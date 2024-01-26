@@ -1,0 +1,45 @@
+default_biome = "one"
+
+[env]
+VAR1 = "val1"
+VAR2 = "val2"
+VAR3 = "val3"
+
+[aliases]
+alias1 = "run1"
+alias2 = "run2"
+alias3 = "run3"
+
+[construct]
+exec = ["run1", "something-new"]
+
+[deconstruct]
+exec = ["stop1", "something-old"]
+
+[[biomes]]
+name = "one"
+[biomes.env]
+VAR1 = "val11"
+
+[biomes.aliases]
+alias1 = "run11"
+
+[biomes.construct]
+exec = ["run4"]
+
+[biomes.deconstruct]
+exec = ["stop4"]
+
+[[biomes]]
+name = "two"
+[biomes.env]
+VAR1 = "val21"
+
+[biomes.aliases]
+alias1 = "run21"
+
+[biomes.construct]
+exec = ["run8"]
+
+[biomes.deconstruct]
+exec = ["stop8"]
