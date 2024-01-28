@@ -1,9 +1,17 @@
-use anyhow::{anyhow, Result};
+use std::path::PathBuf;
+
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::types::errors::TerrainiumErrors;
 
 use super::{aliases::KeyValue, biomes::Biome, commands::Commands};
+
+pub fn parse_terrain(path: PathBuf) -> Result<Terrain> {
+    let terrain = std::fs::read_to_string(path).context("Unable to read file")?;
+    let terrain: Terrain = toml::from_str(&terrain).context("Unable to parse terrain")?;
+    return Ok(terrain);
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Terrain {

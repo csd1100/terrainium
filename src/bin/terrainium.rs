@@ -1,5 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
+use clap::Parser;
+use terrainium::types::args::Args;
 
 fn main() -> Result<()> {
-    return Err(anyhow!("Not implemented"));
+    let opts = Args::parse();
+    println!("{:?}", opts);
+    return Ok(());
 }

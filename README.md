@@ -9,6 +9,7 @@ terrainium <verb> [OPTIONS]
 ```
 
 - Verbs:
+
   - `init [OPTIONS]` - Generates terrain.toml in current directory or
     central location.
     - `-c|--central` - Stores terrain in `$XDG_CONFIG_HOME/terrainium/terrains/[parent_]$(pwd).toml`.
@@ -18,14 +19,15 @@ terrainium <verb> [OPTIONS]
   - `update OPTIONS` - Updates terrain with options
     - `-b|--biome <name>` - biome to update. Updates default if `default` is used.
       Updates terrain if not specified.
-    - `-e|--env <VAR_NAME> <VAR_VALUE>` adds or updates environment variable `VAR_NAME`
+    - `-e|--env <VAR_NAME>=<VAR_VALUE>` adds or updates environment variable `VAR_NAME`
       with value `VAR_VALUE`.
-    - `-a|--alias <ALIAS_NAME> <ALIAS_VALUE>` adds or updates alias `ALIAS_NAME`
+    - `-a|--alias <ALIAS_NAME>=<ALIAS_VALUE>` adds or updates alias `ALIAS_NAME`
       with value `ALIAS_VALUE`.
-    - `-c|--construct <type> <value>` adds constructor of type `<type>` and
-      value `<value>`. `-d` Must be specified along with it.
-    - `-d|--deconstruct <type> <value>` adds de-constructor of type `<type>` and
-      value `<value>`. Needs `-c` along with it.
+    - `-c|--construct <type>=<value>` adds constructor of type `<type>` and
+      value `<value>`. `-d` Must be specified along with it. Only one can be
+      specified at once.
+    - `-d|--deconstruct <type>=<value>` adds de-constructor of type `<type>` and
+      value `<value>`. Needs `-c` along with it. Only one can be specified at once.
   - `enter [OPTIONS]` - applies terrain.
     - `-b|--biome <name>` - name of the biome to be applied. `default` to use
       default biome. `none` to remove biome only use terrain without biome.
