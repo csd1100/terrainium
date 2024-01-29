@@ -1,15 +1,17 @@
 use anyhow::Result;
 use clap::Parser;
 use terrainium::{
-    parser::args::{
-        handle_construct, handle_deconstruct, handle_edit, handle_enter, handle_exit, handle_init,
-        handle_update,
+    handlers::{
+        args::{handle_construct, handle_deconstruct, handle_edit, handle_enter, handle_exit},
+        init::handle_init,
+        update::handle_update,
     },
-    types::args::{Args, Verbs},
+    types::args::{TerrainiumArgs, UpdateOpts, Verbs},
 };
 
 fn main() -> Result<()> {
-    let opts = Args::parse();
+    let opts = TerrainiumArgs::parse();
+    println!("{:?}", opts);
 
     return match opts.verbs {
         Verbs::Init {
@@ -19,13 +21,14 @@ fn main() -> Result<()> {
         } => handle_init(central, full, edit),
         Verbs::Edit => handle_edit(),
         Verbs::Update {
-            set_biome,
-            biome,
-            env,
-            alias,
-            construct,
-            destruct,
-        } => handle_update(set_biome, biome, env, alias, construct, destruct),
+            set_biome: _,
+            opts:
+                UpdateOpts {
+                    biome: _,
+                    env: _,
+                    aliases: _,
+                },
+        } => handle_update(),
         Verbs::Enter { biome } => handle_enter(biome),
         Verbs::Exit => handle_exit(),
         Verbs::Construct { biome } => handle_construct(biome),

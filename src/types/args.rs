@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
 use anyhow::{anyhow, Ok};
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
-pub struct Args {
+pub struct TerrainiumArgs {
     #[command(subcommand)]
     pub verbs: Verbs,
 }
@@ -26,21 +26,8 @@ pub enum Verbs {
     Update {
         #[arg(short, long = "set-biome")]
         set_biome: Option<String>,
-
-        #[arg(short, long, default_value = "default")]
-        biome: Option<BiomeArg>,
-
-        #[arg(short, long)]
-        env: Option<Vec<Pair>>,
-
-        #[arg(short, long)]
-        alias: Option<Vec<Pair>>,
-
-        #[arg(short, long, requires = "deconstruct")]
-        construct: Option<Pair>,
-
-        #[arg(short, long, requires = "construct")]
-        destruct: Option<Pair>,
+        #[command(flatten)]
+        opts: UpdateOpts,
     },
     Enter {
         #[arg(short, long, default_value = "default")]
@@ -55,6 +42,19 @@ pub enum Verbs {
         #[arg(short, long, default_value = "default")]
         biome: Option<BiomeArg>,
     },
+}
+
+#[derive(Args, Debug)]
+#[group(conflicts_with("set_biome"))]
+pub struct UpdateOpts {
+    #[arg(short, long, default_value = "default")]
+    pub biome: Option<BiomeArg>,
+
+    #[arg(short, long)]
+    pub env: Option<Vec<Pair>>,
+
+    #[arg(short, long)]
+    pub aliases: Option<Vec<Pair>>,
 }
 
 #[derive(Debug, Clone)]
@@ -110,11 +110,11 @@ impl FromStr for Pair {
 
 #[cfg(test)]
 mod test {
-    use crate::types::args::Args;
+    use crate::types::args::TerrainiumArgs;
 
     #[test]
     fn verify_args() {
         use clap::CommandFactory;
-        Args::command().debug_assert()
+        TerrainiumArgs::command().debug_assert()
     }
 }

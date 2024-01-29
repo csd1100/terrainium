@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use home::home_dir;
 
 use crate::types::errors::TerrainiumErrors;
@@ -40,8 +40,10 @@ pub fn get_central_store_path() -> Result<PathBuf> {
 
 pub fn create_config_dir() -> Result<PathBuf> {
     let config_path = get_terrainium_config_path()?;
-    create_dir_if_not_exist(config_path.as_path())?;
-    create_dir_if_not_exist(get_central_store_path()?.as_path())?;
+    create_dir_if_not_exist(config_path.as_path())
+        .context("unable to create terrainium config directory")?;
+    create_dir_if_not_exist(get_central_store_path()?.as_path())
+        .context("unable to create terrains directory in terrainium config directory")?;
     return Ok(config_path);
 }
 
@@ -64,4 +66,19 @@ pub fn get_local_terrain_path() -> Result<PathBuf> {
 
 pub fn is_local_terrain_present() -> Result<bool> {
     return Ok(Path::try_exists(&get_local_terrain_path()?)?);
+}
+
+pub fn is_central_terrain_present() -> Result<bool> {
+    return Ok(Path::try_exists(&get_central_terrain_path()?)?);
+}
+
+pub fn get_terrain_toml() -> Result<PathBuf> {
+    if is_local_terrain_present()? {
+        return get_local_terrain_path();
+    } else if is_central_terrain_present()? {
+        return get_central_terrain_path();
+    } else {
+        let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
+        return Err(err);
+    }
 }

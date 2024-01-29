@@ -1,57 +1,53 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
-use super::{aliases::KeyValue, commands::Command, commands::Commands};
+use super::commands::{Command, Commands};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Biome {
-    pub name: String,
-    pub env: Option<KeyValue>,
-    pub aliases: Option<KeyValue>,
-    pub construct: Option<Commands>,
-    pub destruct: Option<Commands>,
+    pub env: Option<HashMap<String, String>>,
+    pub alias: Option<HashMap<String, String>>,
+    pub constructor: Option<Commands>,
+    pub destructor: Option<Commands>,
 }
 
 impl Biome {
     pub fn new() -> Biome {
         return Biome {
-            name: String::new(),
-            env: Some(KeyValue::new()),
-            aliases: Some(KeyValue::new()),
-            construct: None,
-            destruct: None,
+            env: Some(HashMap::<String, String>::new()),
+            alias: Some(HashMap::<String, String>::new()),
+            constructor: None,
+            destructor: None,
         };
     }
 }
 
 impl Default for Biome {
     fn default() -> Self {
-        let name = String::from("biome1");
-        let mut env = KeyValue::new();
-        env.insert(String::from("EDITOR"), String::from("nvim"));
-        let mut aliases = KeyValue::new();
-        aliases.insert(
-            String::from("tenter"),
-            String::from("terrain enter -b ") + &name,
-        );
-        let construct = Commands {
+        let name = String::from("example_biome");
+        let mut env = HashMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("vim"));
+        let mut alias = HashMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(String::from("tenter"), String::from("terrainium enter"));
+        let constructor = Commands {
             exec: vec![Command {
                 exe: String::from("echo"),
-                args: Some(vec!["entering biome ".to_string() + &name]),
+                args: Some(vec![String::from("entering biome '") + &name + "'"]),
             }],
         };
-        let destruct = Commands {
+        let destructor = Commands {
             exec: vec![Command {
                 exe: String::from("echo"),
-                args: Some(vec!["exiting biome ".to_string() + &name]),
+                args: Some(vec![String::from("exiting biome '") + &name + "'"]),
             }],
         };
-
-        return Biome {
-            name,
+        Self {
             env: Some(env),
-            aliases: Some(aliases),
-            construct: Some(construct),
-            destruct: Some(destruct),
-        };
+            alias: Some(alias),
+            constructor: Some(constructor),
+            destructor: Some(destructor),
+        }
     }
 }
