@@ -13,35 +13,46 @@ pub struct Args {
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
     Init {
-        #[arg(short = 'c', long = "central")]
+        #[arg(short, long)]
         central: bool,
+
+        #[arg(short, long)]
         full: bool,
+
+        #[arg(short, long)]
         edit: bool,
     },
     Edit,
     Update {
-        #[arg(short, long)]
+        #[arg(short, long = "set-biome")]
+        set_biome: Option<String>,
+
+        #[arg(short, long, default_value = "default")]
         biome: Option<BiomeArg>,
+
         #[arg(short, long)]
         env: Option<Vec<Pair>>,
+
         #[arg(short, long)]
         alias: Option<Vec<Pair>>,
+
         #[arg(short, long, requires = "deconstruct")]
         construct: Option<Pair>,
+
         #[arg(short, long, requires = "construct")]
-        deconstruct: Option<Pair>,
+        destruct: Option<Pair>,
     },
     Enter {
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "default")]
         biome: Option<BiomeArg>,
     },
     Exit,
     Construct {
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "default")]
         biome: Option<BiomeArg>,
     },
     Deconstruct {
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "default")]
         biome: Option<BiomeArg>,
     },
 }
@@ -83,9 +94,7 @@ impl FromStr for Pair {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut values: Vec<_> = s.split("=").collect();
         if values.len() != 2 {
-            return Err(anyhow!(
-                "Invalid value passed for argument, expected `key=value`pair"
-            ));
+            return Err(anyhow!("expected `key=value`pair"));
         }
 
         let mut drain = values.drain(0..=1);
@@ -96,5 +105,16 @@ impl FromStr for Pair {
         };
 
         return Ok(pair);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::types::args::Args;
+
+    #[test]
+    fn verify_args() {
+        use clap::CommandFactory;
+        Args::command().debug_assert()
     }
 }

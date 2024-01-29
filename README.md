@@ -17,8 +17,9 @@ terrainium <verb> [OPTIONS]
     - `-e|--edit` - Generates terrain and opens file in `EDITOR`.
   - `edit` - edit terrain with editor specified in `EDITOR` env var.
   - `update OPTIONS` - Updates terrain with options
-    - `-b|--biome <name>` - biome to update. Updates default if `default` is used.
-      Updates terrain if not specified.
+    - `-s|--set-biome <name>` - set default `biome`.
+    - `-b|--biome <biome_value>` - biome to update. Updates default if `default`
+      is used. Updates terrain if not specified.
     - `-e|--env <VAR_NAME>=<VAR_VALUE>` adds or updates environment variable `VAR_NAME`
       with value `VAR_VALUE`.
     - `-a|--alias <ALIAS_NAME>=<ALIAS_VALUE>` adds or updates alias `ALIAS_NAME`
