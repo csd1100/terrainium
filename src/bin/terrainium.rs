@@ -21,14 +21,16 @@ fn main() -> Result<()> {
         } => handle_init(central, full, edit),
         Verbs::Edit => handle_edit(),
         Verbs::Update {
-            set_biome: _,
+            set_biome,
             opts:
                 UpdateOpts {
-                    biome: _,
-                    env: _,
-                    aliases: _,
+                    new,
+                    biome,
+                    env,
+                    alias,
                 },
-        } => handle_update(),
+            backup,
+        } => handle_update(set_biome, new, biome, env, alias, backup),
         Verbs::Enter { biome } => handle_enter(biome),
         Verbs::Exit => handle_exit(),
         Verbs::Construct { biome } => handle_construct(biome),

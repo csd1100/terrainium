@@ -24,22 +24,24 @@ pub enum Verbs {
     },
     Edit,
     Update {
+        #[arg(short = 'k', long)]
+        backup: bool,
         #[arg(short, long = "set-biome")]
         set_biome: Option<String>,
         #[command(flatten)]
         opts: UpdateOpts,
     },
     Enter {
-        #[arg(short, long, default_value = "default")]
+        #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
     Exit,
     Construct {
-        #[arg(short, long, default_value = "default")]
+        #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
     Deconstruct {
-        #[arg(short, long, default_value = "default")]
+        #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
 }
@@ -47,14 +49,17 @@ pub enum Verbs {
 #[derive(Args, Debug)]
 #[group(conflicts_with("set_biome"))]
 pub struct UpdateOpts {
-    #[arg(short, long, default_value = "default")]
+    #[arg(short, long, group = "for")]
+    pub new: Option<String>,
+
+    #[arg(short, long, group = "for")]
     pub biome: Option<BiomeArg>,
 
     #[arg(short, long)]
     pub env: Option<Vec<Pair>>,
 
     #[arg(short, long)]
-    pub aliases: Option<Vec<Pair>>,
+    pub alias: Option<Vec<Pair>>,
 }
 
 #[derive(Debug, Clone)]

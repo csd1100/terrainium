@@ -23,6 +23,28 @@ impl Biome {
     }
 }
 
+impl Biome {
+    pub fn update_env(&mut self, k: String, v: String) {
+        if self.env.is_none() {
+            self.env = Some(HashMap::<String, String>::new());
+        }
+
+        if let Some(env) = self.env.as_mut() {
+            env.insert(k, v);
+        }
+    }
+
+    pub fn update_alias(&mut self, k: String, v: String) {
+        if self.alias.is_none() {
+            self.alias = Some(HashMap::<String, String>::new());
+        }
+
+        if let Some(alias) = self.alias.as_mut() {
+            alias.insert(k, v);
+        }
+    }
+}
+
 impl Default for Biome {
     fn default() -> Self {
         let name = String::from("example_biome");
