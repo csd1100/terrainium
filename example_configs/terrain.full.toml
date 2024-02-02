@@ -2,30 +2,44 @@ default_biome = "example_biome"
 
 [terrain.env]
 EDITOR = "vim"
+TEST = "value"
 
 [terrain.alias]
 tedit = "terrainium edit"
 tenter = "terrainium enter"
 
-[[terrain.constructor.exec]]
+[[terrain.constructors.exec]]
 exe = "echo"
 args = ["entering terrain"]
 
-[[terrain.destructor.exec]]
+[[terrain.destructors.exec]]
 exe = "echo"
 args = ["exiting terrain"]
 
 [biomes.example_biome.env]
-EDITOR = "vim"
+EDITOR = "nvim"
 
 [biomes.example_biome.alias]
-tedit = "terrainium edit"
-tenter = "terrainium enter"
+tenter = "terrainium enter --biome example_biome"
 
-[[biomes.example_biome.constructor.exec]]
+[[biomes.example_biome.constructors.exec]]
 exe = "echo"
 args = ["entering biome 'example_biome'"]
 
-[[biomes.example_biome.destructor.exec]]
+[[biomes.example_biome.destructors.exec]]
 exe = "echo"
 args = ["exiting biome 'example_biome'"]
+
+[biomes.example_biome2.env]
+EDITOR = "nano"
+
+[biomes.example_biome2.alias]
+tenter = "terrainium enter --biome example_biome2"
+
+[[biomes.example_biome2.constructors.exec]]
+exe = "echo"
+args = ["entering biome 'example_biome2'"]
+
+[[biomes.example_biome2.destructors.exec]]
+exe = "echo"
+args = ["exiting biome 'example_biome2'"]

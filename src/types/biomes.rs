@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::handlers::helpers::{find_in_hashmaps, get_merged_commands, get_merged_hashmaps};
 
-use super::commands::{Command, Commands};
+use super::{
+    commands::{Command, Commands},
+    errors::TerrainiumErrors,
+};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Biome {
     pub env: Option<HashMap<String, String>>,
     pub alias: Option<HashMap<String, String>>,
@@ -46,11 +49,17 @@ impl Biome {
     }
 
     pub fn find_envs(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
-        return find_in_hashmaps(&self.env, tofind);
+        match find_in_hashmaps(&self.env, tofind) {
+            Result::Ok(envs) => return Ok(envs),
+            Err(_) => return Err(TerrainiumErrors::EnvsNotDefined.into()),
+        };
     }
 
     pub fn find_aliases(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
-        return find_in_hashmaps(&self.alias, tofind);
+        match find_in_hashmaps(&self.alias, tofind) {
+            Result::Ok(aliases) => return Ok(aliases),
+            Err(_err) => return Err(TerrainiumErrors::AliasesNotDefined.into()),
+        };
     }
 
     pub fn merge(&self, other: &Self) -> Result<Self> {

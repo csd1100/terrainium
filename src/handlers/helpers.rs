@@ -160,7 +160,7 @@ pub fn find_in_hashmaps(
             })
             .collect()
     } else {
-        return Err(anyhow!("Not defined"));
+        return Err(anyhow!("Not Defined"));
     };
     return Ok(return_map);
 }
