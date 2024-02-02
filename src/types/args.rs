@@ -31,6 +31,14 @@ pub enum Verbs {
         #[command(flatten)]
         opts: UpdateOpts,
     },
+    Get {
+        #[arg(long, default_value = "true")]
+        all: bool,
+        #[arg(short, long)]
+        biome: Option<BiomeArg>,
+        #[command(flatten)]
+        opts: GetOpts,
+    },
     Enter {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
@@ -60,6 +68,19 @@ pub struct UpdateOpts {
 
     #[arg(short, long)]
     pub alias: Option<Vec<Pair>>,
+}
+
+#[derive(Args, Debug)]
+#[group(conflicts_with("all"))]
+pub struct GetOpts {
+    #[arg(short, long)]
+    pub alias: Option<Vec<String>>,
+    #[arg(short, long)]
+    pub env: Option<Vec<String>>,
+    #[arg(short, long)]
+    pub constructors: bool,
+    #[arg(short, long)]
+    pub destructors: bool,
 }
 
 #[derive(Debug, Clone)]

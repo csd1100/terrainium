@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
+
+use crate::handlers::helpers::{find_in_hashmaps, get_merged_commands, get_merged_hashmaps};
 
 use super::commands::{Command, Commands};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Biome {
     pub env: Option<HashMap<String, String>>,
     pub alias: Option<HashMap<String, String>>,
-    pub constructor: Option<Commands>,
-    pub destructor: Option<Commands>,
+    pub constructors: Option<Commands>,
+    pub destructors: Option<Commands>,
 }
 
 impl Biome {
@@ -17,13 +20,11 @@ impl Biome {
         return Biome {
             env: Some(HashMap::<String, String>::new()),
             alias: Some(HashMap::<String, String>::new()),
-            constructor: None,
-            destructor: None,
+            constructors: None,
+            destructors: None,
         };
     }
-}
 
-impl Biome {
     pub fn update_env(&mut self, k: String, v: String) {
         if self.env.is_none() {
             self.env = Some(HashMap::<String, String>::new());
@@ -42,6 +43,60 @@ impl Biome {
         if let Some(alias) = self.alias.as_mut() {
             alias.insert(k, v);
         }
+    }
+
+    pub fn find_envs(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
+        return find_in_hashmaps(&self.env, tofind);
+    }
+
+    pub fn find_aliases(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
+        return find_in_hashmaps(&self.alias, tofind);
+    }
+
+    pub fn merge(&self, other: &Self) -> Result<Self> {
+        let mut env = None;
+        let mut alias = None;
+        let mut constructors = None;
+        let mut destructors = None;
+
+        if self.env.is_some() || other.env.is_some() {
+            env = self.merge_env(&other);
+        }
+
+        if self.alias.is_some() || other.alias.is_some() {
+            alias = self.merge_alias(&other);
+        }
+
+        if self.constructors.is_some() || other.constructors.is_some() {
+            constructors = self.merge_constructors(&other);
+        }
+
+        if self.destructors.is_some() || other.destructors.is_some() {
+            destructors = self.merge_destructors(&other);
+        }
+
+        return Ok(Biome {
+            env,
+            alias,
+            constructors,
+            destructors,
+        });
+    }
+
+    fn merge_env(&self, other: &Self) -> Option<HashMap<String, String>> {
+        return get_merged_hashmaps(&self.env, &other.env);
+    }
+
+    fn merge_alias(&self, other: &Self) -> Option<HashMap<String, String>> {
+        return get_merged_hashmaps(&self.alias, &other.alias);
+    }
+
+    fn merge_constructors(&self, other: &Self) -> Option<Commands> {
+        return get_merged_commands(&self.constructors, &other.constructors);
+    }
+
+    fn merge_destructors(&self, other: &Self) -> Option<Commands> {
+        return get_merged_commands(&self.destructors, &other.destructors);
     }
 }
 
@@ -68,8 +123,8 @@ impl Default for Biome {
         Self {
             env: Some(env),
             alias: Some(alias),
-            constructor: Some(constructor),
-            destructor: Some(destructor),
+            constructors: Some(constructor),
+            destructors: Some(destructor),
         }
     }
 }

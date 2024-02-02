@@ -32,6 +32,18 @@ terrainium <verb> [OPTIONS]
       with value `ALIAS_VALUE`.
     - `-k|--backup` creates a backup toml before updating the original in same directory.
 
+  - `get [OPTIONS]` - Get the values that will be applied
+
+    - `-a|--all` - returns all values. It is selected by default.
+    - `-b|--biome <name>` - name of the biome for which values to be retrieved.
+      `default` to use default biome. `none` to remove biome get values from terrain.
+    - `-a|--alias [name]` - returns value of aliases defined. If `name` is provided
+      will return value of that specific alias.
+    - `-e|--env [name]` - returns value of env vars defined. If `name` is provided
+      will return value of that specific env vars.
+    - `-c|--constructors` - returns value of constructors defined.
+    - `-d|--destructors` - returns value of constructors defined.
+
   - `enter [OPTIONS]` - applies terrain.
 
     - `-b|--biome <name>` - name of the biome to be applied. `default` to use

@@ -35,10 +35,10 @@ impl Terrain {
         return Ok(toml::to_string(self).context("unable to convert terrain to toml")?);
     }
 
-    pub fn get_biome(&self, biome: &String) -> Result<Option<&Biome>> {
+    pub fn get_biome(&self, biome: &String) -> Result<&Biome> {
         if let Some(biomes) = &self.biomes {
             if let Some(biome) = biomes.get(biome) {
-                return Ok(Some(biome));
+                return Ok(biome);
             } else {
                 return Err(anyhow!(format!("biome {} is not defined", biome)));
             }
@@ -47,8 +47,56 @@ impl Terrain {
         }
     }
 
+    pub fn get_default_biome_name(&self) -> Result<String> {
+        if let Some(default_biome) = &self.default_biome {
+            let default_biome = default_biome.clone();
+            return Ok(default_biome);
+        } else {
+            return Err(anyhow!("default biome not set"));
+        }
+    }
+
+    fn get_merged_biome(&self, biome: String) -> Result<Biome> {
+        let biome = self.get_biome(&biome)?;
+        return self.terrain.merge(biome);
+    }
+
+    pub fn get_env(
+        &self,
+        selected: Option<BiomeArg>,
+        env: Vec<String>,
+    ) -> Result<HashMap<String, Option<String>>> {
+        let environment = self.get(selected)?;
+        return environment.find_envs(env);
+    }
+
+    pub fn get_alias(
+        &self,
+        selected: Option<BiomeArg>,
+        aliases: Vec<String>,
+    ) -> Result<HashMap<String, Option<String>>> {
+        let environment = self.get(selected)?;
+        return environment.find_aliases(aliases);
+    }
+
+    pub fn get(&self, selected: Option<BiomeArg>) -> Result<Biome> {
+        if let Some(selected) = selected {
+            match selected {
+                BiomeArg::Value(biome) => return self.get_merged_biome(biome),
+                BiomeArg::None => return Ok(self.terrain.clone()),
+                BiomeArg::Default => return self.get_merged_biome(self.get_default_biome_name()?),
+            }
+        } else {
+            if let Some(_) = self.default_biome {
+                return self.get_merged_biome(self.get_default_biome_name()?);
+            } else {
+                return Ok(self.terrain.clone());
+            }
+        }
+    }
+
     pub fn update_default_biome(&mut self, biome: String) -> Result<()> {
-        if let Some(_) = self.get_biome(&biome)? {
+        if let Ok(_) = self.get_biome(&biome) {
             self.default_biome = Some(biome);
         }
         return Ok(());
@@ -81,12 +129,7 @@ impl Terrain {
     }
 
     fn get_default_biome_mut(&mut self) -> Result<&mut Biome> {
-        if let Some(default_biome) = &self.default_biome {
-            let default_biome = default_biome.clone();
-            return Ok(self.get_biome_mut(&default_biome)?);
-        } else {
-            return Err(anyhow!("default biome not set"));
-        }
+        return Ok(self.get_biome_mut(&self.get_default_biome_name()?)?);
     }
 
     fn get_terrain_mut(&mut self) -> &mut Biome {
@@ -137,13 +180,13 @@ impl Terrain {
 impl Default for Terrain {
     fn default() -> Self {
         let mut main = Biome::default();
-        main.constructor = Some(Commands {
+        main.constructors = Some(Commands {
             exec: vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering terrain")]),
             }],
         });
-        main.destructor = Some(Commands {
+        main.destructors = Some(Commands {
             exec: vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting terrain")]),
