@@ -5,7 +5,10 @@ pub enum TerrainiumErrors {
     #[error("biome `{0}` is not present")]
     BiomeNotFound(String),
 
-    #[error("biomes are not defined found")]
+    #[error("biome `{0}` already exists")]
+    BiomeAlreadyExists(String),
+
+    #[error("biomes are not defined")]
     BiomesNotDefined,
 
     #[error("default biome is not defined")]

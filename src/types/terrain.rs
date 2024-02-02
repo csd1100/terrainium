@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -99,13 +99,15 @@ impl Terrain {
     pub fn update_default_biome(&mut self, biome: String) -> Result<()> {
         if let Ok(_) = self.get_biome(&biome) {
             self.default_biome = Some(biome);
+        } else {
+            return Err(TerrainiumErrors::BiomeNotFound(biome).into());
         }
         return Ok(());
     }
 
     pub fn add_biome(&mut self, name: &String, biome: Biome) -> Result<()> {
         if let Ok(_) = self.get_biome(name) {
-            return Err(anyhow!(format!("biome {} already exists", name)));
+            return Err(TerrainiumErrors::BiomeAlreadyExists(name.to_string()).into());
         }
         if let None = self.biomes {
             self.biomes = Some(HashMap::<String, Biome>::new());
@@ -122,10 +124,10 @@ impl Terrain {
             if let Some(biome) = biomes.get_mut(biome) {
                 return Ok(biome);
             } else {
-                return Err(anyhow!(format!("biome {} is not defined", biome)));
+                return Err(TerrainiumErrors::BiomeNotFound(biome.to_string()).into());
             }
         } else {
-            return Err(anyhow!("biomes are not defined"));
+            return Err(TerrainiumErrors::BiomesNotDefined.into());
         }
     }
 
@@ -209,7 +211,7 @@ impl Default for Terrain {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashMap, path::PathBuf};
+    use std::{borrow::BorrowMut, collections::HashMap, path::PathBuf};
 
     use anyhow::Result;
 
@@ -412,7 +414,11 @@ mod test {
         expected.insert("TEST".to_owned(), Some("value".to_owned()));
         expected.insert("VAR1".to_owned(), None);
 
-        let to_find = vec![String::from("EDITOR"), String::from("VAR1"), String::from("TEST")];
+        let to_find = vec![
+            String::from("EDITOR"),
+            String::from("VAR1"),
+            String::from("TEST"),
+        ];
 
         // test main terrain
         let actual = terrain.get_env(Some(BiomeArg::None), to_find.clone())?;
@@ -474,7 +480,9 @@ mod test {
 
         let expected = TerrainiumErrors::AliasesNotDefined;
         // test main terrain
-        let actual = terrain.get_alias(Some(BiomeArg::None), to_find).unwrap_err();
+        let actual = terrain
+            .get_alias(Some(BiomeArg::None), to_find)
+            .unwrap_err();
         assert_eq!(&expected.to_string(), &actual.to_string());
 
         return Ok(());
@@ -516,6 +524,256 @@ mod test {
         return Ok(());
     }
 
+    #[test]
+    fn terrain_get_returns_main_terrain_when_biomearg_none_passed() -> Result<()> {
+        let terrain = test_data_terrain_full();
+        let expected = test_data_main_terrain_full();
+
+        let actual = terrain.get(Some(BiomeArg::None))?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_merged_default_when_biomearg_default_passed() -> Result<()> {
+        let terrain = test_data_terrain_full();
+        let expected = test_data_merged_default();
+
+        let actual = terrain.get(Some(BiomeArg::Default))?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_merged_when_biomearg_value_passed() -> Result<()> {
+        let terrain = test_data_terrain_full();
+        let expected = test_data_merged_example_biome2();
+
+        let actual = terrain.get(Some(BiomeArg::Value("example_biome2".to_string())))?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_merged_default_when_biomearg_not_passed() -> Result<()> {
+        let terrain = test_data_terrain_full();
+        let expected = test_data_merged_default();
+
+        let actual = terrain.get(None)?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_main_terrain_when_biomearg_not_passed_and_no_default() -> Result<()> {
+        let terrain = test_data_terrain_without_biomes();
+        let expected = test_data_terrain_without_biomes_main();
+
+        let actual = terrain.get(None)?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_error_when_biomearg_default_passed_but_not_defined() -> Result<()> {
+        let terrain = test_data_terrain_without_biomes();
+        let expected = TerrainiumErrors::DefaultBiomeNotDefined.to_string();
+
+        let actual = terrain
+            .get(Some(BiomeArg::Default))
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn terrain_get_returns_error_when_biomearg_value_passed_but_not_defined() -> Result<()> {
+        let terrain = test_data_terrain_full();
+        let expected = TerrainiumErrors::BiomeNotFound("non_existent".to_string()).to_string();
+
+        let actual = terrain
+            .get(Some(BiomeArg::Value("non_existent".to_string())))
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn update_default_biome_works() -> Result<()> {
+        let mut expected = test_data_terrain_full();
+        expected.default_biome = Some("example_biome2".to_string());
+
+        let mut terrain = test_data_terrain_full();
+        terrain.update_default_biome("example_biome2".to_string())?;
+        let actual = terrain;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn update_default_biome_returns_error_if_not_found() -> Result<()> {
+        let expected = TerrainiumErrors::BiomeNotFound("non_existent".to_string()).to_string();
+
+        let mut terrain = test_data_terrain_full();
+        let actual = terrain
+            .update_default_biome("non_existent".to_string())
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn add_biome_works() -> Result<()> {
+        let mut expected = test_data_terrain_full();
+        if let Some(biomes) = &mut expected.biomes {
+            biomes.insert(
+                "new_biome".to_string(),
+                Biome {
+                    env: Some(HashMap::<String, String>::new()),
+                    alias: Some(HashMap::<String, String>::new()),
+                    constructors: None,
+                    destructors: None,
+                },
+            );
+        }
+
+        let mut terrain = test_data_terrain_full();
+        terrain.add_biome(&"new_biome".to_string(), Biome::new())?;
+
+        assert_eq!(expected, terrain);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn add_biome_works_when_none_present() -> Result<()> {
+        let mut expected = test_data_terrain_without_biomes();
+        expected.biomes = Some(HashMap::<String, Biome>::new());
+        if let Some(biomes) = &mut expected.biomes {
+            biomes.insert(
+                "new_biome".to_string(),
+                Biome {
+                    env: Some(HashMap::<String, String>::new()),
+                    alias: Some(HashMap::<String, String>::new()),
+                    constructors: None,
+                    destructors: None,
+                },
+            );
+        }
+
+        let mut terrain = test_data_terrain_without_biomes();
+        terrain.add_biome(&"new_biome".to_string(), Biome::new())?;
+
+        assert_eq!(expected, terrain);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn add_biome_fails_if_already_present() -> Result<()> {
+        let expected =
+            TerrainiumErrors::BiomeAlreadyExists("example_biome2".to_string()).to_string();
+
+        let mut terrain = test_data_terrain_full();
+        let actual = terrain
+            .add_biome(&"example_biome2".to_string(), Biome::new())
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn get_biome_mut_returns_biome_if_present() -> Result<()> {
+        let mut terrain = test_data_terrain_full();
+        let expected = &mut test_data_biome(&"example_biome2".to_owned(), "nano".to_owned());
+
+        let actual = terrain.get_biome_mut(&"example_biome2".to_owned())?;
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn get_biome_mut_returns_error_if_not_present() -> Result<()> {
+        let mut terrain = test_data_terrain_full();
+
+        let non_existent = "non_existent".to_owned();
+        let actual = terrain.get_biome_mut(&non_existent).unwrap_err();
+
+        assert_eq!(
+            actual.to_string(),
+            TerrainiumErrors::BiomeNotFound(non_existent).to_string()
+        );
+
+        return Ok(());
+    }
+
+    #[test]
+    fn get_biome_mut_returns_error_if_biomes_not_defined() -> Result<()> {
+        let mut terrain = test_data_terrain_without_biomes();
+
+        let biome = "example_biome".to_owned();
+        let actual = terrain.get_biome_mut(&biome).unwrap_err();
+
+        assert_eq!(
+            actual.to_string(),
+            TerrainiumErrors::BiomesNotDefined.to_string()
+        );
+
+        return Ok(());
+    }
+
+    #[test]
+    fn get_default_biome_mut_name_returns_default_if_present() -> Result<()> {
+        let mut terrain = test_data_terrain_full();
+
+        if let Some(biomes) = test_data_terrain_full().biomes.borrow_mut() {
+            let expected = biomes.get_mut("example_biome").expect("to be present");
+            let actual = terrain.get_default_biome_mut()?;
+
+            assert_eq!(expected, actual);
+        }
+
+        return Ok(());
+    }
+
+    #[test]
+    fn get_default_biome_mut_name_returns_error_if_no_biomes() -> Result<()> {
+        let mut terrain = test_data_terrain_without_biomes();
+
+        let expected = TerrainiumErrors::DefaultBiomeNotDefined.to_string();
+        let actual = terrain.get_default_biome_mut().unwrap_err().to_string();
+
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
     fn test_data_biome(name: &String, editor: String) -> Biome {
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("EDITOR"), editor);
@@ -537,6 +795,94 @@ mod test {
             }],
         };
 
+        return Biome {
+            env: Some(env),
+            alias: Some(alias),
+            constructors: Some(constructor),
+            destructors: Some(destructor),
+        };
+    }
+
+    fn test_data_main_terrain_full() -> Biome {
+        return test_data_terrain_full().terrain;
+    }
+
+    fn test_data_merged_default() -> Biome {
+        let mut env = HashMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("nvim"));
+        env.insert(String::from("TEST"), String::from("value"));
+        let mut alias = HashMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(
+            String::from("tenter"),
+            String::from("terrainium enter --biome example_biome"),
+        );
+        let constructor = Commands {
+            exec: vec![
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("entering terrain")]),
+                },
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("entering biome 'example_biome'")]),
+                },
+            ],
+        };
+        let destructor = Commands {
+            exec: vec![
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("exiting terrain")]),
+                },
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("exiting biome 'example_biome'")]),
+                },
+            ],
+        };
+        return Biome {
+            env: Some(env),
+            alias: Some(alias),
+            constructors: Some(constructor),
+            destructors: Some(destructor),
+        };
+    }
+
+    fn test_data_merged_example_biome2() -> Biome {
+        let mut env = HashMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("nano"));
+        env.insert(String::from("TEST"), String::from("value"));
+        let mut alias = HashMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(
+            String::from("tenter"),
+            String::from("terrainium enter --biome example_biome2"),
+        );
+        let constructor = Commands {
+            exec: vec![
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("entering terrain")]),
+                },
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("entering biome 'example_biome2'")]),
+                },
+            ],
+        };
+        let destructor = Commands {
+            exec: vec![
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("exiting terrain")]),
+                },
+                Command {
+                    exe: String::from("echo"),
+                    args: Some(vec![String::from("exiting biome 'example_biome2'")]),
+                },
+            ],
+        };
         return Biome {
             env: Some(env),
             alias: Some(alias),
@@ -583,6 +929,10 @@ mod test {
             default_biome: Some("example_biome".to_owned()),
             biomes: Some(biomes),
         };
+    }
+
+    fn test_data_terrain_without_biomes_main() -> Biome {
+        return test_data_terrain_without_biomes().terrain;
     }
 
     fn test_data_terrain_without_biomes() -> Terrain {
