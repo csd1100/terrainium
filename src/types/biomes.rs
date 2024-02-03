@@ -62,7 +62,7 @@ impl Biome {
         };
     }
 
-    pub fn merge(&self, other: &Self) -> Result<Self> {
+    pub fn merge(&self, other: &Self) -> Self {
         let mut env = None;
         let mut alias = None;
         let mut constructors = None;
@@ -84,12 +84,12 @@ impl Biome {
             destructors = self.merge_destructors(&other);
         }
 
-        return Ok(Biome {
+        return Biome {
             env,
             alias,
             constructors,
             destructors,
-        });
+        };
     }
 
     fn merge_env(&self, other: &Self) -> Option<HashMap<String, String>> {
