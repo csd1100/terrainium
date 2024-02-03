@@ -83,7 +83,7 @@ pub struct GetOpts {
     pub destructors: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BiomeArg {
     Default,
     None,
@@ -108,7 +108,7 @@ impl FromStr for BiomeArg {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pair {
     pub key: String,
     pub value: String,
@@ -136,11 +136,51 @@ impl FromStr for Pair {
 
 #[cfg(test)]
 mod test {
-    use crate::types::args::TerrainiumArgs;
+    use std::str::FromStr;
+
+    use anyhow::Result;
+
+    use crate::types::args::{BiomeArg, Pair, TerrainiumArgs};
 
     #[test]
     fn verify_args() {
         use clap::CommandFactory;
         TerrainiumArgs::command().debug_assert()
+    }
+
+    #[test]
+    fn str_to_pair() -> Result<()> {
+        let expected = Pair {
+            key: "test".to_string(),
+            value: "val".to_string(),
+        };
+        let val = "test=val";
+
+        let actual: Pair = Pair::from_str(val)?;
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn str_to_biomearg() -> Result<()> {
+        let expected = BiomeArg::None;
+        let val = "none";
+
+        let actual = BiomeArg::from_str(val)?;
+        assert_eq!(expected, actual);
+
+        let expected = BiomeArg::Default;
+        let val = "default";
+
+        let actual = BiomeArg::from_str(val)?;
+        assert_eq!(expected, actual);
+
+        let expected = BiomeArg::Value("test".to_string());
+        let val = "test";
+
+        let actual = BiomeArg::from_str(val)?;
+        assert_eq!(expected, actual);
+        return Ok(());
     }
 }
