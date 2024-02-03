@@ -1022,6 +1022,80 @@ mod test {
 
         return Ok(());
     }
+
+    #[test]
+    fn create_and_update_new_biome() -> Result<()> {
+        // setup
+        let mut env = HashMap::<String, String>::new();
+        env.insert("EDITOR".to_string(), "nvim".to_string());
+        env.insert("TEST".to_string(), "test".to_string());
+        let mut alias = HashMap::<String, String>::new();
+        alias.insert(
+            "tenter".to_string(),
+            "terrainium enter --biome name".to_string(),
+        );
+        alias.insert("alias1".to_string(), "alias1".to_string());
+        let constructor = Commands {
+            exec: vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("entering biome 'name'")]),
+            }],
+        };
+        let destructor = Commands {
+            exec: vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("exiting biome 'name'")]),
+            }],
+        };
+        let biome = Biome {
+            env: Some(env),
+            alias: Some(alias),
+            constructors: Some(constructor),
+            destructors: Some(destructor),
+        };
+        let mut expected = test_data_terrain_without_biomes();
+        expected.default_biome = Some("name".to_string());
+        expected.biomes = Some(HashMap::<String, Biome>::new());
+        if let Some(biomes) = expected.biomes.as_mut() {
+            biomes.insert("name".to_string(), biome);
+        } else {
+            return Err(anyhow!("expected to be present"));
+        }
+
+        // test
+        let mut terrain = test_data_terrain_without_biomes();
+        let biome_args = Some(BiomeArg::Value("name".to_string()));
+        let biome = test_data_biome("name", "editor");
+        let env = Some(vec![
+            Pair {
+                key: "EDITOR".to_string(),
+                value: "nvim".to_string(),
+            },
+            Pair {
+                key: "TEST".to_string(),
+                value: "test".to_string(),
+            },
+        ]);
+        let alias = Some(vec![
+            Pair {
+                key: "alias1".to_string(),
+                value: "alias1".to_string(),
+            },
+            Pair {
+                key: "tenter".to_string(),
+                value: "terrainium enter --biome name".to_string(),
+            },
+        ]);
+        terrain.add_biome(&"name".to_string(), biome)?;
+        terrain.update_default_biome("name".to_string())?;
+        terrain.update(biome_args, env, alias)?;
+
+        // assertion
+        assert_eq!(expected, terrain);
+
+        return Ok(());
+    }
+
     fn test_data_biome(name: &str, editor: &str) -> Biome {
         let name = name.to_owned();
         let editor = editor.to_owned();

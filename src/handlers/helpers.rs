@@ -7,7 +7,7 @@ use anyhow::{anyhow, Context, Ok, Result};
 use home::home_dir;
 
 use crate::types::{
-    commands::Commands,
+    commands::{Command, Commands},
     errors::TerrainiumErrors,
     terrain::{parse_terrain, Terrain},
 };
@@ -125,6 +125,12 @@ pub fn get_merged_hashmaps(
     }
 
     return None;
+}
+
+pub fn get_merged_vecs(from: &Vec<Command>, to: &Vec<Command>) -> Vec<Command> {
+    let mut return_vec = to.clone();
+    return_vec.extend_from_slice(&from);
+    return return_vec;
 }
 
 pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Option<Commands> {

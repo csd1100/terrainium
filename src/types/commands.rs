@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::handlers::helpers::get_merged_vecs;
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Commands {
     pub exec: Vec<Command>,
@@ -9,12 +11,6 @@ pub struct Commands {
 pub struct Command {
     pub exe: String,
     pub args: Option<Vec<String>>,
-}
-
-fn get_merged_vecs(from: &Vec<Command>, to: &Vec<Command>) -> Vec<Command> {
-    let mut return_vec = to.clone();
-    return_vec.extend_from_slice(&from);
-    return return_vec;
 }
 
 impl Commands {
