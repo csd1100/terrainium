@@ -9,12 +9,11 @@ use terrainium::{
         init::handle_init,
         update::handle_update,
     },
-    types::args::{GetOpts, TerrainiumArgs, UpdateOpts, Verbs},
+    types::args::{TerrainiumArgs, UpdateOpts, Verbs},
 };
 
 fn main() -> Result<()> {
     let opts = TerrainiumArgs::parse();
-    println!("{:?}", opts);
 
     return match opts.verbs {
         Verbs::Init {
@@ -34,17 +33,7 @@ fn main() -> Result<()> {
                 },
             backup,
         } => handle_update(set_biome, new, biome, env, alias, backup),
-        Verbs::Get {
-            biome,
-            all,
-            opts:
-                GetOpts {
-                    env,
-                    alias,
-                    constructors,
-                    destructors,
-                },
-        } => handle_get(all, biome, alias, env, constructors, destructors),
+        Verbs::Get { biome, all, opts } => handle_get(all, biome, opts),
         Verbs::Enter { biome } => handle_enter(biome),
         Verbs::Exit => handle_exit(),
         Verbs::Construct { biome } => handle_construct(biome),

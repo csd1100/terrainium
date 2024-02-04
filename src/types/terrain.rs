@@ -8,6 +8,7 @@ use super::{
     biomes::Biome,
     commands::{Command, Commands},
     errors::TerrainiumErrors,
+    get::PrintableTerrain,
 };
 
 pub fn parse_terrain(path: &PathBuf) -> Result<Terrain> {
@@ -57,19 +58,31 @@ impl Terrain {
         }
     }
 
-    pub fn select_biome(&self, biome: Option<BiomeArg>) -> Result<&Biome> {
-        if let Some(selected) = biome {
+    fn get_selected_biome_name(&self, selected: &Option<BiomeArg>) -> Result<String> {
+        if let Some(selected) = selected {
             match selected {
-                BiomeArg::Value(biome) => return self.get_biome(&biome),
-                BiomeArg::None => return Ok(&self.terrain),
-                BiomeArg::Default => return self.get_biome(&self.get_default_biome_name()?),
+                BiomeArg::Value(biome) => match self.get_biome(&biome) {
+                    Ok(_) => return Ok(biome.to_string()),
+                    Err(e) => return Err(e),
+                },
+                BiomeArg::None => return Ok("none".to_string()),
+                BiomeArg::Default => return Ok(self.get_default_biome_name()?),
             }
         } else {
             if let Some(_) = self.default_biome {
-                return self.get_biome(&self.get_default_biome_name()?);
+                return Ok(self.get_default_biome_name()?);
             } else {
-                return Ok(&self.terrain);
+                return Ok("none".to_string());
             }
+        }
+    }
+
+    pub fn select_biome(&self, biome: Option<BiomeArg>) -> Result<&Biome> {
+        let selected = self.get_selected_biome_name(&biome)?;
+        if selected == "none".to_string() {
+            return Ok(&self.terrain);
+        } else {
+            return self.get_biome(&selected);
         }
     }
 
@@ -104,19 +117,22 @@ impl Terrain {
         }
     }
 
+    pub fn get_printable_terrain(self, selected: Option<BiomeArg>) -> Result<PrintableTerrain> {
+        let selected_name = self.get_selected_biome_name(&selected)?;
+        return Ok(PrintableTerrain {
+            default_biome: self.default_biome.clone(),
+            selected_biome: Some(selected_name),
+            biome: self.get(selected)?,
+            all: false,
+        });
+    }
+
     pub fn select_biome_mut(&mut self, biome: Option<BiomeArg>) -> Result<&mut Biome> {
-        if let Some(selected) = biome {
-            match selected {
-                BiomeArg::Value(biome) => return self.get_biome_mut(&biome),
-                BiomeArg::None => return Ok(&mut self.terrain),
-                BiomeArg::Default => return self.get_default_biome_mut(),
-            }
+        let selected = self.get_selected_biome_name(&biome)?;
+        if selected == "none".to_string() {
+            return Ok(&mut self.terrain);
         } else {
-            if let Some(_) = self.default_biome {
-                return self.get_default_biome_mut();
-            } else {
-                return Ok(&mut self.terrain);
-            }
+            return self.get_biome_mut(&selected);
         }
     }
 
@@ -153,10 +169,6 @@ impl Terrain {
         } else {
             return Err(TerrainiumErrors::BiomesNotDefined.into());
         }
-    }
-
-    fn get_default_biome_mut(&mut self) -> Result<&mut Biome> {
-        return Ok(self.get_biome_mut(&self.get_default_biome_name()?)?);
     }
 
     pub fn update(
@@ -212,7 +224,7 @@ impl Default for Terrain {
 
 #[cfg(test)]
 mod test {
-    use std::{borrow::BorrowMut, collections::HashMap, path::PathBuf};
+    use std::{collections::HashMap, path::PathBuf};
 
     use anyhow::{anyhow, Result};
 
@@ -825,32 +837,6 @@ mod test {
     }
 
     #[test]
-    fn get_default_biome_mut_name_returns_default_if_present() -> Result<()> {
-        let mut terrain = test_data_terrain_full();
-
-        if let Some(biomes) = test_data_terrain_full().biomes.borrow_mut() {
-            let expected = biomes.get_mut("example_biome").expect("to be present");
-            let actual = terrain.get_default_biome_mut()?;
-
-            assert_eq!(expected, actual);
-        }
-
-        return Ok(());
-    }
-
-    #[test]
-    fn get_default_biome_mut_name_returns_error_if_no_biomes() -> Result<()> {
-        let mut terrain = test_data_terrain_without_biomes();
-
-        let expected = TerrainiumErrors::DefaultBiomeNotDefined.to_string();
-        let actual = terrain.get_default_biome_mut().unwrap_err().to_string();
-
-        assert_eq!(expected, actual);
-
-        return Ok(());
-    }
-
-    #[test]
     fn update_works_full() -> Result<()> {
         let mut terrain = test_data_terrain_full();
         let biome_args = BiomeArg::Value("example_biome2".to_owned());
@@ -1259,7 +1245,7 @@ mod test {
         return test_data_terrain_without_biomes().terrain;
     }
 
-    fn test_data_terrain_without_biomes() -> Terrain {
+    pub fn test_data_terrain_without_biomes() -> Terrain {
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("VAR1"), String::from("val1"));
         env.insert(String::from("VAR2"), String::from("val2"));

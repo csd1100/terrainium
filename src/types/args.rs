@@ -26,16 +26,20 @@ pub enum Verbs {
     Update {
         #[arg(short = 'k', long)]
         backup: bool,
+
         #[arg(short, long = "set-biome")]
         set_biome: Option<String>,
+
         #[command(flatten)]
         opts: UpdateOpts,
     },
     Get {
-        #[arg(long, default_value = "true")]
+        #[arg(long)]
         all: bool,
+
         #[arg(short, long)]
         biome: Option<BiomeArg>,
+
         #[command(flatten)]
         opts: GetOpts,
     },
@@ -73,14 +77,38 @@ pub struct UpdateOpts {
 #[derive(Args, Debug)]
 #[group(conflicts_with("all"))]
 pub struct GetOpts {
-    #[arg(short, long)]
+    #[arg(long = "alias", group = "aliases")]
+    pub alias_all: bool,
+
+    #[arg(short, group = "aliases")]
     pub alias: Option<Vec<String>>,
-    #[arg(short, long)]
+
+    #[arg(long = "env", group = "envs")]
+    pub env_all: bool,
+
+    #[arg(short, group = "envs")]
     pub env: Option<Vec<String>>,
+
     #[arg(short, long)]
     pub constructors: bool,
+
     #[arg(short, long)]
     pub destructors: bool,
+}
+
+impl GetOpts {
+    pub fn is_empty(&self) -> bool {
+        if !self.destructors
+            && !self.constructors
+            && !self.alias_all
+            && !self.env_all
+            && self.env.is_none()
+            && self.alias.is_none()
+        {
+            return true;
+        }
+        return false;
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

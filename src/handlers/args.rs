@@ -1,33 +1,85 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 
-use crate::{handlers::helpers::get_parsed_terrain, types::args::BiomeArg};
+use crate::{
+    handlers::helpers::get_parsed_terrain,
+    templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
+    types::args::{BiomeArg, GetOpts},
+};
 
 pub fn handle_edit() -> Result<()> {
     todo!()
 }
 
-pub fn handle_get(
-    all: bool,
-    biome: Option<BiomeArg>,
-    _alias: Option<Vec<String>>,
-    _env: Option<Vec<String>>,
-    _construcors: bool,
-    _destructors: bool,
-) -> Result<()> {
+pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
     let terrain = get_parsed_terrain()?;
-    let environment = terrain.get(biome)?;
-    if all {
-        println!("{:?}", environment);
+    if opts.is_empty() || all {
+        let mut terrain = terrain.get_printable_terrain(biome)?;
+        terrain.all = true;
+        print_all(terrain)?;
     } else {
-        todo!();
-        // let found_alias;
-        // let found_env;
-        // if let Some(alias) = alias {
-        //     found_alias = Some(environment.find_aliases(alias)?);
-        // }
-        // if let Some(env) = env {
-        //     found_env = Some(environment.find_envs(env)?);
-        // }
+        let GetOpts {
+            alias_all,
+            alias,
+            env_all,
+            env,
+            constructors,
+            destructors,
+        } = opts;
+        let terrain = terrain.get(biome)?;
+        if alias_all {
+            print_aliases(terrain.alias.to_owned())?;
+        } else {
+            if let Some(alias) = alias {
+                let found_alias = Some(terrain.find_aliases(alias)?);
+                let aliases: HashMap<String, String> = found_alias
+                    .expect("to be present")
+                    .iter()
+                    .map(|(k, v)| {
+                        if let None = v {
+                            return (k.to_string(), "NOT FOUND".to_string());
+                        } else {
+                            return (
+                                k.to_string(),
+                                v.to_owned().expect("to be present").to_string(),
+                            );
+                        }
+                    })
+                    .collect();
+                print_aliases(Some(aliases))?;
+            }
+        }
+
+        if env_all {
+            print_env(terrain.env.to_owned())?;
+        } else {
+            if let Some(env) = env {
+                let found_env = Some(terrain.find_envs(env)?);
+                let env: HashMap<String, String> = found_env
+                    .expect("to be present")
+                    .iter()
+                    .map(|(k, v)| {
+                        if let None = v {
+                            return (k.to_string(), "NOT FOUND".to_string());
+                        } else {
+                            return (
+                                k.to_string(),
+                                v.to_owned().expect("to be present").to_string(),
+                            );
+                        }
+                    })
+                    .collect();
+                print_env(Some(env))?;
+            }
+        }
+
+        if constructors {
+            print_constructors(terrain.constructors)?;
+        }
+        if destructors {
+            print_destructors(terrain.destructors)?;
+        }
     }
     return Ok(());
 }
