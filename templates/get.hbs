@@ -1,5 +1,5 @@
 {{#if all}}
-Default Biome: {{ default_biome }}          Selected Biome: {{ selected_biome }}
+Default Biome: {{#if default_biome}}{{ default_biome }}{{else}}none{{/if}}          Selected Biome: {{ selected_biome }}
 {{/if}}
 {{> env biome.env }}
 {{> aliases biome.alias }}

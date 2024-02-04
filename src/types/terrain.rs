@@ -197,16 +197,18 @@ impl Default for Terrain {
     fn default() -> Self {
         let mut main = Biome::default();
         main.constructors = Some(Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering terrain")]),
-            }],
+            }]),
+            background: None,
         });
         main.destructors = Some(Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting terrain")]),
-            }],
+            }]),
+            background: None,
         });
 
         let mut biomes = HashMap::<String, Biome>::new();
@@ -349,7 +351,7 @@ mod test {
             String::from("terrainium enter --biome example_biome"),
         );
         let constructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering terrain")]),
@@ -358,10 +360,11 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering biome 'example_biome'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting terrain")]),
@@ -370,7 +373,8 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting biome 'example_biome'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         let expected = Biome {
             env: Some(env),
@@ -1022,16 +1026,18 @@ mod test {
         );
         alias.insert("alias1".to_string(), "alias1".to_string());
         let constructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering biome 'name'")]),
-            }],
+            }]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting biome 'name'")]),
-            }],
+            }]),
+            background: None,
         };
         let biome = Biome {
             env: Some(env),
@@ -1093,16 +1099,18 @@ mod test {
             String::from("terrainium enter --biome ") + &name,
         );
         let constructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering biome '") + &name + "'"]),
-            }],
+            }]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting biome '") + &name + "'"]),
-            }],
+            }]),
+            background: None,
         };
 
         return Biome {
@@ -1128,7 +1136,7 @@ mod test {
             String::from("terrainium enter --biome example_biome"),
         );
         let constructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering terrain")]),
@@ -1137,10 +1145,11 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering biome 'example_biome'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting terrain")]),
@@ -1149,7 +1158,8 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting biome 'example_biome'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         return Biome {
             env: Some(env),
@@ -1170,7 +1180,7 @@ mod test {
             String::from("terrainium enter --biome example_biome2"),
         );
         let constructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering terrain")]),
@@ -1179,10 +1189,11 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("entering biome 'example_biome2'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![
+            foreground: Some(vec![
                 Command {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting terrain")]),
@@ -1191,7 +1202,8 @@ mod test {
                     exe: String::from("echo"),
                     args: Some(vec![String::from("exiting biome 'example_biome2'")]),
                 },
-            ],
+            ]),
+            background: None,
         };
         return Biome {
             env: Some(env),
@@ -1209,16 +1221,18 @@ mod test {
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(String::from("tenter"), String::from("terrainium enter"));
         let constructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering terrain")]),
-            }],
+            }]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting terrain")]),
-            }],
+            }]),
+            background: None,
         };
 
         let biome1_name = "example_biome";
@@ -1255,16 +1269,18 @@ mod test {
         alias.insert(String::from("alias2"), String::from("run2"));
         alias.insert(String::from("alias3"), String::from("run3"));
         let constructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("run1"),
                 args: Some(vec![String::from("something-new")]),
-            }],
+            }]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("stop1"),
                 args: Some(vec![String::from("something-old")]),
-            }],
+            }]),
+            background: None,
         };
         return Terrain {
             terrain: Biome {

@@ -10,7 +10,7 @@ pub fn edit_file(file: PathBuf) -> Result<()> {
 
     let file = file.to_string_lossy().to_string();
 
-    spawn_and_wait(editor, vec![file], std::env::vars())?;
+    spawn_and_wait(editor, vec![file], None)?;
 
     return Ok(());
 }

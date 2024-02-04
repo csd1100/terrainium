@@ -8,10 +8,10 @@ alias1 = "run1"
 alias2 = "run2"
 alias3 = "run3"
 
-[[terrain.constructors.exec]]
+[[terrain.constructors.foreground]]
 exe = "run1"
 args = ["something-new"]
 
-[[terrain.destructors.exec]]
+[[terrain.destructors.foreground]]
 exe = "stop1"
 args = ["something-old"]

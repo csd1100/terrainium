@@ -31,7 +31,7 @@ pub fn get_config_path() -> Result<PathBuf> {
 fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
     if !Path::try_exists(dir)? {
         println!("creating a directory at path {}", dir.to_string_lossy());
-        std::fs::create_dir(dir)?;
+        std::fs::create_dir_all(dir)?;
         return Ok(true);
     }
     return Ok(false);
@@ -42,7 +42,15 @@ pub fn get_terrainium_config_path() -> Result<PathBuf> {
 }
 
 pub fn get_central_store_path() -> Result<PathBuf> {
-    return Ok(Path::join(&get_terrainium_config_path()?, "terrains"));
+    let cwd = std::env::current_dir()?;
+
+    let terrain_dir = Path::canonicalize(cwd.as_path())?
+        .to_string_lossy()
+        .to_string()
+        .replace("/", "_");
+    let dirname = Path::join(&get_terrainium_config_path()?, "terrains");
+    let dirname = dirname.join(terrain_dir);
+    return Ok(dirname);
 }
 
 pub fn create_config_dir() -> Result<PathBuf> {
@@ -55,16 +63,9 @@ pub fn create_config_dir() -> Result<PathBuf> {
 }
 
 pub fn get_central_terrain_path() -> Result<PathBuf> {
-    let cwd = std::env::current_dir()?;
-    let mut filename = Path::canonicalize(cwd.as_path())?
-        .to_string_lossy()
-        .to_string()
-        .replace("/", "_");
-    filename.push_str(".toml");
-    return Ok(Path::join(
-        &get_central_store_path()?,
-        PathBuf::from(filename),
-    ));
+    let mut dirname = get_central_store_path()?;
+    dirname.push("terrain.toml");
+    return Ok(dirname);
 }
 
 pub fn get_local_terrain_path() -> Result<PathBuf> {
@@ -127,10 +128,21 @@ pub fn get_merged_hashmaps(
     return None;
 }
 
-pub fn get_merged_vecs(from: &Vec<Command>, to: &Vec<Command>) -> Vec<Command> {
-    let mut return_vec = to.clone();
-    return_vec.extend_from_slice(&from);
-    return return_vec;
+pub fn get_merged_vecs(from: &Option<Vec<Command>>, to: &Option<Vec<Command>>) -> Option<Vec<Command>> {
+    if from.is_none() && to.is_none() {
+        return None;
+    }
+    if from.is_some() && !to.is_some() {
+        return from.clone();
+    }
+    if to.is_some() && !from.is_some() {
+        return to.clone();
+    }
+
+
+    let mut return_vec = to.clone().expect("to be present");
+    return_vec.extend_from_slice(&from.clone().expect("to be present"));
+    return Some(return_vec);
 }
 
 pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Option<Commands> {

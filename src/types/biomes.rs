@@ -118,16 +118,18 @@ impl Default for Biome {
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(String::from("tenter"), String::from("terrainium enter"));
         let constructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering biome '") + &name + "'"]),
-            }],
+            }]),
+            background: None,
         };
         let destructor = Commands {
-            exec: vec![Command {
+            foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting biome '") + &name + "'"]),
-            }],
+            }]),
+            background: None,
         };
         Self {
             env: Some(env),

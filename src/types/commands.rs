@@ -4,7 +4,8 @@ use crate::handlers::helpers::get_merged_vecs;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Commands {
-    pub exec: Vec<Command>,
+    pub foreground: Option<Vec<Command>>,
+    pub background: Option<Vec<Command>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -15,7 +16,11 @@ pub struct Command {
 
 impl Commands {
     pub fn merge(&self, other: Self) -> Self {
-        let execs = get_merged_vecs(&self.exec, &other.exec);
-        return Commands { exec: execs };
+        let foreground = get_merged_vecs(&self.foreground, &other.foreground);
+        let background = get_merged_vecs(&self.background, &other.background);
+        return Commands {
+            foreground,
+            background,
+        };
     }
 }

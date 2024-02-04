@@ -5,10 +5,10 @@ use anyhow::{anyhow, Result};
 use crate::types::{commands::Commands, get::PrintableTerrain};
 
 const MAIN_TEMPLATE: &str = include_str!("../../templates/get.hbs");
-const ENV_TEMPLATE: &str = include_str!("../../templates/env.hbs");
-const ALIAS_TEMPLATE: &str = include_str!("../../templates/aliases.hbs");
-const CONSTRUCTORS_TEMPLATE: &str = include_str!("../../templates/constructors.hbs");
-const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/destructors.hbs");
+const ENV_TEMPLATE: &str = include_str!("../../templates/get_env.hbs");
+const ALIAS_TEMPLATE: &str = include_str!("../../templates/get_aliases.hbs");
+const CONSTRUCTORS_TEMPLATE: &str = include_str!("../../templates/get_constructors.hbs");
+const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/get_destructors.hbs");
 
 const ENV: &str = "env";
 const MAIN: &str = "MAIN";
@@ -118,11 +118,11 @@ Aliases:
     tedit=\"terrainium edit\"
     tenter=\"terrainium enter\"
 Constructors:
-    exec:
+    foreground:
         echo entering terrain
         echo entering biome 'example_biome'
 Destructors:
-    exec:
+    foreground:
         echo exiting terrain
         echo exiting biome 'example_biome'
 "

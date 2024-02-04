@@ -8,11 +8,11 @@ TEST = "value"
 tedit = "terrainium edit"
 tenter = "terrainium enter"
 
-[[terrain.constructors.exec]]
+[[terrain.constructors.foreground]]
 exe = "echo"
 args = ["entering terrain"]
 
-[[terrain.destructors.exec]]
+[[terrain.destructors.foreground]]
 exe = "echo"
 args = ["exiting terrain"]
 
@@ -22,11 +22,11 @@ EDITOR = "nvim"
 [biomes.example_biome.alias]
 tenter = "terrainium enter --biome example_biome"
 
-[[biomes.example_biome.constructors.exec]]
+[[biomes.example_biome.constructors.foreground]]
 exe = "echo"
 args = ["entering biome 'example_biome'"]
 
-[[biomes.example_biome.destructors.exec]]
+[[biomes.example_biome.destructors.foreground]]
 exe = "echo"
 args = ["exiting biome 'example_biome'"]
 
@@ -36,10 +36,10 @@ EDITOR = "nano"
 [biomes.example_biome2.alias]
 tenter = "terrainium enter --biome example_biome2"
 
-[[biomes.example_biome2.constructors.exec]]
+[[biomes.example_biome2.constructors.foreground]]
 exe = "echo"
 args = ["entering biome 'example_biome2'"]
 
-[[biomes.example_biome2.destructors.exec]]
+[[biomes.example_biome2.destructors.foreground]]
 exe = "echo"
 args = ["exiting biome 'example_biome2'"]
