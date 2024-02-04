@@ -3,8 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Result};
 
 use crate::{
-    handlers::helpers::{create_config_dir, get_central_terrain_path, get_local_terrain_path},
-    types::terrain::Terrain,
+    handlers::helpers::{create_config_dir, get_central_terrain_path, get_local_terrain_path}, shell::editor::edit_file, types::terrain::Terrain
 };
 
 pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
@@ -34,7 +33,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
 
         if edit {
             println!("editing...");
-            todo!()
+            edit_file(terrain_toml_path)?;
         }
     } else {
         return Err(anyhow!(

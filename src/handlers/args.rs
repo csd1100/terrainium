@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::{
-    handlers::helpers::get_parsed_terrain,
-    templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
-    types::args::{BiomeArg, GetOpts},
+    handlers::helpers::get_parsed_terrain, shell::editor::edit_file, templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env}, types::args::{BiomeArg, GetOpts}
 };
 
+use super::helpers::get_terrain_toml;
+
 pub fn handle_edit() -> Result<()> {
-    todo!()
+    let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+
+    edit_file(toml_file)?;
+
+    return Ok(());
 }
 
 pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
