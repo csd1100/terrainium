@@ -47,7 +47,10 @@ pub enum Verbs {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
-    Exit,
+    Exit {
+        #[arg(short, long)]
+        biome: Option<BiomeArg>,
+    },
     Construct {
         #[arg(short, long)]
         biome: Option<BiomeArg>,

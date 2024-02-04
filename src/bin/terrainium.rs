@@ -35,7 +35,9 @@ fn main() -> Result<()> {
         } => handle_update(set_biome, new, biome, env, alias, backup),
         Verbs::Get { biome, all, opts } => handle_get(all, biome, opts),
         Verbs::Enter { biome } => handle_enter(biome),
-        Verbs::Exit => handle_exit(),
+        Verbs::Exit{ biome } => {
+            handle_exit(biome)
+        },
         Verbs::Construct { biome } => handle_construct(biome),
         Verbs::Deconstruct { biome } => handle_deconstruct(biome),
     };

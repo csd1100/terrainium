@@ -1,0 +1,7 @@
+default_biome = "dev"
+
+[terrain.env]
+DEV = "false"
+
+[biomes.dev.env]
+DEV = "true"

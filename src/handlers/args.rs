@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use crate::{
     handlers::helpers::get_parsed_terrain,
     shell::{
+        background::start_background_processes,
         editor::edit_file,
         zsh::{compile, generate_zsh_script, get_zsh_envs, spawn_zsh},
     },
@@ -103,7 +104,7 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
 }
 
 pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
-    let terrain = get_parsed_terrain()?.get(biome)?;
+    let terrain = get_parsed_terrain()?.get(biome.clone())?;
     let mut envs = terrain.env;
 
     if let None = envs {
@@ -113,6 +114,8 @@ pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     if let Some(envs) = envs.as_mut() {
         envs.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
     }
+
+    // handle_construct(biome)?;
 
     if let Some(envs) = envs {
         let zsh_env = get_zsh_envs()?;
@@ -124,14 +127,16 @@ pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     return Ok(());
 }
 
-pub fn handle_exit() -> Result<()> {
-    todo!()
+pub fn handle_exit(biome: Option<BiomeArg>) -> Result<()> {
+    return handle_deconstruct(biome);
 }
 
-pub fn handle_construct(_biome: Option<BiomeArg>) -> Result<()> {
-    todo!()
+pub fn handle_construct(biome: Option<BiomeArg>) -> Result<()> {
+    let terrain = get_parsed_terrain()?.get(biome)?;
+    return start_background_processes(terrain.constructors, terrain.env);
 }
 
-pub fn handle_deconstruct(_biome: Option<BiomeArg>) -> Result<()> {
-    todo!()
+pub fn handle_deconstruct(biome: Option<BiomeArg>) -> Result<()> {
+    let terrain = get_parsed_terrain()?.get(biome)?;
+    return start_background_processes(terrain.destructors, terrain.env);
 }
