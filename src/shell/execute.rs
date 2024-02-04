@@ -1,15 +1,18 @@
-use std::{collections::HashMap, process::Command};
+use std::{
+    collections::HashMap,
+    process::{Command, Output},
+};
 
 use anyhow::{Context, Ok, Result};
 
 pub fn spawn_and_wait(
-    command: String,
-    args: Vec<String>,
+    command: &str,
+    args: Vec<&str>,
     envs: Option<HashMap<String, String>>,
 ) -> Result<()> {
     if let Some(envs) = envs {
-        let mut child_process = Command::new(&command)
-            .args(&args)
+        let mut child_process = Command::new(command)
+            .args(args.clone())
             .envs(&envs)
             .spawn()
             .context(format!(
@@ -28,4 +31,32 @@ pub fn spawn_and_wait(
     }
 
     return Ok(());
+}
+
+pub fn run_and_get_output(
+    command: &str,
+    args: Vec<&str>,
+    envs: Option<HashMap<String, String>>,
+) -> Result<Output> {
+    let output;
+    if let Some(envs) = envs {
+        output = Command::new(command)
+            .args(args.clone())
+            .envs(&envs)
+            .output()
+            .context(format!(
+                "Unable to execute command: {} with args: {:?} and env vars: {:?}",
+                command, args, envs
+            ))?;
+    } else {
+        output = Command::new(&command)
+            .args(&args)
+            .output()
+            .context(format!(
+                "Unable to execute command: {} with args: {:?}",
+                command, args
+            ))?;
+    }
+
+    return Ok(output);
 }

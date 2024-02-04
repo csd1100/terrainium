@@ -4,17 +4,28 @@ use anyhow::{Context, Result};
 
 use crate::{
     handlers::helpers::get_parsed_terrain,
-    shell::editor::edit_file,
+    shell::{
+        editor::edit_file,
+        zsh::{compile, generate_zsh_script, get_zsh_envs, spawn_zsh},
+    },
     templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
-    types::args::{BiomeArg, GetOpts},
+    types::{
+        args::{BiomeArg, GetOpts},
+        terrain::parse_terrain,
+    },
 };
 
-use super::helpers::get_terrain_toml;
+use super::helpers::{get_central_store_path, get_terrain_toml, merge_hashmaps};
 
 pub fn handle_edit() -> Result<()> {
     let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
 
     edit_file(toml_file)?;
+
+    let terrain = parse_terrain(&get_terrain_toml()?)?;
+    let central_terrain_path = get_central_store_path()?;
+    generate_zsh_script(&central_terrain_path, terrain.get(None)?)?;
+    compile(&central_terrain_path)?;
 
     return Ok(());
 }
@@ -92,7 +103,24 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
 }
 
 pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
-    let _terrain = get_parsed_terrain()?.get(biome)?;
+    let terrain = get_parsed_terrain()?.get(biome)?;
+    let mut envs = terrain.env;
+
+    if let None = envs {
+        envs = Some(HashMap::<String, String>::new());
+    }
+
+    if let Some(envs) = envs.as_mut() {
+        envs.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+    }
+
+    if let Some(envs) = envs {
+        let zsh_env = get_zsh_envs()?;
+        let merged = merge_hashmaps(&envs.clone(), &zsh_env);
+
+        spawn_zsh(vec!["-s"], Some(merged))?;
+    }
+
     return Ok(());
 }
 

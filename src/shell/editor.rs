@@ -8,9 +8,9 @@ pub fn edit_file(file: PathBuf) -> Result<()> {
     let editor = std::env::var("EDITOR")
         .context("environment variable EDITOR not defined to edit terrain.")?;
 
-    let file = file.to_string_lossy().to_string();
+    let file = file.to_str().expect("filepath to be converted to string");
 
-    spawn_and_wait(editor, vec![file], None)?;
+    spawn_and_wait(&editor, vec![file], None)?;
 
     return Ok(());
 }

@@ -2,38 +2,39 @@
 # DO NOT EDIT Manually use terrainium edit command to edit toml
 
 function {
-    {{> alias aliases }}
+{{> aliases this.alias }}
+{{> envs this.env }}
 }
 
 function terrainium_shell_constructor() {
-    {{> constructor constructors }}
+{{> constructors this.constructors.foreground }}
 }
 
 function terrainium_shell_destructor() {
-    {{> destructors destructors }}
+{{> destructors this.destructors.foreground }}
 }
 
 function terrainium_enter() {
-    terrainium_shell_constructor()
+    terrainium_shell_constructor
 }
 
 function terrainium_exit() {
-    terrainium_shell_destructor()
+    exit
 }
 
 function terrainium_preexec_functions() {
     if [ $TERRAINIUM_ENABLED = 1 ]; then
         if [[ "$3" =~ "^terrainium enter*" ]]; then
-            terrainium_enter()
+            terrainium_enter
         fi
         if [[ "$3" =~ "^terrainium exit*" ]]; then
-            terrainium_exit()
+            terrainium_exit
         fi
         if [[ "$3" =~ "^terrainium construct*" ]]; then
-            terrainium_shell_constructor()
+            terrainium_shell_constructor
         fi
         if [[ "$3" =~ "^terrainium destruct*" ]]; then
-            terrainium_shell_destructor()
+            terrainium_shell_destructor
         fi
     fi
 }
@@ -47,7 +48,7 @@ function terrainium_chpwd_functions() {
 }
 
 function terrainium_zshexit_functions() {
-    terrainium destruct
+    terrainium_shell_destructor
 }
 
 preexec_functions=(terrainium_preexec_functions $preexec_functions)

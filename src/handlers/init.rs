@@ -3,7 +3,11 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Result};
 
 use crate::{
-    handlers::helpers::{create_config_dir, get_central_terrain_path, get_local_terrain_path}, shell::editor::edit_file, types::terrain::Terrain
+    handlers::helpers::{
+        create_config_dir, get_central_store_path, get_central_terrain_path, get_local_terrain_path,
+    },
+    shell::{editor::edit_file, zsh::{compile, generate_zsh_script}},
+    types::terrain::Terrain,
 };
 
 pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
@@ -30,6 +34,10 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
             "terrain created at path {}",
             terrain_toml_path.to_string_lossy().to_string()
         );
+
+        let central_terrain_path = get_central_store_path()?;
+        generate_zsh_script(&central_terrain_path, terrain.get(None)?)?;
+        compile(&central_terrain_path)?;
 
         if edit {
             println!("editing...");
