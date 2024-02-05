@@ -3,7 +3,12 @@ use std::{collections::HashMap, path::PathBuf, process::Output};
 use anyhow::Result;
 
 use crate::{
-    handlers::helpers::get_central_store_path, shell::execute::spawn_and_wait, types::biomes::Biome,
+    handlers::{
+        constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
+        helpers::get_central_store_path,
+    },
+    shell::execute::spawn_and_wait,
+    types::biomes::Biome,
 };
 
 use super::execute::run_and_get_output;
@@ -81,10 +86,10 @@ pub fn get_zsh_envs() -> Result<HashMap<String, String>> {
     init_file.push(ZWC_FILE);
     let init_file = init_file.to_string_lossy().to_string();
     let mut envs = HashMap::<String, String>::new();
-    envs.insert("TERRAINIUM_INIT_FILE".to_string(), init_file.clone());
-    envs.insert("TERRAINIUM_INIT_ZSH".to_string(), ZSH_FILE.to_string());
+    envs.insert(TERRAINIUM_INIT_FILE.to_string(), init_file.clone());
+    envs.insert(TERRAINIUM_INIT_ZSH.to_string(), ZSH_FILE.to_string());
     let fpath = format!("{}:{}", init_file, get_fpath()?);
-    envs.insert("FPATH".to_string(), fpath);
+    envs.insert(FPATH.to_string(), fpath);
 
     return Ok(envs);
 }

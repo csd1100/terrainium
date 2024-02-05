@@ -38,7 +38,7 @@ fn main() -> Result<()> {
         Verbs::Exit{ biome } => {
             handle_exit(biome)
         },
-        Verbs::Construct { biome } => handle_construct(biome),
+        Verbs::Construct { biome } => handle_construct(biome, None),
         Verbs::Deconstruct { biome } => handle_deconstruct(biome),
     };
 }

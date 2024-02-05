@@ -128,7 +128,10 @@ pub fn get_merged_hashmaps(
     return None;
 }
 
-pub fn get_merged_vecs(from: &Option<Vec<Command>>, to: &Option<Vec<Command>>) -> Option<Vec<Command>> {
+pub fn get_merged_vecs(
+    from: &Option<Vec<Command>>,
+    to: &Option<Vec<Command>>,
+) -> Option<Vec<Command>> {
     if from.is_none() && to.is_none() {
         return None;
     }
@@ -138,7 +141,6 @@ pub fn get_merged_vecs(from: &Option<Vec<Command>>, to: &Option<Vec<Command>>) -
     if to.is_some() && !from.is_some() {
         return to.clone();
     }
-
 
     let mut return_vec = to.clone().expect("to be present");
     return_vec.extend_from_slice(&from.clone().expect("to be present"));
@@ -181,4 +183,12 @@ pub fn find_in_hashmaps(
         return Err(anyhow!("Not Defined"));
     };
     return Ok(return_map);
+}
+
+pub fn get_process_log_file_path(session_id: &String, filename: String) -> Result<PathBuf> {
+    let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
+    create_dir_if_not_exist(&tmp)?;
+    let mut out_path = tmp.clone();
+    out_path.push(filename);
+    return Ok(out_path);
 }

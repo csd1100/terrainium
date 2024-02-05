@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Result};
+use uuid::Uuid;
 
 use crate::{
     handlers::helpers::get_parsed_terrain,
@@ -16,7 +17,10 @@ use crate::{
     },
 };
 
-use super::helpers::{get_central_store_path, get_terrain_toml, merge_hashmaps};
+use super::{
+    constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
+    helpers::{get_central_store_path, get_terrain_toml, merge_hashmaps},
+};
 
 pub fn handle_edit() -> Result<()> {
     let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
@@ -112,15 +116,18 @@ pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     }
 
     if let Some(envs) = envs.as_mut() {
-        envs.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        envs.insert(TERRAINIUM_ENABLED.to_string(), "1".to_string());
+        envs.insert(
+            TERRAINIUM_SESSION_ID.to_string(),
+            Uuid::new_v4().to_string(),
+        );
     }
-
-    // handle_construct(biome)?;
 
     if let Some(envs) = envs {
         let zsh_env = get_zsh_envs()?;
         let merged = merge_hashmaps(&envs.clone(), &zsh_env);
 
+        handle_construct(biome, Some(&merged))?;
         spawn_zsh(vec!["-s"], Some(merged))?;
     }
 
@@ -131,12 +138,18 @@ pub fn handle_exit(biome: Option<BiomeArg>) -> Result<()> {
     return handle_deconstruct(biome);
 }
 
-pub fn handle_construct(biome: Option<BiomeArg>) -> Result<()> {
+pub fn handle_construct(
+    biome: Option<BiomeArg>,
+    envs: Option<&HashMap<String, String>>,
+) -> Result<()> {
     let terrain = get_parsed_terrain()?.get(biome)?;
-    return start_background_processes(terrain.constructors, terrain.env);
+    if let Some(envs) = envs {
+        return start_background_processes(terrain.constructors, envs);
+    }
+    return start_background_processes(terrain.constructors, &terrain.env.unwrap_or_default());
 }
 
 pub fn handle_deconstruct(biome: Option<BiomeArg>) -> Result<()> {
     let terrain = get_parsed_terrain()?.get(biome)?;
-    return start_background_processes(terrain.destructors, terrain.env);
+    return start_background_processes(terrain.destructors, &terrain.env.unwrap_or_default());
 }
