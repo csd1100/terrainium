@@ -5,3 +5,19 @@ DEV = "false"
 
 [biomes.dev.env]
 DEV = "true"
+
+[biomes.test.env]
+DEV = "true"
+
+[[biomes.test.constructors.background]]
+exe = "/bin/zsh"
+args = ["-c", "./test_scripts/print_num_for_10_sec"]
+[[biomes.test.constructors.foreground]]
+exe = "echo"
+args = ["entering dev biome"]
+[[biomes.test.destructors.background]]
+exe = "/bin/zsh"
+args = ["-c", "./test_scripts/print_num_for_10_sec"]
+[[biomes.test.destructors.foreground]]
+exe = "echo"
+args = ["exiting dev biome"]
