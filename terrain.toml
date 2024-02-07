@@ -14,10 +14,10 @@ exe = "/bin/zsh"
 args = ["-c", "./test_scripts/print_num_for_10_sec"]
 [[biomes.test.constructors.foreground]]
 exe = "echo"
-args = ["entering dev biome"]
+args = ["entering test biome"]
 [[biomes.test.destructors.background]]
 exe = "/bin/zsh"
 args = ["-c", "./test_scripts/print_num_for_10_sec"]
 [[biomes.test.destructors.foreground]]
 exe = "echo"
-args = ["exiting dev biome"]
+args = ["exiting test biome"]

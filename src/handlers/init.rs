@@ -6,7 +6,7 @@ use crate::{
     handlers::helpers::{
         create_config_dir, get_central_store_path, get_central_terrain_path, get_local_terrain_path,
     },
-    shell::{editor::edit_file, zsh::{compile, generate_zsh_script}},
+    shell::{editor::edit_file, zsh::generate_and_compile},
     types::terrain::Terrain,
 };
 
@@ -35,9 +35,20 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
             terrain_toml_path.to_string_lossy().to_string()
         );
 
-        let central_terrain_path = get_central_store_path()?;
-        generate_zsh_script(&central_terrain_path, terrain.get(None)?)?;
-        compile(&central_terrain_path)?;
+        let central_store = get_central_store_path()?;
+        let result: Result<Vec<_>> = terrain
+            .into_iter()
+            .map(|(biome_name, environment)| {
+                generate_and_compile(&central_store, biome_name, environment)
+            })
+            .collect();
+
+        if result.is_err() {
+            return Err(anyhow!(format!(
+                "Error while generating and compiling scripts, error: {}",
+                result.unwrap_err()
+            )));
+        }
 
         if edit {
             println!("editing...");

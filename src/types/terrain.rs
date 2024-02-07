@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{hash_map::IntoIter, HashMap},
+    path::PathBuf,
+};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -58,7 +61,7 @@ impl Terrain {
         }
     }
 
-    fn get_selected_biome_name(&self, selected: &Option<BiomeArg>) -> Result<String> {
+    pub fn get_selected_biome_name(&self, selected: &Option<BiomeArg>) -> Result<String> {
         if let Some(selected) = selected {
             match selected {
                 BiomeArg::Value(biome) => match self.get_biome(&biome) {
@@ -221,6 +224,25 @@ impl Default for Terrain {
             default_biome: Some(biome_name),
             biomes: Some(biomes),
         }
+    }
+}
+
+// Note: This IntoIterator returns merged biomes
+impl IntoIterator for Terrain {
+    type Item = (String, Biome);
+
+    type IntoIter = IntoIter<String, Biome>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let mut iter = HashMap::<String, Biome>::new();
+        iter.insert("none".to_string(), self.terrain.clone());
+        if let Some(biomes) = self.biomes.as_ref() {
+            biomes.iter().for_each(|(name, biome)| {
+                iter.insert(name.to_string(), self.get_merged_biome(&biome));
+            });
+        }
+
+        return iter.into_iter();
     }
 }
 

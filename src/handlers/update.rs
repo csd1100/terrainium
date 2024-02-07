@@ -1,10 +1,13 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 
-use crate::{shell::zsh::{compile, generate_zsh_script}, types::{
-    args::{BiomeArg, Pair},
-    biomes::Biome,
-    terrain::parse_terrain,
-}};
+use crate::{
+    shell::zsh::generate_and_compile,
+    types::{
+        args::{BiomeArg, Pair},
+        biomes::Biome,
+        terrain::parse_terrain,
+    },
+};
 
 use super::helpers::{get_central_store_path, get_terrain_toml};
 
@@ -38,9 +41,20 @@ pub fn handle_update(
 
     std::fs::write(toml_file, terrain.to_toml()?)?;
 
-    let central_terrain_path = get_central_store_path()?;
-    generate_zsh_script(&central_terrain_path, terrain.get(None)?)?;
-    compile(&central_terrain_path)?;
+    let central_store = get_central_store_path()?;
+    let result: Result<Vec<_>> = terrain
+        .into_iter()
+        .map(|(biome_name, environment)| {
+            generate_and_compile(&central_store, biome_name, environment)
+        })
+        .collect();
+
+    if result.is_err() {
+        return Err(anyhow!(format!(
+            "Error while generating and compiling scripts, error: {}",
+            result.unwrap_err()
+        )));
+    }
 
     return Ok(());
 }

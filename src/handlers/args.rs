@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use uuid::Uuid;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     shell::{
         background::start_background_processes,
         editor::edit_file,
-        zsh::{compile, generate_zsh_script, get_zsh_envs, spawn_zsh},
+        zsh::{generate_and_compile, get_zsh_envs, spawn_zsh},
     },
     templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
     types::{
@@ -28,9 +28,20 @@ pub fn handle_edit() -> Result<()> {
     edit_file(toml_file)?;
 
     let terrain = parse_terrain(&get_terrain_toml()?)?;
-    let central_terrain_path = get_central_store_path()?;
-    generate_zsh_script(&central_terrain_path, terrain.get(None)?)?;
-    compile(&central_terrain_path)?;
+    let central_store = get_central_store_path()?;
+    let result: Result<Vec<_>> = terrain
+        .into_iter()
+        .map(|(biome_name, environment)| {
+            generate_and_compile(&central_store, biome_name, environment)
+        })
+        .collect();
+
+    if result.is_err() {
+        return Err(anyhow!(format!(
+            "Error while generating and compiling scripts, error: {}",
+            result.unwrap_err()
+        )));
+    }
 
     return Ok(());
 }
@@ -108,8 +119,9 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
 }
 
 pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
-    let terrain = get_parsed_terrain()?.get(biome.clone())?;
-    let mut envs = terrain.env;
+    let terrain = get_parsed_terrain()?;
+    let selected = terrain.get(biome.clone())?;
+    let mut envs = selected.env;
 
     if let None = envs {
         envs = Some(HashMap::<String, String>::new());
@@ -124,7 +136,7 @@ pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     }
 
     if let Some(envs) = envs {
-        let zsh_env = get_zsh_envs()?;
+        let zsh_env = get_zsh_envs(terrain.get_selected_biome_name(&biome)?)?;
         let merged = merge_hashmaps(&envs.clone(), &zsh_env);
 
         handle_construct(biome, Some(&merged))?;
