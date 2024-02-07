@@ -4,7 +4,7 @@ use terrainium::{
     handlers::{
         args::{
             handle_construct, handle_deconstruct, handle_edit, handle_enter, handle_exit,
-            handle_get,
+            handle_generate, handle_get,
         },
         init::handle_init,
         update::handle_update,
@@ -35,10 +35,9 @@ fn main() -> Result<()> {
         } => handle_update(set_biome, new, biome, env, alias, backup),
         Verbs::Get { biome, all, opts } => handle_get(all, biome, opts),
         Verbs::Enter { biome } => handle_enter(biome),
-        Verbs::Exit{ biome } => {
-            handle_exit(biome)
-        },
+        Verbs::Exit { biome } => handle_exit(biome),
         Verbs::Construct { biome } => handle_construct(biome, None),
         Verbs::Deconstruct { biome } => handle_deconstruct(biome),
+        Verbs::Generate => handle_generate(),
     };
 }

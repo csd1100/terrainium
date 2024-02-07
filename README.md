@@ -32,6 +32,8 @@ terrainium <verb> [OPTIONS]
       with value `ALIAS_VALUE`.
     - `-k|--backup` creates a backup toml before updating the original in same directory.
 
+  - `generate` - generates and compiles required scripts.
+
   - `get [OPTIONS]` - Get the values that will be applied
 
     - `-a|--all` - returns all values. It is selected by default.
@@ -47,9 +49,11 @@ terrainium <verb> [OPTIONS]
   - `enter [OPTIONS]` - applies terrain.
 
     - `-b|--biome <name>` - name of the biome to be applied. `default` to use
-      default biome. `none` to remove biome only use terrain without biome.
+      default biome. `none` to only use main terrain without biome.
 
   - `exit` - exits terrain.
+
+    - `-b|--biome <name>` - name of the biome to be used. Values can be same as `enter`.
 
   - `construct [OPTIONS]` - runs commands specified in construct block.
 
@@ -60,3 +64,18 @@ terrainium <verb> [OPTIONS]
     - `-b|--biome <name>` - name of the biome to be used. Values can be same as `enter`.
 
   - `-h|--help` - shows help.
+
+## Shell Integration
+
+### zsh
+
+- For zsh add this to your `.zshrc`
+
+```sh
+if [ "$TERRAINIUM_ENABLED" = "1" ];then
+    autoload -Uzw "${TERRAINIUM_INIT_FILE}"
+    "${TERRAINIUM_INIT_ZSH}"
+    builtin unfunction -- "${TERRAINIUM_INIT_ZSH}"
+    terrainium_enter
+fi
+```

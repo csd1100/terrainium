@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 
 use super::execute::spawn_and_wait;
 
-pub fn edit_file(file: PathBuf) -> Result<()> {
+pub fn edit_file(file: &PathBuf) -> Result<()> {
     let editor = std::env::var("EDITOR")
         .context("environment variable EDITOR not defined to edit terrain.")?;
 

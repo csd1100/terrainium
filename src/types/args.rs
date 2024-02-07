@@ -33,6 +33,7 @@ pub enum Verbs {
         #[command(flatten)]
         opts: UpdateOpts,
     },
+    Generate,
     Get {
         #[arg(long)]
         all: bool,

@@ -52,7 +52,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
 
         if edit {
             println!("editing...");
-            edit_file(terrain_toml_path)?;
+            edit_file(&terrain_toml_path)?;
         }
     } else {
         return Err(anyhow!(

@@ -25,8 +25,28 @@ use super::{
 pub fn handle_edit() -> Result<()> {
     let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
 
-    edit_file(toml_file)?;
+    edit_file(&toml_file)?;
 
+    let terrain = parse_terrain(&toml_file)?;
+    let central_store = get_central_store_path()?;
+    let result: Result<Vec<_>> = terrain
+        .into_iter()
+        .map(|(biome_name, environment)| {
+            generate_and_compile(&central_store, biome_name, environment)
+        })
+        .collect();
+
+    if result.is_err() {
+        return Err(anyhow!(format!(
+            "Error while generating and compiling scripts, error: {}",
+            result.unwrap_err()
+        )));
+    }
+
+    return Ok(());
+}
+
+pub fn handle_generate() -> Result<()> {
     let terrain = parse_terrain(&get_terrain_toml()?)?;
     let central_store = get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
