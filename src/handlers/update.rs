@@ -23,23 +23,32 @@ pub fn handle_update(
 
     if backup {
         let bkp = toml_file.with_extension("toml.bkp");
-        std::fs::copy(&toml_file, bkp)?;
+        std::fs::copy(&toml_file, bkp).context("unable to backup terrain.toml")?;
     }
 
     let mut terrain = parse_terrain(&toml_file)?;
 
     if let Some(default) = set_biome {
-        terrain.update_default_biome(default)?;
+        terrain
+            .update_default_biome(default)
+            .context("unable to update default biome")?;
     } else {
         if let Some(biome) = &new {
-            terrain.add_biome(biome, Biome::new())?;
-            terrain.update(Some(BiomeArg::Value(biome.to_string())), env, alias)?;
+            terrain
+                .add_biome(biome, Biome::new())
+                .context("unable to create a new biome")?;
+            terrain
+                .update(Some(BiomeArg::Value(biome.to_string())), env, alias)
+                .context("failed to update newly created biome")?;
         } else {
-            terrain.update(biome, env, alias)?;
+            terrain
+                .update(biome, env, alias)
+                .context("failed to update biome")?;
         };
     }
 
-    std::fs::write(toml_file, terrain.to_toml()?)?;
+    std::fs::write(toml_file, terrain.to_toml()?)
+        .context("failed to write updated terrain.toml")?;
 
     let central_store = get_central_store_path()?;
     let result: Result<Vec<_>> = terrain

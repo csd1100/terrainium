@@ -38,7 +38,10 @@ fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
 }
 
 pub fn get_terrainium_config_path() -> Result<PathBuf> {
-    return Ok(Path::join(&get_config_path()?, "terrainium"));
+    return Ok(Path::join(
+        &get_config_path().context("unable to get config directory")?,
+        "terrainium",
+    ));
 }
 
 pub fn get_central_store_path() -> Result<PathBuf> {
@@ -48,13 +51,17 @@ pub fn get_central_store_path() -> Result<PathBuf> {
         .to_string_lossy()
         .to_string()
         .replace("/", "_");
-    let dirname = Path::join(&get_terrainium_config_path()?, "terrains");
+    let dirname = Path::join(
+        &get_terrainium_config_path().context("unable to get terrainium config directory")?,
+        "terrains",
+    );
     let dirname = dirname.join(terrain_dir);
     return Ok(dirname);
 }
 
 pub fn create_config_dir() -> Result<PathBuf> {
-    let config_path = get_terrainium_config_path()?;
+    let config_path =
+        get_terrainium_config_path().context("unable to get terrainium config path")?;
     create_dir_if_not_exist(config_path.as_path())
         .context("unable to create terrainium config directory")?;
     create_dir_if_not_exist(get_central_store_path()?.as_path())
@@ -81,9 +88,11 @@ pub fn is_central_terrain_present() -> Result<bool> {
 }
 
 pub fn get_terrain_toml() -> Result<PathBuf> {
-    if is_local_terrain_present()? {
+    if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
         return get_local_terrain_path();
-    } else if is_central_terrain_present()? {
+    } else if is_central_terrain_present()
+        .context("failed to check whether central terrain.toml exists")?
+    {
         return get_central_terrain_path();
     } else {
         let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");

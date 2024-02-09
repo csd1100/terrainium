@@ -14,28 +14,31 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
     let terrain_toml_path: PathBuf;
 
     if central {
-        create_config_dir()?;
+        create_config_dir().context("unable to create config directory")?;
         terrain_toml_path =
             get_central_terrain_path().context("unable to get central toml path")?;
     } else {
-        terrain_toml_path = get_local_terrain_path().context("unable to get terrain.toml path")?;
+        terrain_toml_path = get_local_terrain_path().context("unable to get local terrain.toml")?;
     }
 
-    if !Path::try_exists(&terrain_toml_path.as_path())? {
+    if !Path::try_exists(&terrain_toml_path.as_path())
+        .context("failed to validate if terrain already exists")?
+    {
         let terrain: Terrain;
         if full {
             terrain = Terrain::default();
         } else {
             terrain = Terrain::new();
         }
-        std::fs::write(&terrain_toml_path, terrain.to_toml()?)?;
+        std::fs::write(&terrain_toml_path, terrain.to_toml()?)
+            .context("failed to write generated terrain to toml file")?;
 
         println!(
             "terrain created at path {}",
             terrain_toml_path.to_string_lossy().to_string()
         );
 
-        let central_store = get_central_store_path()?;
+        let central_store = get_central_store_path().context("unable to get central store path")?;
         let result: Result<Vec<_>> = terrain
             .into_iter()
             .map(|(biome_name, environment)| {
@@ -52,7 +55,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
 
         if edit {
             println!("editing...");
-            edit_file(&terrain_toml_path)?;
+            edit_file(&terrain_toml_path).context("failed to edit terrain.toml")?;
         }
     } else {
         return Err(anyhow!(

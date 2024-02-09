@@ -10,7 +10,8 @@ pub fn edit_file(file: &PathBuf) -> Result<()> {
 
     let file = file.to_str().expect("filepath to be converted to string");
 
-    spawn_and_wait(&editor, vec![file], None)?;
+    spawn_and_wait(&editor, vec![file], None)
+        .context(format!("failed to start editor {}", editor))?;
 
     return Ok(());
 }

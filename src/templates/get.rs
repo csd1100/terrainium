@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 
 use crate::types::{commands::Commands, get::PrintableTerrain};
 
@@ -58,7 +58,8 @@ pub fn print_all(terrain: PrintableTerrain) -> Result<()> {
         ],
         MAIN,
         Data::All(terrain),
-    )?;
+    )
+    .context("failed to render terrain output")?;
     println!("{}", text);
     return Ok(());
 }
@@ -70,7 +71,11 @@ pub fn print_env(env: Option<HashMap<String, String>>) -> Result<()> {
 }
 
 pub fn print_aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
-    let text = parse_template(vec![(ALIASES, ALIAS_TEMPLATE)], ALIASES, Data::HashMap(aliases))?;
+    let text = parse_template(
+        vec![(ALIASES, ALIAS_TEMPLATE)],
+        ALIASES,
+        Data::HashMap(aliases),
+    )?;
     println!("{}", text);
     return Ok(());
 }

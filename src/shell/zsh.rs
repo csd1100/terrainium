@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf, process::Output};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::{
     handlers::{
@@ -49,15 +49,19 @@ fn generate_zsh_script(
     handlebar.register_template_string("constructors", CONSTRUCTORS_TEMPLATE)?;
     handlebar.register_template_string("destructors", DESTRUCTORS_TEMPLATE)?;
 
-    let text = handlebar.render("main", &environment)?;
+    let text = handlebar
+        .render("main", &environment)
+        .context("failed to render script template")?;
+
     let mut path = central_store.clone();
     path.push(format!("terrain-{}.zsh", biome_name));
+
     println!("updating environment scripts");
-    std::fs::write(path, &text)?;
+    std::fs::write(&path, &text).context(format!("failed to write file to path {:?}", &path))?;
     return Ok(());
 }
 
-fn compile(central_store: &PathBuf, biome_name: String) -> Result<()> {
+fn compile(central_store: &PathBuf, biome_name: &String) -> Result<()> {
     let mut zsh = central_store.clone();
     zsh.push(format!("terrain-{}.zsh", biome_name));
     let zsh = zsh.to_string_lossy().to_string();
@@ -80,8 +84,14 @@ pub fn generate_and_compile(
     biome_name: String,
     environment: Biome,
 ) -> Result<()> {
-    generate_zsh_script(central_store, &biome_name, environment)?;
-    compile(central_store, biome_name)?;
+    generate_zsh_script(central_store, &biome_name, environment).context(format!(
+        "failed to generate zsh script for biome {}",
+        &biome_name
+    ))?;
+    compile(central_store, &biome_name).context(format!(
+        "failed to compile generated zsh script for biome {}",
+        &biome_name
+    ))?;
     return Ok(());
 }
 
@@ -94,7 +104,7 @@ fn get_fpath() -> Result<String> {
 }
 
 pub fn get_zsh_envs(biome_name: String) -> Result<HashMap<String, String>> {
-    let mut init_file = get_central_store_path()?;
+    let mut init_file = get_central_store_path().context("unable to get terrains config path")?;
     init_file.push(format!("terrain-{}.zwc", &biome_name));
     let init_file = init_file.to_string_lossy().to_string();
     let mut envs = HashMap::<String, String>::new();
@@ -103,7 +113,11 @@ pub fn get_zsh_envs(biome_name: String) -> Result<HashMap<String, String>> {
         TERRAINIUM_INIT_ZSH.to_string(),
         format!("terrain-{}.zsh", biome_name),
     );
-    let fpath = format!("{}:{}", init_file, get_fpath()?);
+    let fpath = format!(
+        "{}:{}",
+        init_file,
+        get_fpath().context("unable to get zsh fpath")?
+    );
     envs.insert(FPATH.to_string(), fpath);
 
     return Ok(envs);

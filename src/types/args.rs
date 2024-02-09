@@ -152,7 +152,7 @@ impl FromStr for Pair {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut values: Vec<_> = s.split("=").collect();
         if values.len() != 2 {
-            return Err(anyhow!("expected `key=value`pair"));
+            return Err(anyhow!("expected a `key=value` pair"));
         }
 
         let mut drain = values.drain(0..=1);
@@ -189,6 +189,17 @@ mod test {
         let val = "test=val";
 
         let actual: Pair = Pair::from_str(val)?;
+        assert_eq!(expected, actual);
+
+        return Ok(());
+    }
+
+    #[test]
+    fn str_to_pair_returns_error_for_bad_string() -> Result<()> {
+        let expected = "expected a `key=value` pair";
+        let val = "testval";
+
+        let actual   = Pair::from_str(val).unwrap_err().to_string();
         assert_eq!(expected, actual);
 
         return Ok(());

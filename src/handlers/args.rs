@@ -25,7 +25,7 @@ use super::{
 pub fn handle_edit() -> Result<()> {
     let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
 
-    edit_file(&toml_file)?;
+    edit_file(&toml_file).context("failed to start editor")?;
 
     let terrain = parse_terrain(&toml_file)?;
     let central_store = get_central_store_path()?;
@@ -69,7 +69,9 @@ pub fn handle_generate() -> Result<()> {
 pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
     let terrain = get_parsed_terrain()?;
     if opts.is_empty() || all {
-        let mut terrain = terrain.get_printable_terrain(biome)?;
+        let mut terrain = terrain
+            .get_printable_terrain(biome)
+            .context("failed to get printable terrain")?;
         terrain.all = true;
         print_all(terrain)?;
     } else {
@@ -83,10 +85,14 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
         } = opts;
         let terrain = terrain.get(biome)?;
         if alias_all {
-            print_aliases(terrain.alias.to_owned())?;
+            print_aliases(terrain.alias.to_owned()).context("unable to print aliases")?;
         } else {
             if let Some(alias) = alias {
-                let found_alias = Some(terrain.find_aliases(alias)?);
+                let found_alias = Some(
+                    terrain
+                        .find_aliases(alias)
+                        .context("unable to get aliases")?,
+                );
                 let aliases: HashMap<String, String> = found_alias
                     .expect("to be present")
                     .iter()
@@ -101,15 +107,15 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
                         }
                     })
                     .collect();
-                print_aliases(Some(aliases))?;
+                print_aliases(Some(aliases)).context("unable to print aliases")?;
             }
         }
 
         if env_all {
-            print_env(terrain.env.to_owned())?;
+            print_env(terrain.env.to_owned()).context("unable to print env vars")?;
         } else {
             if let Some(env) = env {
-                let found_env = Some(terrain.find_envs(env)?);
+                let found_env = Some(terrain.find_envs(env).context("unable to get env vars")?);
                 let env: HashMap<String, String> = found_env
                     .expect("to be present")
                     .iter()
@@ -124,15 +130,15 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
                         }
                     })
                     .collect();
-                print_env(Some(env))?;
+                print_env(Some(env)).context("unable to print env vars")?;
             }
         }
 
         if constructors {
-            print_constructors(terrain.constructors)?;
+            print_constructors(terrain.constructors).context("unable to print constructors")?;
         }
         if destructors {
-            print_destructors(terrain.destructors)?;
+            print_destructors(terrain.destructors).context("unable to print destructors")?;
         }
     }
     return Ok(());
@@ -140,7 +146,9 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
 
 pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     let terrain = get_parsed_terrain()?;
-    let selected = terrain.get(biome.clone())?;
+    let selected = terrain
+        .get(biome.clone())
+        .context("unable to select biome")?;
     let mut envs = selected.env;
 
     if let None = envs {
@@ -156,32 +164,40 @@ pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
     }
 
     if let Some(envs) = envs {
-        let zsh_env = get_zsh_envs(terrain.get_selected_biome_name(&biome)?)?;
+        let zsh_env = get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
+            .context("unable to set zsh environment varibles")?;
         let merged = merge_hashmaps(&envs.clone(), &zsh_env);
 
-        handle_construct(biome, Some(&merged))?;
-        spawn_zsh(vec!["-s"], Some(merged))?;
+        handle_construct(biome, Some(&merged)).context("unable to construct biome")?;
+        spawn_zsh(vec!["-s"], Some(merged)).context("unable to start zsh")?;
     }
 
     return Ok(());
 }
 
 pub fn handle_exit(biome: Option<BiomeArg>) -> Result<()> {
-    return handle_deconstruct(biome);
+    return handle_deconstruct(biome).context("unable to call destructors");
 }
 
 pub fn handle_construct(
     biome: Option<BiomeArg>,
     envs: Option<&HashMap<String, String>>,
 ) -> Result<()> {
-    let terrain = get_parsed_terrain()?.get(biome)?;
+    let terrain = get_parsed_terrain()?
+        .get(biome)
+        .context("unable to select biome to call constructors")?;
     if let Some(envs) = envs {
-        return start_background_processes(terrain.constructors, envs);
+        return start_background_processes(terrain.constructors, envs)
+            .context("unable to start background processes");
     }
-    return start_background_processes(terrain.constructors, &terrain.env.unwrap_or_default());
+    return start_background_processes(terrain.constructors, &terrain.env.unwrap_or_default())
+        .context("unable to start background processes");
 }
 
 pub fn handle_deconstruct(biome: Option<BiomeArg>) -> Result<()> {
-    let terrain = get_parsed_terrain()?.get(biome)?;
-    return start_background_processes(terrain.destructors, &terrain.env.unwrap_or_default());
+    let terrain = get_parsed_terrain()?
+        .get(biome)
+        .context("unable to select biome to call destructors")?;
+    return start_background_processes(terrain.destructors, &terrain.env.unwrap_or_default())
+        .context("unable to start background processes");
 }
