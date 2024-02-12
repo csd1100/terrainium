@@ -6,13 +6,85 @@ use std::{
 use anyhow::{anyhow, Context, Ok, Result};
 use home::home_dir;
 
+#[cfg(test)]
+use mockall::automock;
+
 use crate::types::{
-    commands::{Command, Commands},
     errors::TerrainiumErrors,
     terrain::{parse_terrain, Terrain},
 };
 
-pub fn get_config_path() -> Result<PathBuf> {
+pub struct FS;
+
+#[cfg_attr(test, automock)]
+impl FS {
+    pub fn create_config_dir() -> Result<PathBuf> {
+        let config_path =
+            get_terrainium_config_path().context("unable to get terrainium config path")?;
+        println!("[config_path: {:?}]\n", config_path);
+        FS::create_dir_if_not_exist(config_path.as_path())
+            .context("unable to create terrainium config directory")?;
+        FS::create_dir_if_not_exist(Self::get_central_store_path()?.as_path())
+            .context("unable to create terrains directory in terrainium config directory")?;
+        return Ok(config_path);
+    }
+
+    pub fn get_central_store_path() -> Result<PathBuf> {
+        let cwd = std::env::current_dir()?;
+
+        let terrain_dir = Path::canonicalize(cwd.as_path())?
+            .to_string_lossy()
+            .to_string()
+            .replace("/", "_");
+        let dirname = Path::join(
+            &get_terrainium_config_path().context("unable to get terrainium config directory")?,
+            "terrains",
+        );
+        let dirname = dirname.join(terrain_dir);
+        return Ok(dirname);
+    }
+
+    pub fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
+        if !Path::try_exists(dir)? {
+            println!("creating a directory at path {}", dir.to_string_lossy());
+            std::fs::create_dir_all(dir)?;
+            return Ok(true);
+        }
+        return Ok(false);
+    }
+
+    pub fn get_local_terrain_path() -> Result<PathBuf> {
+        return Ok(Path::join(&std::env::current_dir()?, "terrain.toml"));
+    }
+
+    pub fn get_central_terrain_path() -> Result<PathBuf> {
+        let mut dirname = Self::get_central_store_path()?;
+        dirname.push("terrain.toml");
+        return Ok(dirname);
+    }
+
+    pub fn write_file(path: &Path, contents: String) -> Result<()> {
+        return Ok(std::fs::write(path, contents)?);
+    }
+
+    pub fn is_terrain_present() -> Result<bool> {
+        if is_local_terrain_present()? {
+            return Ok(true);
+        } else if is_central_terrain_present()? {
+            return Ok(true);
+        }
+        return Ok(false);
+    }
+}
+
+fn get_terrainium_config_path() -> Result<PathBuf> {
+    return Ok(Path::join(
+        &get_config_path().context("unable to get config directory")?,
+        "terrainium",
+    ));
+}
+
+fn get_config_path() -> Result<PathBuf> {
     let home = home_dir();
     if let Some(home) = home {
         if Path::is_dir(home.as_path()) {
@@ -28,81 +100,30 @@ pub fn get_config_path() -> Result<PathBuf> {
     return Err(TerrainiumErrors::UnableToFindHome.into());
 }
 
-fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
-    if !Path::try_exists(dir)? {
-        println!("creating a directory at path {}", dir.to_string_lossy());
-        std::fs::create_dir_all(dir)?;
-        return Ok(true);
-    }
-    return Ok(false);
-}
-
-pub fn get_terrainium_config_path() -> Result<PathBuf> {
-    return Ok(Path::join(
-        &get_config_path().context("unable to get config directory")?,
-        "terrainium",
-    ));
-}
-
-pub fn get_central_store_path() -> Result<PathBuf> {
-    let cwd = std::env::current_dir()?;
-
-    let terrain_dir = Path::canonicalize(cwd.as_path())?
-        .to_string_lossy()
-        .to_string()
-        .replace("/", "_");
-    let dirname = Path::join(
-        &get_terrainium_config_path().context("unable to get terrainium config directory")?,
-        "terrains",
-    );
-    let dirname = dirname.join(terrain_dir);
-    return Ok(dirname);
-}
-
-pub fn create_config_dir() -> Result<PathBuf> {
-    let config_path =
-        get_terrainium_config_path().context("unable to get terrainium config path")?;
-    create_dir_if_not_exist(config_path.as_path())
-        .context("unable to create terrainium config directory")?;
-    create_dir_if_not_exist(get_central_store_path()?.as_path())
-        .context("unable to create terrains directory in terrainium config directory")?;
-    return Ok(config_path);
-}
-
-pub fn get_central_terrain_path() -> Result<PathBuf> {
-    let mut dirname = get_central_store_path()?;
-    dirname.push("terrain.toml");
-    return Ok(dirname);
-}
-
-pub fn get_local_terrain_path() -> Result<PathBuf> {
-    return Ok(Path::join(&std::env::current_dir()?, "terrain.toml"));
-}
-
-pub fn is_local_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&get_local_terrain_path()?)?);
-}
-
-pub fn is_central_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&get_central_terrain_path()?)?);
+pub fn get_parsed_terrain() -> Result<Terrain> {
+    let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+    return parse_terrain(&toml_file);
 }
 
 pub fn get_terrain_toml() -> Result<PathBuf> {
     if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
-        return get_local_terrain_path();
+        return FS::get_local_terrain_path();
     } else if is_central_terrain_present()
         .context("failed to check whether central terrain.toml exists")?
     {
-        return get_central_terrain_path();
+        return FS::get_central_terrain_path();
     } else {
         let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
         return Err(err);
     }
 }
 
-pub fn get_parsed_terrain() -> Result<Terrain> {
-    let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
-    return parse_terrain(&toml_file);
+fn is_local_terrain_present() -> Result<bool> {
+    return Ok(Path::try_exists(&FS::get_local_terrain_path()?)?);
+}
+
+fn is_central_terrain_present() -> Result<bool> {
+    return Ok(Path::try_exists(&FS::get_central_terrain_path()?)?);
 }
 
 pub fn merge_hashmaps(
@@ -137,42 +158,6 @@ pub fn get_merged_hashmaps(
     return None;
 }
 
-pub fn get_merged_vecs(
-    from: &Option<Vec<Command>>,
-    to: &Option<Vec<Command>>,
-) -> Option<Vec<Command>> {
-    if from.is_none() && to.is_none() {
-        return None;
-    }
-    if from.is_some() && !to.is_some() {
-        return from.clone();
-    }
-    if to.is_some() && !from.is_some() {
-        return to.clone();
-    }
-
-    let mut return_vec = to.clone().expect("to be present");
-    return_vec.extend_from_slice(&from.clone().expect("to be present"));
-    return Some(return_vec);
-}
-
-pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Option<Commands> {
-    if from.is_some() && !to.is_some() {
-        return from.clone();
-    }
-    if to.is_some() && !from.is_some() {
-        return to.clone();
-    }
-
-    if let Some(from) = &from {
-        if let Some(to) = &to {
-            return Some(to.merge(from.clone()));
-        }
-    }
-
-    return None;
-}
-
 pub fn find_in_hashmaps(
     from: &Option<HashMap<String, String>>,
     tofind: Vec<String>,
@@ -196,8 +181,70 @@ pub fn find_in_hashmaps(
 
 pub fn get_process_log_file_path(session_id: &String, filename: String) -> Result<PathBuf> {
     let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
-    create_dir_if_not_exist(&tmp)?;
+    FS::create_dir_if_not_exist(&tmp)?;
     let mut out_path = tmp.clone();
     out_path.push(filename);
     return Ok(out_path);
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashMap;
+
+    use anyhow::Result;
+
+    use super::get_merged_hashmaps;
+
+    #[test]
+    fn test_merge_hashmaps() -> Result<()> {
+        let mut hashmap_1: HashMap<String, String> = HashMap::<String, String>::new();
+        hashmap_1.insert("k1".to_string(), "v1".to_string());
+
+        // from: some to: none; from
+        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &None).expect("to be present");
+        assert_eq!(hashmap_1, actual);
+
+        // from: none to: some; to
+        let actual = get_merged_hashmaps(&None, &Some(hashmap_1.clone())).expect("to be present");
+        assert_eq!(hashmap_1, actual);
+
+        let mut hashmap_2: HashMap<String, String> = HashMap::<String, String>::new();
+        hashmap_2.insert("k2".to_string(), "v2".to_string());
+
+        // from: some to: some; to overrides from
+        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &Some(hashmap_2.clone()))
+            .expect("to be present");
+
+        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        expected.insert("k1".to_string(), "v1".to_string());
+        expected.insert("k2".to_string(), "v2".to_string());
+        assert_eq!(expected, actual);
+
+        let mut hashmap_2: HashMap<String, String> = HashMap::<String, String>::new();
+        hashmap_2.insert("k1".to_string(), "new1".to_string());
+        hashmap_2.insert("k2".to_string(), "v2".to_string());
+
+        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        expected.insert("k1".to_string(), "new1".to_string());
+        expected.insert("k2".to_string(), "v2".to_string());
+
+        // from: some to: some; to overrides from
+        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &Some(hashmap_2.clone()))
+            .expect("to be present");
+        assert_eq!(expected, actual);
+
+        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        expected.insert("k1".to_string(), "v1".to_string());
+        expected.insert("k2".to_string(), "v2".to_string());
+
+        let actual = get_merged_hashmaps(&Some(hashmap_2.clone()), &Some(hashmap_1.clone()))
+            .expect("to be present");
+        assert_eq!(expected, actual);
+        return Ok(());
+    }
+
+    #[test]
+    fn test_mock() -> Result<()> {
+        return Ok(());
+    }
 }

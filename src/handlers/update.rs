@@ -1,15 +1,16 @@
 use anyhow::{anyhow, Context, Result};
+use mockall_double::double;
 
-use crate::{
-    shell::zsh::generate_and_compile,
-    types::{
-        args::{BiomeArg, Pair},
-        biomes::Biome,
-        terrain::parse_terrain,
-    },
+use crate::types::{
+    args::{BiomeArg, Pair},
+    biomes::Biome,
+    terrain::parse_terrain,
 };
 
-use super::helpers::{get_central_store_path, get_terrain_toml};
+#[double]
+use crate::shell::zsh::ZshOps;
+
+use super::helpers::{get_terrain_toml, FS};
 
 pub fn handle_update(
     set_biome: Option<String>,
@@ -47,14 +48,14 @@ pub fn handle_update(
         };
     }
 
-    std::fs::write(toml_file, terrain.to_toml()?)
+    FS::write_file(toml_file.as_path(), terrain.to_toml()?)
         .context("failed to write updated terrain.toml")?;
 
-    let central_store = get_central_store_path()?;
+    let central_store = FS::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            generate_and_compile(&central_store, biome_name, environment)
+            ZshOps::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 

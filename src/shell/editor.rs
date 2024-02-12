@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use super::execute::spawn_and_wait;
+use super::execute::Execute;
 
 pub fn edit_file(file: &PathBuf) -> Result<()> {
     let editor = std::env::var("EDITOR")
@@ -10,7 +10,7 @@ pub fn edit_file(file: &PathBuf) -> Result<()> {
 
     let file = file.to_str().expect("filepath to be converted to string");
 
-    spawn_and_wait(&editor, vec![file], None)
+    Execute::spawn_and_wait(&editor, vec![file], None)
         .context(format!("failed to start editor {}", editor))?;
 
     return Ok(());

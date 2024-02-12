@@ -1,65 +1,71 @@
 use std::{
-    collections::HashMap, fs::File, process::{Child, Command, Output}
+    collections::HashMap,
+    fs::File,
+    process::{Child, Command, Output},
 };
 
 use anyhow::{Context, Ok, Result};
 
-pub fn spawn_and_wait(
-    exe: &str,
-    args: Vec<&str>,
-    envs: Option<HashMap<String, String>>,
-) -> Result<()> {
-    let mut command = Command::new(exe);
-    command.args(args.clone());
-    if let Some(envs) = &envs {
-        command.envs(envs);
-    }
-    let mut child_process = command.spawn().context(format!(
-        "Unable to execute command: {} with args: {:?} and env vars: {:?}",
-        exe, args, envs
-    ))?;
-    child_process.wait()?;
-    return Ok(());
-}
+pub struct Execute;
 
-pub fn spawn_and_get_child(
-    exe: &str,
-    args: Vec<&str>,
-    envs: Option<HashMap<String, String>>,
-    stdout: Option<File>,
-    stderr: Option<File>,
-) -> Result<Child> {
-    let mut command = Command::new(exe);
-    command.args(args.clone());
-    if let Some(envs) = &envs {
-        command.envs(envs);
+impl Execute {
+    pub fn spawn_and_wait<'a>(
+        exe: &str,
+        args: Vec<&'a str>,
+        envs: Option<HashMap<String, String>>,
+    ) -> Result<()> {
+        let mut command = Command::new(exe);
+        command.args(args.clone());
+        if let Some(envs) = &envs {
+            command.envs(envs);
+        }
+        let mut child_process = command.spawn().context(format!(
+            "Unable to execute command: {} with args: {:?} and env vars: {:?}",
+            exe, args, envs
+        ))?;
+        child_process.wait()?;
+        return Ok(());
     }
-    if let Some(stdout) = stdout {
-        command.stdout(stdout);
-    }
-    if let Some(stderr) = stderr {
-        command.stderr(stderr);
-    }
-    let child_process = command.spawn().context(format!(
-        "Unable to execute command: {} with args: {:?} and env vars: {:?}",
-        exe, args, envs
-    ))?;
-    return Ok(child_process);
-}
 
-pub fn run_and_get_output(
-    exe: &str,
-    args: Vec<&str>,
-    envs: Option<HashMap<String, String>>,
-) -> Result<Output> {
-    let mut command = Command::new(exe);
-    command.args(args.clone());
-    if let Some(envs) = &envs {
-        command.envs(envs);
+    pub fn spawn_and_get_child<'a>(
+        exe: &str,
+        args: Vec<&'a str>,
+        envs: Option<HashMap<String, String>>,
+        stdout: Option<File>,
+        stderr: Option<File>,
+    ) -> Result<Child> {
+        let mut command = Command::new(exe);
+        command.args(args.clone());
+        if let Some(envs) = &envs {
+            command.envs(envs);
+        }
+        if let Some(stdout) = stdout {
+            command.stdout(stdout);
+        }
+        if let Some(stderr) = stderr {
+            command.stderr(stderr);
+        }
+        let child_process = command.spawn().context(format!(
+            "Unable to execute command: {} with args: {:?} and env vars: {:?}",
+            exe, args, envs
+        ))?;
+        return Ok(child_process);
     }
-    let output = command.output().context(format!(
-        "Unable to execute command: {} with args: {:?} and env vars: {:?}",
-        exe, args, envs
-    ))?;
-    return Ok(output);
+
+    pub fn run_and_get_output<'a>(
+        exe: &str,
+        args: Vec<&'a str>,
+        envs: Option<HashMap<String, String>>,
+    ) -> Result<Output> {
+        let mut command = Command::new(exe);
+        command.args(args.clone());
+        if let Some(envs) = &envs {
+            command.envs(envs);
+        }
+        let output = command.output().context(format!(
+            "Unable to execute command: {} with args: {:?} and env vars: {:?}",
+            exe, args, envs
+        ))?;
+        return Ok(output);
+    }
 }

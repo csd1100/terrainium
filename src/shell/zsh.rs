@@ -1,17 +1,17 @@
+use anyhow::{Context, Result};
 use std::{collections::HashMap, path::PathBuf, process::Output};
 
-use anyhow::{Context, Result};
+#[cfg(test)]
+use mockall::automock;
 
 use crate::{
     handlers::{
         constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
-        helpers::get_central_store_path,
+        helpers::FS,
     },
-    shell::execute::spawn_and_wait,
+    shell::execute::Execute,
     types::biomes::Biome,
 };
-
-use super::execute::run_and_get_output;
 
 const MAIN_TEMPLATE: &str = include_str!("../../templates/zsh_final_script.hbs");
 const ALIAS_TEMPLATE: &str = include_str!("../../templates/zsh_aliases.hbs");
@@ -19,12 +19,33 @@ const ENV_TEMPLATE: &str = include_str!("../../templates/zsh_env.hbs");
 const CONSTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_constructors.hbs");
 const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_destructors.hbs");
 
+pub struct ZshOps;
+
+#[cfg_attr(test, automock)]
+impl ZshOps {
+    pub fn generate_and_compile(
+        central_store: &PathBuf,
+        biome_name: String,
+        environment: Biome,
+    ) -> Result<()> {
+        generate_zsh_script(central_store, &biome_name, environment).context(format!(
+            "failed to generate zsh script for biome {}",
+            &biome_name
+        ))?;
+        compile(central_store, &biome_name).context(format!(
+            "failed to compile generated zsh script for biome {}",
+            &biome_name
+        ))?;
+        return Ok(());
+    }
+}
+
 pub fn run_via_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result<Output> {
     let mut args = args;
     let mut zsh_args = vec!["-c"];
     zsh_args.append(&mut args);
 
-    return run_and_get_output("/bin/zsh", zsh_args, envs);
+    return Execute::run_and_get_output("/bin/zsh", zsh_args, envs);
 }
 
 pub fn spawn_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result<()> {
@@ -32,7 +53,7 @@ pub fn spawn_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Resu
     let mut zsh_args = vec!["-i"];
     zsh_args.append(&mut args);
 
-    spawn_and_wait("/bin/zsh", zsh_args, envs)?;
+    Execute::spawn_and_wait("/bin/zsh", zsh_args, envs)?;
     return Ok(());
 }
 
@@ -57,7 +78,7 @@ fn generate_zsh_script(
     path.push(format!("terrain-{}.zsh", biome_name));
 
     println!("updating environment scripts");
-    std::fs::write(&path, &text).context(format!("failed to write file to path {:?}", &path))?;
+    FS::write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
     return Ok(());
 }
 
@@ -79,22 +100,6 @@ fn compile(central_store: &PathBuf, biome_name: &String) -> Result<()> {
     return Ok(());
 }
 
-pub fn generate_and_compile(
-    central_store: &PathBuf,
-    biome_name: String,
-    environment: Biome,
-) -> Result<()> {
-    generate_zsh_script(central_store, &biome_name, environment).context(format!(
-        "failed to generate zsh script for biome {}",
-        &biome_name
-    ))?;
-    compile(central_store, &biome_name).context(format!(
-        "failed to compile generated zsh script for biome {}",
-        &biome_name
-    ))?;
-    return Ok(());
-}
-
 fn get_fpath() -> Result<String> {
     let some = "echo -n $FPATH";
     let envs: HashMap<String, String> =
@@ -104,7 +109,8 @@ fn get_fpath() -> Result<String> {
 }
 
 pub fn get_zsh_envs(biome_name: String) -> Result<HashMap<String, String>> {
-    let mut init_file = get_central_store_path().context("unable to get terrains config path")?;
+    let mut init_file =
+        FS::get_central_store_path().context("unable to get terrains config path")?;
     init_file.push(format!("terrain-{}.zwc", &biome_name));
     let init_file = init_file.to_string_lossy().to_string();
     let mut envs = HashMap::<String, String>::new();

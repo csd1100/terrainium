@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
+use mockall_double::double;
 use uuid::Uuid;
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     shell::{
         background::start_background_processes,
         editor::edit_file,
-        zsh::{generate_and_compile, get_zsh_envs, spawn_zsh},
+        zsh::{get_zsh_envs, spawn_zsh},
     },
     templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
     types::{
@@ -17,9 +18,12 @@ use crate::{
     },
 };
 
+#[double]
+use crate::shell::zsh::ZshOps;
+
 use super::{
     constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
-    helpers::{get_central_store_path, get_terrain_toml, merge_hashmaps},
+    helpers::{get_terrain_toml, merge_hashmaps, FS},
 };
 
 pub fn handle_edit() -> Result<()> {
@@ -28,11 +32,11 @@ pub fn handle_edit() -> Result<()> {
     edit_file(&toml_file).context("failed to start editor")?;
 
     let terrain = parse_terrain(&toml_file)?;
-    let central_store = get_central_store_path()?;
+    let central_store = FS::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            generate_and_compile(&central_store, biome_name, environment)
+            ZshOps::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 
@@ -48,11 +52,11 @@ pub fn handle_edit() -> Result<()> {
 
 pub fn handle_generate() -> Result<()> {
     let terrain = parse_terrain(&get_terrain_toml()?)?;
-    let central_store = get_central_store_path()?;
+    let central_store = FS::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            generate_and_compile(&central_store, biome_name, environment)
+            ZshOps::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 

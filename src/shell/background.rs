@@ -11,9 +11,8 @@ use crate::{
         commands::{Command, Commands},
         executor::Executable,
     },
+    shell::execute::Execute,
 };
-
-use super::execute::spawn_and_get_child;
 
 fn start_process_with_session_id(
     session_id: String,
@@ -46,7 +45,7 @@ fn start_process_with_session_id(
         .create_new(true)
         .open(&spawn_err_logs)?;
 
-    spawn_and_get_child(command, args, envs, Some(spawn_out), Some(spawn_err))?;
+    Execute::spawn_and_get_child(command, args, envs, Some(spawn_out), Some(spawn_err))?;
 
     return Ok(());
 }
