@@ -1,17 +1,23 @@
-use std::path::PathBuf;
+#[cfg(test)]
+use mockall::automock;
 
-use anyhow::{Context, Result};
+#[cfg_attr(test, automock)]
+pub mod edit {
+    use std::path::PathBuf;
 
-use super::execute::Execute;
+    use anyhow::{Context, Result};
 
-pub fn edit_file(file: &PathBuf) -> Result<()> {
-    let editor = std::env::var("EDITOR")
-        .context("environment variable EDITOR not defined to edit terrain.")?;
+    use crate::shell::execute::Execute;
 
-    let file = file.to_str().expect("filepath to be converted to string");
+    pub fn file(file: &PathBuf) -> Result<()> {
+        let editor = std::env::var("EDITOR")
+            .context("environment variable EDITOR not defined to edit terrain.")?;
 
-    Execute::spawn_and_wait(&editor, vec![file], None)
-        .context(format!("failed to start editor {}", editor))?;
+        let file = file.to_str().expect("filepath to be converted to string");
 
-    return Ok(());
+        Execute::spawn_and_wait(&editor, vec![file], None)
+            .context(format!("failed to start editor {}", editor))?;
+
+        return Ok(());
+    }
 }

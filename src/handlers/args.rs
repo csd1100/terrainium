@@ -8,7 +8,6 @@ use crate::{
     handlers::helpers::get_parsed_terrain,
     shell::{
         background::start_background_processes,
-        editor::edit_file,
         zsh::{get_zsh_envs, spawn_zsh},
     },
     templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
@@ -17,6 +16,9 @@ use crate::{
         terrain::parse_terrain,
     },
 };
+
+#[double]
+use crate::shell::editor::edit;
 
 #[double]
 use crate::shell::zsh::ZshOps;
@@ -29,7 +31,7 @@ use super::{
 pub fn handle_edit() -> Result<()> {
     let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
 
-    edit_file(&toml_file).context("failed to start editor")?;
+    edit::file(&toml_file).context("failed to start editor")?;
 
     let terrain = parse_terrain(&toml_file)?;
     let central_store = FS::get_central_store_path()?;

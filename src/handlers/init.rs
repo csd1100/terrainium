@@ -2,7 +2,10 @@ use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
 use std::path::PathBuf;
 
-use crate::{shell::editor::edit_file, types::terrain::Terrain};
+use crate::types::terrain::Terrain;
+
+#[double]
+use crate::shell::editor::edit;
 
 #[double]
 use crate::shell::zsh::ZshOps;
@@ -27,7 +30,8 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
             terrain = Terrain::new();
         }
 
-        FS::write_file(&terrain_toml_path, terrain.to_toml()?)
+        let contents = terrain.to_toml()?;
+        FS::write_file(&terrain_toml_path, contents)
             .context("failed to write generated terrain to toml file")?;
 
         println!(
@@ -53,7 +57,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
 
         if edit {
             println!("editing...");
-            edit_file(&terrain_toml_path).context("failed to edit terrain.toml")?;
+            edit::file(&terrain_toml_path).context("failed to edit terrain.toml")?;
         }
     } else {
         return Err(anyhow!(
@@ -70,17 +74,22 @@ mod test {
 
     use anyhow::{Ok, Result};
     use mockall::predicate::eq;
+    use std::sync::Mutex;
 
     use crate::{
         handlers::helpers::MockFS,
-        shell::zsh::MockZshOps,
+        shell::{editor::mock_edit, zsh::MockZshOps},
         types::{args::BiomeArg, terrain::Terrain},
     };
 
     use super::handle_init;
 
+    static MTX: Mutex<()> = Mutex::new(());
+
     #[test]
     fn init_without_any_options_creates_and_compiles_terrain() -> Result<()> {
+        let _m = MTX.lock();
+
         let mock_create_dir_ctx = MockFS::create_config_dir_context();
         mock_create_dir_ctx
             .expect()
@@ -135,6 +144,206 @@ mod test {
             .times(1);
 
         handle_init(false, false, false)?;
+
+        return Ok(());
+    }
+
+    #[test]
+    fn init_with_full_creates_and_compiles_terrain() -> Result<()> {
+        let _m = MTX.lock();
+        let mock_create_dir_ctx = MockFS::create_config_dir_context();
+        mock_create_dir_ctx
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
+            .times(1);
+
+        let mock_get_local_terrain_ctx = MockFS::get_local_terrain_path_context();
+        mock_get_local_terrain_ctx
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .times(1);
+
+        let is_terrain_present_context = MockFS::is_terrain_present_context();
+        is_terrain_present_context
+            .expect()
+            .return_once(|| Ok(false))
+            .times(1);
+
+        // toml deserializes vec in different order so string equals will fail
+        // so just check if called with any string containing default_biome
+        let write_file_context = MockFS::write_file_context();
+        write_file_context
+            .expect()
+            .withf(|path, contents| {
+                return path == PathBuf::from("./example_configs/terrain.full.toml")
+                    && contents.contains("default_biome = \"example_biome\"");
+            })
+            .return_once(|_, _| Ok(()))
+            .times(1);
+
+        let get_central_store_path_context = MockFS::get_central_store_path_context();
+        get_central_store_path_context
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+
+        let terrain = Terrain::default();
+        let main = terrain.get(Some(BiomeArg::None))?;
+        let generate_and_compile_context = MockZshOps::generate_and_compile_context();
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("none")),
+                eq(main),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let generate_and_compile_context = MockZshOps::generate_and_compile_context();
+        let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("example_biome")),
+                eq(example_biome),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+        handle_init(false, true, false)?;
+
+        return Ok(());
+    }
+
+    #[test]
+    fn init_with_central_creates_and_compiles_terrain() -> Result<()> {
+        let _m = MTX.lock();
+
+        let mock_create_dir_ctx = MockFS::create_config_dir_context();
+        mock_create_dir_ctx
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
+            .times(1);
+
+        let mock_get_central_terrain_ctx = MockFS::get_central_terrain_path_context();
+        mock_get_central_terrain_ctx
+            .expect()
+            .return_once(|| {
+                Ok(PathBuf::from(
+                    "./example_configs/terrain.without.biomes.toml",
+                ))
+            })
+            .times(1);
+
+        let is_terrain_present_context = MockFS::is_terrain_present_context();
+        is_terrain_present_context
+            .expect()
+            .return_once(|| Ok(false))
+            .times(1);
+
+        let contents = Terrain::new().to_toml()?;
+
+        let write_file_context = MockFS::write_file_context();
+        write_file_context
+            .expect()
+            .with(
+                eq(PathBuf::from(
+                    "./example_configs/terrain.without.biomes.toml",
+                )),
+                eq(contents),
+            )
+            .return_once(|_, _| Ok(()))
+            .times(1);
+
+        let get_central_store_path_context = MockFS::get_central_store_path_context();
+        get_central_store_path_context
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+
+        let terrain = Terrain::new().get(Some(BiomeArg::None))?;
+        let generate_and_compile_context = MockZshOps::generate_and_compile_context();
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("none")),
+                eq(terrain),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        handle_init(true, false, false)?;
+
+        return Ok(());
+    }
+
+    #[test]
+    fn init_with_edit_creates_and_compiles_terrain_and_starts_editor() -> Result<()> {
+        let _m = MTX.lock();
+
+        let mock_create_dir_ctx = MockFS::create_config_dir_context();
+        mock_create_dir_ctx
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
+            .times(1);
+
+        let mock_get_local_terrain_ctx = MockFS::get_local_terrain_path_context();
+        mock_get_local_terrain_ctx
+            .expect()
+            .return_once(|| {
+                Ok(PathBuf::from(
+                    "./example_configs/terrain.without.biomes.toml",
+                ))
+            })
+            .times(1);
+
+        let is_terrain_present_context = MockFS::is_terrain_present_context();
+        is_terrain_present_context
+            .expect()
+            .return_once(|| Ok(false))
+            .times(1);
+
+        let contents = Terrain::new().to_toml()?;
+
+        let write_file_context = MockFS::write_file_context();
+        write_file_context
+            .expect()
+            .with(
+                eq(PathBuf::from(
+                    "./example_configs/terrain.without.biomes.toml",
+                )),
+                eq(contents),
+            )
+            .return_once(|_, _| Ok(()))
+            .times(1);
+
+        let get_central_store_path_context = MockFS::get_central_store_path_context();
+        get_central_store_path_context
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+
+        let terrain = Terrain::new().get(Some(BiomeArg::None))?;
+        let generate_and_compile_context = MockZshOps::generate_and_compile_context();
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("none")),
+                eq(terrain),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let mock_edit_file = mock_edit::file_context();
+        mock_edit_file
+            .expect()
+            .with(eq(PathBuf::from(
+                "./example_configs/terrain.without.biomes.toml",
+            )))
+            .return_once(|_| Ok(()))
+            .times(1);
+
+        handle_init(false, false, true)?;
 
         return Ok(());
     }
