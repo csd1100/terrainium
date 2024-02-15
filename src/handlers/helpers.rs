@@ -20,7 +20,7 @@ pub mod fs {
 
     use anyhow::{anyhow, Context, Ok, Result};
 
-    use crate::handlers::helpers::get_terrainium_config_path;
+    use crate::{handlers::helpers::get_terrainium_config_path, types::terrain::Terrain};
 
     pub fn create_config_dir() -> Result<PathBuf> {
         let config_path =
@@ -48,10 +48,6 @@ pub mod fs {
             return Ok(true);
         }
         Ok(false)
-    }
-
-    pub fn write_file(path: &Path, contents: String) -> Result<()> {
-        Ok(std::fs::write(path, contents)?)
     }
 
     pub fn get_central_store_path() -> Result<PathBuf> {
@@ -82,6 +78,18 @@ pub mod fs {
             let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
             return Err(err);
         }
+    }
+
+    pub fn write_file(path: &Path, contents: String) -> Result<()> {
+        Ok(std::fs::write(path, contents)?)
+    }
+
+    pub fn write_terrain(path: &Path, terrain: &Terrain) -> Result<()> {
+        write_file(path, terrain.to_toml()?)
+    }
+
+    pub fn copy_file(from: &Path, to: &Path) -> Result<u64> {
+        Ok(std::fs::copy(from, to)?)
     }
 }
 

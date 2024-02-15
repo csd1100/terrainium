@@ -29,8 +29,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
             Terrain::new()
         };
 
-        let contents = terrain.to_toml()?;
-        fs::write_file(&terrain_toml_path, contents)
+        fs::write_terrain(&terrain_toml_path, &terrain)
             .context("failed to write generated terrain to toml file")?;
 
         println!(
@@ -108,16 +107,14 @@ mod test {
             .return_once(|| Ok(false))
             .times(1);
 
-        let contents = Terrain::new().to_toml()?;
-
-        let write_file_context = mock_fs::write_file_context();
-        write_file_context
+        let write_terrain_context = mock_fs::write_terrain_context();
+        write_terrain_context
             .expect()
             .with(
                 eq(PathBuf::from(
                     "./example_configs/terrain.without.biomes.toml",
                 )),
-                eq(contents),
+                eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -167,20 +164,21 @@ mod test {
 
         // toml deserializes vec in different order so string equals will fail
         // so just check if called with any string containing default_biome
-        let write_file_context = mock_fs::write_file_context();
-        write_file_context
+        let write_terrain_context = mock_fs::write_terrain_context();
+        write_terrain_context
             .expect()
-            .withf(|path, contents| {
-                path == PathBuf::from("./example_configs/terrain.full.toml")
-                    && contents.contains("default_biome = \"example_biome\"")
-            })
+            .with(
+                eq(PathBuf::from("./example_configs/terrain.full.toml")),
+                eq(Terrain::default()),
+            )
             .return_once(|_, _| Ok(()))
             .times(1);
 
         let get_central_store_path_context = mock_fs::get_central_store_path_context();
         get_central_store_path_context
             .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/"))).times(1);
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
 
         let terrain = Terrain::default();
         let main = terrain.get(Some(BiomeArg::None))?;
@@ -236,16 +234,14 @@ mod test {
             .return_once(|| Ok(false))
             .times(1);
 
-        let contents = Terrain::new().to_toml()?;
-
-        let write_file_context = mock_fs::write_file_context();
-        write_file_context
+        let write_terrain_context = mock_fs::write_terrain_context();
+        write_terrain_context
             .expect()
             .with(
                 eq(PathBuf::from(
                     "./example_configs/terrain.without.biomes.toml",
                 )),
-                eq(contents),
+                eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -297,16 +293,14 @@ mod test {
             .return_once(|| Ok(false))
             .times(1);
 
-        let contents = Terrain::new().to_toml()?;
-
-        let write_file_context = mock_fs::write_file_context();
-        write_file_context
+        let write_terrain_context = mock_fs::write_terrain_context();
+        write_terrain_context
             .expect()
             .with(
                 eq(PathBuf::from(
                     "./example_configs/terrain.without.biomes.toml",
                 )),
-                eq(contents),
+                eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
             .times(1);
