@@ -220,7 +220,7 @@ mod test {
         types::{args::BiomeArg, terrain::test_data},
     };
 
-    use super::handle_edit;
+    use super::{handle_edit, handle_generate};
 
     #[test]
     #[serial]
@@ -280,6 +280,61 @@ mod test {
             .times(1);
 
         handle_edit()?;
+
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn handle_generate_generates_scripts() -> Result<()> {
+        let mock_get_toml_path = mock_fs::get_terrain_toml_context();
+        mock_get_toml_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .times(1);
+
+        let get_central_store_path_context = mock_fs::get_central_store_path_context();
+        get_central_store_path_context
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let terrain = test_data::test_data_terrain_full();
+        let main = terrain.get(Some(BiomeArg::None))?;
+        let generate_and_compile_context = mock_ops::generate_and_compile_context();
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("none")),
+                eq(main),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("example_biome")),
+                eq(example_biome),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let example_biome2 = terrain.get(Some(BiomeArg::Value("example_biome2".to_owned())))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("example_biome2")),
+                eq(example_biome2),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        handle_generate()?;
 
         Ok(())
     }
