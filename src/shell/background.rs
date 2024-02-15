@@ -25,7 +25,7 @@ fn start_process_with_session_id(
 
     let dev = std::env::var("DEV");
 
-    if dev.is_ok() && dev.unwrap() == "true".to_string() {
+    if dev.is_ok() && dev.unwrap() == *"true" {
         command = "./target/debug/terrainium_executor";
     }
 
@@ -39,15 +39,15 @@ fn start_process_with_session_id(
     let spawn_out = File::options()
         .append(true)
         .create_new(true)
-        .open(&spawn_out_logs)?;
+        .open(spawn_out_logs)?;
     let spawn_err = File::options()
         .append(true)
         .create_new(true)
-        .open(&spawn_err_logs)?;
+        .open(spawn_err_logs)?;
 
     Execute::spawn_and_get_child(command, args, envs, Some(spawn_out), Some(spawn_err))?;
 
-    return Ok(());
+    Ok(())
 }
 
 fn iterate_over_commands_and_spawn(
@@ -58,18 +58,18 @@ fn iterate_over_commands_and_spawn(
     let errors: Result<Vec<_>> = background
         .into_iter()
         .map(|command| {
-            return start_process_with_session_id(
+            start_process_with_session_id(
                 session_id.to_string(),
                 command,
                 Some(envs.clone()),
-            );
+            )
         })
         .collect();
 
     if let Some(e) = errors.err() {
-        return Err(e);
+        Err(e)
     } else {
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -90,5 +90,5 @@ pub fn start_background_processes(
             }
         }
     }
-    return Ok(());
+    Ok(())
 }

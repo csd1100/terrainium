@@ -17,7 +17,7 @@ const CONSTRUCTORS: &str = "constructors";
 const DESTRUCTORS: &str = "destructors";
 
 enum Data {
-    All(PrintableTerrain),
+    All(Box<PrintableTerrain>),
     HashMap(Option<HashMap<String, String>>),
     Commands(Option<Commands>),
 }
@@ -32,7 +32,7 @@ fn parse_template(
     let errors: Result<Vec<_>, _> = template_strings
         .iter()
         .map(|(name, template)| {
-            return handlebar.register_template_string(name, template);
+            handlebar.register_template_string(name, template)
         })
         .collect();
 
@@ -41,9 +41,9 @@ fn parse_template(
     }
 
     match data {
-        Data::All(data) => return Ok(handlebar.render(template_to_parse, &data)?),
-        Data::HashMap(data) => return Ok(handlebar.render(template_to_parse, &data)?),
-        Data::Commands(data) => return Ok(handlebar.render(template_to_parse, &data)?),
+        Data::All(data) => Ok(handlebar.render(template_to_parse, &data)?),
+        Data::HashMap(data) => Ok(handlebar.render(template_to_parse, &data)?),
+        Data::Commands(data) => Ok(handlebar.render(template_to_parse, &data)?),
     }
 }
 
@@ -57,17 +57,17 @@ pub fn print_all(terrain: PrintableTerrain) -> Result<()> {
             (DESTRUCTORS, DESTRUCTORS_TEMPLATE),
         ],
         MAIN,
-        Data::All(terrain),
+        Data::All(Box::new(terrain)),
     )
     .context("failed to render terrain output")?;
     println!("{}", text);
-    return Ok(());
+    Ok(())
 }
 
 pub fn print_env(env: Option<HashMap<String, String>>) -> Result<()> {
     let text = parse_template(vec![(ENV, ENV_TEMPLATE)], ENV, Data::HashMap(env))?;
     println!("{}", text);
-    return Ok(());
+    Ok(())
 }
 
 pub fn print_aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
@@ -77,7 +77,7 @@ pub fn print_aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
         Data::HashMap(aliases),
     )?;
     println!("{}", text);
-    return Ok(());
+    Ok(())
 }
 
 pub fn print_constructors(constructors: Option<Commands>) -> Result<()> {
@@ -87,7 +87,7 @@ pub fn print_constructors(constructors: Option<Commands>) -> Result<()> {
         Data::Commands(constructors),
     )?;
     println!("{}", text);
-    return Ok(());
+    Ok(())
 }
 
 pub fn print_destructors(destructors: Option<Commands>) -> Result<()> {
@@ -97,7 +97,7 @@ pub fn print_destructors(destructors: Option<Commands>) -> Result<()> {
         Data::Commands(destructors),
     )?;
     println!("{}", text);
-    return Ok(());
+    Ok(())
 }
 
 #[cfg(test)]
@@ -144,11 +144,11 @@ Destructors:
                 (DESTRUCTORS, DESTRUCTORS_TEMPLATE),
             ],
             MAIN,
-            Data::All(terrain),
+            Data::All(Box::new(terrain)),
         )?;
 
         assert_eq!(expected, actual);
 
-        return Ok(());
+        Ok(())
     }
 }

@@ -13,9 +13,9 @@ fn create_log_file(session_id: &String, filename: String) -> Result<(File, PathB
     let out = File::options()
         .append(true)
         .create_new(true)
-        .open(&out_file)
+        .open(out_file)
         .context(format!("Unable to create and open file:{:?}", &out_file))?;
-    return Ok((out, out_file.to_path_buf()));
+    Ok((out, out_file.to_path_buf()))
 }
 
 fn create_log_files(
@@ -24,10 +24,10 @@ fn create_log_files(
 ) -> Result<((File, PathBuf), (File, PathBuf))> {
     let out_file = format!("std_out-{}.log", process_uuid);
     let err_file = format!("std_err-{}.log", process_uuid);
-    return Ok((
+    Ok((
         create_log_file(session_id, out_file)?,
         create_log_file(session_id, err_file)?,
-    ));
+    ))
 }
 
 fn main() -> Result<()> {
@@ -44,10 +44,8 @@ fn main() -> Result<()> {
         cmd.args(&args);
     }
 
-    let child = cmd.spawn().expect(&format!(
-        "command {:?}, to start with args {:?}",
-        &command.exe, &command.args
-    ));
+    let child = cmd.spawn().unwrap_or_else(|_| panic!("command {:?}, to start with args {:?}",
+        &command.exe, &command.args));
 
     let status_file_name = format!("status-{}.json", command.uuid);
     let status_file_path = get_process_log_file_path(&cli.id, status_file_name.clone())?;
@@ -91,5 +89,5 @@ fn main() -> Result<()> {
         ))?;
     serde_json::to_writer_pretty(&status_file, &existing_status)?;
 
-    return Ok(());
+    Ok(())
 }

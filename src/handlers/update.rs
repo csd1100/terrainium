@@ -33,19 +33,17 @@ pub fn handle_update(
         terrain
             .update_default_biome(default)
             .context("unable to update default biome")?;
+    } else if let Some(biome) = &new {
+        terrain
+            .add_biome(biome, Biome::new())
+            .context("unable to create a new biome")?;
+        terrain
+            .update(Some(BiomeArg::Value(biome.to_string())), env, alias)
+            .context("failed to update newly created biome")?;
     } else {
-        if let Some(biome) = &new {
-            terrain
-                .add_biome(biome, Biome::new())
-                .context("unable to create a new biome")?;
-            terrain
-                .update(Some(BiomeArg::Value(biome.to_string())), env, alias)
-                .context("failed to update newly created biome")?;
-        } else {
-            terrain
-                .update(biome, env, alias)
-                .context("failed to update biome")?;
-        };
+        terrain
+            .update(biome, env, alias)
+            .context("failed to update biome")?;
     }
 
     fs::write_file(toml_file.as_path(), terrain.to_toml()?)
@@ -66,5 +64,5 @@ pub fn handle_update(
         )));
     }
 
-    return Ok(());
+    Ok(())
 }

@@ -111,7 +111,7 @@ impl GetOpts {
         {
             return true;
         }
-        return false;
+        false
     }
 }
 
@@ -128,13 +128,13 @@ impl FromStr for BiomeArg {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "none" => {
-                return Ok(BiomeArg::None);
+                Ok(BiomeArg::None)
             }
             "default" => {
-                return Ok(BiomeArg::Default);
+                Ok(BiomeArg::Default)
             }
             _ => {
-                return Ok(BiomeArg::Value(s.to_string()));
+                Ok(BiomeArg::Value(s.to_string()))
             }
         }
     }
@@ -150,7 +150,7 @@ impl FromStr for Pair {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut values: Vec<_> = s.split("=").collect();
+        let mut values: Vec<_> = s.split('=').collect();
         if values.len() != 2 {
             return Err(anyhow!("expected a `key=value` pair"));
         }
@@ -162,7 +162,7 @@ impl FromStr for Pair {
             value: drain.next().expect("expect to be present").to_string(),
         };
 
-        return Ok(pair);
+        Ok(pair)
     }
 }
 
@@ -191,7 +191,7 @@ mod test {
         let actual: Pair = Pair::from_str(val)?;
         assert_eq!(expected, actual);
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod test {
         let actual   = Pair::from_str(val).unwrap_err().to_string();
         assert_eq!(expected, actual);
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -224,6 +224,6 @@ mod test {
 
         let actual = BiomeArg::from_str(val)?;
         assert_eq!(expected, actual);
-        return Ok(());
+        Ok(())
     }
 }

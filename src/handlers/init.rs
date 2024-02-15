@@ -35,7 +35,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
 
         println!(
             "terrain created at path {}",
-            terrain_toml_path.to_string_lossy().to_string()
+            terrain_toml_path.to_string_lossy()
         );
 
         let central_store =
@@ -64,7 +64,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
         ));
     }
 
-    return Ok(());
+    Ok(())
 }
 
 #[cfg(test)]
@@ -141,7 +141,7 @@ mod test {
 
         handle_init(false, false, false)?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -171,8 +171,8 @@ mod test {
         write_file_context
             .expect()
             .withf(|path, contents| {
-                return path == PathBuf::from("./example_configs/terrain.full.toml")
-                    && contents.contains("default_biome = \"example_biome\"");
+                path == PathBuf::from("./example_configs/terrain.full.toml")
+                    && contents.contains("default_biome = \"example_biome\"")
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -208,7 +208,7 @@ mod test {
             .times(1);
         handle_init(false, true, false)?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -269,7 +269,7 @@ mod test {
 
         handle_init(true, false, false)?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -339,7 +339,7 @@ mod test {
 
         handle_init(false, false, true)?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -352,6 +352,6 @@ mod test {
 
         assert_eq!(err, "terrain for this project is already present. edit existing terrain with `terrain edit` command");
 
-        return Ok(());
+        Ok(())
     }
 }

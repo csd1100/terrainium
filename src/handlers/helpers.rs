@@ -30,30 +30,28 @@ pub mod fs {
             .context("unable to create terrainium config directory")?;
         super::create_dir_if_not_exist(get_central_store_path()?.as_path())
             .context("unable to create terrains directory in terrainium config directory")?;
-        return Ok(config_path);
+        Ok(config_path)
     }
 
     pub fn get_central_terrain_path() -> Result<PathBuf> {
         let mut dirname = get_central_store_path()?;
         dirname.push("terrain.toml");
-        return Ok(dirname);
+        Ok(dirname)
     }
 
     pub fn get_local_terrain_path() -> Result<PathBuf> {
-        return Ok(Path::join(&std::env::current_dir()?, "terrain.toml"));
+        Ok(Path::join(&std::env::current_dir()?, "terrain.toml"))
     }
 
     pub fn is_terrain_present() -> Result<bool> {
-        if super::is_local_terrain_present()? {
-            return Ok(true);
-        } else if super::is_central_terrain_present()? {
+        if super::is_local_terrain_present()? || super::is_central_terrain_present()? {
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
 
     pub fn write_file(path: &Path, contents: String) -> Result<()> {
-        return Ok(std::fs::write(path, contents)?);
+        Ok(std::fs::write(path, contents)?)
     }
 
     pub fn get_central_store_path() -> Result<PathBuf> {
@@ -62,20 +60,20 @@ pub mod fs {
         let terrain_dir = Path::canonicalize(cwd.as_path())?
             .to_string_lossy()
             .to_string()
-            .replace("/", "_");
+            .replace('/', "_");
         let dirname = Path::join(
             &get_terrainium_config_path().context("unable to get terrainium config directory")?,
             "terrains",
         );
         let dirname = dirname.join(terrain_dir);
-        return Ok(dirname);
+        Ok(dirname)
     }
 
     pub fn get_terrain_toml() -> Result<PathBuf> {
         if super::is_local_terrain_present()
             .context("failed to check whether local terrain.toml exists")?
         {
-            return get_local_terrain_path();
+            get_local_terrain_path()
         } else if super::is_central_terrain_present()
             .context("failed to check whether central terrain.toml exists")?
         {
@@ -93,14 +91,14 @@ fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
         std::fs::create_dir_all(dir)?;
         return Ok(true);
     }
-    return Ok(false);
+    Ok(false)
 }
 
 fn get_terrainium_config_path() -> Result<PathBuf> {
-    return Ok(Path::join(
+    Ok(Path::join(
         &get_config_path().context("unable to get config directory")?,
         "terrainium",
-    ));
+    ))
 }
 
 fn get_config_path() -> Result<PathBuf> {
@@ -108,7 +106,7 @@ fn get_config_path() -> Result<PathBuf> {
     if let Some(home) = home {
         if Path::is_dir(home.as_path()) {
             let config_dir = Path::join(&home, PathBuf::from(".config"));
-            if Path::try_exists(&config_dir.as_path())? {
+            if Path::try_exists(config_dir.as_path())? {
                 return Ok(config_dir);
             }
             return Ok(home);
@@ -116,20 +114,20 @@ fn get_config_path() -> Result<PathBuf> {
             return Err(TerrainiumErrors::InvalidHomeDirectory.into());
         }
     }
-    return Err(TerrainiumErrors::UnableToFindHome.into());
+    Err(TerrainiumErrors::UnableToFindHome.into())
 }
 
 pub fn get_parsed_terrain() -> Result<Terrain> {
     let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
-    return parse_terrain(&toml_file);
+    parse_terrain(&toml_file)
 }
 
 fn is_local_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&fs::get_local_terrain_path()?)?);
+    Ok(Path::try_exists(&fs::get_local_terrain_path()?)?)
 }
 
 fn is_central_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&fs::get_central_terrain_path()?)?);
+    Ok(Path::try_exists(&fs::get_central_terrain_path()?)?)
 }
 
 pub fn merge_hashmaps(
@@ -141,7 +139,7 @@ pub fn merge_hashmaps(
         .iter()
         .map(|(key, value)| return_map.insert(key.to_string(), value.to_string()))
         .collect();
-    return return_map;
+    return_map
 }
 
 pub fn get_merged_hashmaps(
@@ -161,7 +159,7 @@ pub fn get_merged_hashmaps(
         }
     }
 
-    return None;
+    None
 }
 
 pub fn find_in_hashmaps(
@@ -173,16 +171,16 @@ pub fn find_in_hashmaps(
             .iter()
             .map(|env| {
                 if let Some(value) = values.get(env) {
-                    return (env.to_string(), Some(value.to_string()));
+                    (env.to_string(), Some(value.to_string()))
                 } else {
-                    return (env.to_string(), None);
+                    (env.to_string(), None)
                 }
             })
             .collect()
     } else {
         return Err(anyhow!("Not Defined"));
     };
-    return Ok(return_map);
+    Ok(return_map)
 }
 
 pub fn get_process_log_file_path(session_id: &String, filename: String) -> Result<PathBuf> {
@@ -190,7 +188,7 @@ pub fn get_process_log_file_path(session_id: &String, filename: String) -> Resul
     create_dir_if_not_exist(&tmp)?;
     let mut out_path = tmp.clone();
     out_path.push(filename);
-    return Ok(out_path);
+    Ok(out_path)
 }
 
 #[cfg(test)]
@@ -246,11 +244,11 @@ mod test {
         let actual = get_merged_hashmaps(&Some(hashmap_2.clone()), &Some(hashmap_1.clone()))
             .expect("to be present");
         assert_eq!(expected, actual);
-        return Ok(());
+        Ok(())
     }
 
     #[test]
     fn test_mock() -> Result<()> {
-        return Ok(());
+        Ok(())
     }
 }

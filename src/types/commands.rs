@@ -16,10 +16,10 @@ impl Commands {
     pub fn merge(&self, other: Self) -> Self {
         let foreground = get_merged_vecs(&self.foreground, &other.foreground);
         let background = get_merged_vecs(&self.background, &other.background);
-        return Commands {
+        Commands {
             foreground,
             background,
-        };
+        }
     }
 }
 
@@ -36,7 +36,7 @@ fn get_merged_vecs(from: &Option<Vec<Command>>, to: &Option<Vec<Command>>) -> Op
 
     let mut return_vec = to.clone().expect("to be present");
     return_vec.extend_from_slice(&from.clone().expect("to be present"));
-    return Some(return_vec);
+    Some(return_vec)
 }
 
 pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Option<Commands> {
@@ -53,7 +53,7 @@ pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Op
         }
     }
 
-    return None;
+    None
 }
 
 #[cfg(test)]

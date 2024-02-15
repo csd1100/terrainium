@@ -20,12 +20,12 @@ pub struct Biome {
 
 impl Biome {
     pub fn new() -> Biome {
-        return Biome {
+        Biome {
             env: Some(HashMap::<String, String>::new()),
             alias: Some(HashMap::<String, String>::new()),
             constructors: None,
             destructors: None,
-        };
+        }
     }
 
     pub fn update_env(&mut self, k: String, v: String) {
@@ -50,16 +50,16 @@ impl Biome {
 
     pub fn find_envs(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
         match find_in_hashmaps(&self.env, tofind) {
-            Result::Ok(envs) => return Ok(envs),
-            Err(_) => return Err(TerrainiumErrors::EnvsNotDefined.into()),
-        };
+            Result::Ok(envs) => Ok(envs),
+            Err(_) => Err(TerrainiumErrors::EnvsNotDefined.into()),
+        }
     }
 
     pub fn find_aliases(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
         match find_in_hashmaps(&self.alias, tofind) {
-            Result::Ok(aliases) => return Ok(aliases),
-            Err(_err) => return Err(TerrainiumErrors::AliasesNotDefined.into()),
-        };
+            Result::Ok(aliases) => Ok(aliases),
+            Err(_err) => Err(TerrainiumErrors::AliasesNotDefined.into()),
+        }
     }
 
     pub fn merge(&self, other: &Self) -> Self {
@@ -69,43 +69,43 @@ impl Biome {
         let mut destructors = None;
 
         if self.env.is_some() || other.env.is_some() {
-            env = self.merge_env(&other);
+            env = self.merge_env(other);
         }
 
         if self.alias.is_some() || other.alias.is_some() {
-            alias = self.merge_alias(&other);
+            alias = self.merge_alias(other);
         }
 
         if self.constructors.is_some() || other.constructors.is_some() {
-            constructors = self.merge_constructors(&other);
+            constructors = self.merge_constructors(other);
         }
 
         if self.destructors.is_some() || other.destructors.is_some() {
-            destructors = self.merge_destructors(&other);
+            destructors = self.merge_destructors(other);
         }
 
-        return Biome {
+        Biome {
             env,
             alias,
             constructors,
             destructors,
-        };
+        }
     }
 
     fn merge_env(&self, other: &Self) -> Option<HashMap<String, String>> {
-        return get_merged_hashmaps(&self.env, &other.env);
+        get_merged_hashmaps(&self.env, &other.env)
     }
 
     fn merge_alias(&self, other: &Self) -> Option<HashMap<String, String>> {
-        return get_merged_hashmaps(&self.alias, &other.alias);
+        get_merged_hashmaps(&self.alias, &other.alias)
     }
 
     fn merge_constructors(&self, other: &Self) -> Option<Commands> {
-        return get_merged_commands(&self.constructors, &other.constructors);
+        get_merged_commands(&self.constructors, &other.constructors)
     }
 
     fn merge_destructors(&self, other: &Self) -> Option<Commands> {
-        return get_merged_commands(&self.destructors, &other.destructors);
+        get_merged_commands(&self.destructors, &other.destructors)
     }
 }
 

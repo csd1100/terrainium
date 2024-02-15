@@ -15,7 +15,7 @@ use terrainium::{
 fn main() -> Result<()> {
     let opts = TerrainiumArgs::parse();
 
-    return match opts.verbs {
+    match opts.verbs {
         Verbs::Init {
             central,
             full,
@@ -39,5 +39,5 @@ fn main() -> Result<()> {
         Verbs::Construct { biome } => handle_construct(biome, None),
         Verbs::Deconstruct { biome } => handle_deconstruct(biome),
         Verbs::Generate => handle_generate(),
-    };
+    }
 }

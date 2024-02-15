@@ -36,10 +36,10 @@ pub struct Executable {
 
 impl From<Command> for Executable {
     fn from(value: Command) -> Self {
-        return Executable {
+        Executable {
             uuid: Uuid::new_v4().to_string(),
             exe: value.exe,
             args: value.args,
-        };
+        }
     }
 }

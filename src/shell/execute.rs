@@ -9,9 +9,9 @@ use anyhow::{Context, Ok, Result};
 pub struct Execute;
 
 impl Execute {
-    pub fn spawn_and_wait<'a>(
+    pub fn spawn_and_wait(
         exe: &str,
-        args: Vec<&'a str>,
+        args: Vec<&str>,
         envs: Option<HashMap<String, String>>,
     ) -> Result<()> {
         let mut command = Command::new(exe);
@@ -24,12 +24,12 @@ impl Execute {
             exe, args, envs
         ))?;
         child_process.wait()?;
-        return Ok(());
+        Ok(())
     }
 
-    pub fn spawn_and_get_child<'a>(
+    pub fn spawn_and_get_child(
         exe: &str,
-        args: Vec<&'a str>,
+        args: Vec<&str>,
         envs: Option<HashMap<String, String>>,
         stdout: Option<File>,
         stderr: Option<File>,
@@ -49,12 +49,12 @@ impl Execute {
             "Unable to execute command: {} with args: {:?} and env vars: {:?}",
             exe, args, envs
         ))?;
-        return Ok(child_process);
+        Ok(child_process)
     }
 
-    pub fn run_and_get_output<'a>(
+    pub fn run_and_get_output(
         exe: &str,
-        args: Vec<&'a str>,
+        args: Vec<&str>,
         envs: Option<HashMap<String, String>>,
     ) -> Result<Output> {
         let mut command = Command::new(exe);
@@ -66,6 +66,6 @@ impl Execute {
             "Unable to execute command: {} with args: {:?} and env vars: {:?}",
             exe, args, envs
         ))?;
-        return Ok(output);
+        Ok(output)
     }
 }
