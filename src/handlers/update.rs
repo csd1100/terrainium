@@ -8,9 +8,9 @@ use crate::types::{
 };
 
 #[double]
-use crate::shell::zsh::ZshOps;
+use crate::shell::zsh::ops;
 
-use super::helpers::{get_terrain_toml, FS};
+use super::helpers::{fs, get_terrain_toml};
 
 pub fn handle_update(
     set_biome: Option<String>,
@@ -48,14 +48,14 @@ pub fn handle_update(
         };
     }
 
-    FS::write_file(toml_file.as_path(), terrain.to_toml()?)
+    fs::write_file(toml_file.as_path(), terrain.to_toml()?)
         .context("failed to write updated terrain.toml")?;
 
-    let central_store = FS::get_central_store_path()?;
+    let central_store = fs::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            ZshOps::generate_and_compile(&central_store, biome_name, environment)
+            ops::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 

@@ -14,19 +14,46 @@ use crate::types::{
     terrain::{parse_terrain, Terrain},
 };
 
-pub struct FS;
-
 #[cfg_attr(test, automock)]
-impl FS {
+pub mod fs {
+    use std::path::{Path, PathBuf};
+
+    use anyhow::{Context, Ok, Result};
+
+    use crate::handlers::helpers::get_terrainium_config_path;
+
     pub fn create_config_dir() -> Result<PathBuf> {
         let config_path =
             get_terrainium_config_path().context("unable to get terrainium config path")?;
         println!("[config_path: {:?}]\n", config_path);
-        FS::create_dir_if_not_exist(config_path.as_path())
+        super::create_dir_if_not_exist(config_path.as_path())
             .context("unable to create terrainium config directory")?;
-        FS::create_dir_if_not_exist(Self::get_central_store_path()?.as_path())
+        super::create_dir_if_not_exist(get_central_store_path()?.as_path())
             .context("unable to create terrains directory in terrainium config directory")?;
         return Ok(config_path);
+    }
+
+    pub fn get_central_terrain_path() -> Result<PathBuf> {
+        let mut dirname = get_central_store_path()?;
+        dirname.push("terrain.toml");
+        return Ok(dirname);
+    }
+
+    pub fn get_local_terrain_path() -> Result<PathBuf> {
+        return Ok(Path::join(&std::env::current_dir()?, "terrain.toml"));
+    }
+
+    pub fn is_terrain_present() -> Result<bool> {
+        if super::is_local_terrain_present()? {
+            return Ok(true);
+        } else if super::is_central_terrain_present()? {
+            return Ok(true);
+        }
+        return Ok(false);
+    }
+
+    pub fn write_file(path: &Path, contents: String) -> Result<()> {
+        return Ok(std::fs::write(path, contents)?);
     }
 
     pub fn get_central_store_path() -> Result<PathBuf> {
@@ -43,38 +70,15 @@ impl FS {
         let dirname = dirname.join(terrain_dir);
         return Ok(dirname);
     }
+}
 
-    pub fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
-        if !Path::try_exists(dir)? {
-            println!("creating a directory at path {}", dir.to_string_lossy());
-            std::fs::create_dir_all(dir)?;
-            return Ok(true);
-        }
-        return Ok(false);
+fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
+    if !Path::try_exists(dir)? {
+        println!("creating a directory at path {}", dir.to_string_lossy());
+        std::fs::create_dir_all(dir)?;
+        return Ok(true);
     }
-
-    pub fn get_local_terrain_path() -> Result<PathBuf> {
-        return Ok(Path::join(&std::env::current_dir()?, "terrain.toml"));
-    }
-
-    pub fn get_central_terrain_path() -> Result<PathBuf> {
-        let mut dirname = Self::get_central_store_path()?;
-        dirname.push("terrain.toml");
-        return Ok(dirname);
-    }
-
-    pub fn write_file(path: &Path, contents: String) -> Result<()> {
-        return Ok(std::fs::write(path, contents)?);
-    }
-
-    pub fn is_terrain_present() -> Result<bool> {
-        if is_local_terrain_present()? {
-            return Ok(true);
-        } else if is_central_terrain_present()? {
-            return Ok(true);
-        }
-        return Ok(false);
-    }
+    return Ok(false);
 }
 
 fn get_terrainium_config_path() -> Result<PathBuf> {
@@ -107,11 +111,11 @@ pub fn get_parsed_terrain() -> Result<Terrain> {
 
 pub fn get_terrain_toml() -> Result<PathBuf> {
     if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
-        return FS::get_local_terrain_path();
+        return fs::get_local_terrain_path();
     } else if is_central_terrain_present()
         .context("failed to check whether central terrain.toml exists")?
     {
-        return FS::get_central_terrain_path();
+        return fs::get_central_terrain_path();
     } else {
         let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
         return Err(err);
@@ -119,11 +123,11 @@ pub fn get_terrain_toml() -> Result<PathBuf> {
 }
 
 fn is_local_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&FS::get_local_terrain_path()?)?);
+    return Ok(Path::try_exists(&fs::get_local_terrain_path()?)?);
 }
 
 fn is_central_terrain_present() -> Result<bool> {
-    return Ok(Path::try_exists(&FS::get_central_terrain_path()?)?);
+    return Ok(Path::try_exists(&fs::get_central_terrain_path()?)?);
 }
 
 pub fn merge_hashmaps(
@@ -181,7 +185,7 @@ pub fn find_in_hashmaps(
 
 pub fn get_process_log_file_path(session_id: &String, filename: String) -> Result<PathBuf> {
     let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
-    FS::create_dir_if_not_exist(&tmp)?;
+    create_dir_if_not_exist(&tmp)?;
     let mut out_path = tmp.clone();
     out_path.push(filename);
     return Ok(out_path);

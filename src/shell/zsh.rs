@@ -7,7 +7,7 @@ use mockall::automock;
 use crate::{
     handlers::{
         constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
-        helpers::FS,
+        helpers::fs,
     },
     shell::execute::Execute,
     types::biomes::Biome,
@@ -19,20 +19,23 @@ const ENV_TEMPLATE: &str = include_str!("../../templates/zsh_env.hbs");
 const CONSTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_constructors.hbs");
 const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_destructors.hbs");
 
-pub struct ZshOps;
-
 #[cfg_attr(test, automock)]
-impl ZshOps {
+pub mod ops {
+    use anyhow::{Context, Result};
+    use std::path::PathBuf;
+
+    use crate::types::biomes::Biome;
+
     pub fn generate_and_compile(
         central_store: &PathBuf,
         biome_name: String,
         environment: Biome,
     ) -> Result<()> {
-        generate_zsh_script(central_store, &biome_name, environment).context(format!(
+        super::generate_zsh_script(central_store, &biome_name, environment).context(format!(
             "failed to generate zsh script for biome {}",
             &biome_name
         ))?;
-        compile(central_store, &biome_name).context(format!(
+        super::compile(central_store, &biome_name).context(format!(
             "failed to compile generated zsh script for biome {}",
             &biome_name
         ))?;
@@ -78,7 +81,7 @@ fn generate_zsh_script(
     path.push(format!("terrain-{}.zsh", biome_name));
 
     println!("updating environment scripts");
-    FS::write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
+    fs::write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
     return Ok(());
 }
 
@@ -110,7 +113,7 @@ fn get_fpath() -> Result<String> {
 
 pub fn get_zsh_envs(biome_name: String) -> Result<HashMap<String, String>> {
     let mut init_file =
-        FS::get_central_store_path().context("unable to get terrains config path")?;
+        fs::get_central_store_path().context("unable to get terrains config path")?;
     init_file.push(format!("terrain-{}.zwc", &biome_name));
     let init_file = init_file.to_string_lossy().to_string();
     let mut envs = HashMap::<String, String>::new();

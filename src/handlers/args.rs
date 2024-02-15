@@ -21,11 +21,11 @@ use crate::{
 use crate::shell::editor::edit;
 
 #[double]
-use crate::shell::zsh::ZshOps;
+use crate::shell::zsh::ops;
 
 use super::{
     constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
-    helpers::{get_terrain_toml, merge_hashmaps, FS},
+    helpers::{fs, get_terrain_toml, merge_hashmaps},
 };
 
 pub fn handle_edit() -> Result<()> {
@@ -34,11 +34,11 @@ pub fn handle_edit() -> Result<()> {
     edit::file(&toml_file).context("failed to start editor")?;
 
     let terrain = parse_terrain(&toml_file)?;
-    let central_store = FS::get_central_store_path()?;
+    let central_store = fs::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            ZshOps::generate_and_compile(&central_store, biome_name, environment)
+            ops::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 
@@ -54,11 +54,11 @@ pub fn handle_edit() -> Result<()> {
 
 pub fn handle_generate() -> Result<()> {
     let terrain = parse_terrain(&get_terrain_toml()?)?;
-    let central_store = FS::get_central_store_path()?;
+    let central_store = fs::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            ZshOps::generate_and_compile(&central_store, biome_name, environment)
+            ops::generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 
