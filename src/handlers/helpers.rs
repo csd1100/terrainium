@@ -18,7 +18,7 @@ use crate::types::{
 pub mod fs {
     use std::path::{Path, PathBuf};
 
-    use anyhow::{Context, Ok, Result};
+    use anyhow::{anyhow, Context, Ok, Result};
 
     use crate::handlers::helpers::get_terrainium_config_path;
 
@@ -70,6 +70,21 @@ pub mod fs {
         let dirname = dirname.join(terrain_dir);
         return Ok(dirname);
     }
+
+    pub fn get_terrain_toml() -> Result<PathBuf> {
+        if super::is_local_terrain_present()
+            .context("failed to check whether local terrain.toml exists")?
+        {
+            return get_local_terrain_path();
+        } else if super::is_central_terrain_present()
+            .context("failed to check whether central terrain.toml exists")?
+        {
+            return get_central_terrain_path();
+        } else {
+            let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
+            return Err(err);
+        }
+    }
 }
 
 fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
@@ -105,21 +120,8 @@ fn get_config_path() -> Result<PathBuf> {
 }
 
 pub fn get_parsed_terrain() -> Result<Terrain> {
-    let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+    let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
     return parse_terrain(&toml_file);
-}
-
-pub fn get_terrain_toml() -> Result<PathBuf> {
-    if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
-        return fs::get_local_terrain_path();
-    } else if is_central_terrain_present()
-        .context("failed to check whether central terrain.toml exists")?
-    {
-        return fs::get_central_terrain_path();
-    } else {
-        let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
-        return Err(err);
-    }
 }
 
 fn is_local_terrain_present() -> Result<bool> {

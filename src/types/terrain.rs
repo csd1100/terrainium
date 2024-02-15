@@ -253,13 +253,11 @@ mod test {
     use anyhow::{anyhow, Result};
 
     use crate::types::{
-        args::{BiomeArg, Pair},
-        biomes::Biome,
-        commands::{Command, Commands},
-        errors::TerrainiumErrors,
+        args::{BiomeArg, Pair}, biomes::Biome, commands::{Command, Commands}, errors::TerrainiumErrors, terrain::test_data::{test_data_biome, test_data_main_terrain_full, test_data_merged_default, test_data_merged_example_biome2, test_data_terrain_full, test_data_terrain_without_biomes_main}
     };
 
     use super::{parse_terrain, Terrain};
+    use super::test_data::test_data_terrain_without_biomes;
 
     #[test]
     fn parse_toml_full() -> Result<()> {
@@ -1109,8 +1107,17 @@ mod test {
 
         return Ok(());
     }
+}
 
-    fn test_data_biome(name: &str, editor: &str) -> Biome {
+pub mod test_data {
+    use std::collections::HashMap;
+
+    use crate::types::{biomes::Biome, commands::{Command, Commands}};
+
+    use super::Terrain;
+
+
+    pub fn test_data_biome(name: &str, editor: &str) -> Biome {
         let name = name.to_owned();
         let editor = editor.to_owned();
         let mut env = HashMap::<String, String>::new();
@@ -1143,11 +1150,11 @@ mod test {
         };
     }
 
-    fn test_data_main_terrain_full() -> Biome {
+    pub fn test_data_main_terrain_full() -> Biome {
         return test_data_terrain_full().terrain;
     }
 
-    fn test_data_merged_default() -> Biome {
+    pub fn test_data_merged_default() -> Biome {
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nvim"));
         env.insert(String::from("TEST"), String::from("value"));
@@ -1191,7 +1198,7 @@ mod test {
         };
     }
 
-    fn test_data_merged_example_biome2() -> Biome {
+    pub fn test_data_merged_example_biome2() -> Biome {
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nano"));
         env.insert(String::from("TEST"), String::from("value"));
@@ -1235,7 +1242,7 @@ mod test {
         };
     }
 
-    fn test_data_terrain_full() -> Terrain {
+    pub fn test_data_terrain_full() -> Terrain {
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("vim"));
         env.insert(String::from("TEST"), String::from("value"));
@@ -1277,7 +1284,7 @@ mod test {
         };
     }
 
-    fn test_data_terrain_without_biomes_main() -> Biome {
+    pub fn test_data_terrain_without_biomes_main() -> Biome {
         return test_data_terrain_without_biomes().terrain;
     }
 

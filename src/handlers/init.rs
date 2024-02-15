@@ -14,21 +14,20 @@ use crate::shell::zsh::ops;
 use crate::handlers::helpers::fs;
 
 pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
-    fs::create_config_dir().context("unable to create config directory")?;
-
-    let terrain_toml_path: PathBuf = if central {
-        fs::get_central_terrain_path().context("unable to get central toml path")?
-    } else {
-        fs::get_local_terrain_path().context("unable to get local terrain.toml")?
-    };
-
     if !fs::is_terrain_present().context("failed to validate if terrain already exists")? {
-        let terrain: Terrain;
-        if full {
-            terrain = Terrain::default();
+        fs::create_config_dir().context("unable to create config directory")?;
+
+        let terrain_toml_path: PathBuf = if central {
+            fs::get_central_terrain_path().context("unable to get central toml path")?
         } else {
-            terrain = Terrain::new();
-        }
+            fs::get_local_terrain_path().context("unable to get local terrain.toml")?
+        };
+
+        let terrain: Terrain = if full {
+            Terrain::default()
+        } else {
+            Terrain::new()
+        };
 
         let contents = terrain.to_toml()?;
         fs::write_file(&terrain_toml_path, contents)
@@ -61,7 +60,7 @@ pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
         }
     } else {
         return Err(anyhow!(
-            "terrain for this project is already present. edit existing with `terrain edit` command."
+            "terrain for this project is already present. edit existing terrain with `terrain edit` command"
         ));
     }
 
@@ -181,7 +180,7 @@ mod test {
         let get_central_store_path_context = mock_fs::get_central_store_path_context();
         get_central_store_path_context
             .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/"))).times(1);
 
         let terrain = Terrain::default();
         let main = terrain.get(Some(BiomeArg::None))?;
@@ -339,6 +338,19 @@ mod test {
             .times(1);
 
         handle_init(false, false, true)?;
+
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn init_with_terrain_present_throws_error() -> Result<()> {
+        let mock_is_present = mock_fs::is_terrain_present_context();
+        mock_is_present.expect().return_once(|| Ok(true));
+
+        let err = handle_init(false, false, false).unwrap_err().to_string();
+
+        assert_eq!(err, "terrain for this project is already present. edit existing terrain with `terrain edit` command");
 
         return Ok(());
     }

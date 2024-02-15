@@ -10,7 +10,7 @@ use crate::types::{
 #[double]
 use crate::shell::zsh::ops;
 
-use super::helpers::{fs, get_terrain_toml};
+use super::helpers::fs;
 
 pub fn handle_update(
     set_biome: Option<String>,
@@ -20,7 +20,7 @@ pub fn handle_update(
     alias: Option<Vec<Pair>>,
     backup: bool,
 ) -> Result<()> {
-    let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+    let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
 
     if backup {
         let bkp = toml_file.with_extension("toml.bkp");
