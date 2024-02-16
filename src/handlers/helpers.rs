@@ -9,10 +9,7 @@ use home::home_dir;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::types::{
-    errors::TerrainiumErrors,
-    terrain::{parse_terrain, Terrain},
-};
+use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain};
 
 #[cfg_attr(test, automock)]
 pub mod fs {
@@ -91,6 +88,11 @@ pub mod fs {
     pub fn copy_file(from: &Path, to: &Path) -> Result<u64> {
         Ok(std::fs::copy(from, to)?)
     }
+
+    pub fn get_parsed_terrain() -> Result<Terrain> {
+        let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+        super::parse_terrain(&toml_file)
+    }
 }
 
 fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
@@ -123,11 +125,6 @@ fn get_config_path() -> Result<PathBuf> {
         }
     }
     Err(TerrainiumErrors::UnableToFindHome.into())
-}
-
-pub fn get_parsed_terrain() -> Result<Terrain> {
-    let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
-    parse_terrain(&toml_file)
 }
 
 fn is_local_terrain_present() -> Result<bool> {

@@ -90,7 +90,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn handle_update_only_updates_default_biome() -> Result<()> {
+    fn handle_update_only_sets_default_biome() -> Result<()> {
         let mock_terrain_path = mock_fs::get_terrain_toml_context();
         mock_terrain_path
             .expect()
@@ -262,18 +262,110 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        handle_update(
-            None,
-            None,
-            Some(BiomeArg::Default),
-            Some(env_vars),
-            Some(aliases),
-            true,
-        )?;
+        handle_update(None, None, None, Some(env_vars), Some(aliases), true)?;
 
         return Ok(());
     }
 
+    #[test]
+    #[serial]
+    fn handle_update_updates_specified_biome() -> Result<()> {
+        let mock_terrain_path = mock_fs::get_terrain_toml_context();
+        mock_terrain_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .times(1);
+
+        let env_vars = vec![Pair {
+            key: "EDITOR".to_string(),
+            value: "nano".to_string(),
+        }];
+        let aliases = vec![Pair {
+            key: "new_test".to_string(),
+            value: "new_value".to_string(),
+        }];
+
+        let mut expected = test_data_terrain_full();
+        expected.update(
+            Some(BiomeArg::Value("example_biome2".to_string())),
+            Some(env_vars),
+            Some(aliases),
+        )?;
+
+        let mock_write_terrain = mock_fs::write_terrain_context();
+        mock_write_terrain
+            .expect()
+            .with(
+                eq(PathBuf::from("./example_configs/terrain.full.toml")),
+                eq(expected),
+            )
+            .times(1)
+            .return_once(|_, _| Ok(()));
+
+        let get_central_store_path_context = mock_fs::get_central_store_path_context();
+        get_central_store_path_context
+            .expect()
+            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let terrain = test_data_terrain_full();
+        let main = terrain.get(Some(BiomeArg::None))?;
+        let generate_and_compile_context = mock_ops::generate_and_compile_context();
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("none")),
+                eq(main),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("example_biome")),
+                eq(example_biome),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let mut example_biome2 = terrain.get(Some(BiomeArg::Value("example_biome2".to_owned())))?;
+        example_biome2.update_env("EDITOR".to_string(), "nano".to_string());
+        example_biome2.update_alias("new_test".to_string(), "new_value".to_string());
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(PathBuf::from("~/.config/terrainium/terrains/")),
+                eq(String::from("example_biome2")),
+                eq(example_biome2),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let env_vars = vec![Pair {
+            key: "EDITOR".to_string(),
+            value: "nano".to_string(),
+        }];
+
+        let aliases = vec![Pair {
+            key: "new_test".to_string(),
+            value: "new_value".to_string(),
+        }];
+
+        handle_update(
+            None,
+            None,
+            Some(BiomeArg::Value("example_biome2".to_string())),
+            Some(env_vars),
+            Some(aliases),
+            false,
+        )?;
+
+        return Ok(());
+    }
     #[test]
     #[serial]
     fn handle_update_creates_new_biome() -> Result<()> {

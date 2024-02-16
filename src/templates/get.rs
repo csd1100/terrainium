@@ -1,6 +1,7 @@
+use anyhow::{anyhow, Result};
+#[cfg(test)]
+use mockall::automock;
 use std::collections::HashMap;
-
-use anyhow::{anyhow, Context, Result};
 
 use crate::types::{commands::Commands, get::PrintableTerrain};
 
@@ -22,6 +23,71 @@ enum Data {
     Commands(Option<Commands>),
 }
 
+#[cfg_attr(test, automock)]
+pub mod print {
+    use anyhow::{Context, Result};
+    use std::collections::HashMap;
+
+    use super::{
+        parse_template, Data, ALIASES, ALIAS_TEMPLATE, CONSTRUCTORS, CONSTRUCTORS_TEMPLATE,
+        DESTRUCTORS, DESTRUCTORS_TEMPLATE, ENV, ENV_TEMPLATE, MAIN, MAIN_TEMPLATE,
+    };
+    use crate::types::{commands::Commands, get::PrintableTerrain};
+
+    pub fn all(terrain: PrintableTerrain) -> Result<()> {
+        let text = parse_template(
+            vec![
+                (ENV, ENV_TEMPLATE),
+                (MAIN, MAIN_TEMPLATE),
+                (ALIASES, ALIAS_TEMPLATE),
+                (CONSTRUCTORS, CONSTRUCTORS_TEMPLATE),
+                (DESTRUCTORS, DESTRUCTORS_TEMPLATE),
+            ],
+            MAIN,
+            Data::All(Box::new(terrain)),
+        )
+        .context("failed to render terrain output")?;
+        println!("{}", text);
+        Ok(())
+    }
+
+    pub fn env(env: Option<HashMap<String, String>>) -> Result<()> {
+        let text = parse_template(vec![(ENV, ENV_TEMPLATE)], ENV, Data::HashMap(env))?;
+        println!("{}", text);
+        Ok(())
+    }
+
+    pub fn aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
+        let text = parse_template(
+            vec![(ALIASES, ALIAS_TEMPLATE)],
+            ALIASES,
+            Data::HashMap(aliases),
+        )?;
+        println!("{}", text);
+        Ok(())
+    }
+
+    pub fn constructors(constructors: Option<Commands>) -> Result<()> {
+        let text = parse_template(
+            vec![(CONSTRUCTORS, CONSTRUCTORS_TEMPLATE)],
+            CONSTRUCTORS,
+            Data::Commands(constructors),
+        )?;
+        println!("{}", text);
+        Ok(())
+    }
+
+    pub fn destructors(destructors: Option<Commands>) -> Result<()> {
+        let text = parse_template(
+            vec![(DESTRUCTORS, DESTRUCTORS_TEMPLATE)],
+            DESTRUCTORS,
+            Data::Commands(destructors),
+        )?;
+        println!("{}", text);
+        Ok(())
+    }
+}
+
 fn parse_template(
     template_strings: Vec<(&str, &str)>,
     template_to_parse: &str,
@@ -31,9 +97,7 @@ fn parse_template(
     handlebar.set_strict_mode(true);
     let errors: Result<Vec<_>, _> = template_strings
         .iter()
-        .map(|(name, template)| {
-            handlebar.register_template_string(name, template)
-        })
+        .map(|(name, template)| handlebar.register_template_string(name, template))
         .collect();
 
     if let Err(e) = errors {
@@ -45,59 +109,6 @@ fn parse_template(
         Data::HashMap(data) => Ok(handlebar.render(template_to_parse, &data)?),
         Data::Commands(data) => Ok(handlebar.render(template_to_parse, &data)?),
     }
-}
-
-pub fn print_all(terrain: PrintableTerrain) -> Result<()> {
-    let text = parse_template(
-        vec![
-            (ENV, ENV_TEMPLATE),
-            (MAIN, MAIN_TEMPLATE),
-            (ALIASES, ALIAS_TEMPLATE),
-            (CONSTRUCTORS, CONSTRUCTORS_TEMPLATE),
-            (DESTRUCTORS, DESTRUCTORS_TEMPLATE),
-        ],
-        MAIN,
-        Data::All(Box::new(terrain)),
-    )
-    .context("failed to render terrain output")?;
-    println!("{}", text);
-    Ok(())
-}
-
-pub fn print_env(env: Option<HashMap<String, String>>) -> Result<()> {
-    let text = parse_template(vec![(ENV, ENV_TEMPLATE)], ENV, Data::HashMap(env))?;
-    println!("{}", text);
-    Ok(())
-}
-
-pub fn print_aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
-    let text = parse_template(
-        vec![(ALIASES, ALIAS_TEMPLATE)],
-        ALIASES,
-        Data::HashMap(aliases),
-    )?;
-    println!("{}", text);
-    Ok(())
-}
-
-pub fn print_constructors(constructors: Option<Commands>) -> Result<()> {
-    let text = parse_template(
-        vec![(CONSTRUCTORS, CONSTRUCTORS_TEMPLATE)],
-        CONSTRUCTORS,
-        Data::Commands(constructors),
-    )?;
-    println!("{}", text);
-    Ok(())
-}
-
-pub fn print_destructors(destructors: Option<Commands>) -> Result<()> {
-    let text = parse_template(
-        vec![(DESTRUCTORS, DESTRUCTORS_TEMPLATE)],
-        DESTRUCTORS,
-        Data::Commands(destructors),
-    )?;
-    println!("{}", text);
-    Ok(())
 }
 
 #[cfg(test)]

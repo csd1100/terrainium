@@ -9,7 +9,6 @@ use crate::{
         background::start_background_processes,
         zsh::{get_zsh_envs, spawn_zsh},
     },
-    templates::get::{print_aliases, print_all, print_constructors, print_destructors, print_env},
     types::{
         args::{BiomeArg, GetOpts},
         terrain::parse_terrain,
@@ -18,8 +17,11 @@ use crate::{
 
 use super::{
     constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
-    helpers::{get_parsed_terrain, merge_hashmaps},
+    helpers::merge_hashmaps,
 };
+
+#[double]
+use super::helpers::fs;
 
 #[double]
 use crate::shell::editor::edit;
@@ -28,7 +30,7 @@ use crate::shell::editor::edit;
 use crate::shell::zsh::ops;
 
 #[double]
-use super::helpers::fs;
+use crate::templates::get::print;
 
 pub fn handle_edit() -> Result<()> {
     let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
@@ -75,13 +77,13 @@ pub fn handle_generate() -> Result<()> {
 }
 
 pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
-    let terrain = get_parsed_terrain()?;
+    let terrain = fs::get_parsed_terrain()?;
     if opts.is_empty() || all {
         let mut terrain = terrain
             .get_printable_terrain(biome)
             .context("failed to get printable terrain")?;
         terrain.all = true;
-        print_all(terrain)?;
+        print::all(terrain)?;
     } else {
         let GetOpts {
             alias_all,
@@ -93,7 +95,7 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
         } = opts;
         let terrain = terrain.get(biome)?;
         if alias_all {
-            print_aliases(terrain.alias.to_owned()).context("unable to print aliases")?;
+            print::aliases(terrain.alias.to_owned()).context("unable to print aliases")?;
         } else if let Some(alias) = alias {
             let found_alias = Some(
                 terrain
@@ -114,11 +116,11 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
                     }
                 })
                 .collect();
-            print_aliases(Some(aliases)).context("unable to print aliases")?;
+            print::aliases(Some(aliases)).context("unable to print aliases")?;
         }
 
         if env_all {
-            print_env(terrain.env.to_owned()).context("unable to print env vars")?;
+            print::env(terrain.env.to_owned()).context("unable to print env vars")?;
         } else if let Some(env) = env {
             let found_env = Some(terrain.find_envs(env).context("unable to get env vars")?);
             let env: HashMap<String, String> = found_env
@@ -135,21 +137,21 @@ pub fn handle_get(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<(
                     }
                 })
                 .collect();
-            print_env(Some(env)).context("unable to print env vars")?;
+            print::env(Some(env)).context("unable to print env vars")?;
         }
 
         if constructors {
-            print_constructors(terrain.constructors).context("unable to print constructors")?;
+            print::constructors(terrain.constructors).context("unable to print constructors")?;
         }
         if destructors {
-            print_destructors(terrain.destructors).context("unable to print destructors")?;
+            print::destructors(terrain.destructors).context("unable to print destructors")?;
         }
     }
     Ok(())
 }
 
 pub fn handle_enter(biome: Option<BiomeArg>) -> Result<()> {
-    let terrain = get_parsed_terrain()?;
+    let terrain = fs::get_parsed_terrain()?;
     let selected = terrain
         .get(biome.clone())
         .context("unable to select biome")?;
@@ -187,7 +189,7 @@ pub fn handle_construct(
     biome: Option<BiomeArg>,
     envs: Option<&HashMap<String, String>>,
 ) -> Result<()> {
-    let terrain = get_parsed_terrain()?
+    let terrain = fs::get_parsed_terrain()?
         .get(biome)
         .context("unable to select biome to call constructors")?;
     if let Some(envs) = envs {
@@ -199,7 +201,7 @@ pub fn handle_construct(
 }
 
 pub fn handle_deconstruct(biome: Option<BiomeArg>) -> Result<()> {
-    let terrain = get_parsed_terrain()?
+    let terrain = fs::get_parsed_terrain()?
         .get(biome)
         .context("unable to select biome to call destructors")?;
     start_background_processes(terrain.destructors, &terrain.env.unwrap_or_default())
@@ -208,7 +210,7 @@ pub fn handle_deconstruct(biome: Option<BiomeArg>) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use std::{collections::HashMap, path::PathBuf};
 
     use anyhow::Result;
     use mockall::predicate::eq;
@@ -217,10 +219,15 @@ mod test {
     use crate::{
         handlers::helpers::mock_fs,
         shell::{editor::mock_edit, zsh::mock_ops},
-        types::{args::BiomeArg, terrain::test_data},
+        templates::get::mock_print,
+        types::{
+            args::{BiomeArg, GetOpts},
+            commands::{Command, Commands},
+            terrain::test_data::{self, test_data_terrain_full},
+        },
     };
 
-    use super::{handle_edit, handle_generate};
+    use super::{handle_edit, handle_generate, handle_get};
 
     #[test]
     #[serial]
@@ -337,5 +344,357 @@ mod test {
         handle_generate()?;
 
         Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_all_calls_print_all() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_all = mock_print::all_context();
+
+        let mut printable = test_data_terrain_full().get_printable_terrain(None)?;
+        printable.all = true;
+
+        mock_print_all
+            .expect()
+            .with(eq(printable))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: false,
+            env: None,
+            constructors: false,
+            destructors: false,
+        };
+        handle_get(true, None, opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_empty_opts_calls_print_all() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_all = mock_print::all_context();
+
+        let mut printable = test_data_terrain_full().get_printable_terrain(None)?;
+        printable.all = true;
+
+        mock_print_all
+            .expect()
+            .with(eq(printable))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: false,
+            env: None,
+            constructors: false,
+            destructors: false,
+        };
+
+        handle_get(false, None, opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_env_all_calls_print_env_with_all() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_env = mock_print::env_context();
+
+        let mut envs = HashMap::<String, String>::new();
+        envs.insert("EDITOR".to_string(), "nvim".to_string());
+        envs.insert("TEST".to_string(), "value".to_string());
+
+        mock_print_env
+            .expect()
+            .with(eq(Some(envs)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: true,
+            env: None,
+            constructors: false,
+            destructors: false,
+        };
+
+        handle_get(false, None, opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_env_calls_print_env() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_env = mock_print::env_context();
+
+        let mut envs = HashMap::<String, String>::new();
+        envs.insert("EDITOR".to_string(), "nvim".to_string());
+        envs.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
+
+        mock_print_env
+            .expect()
+            .with(eq(Some(envs)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: false,
+            env: Some(vec!["EDITOR".to_string(), "NONEXISTENT".to_string()]),
+            constructors: false,
+            destructors: false,
+        };
+
+        handle_get(false, None, opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_alias_all_calls_print_alias_with_all() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_aliases = mock_print::aliases_context();
+
+        let mut aliases = HashMap::<String, String>::new();
+        aliases.insert("tedit".to_string(), "terrainium edit".to_string());
+        aliases.insert(
+            "tenter".to_string(),
+            "terrainium enter --biome example_biome2".to_string(),
+        );
+
+        mock_print_aliases
+            .expect()
+            .with(eq(Some(aliases)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: true,
+            alias: None,
+            env_all: false,
+            env: None,
+            constructors: false,
+            destructors: false,
+        };
+
+        handle_get(
+            false,
+            Some(BiomeArg::Value("example_biome2".to_string())),
+            opts,
+        )?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_alias_calls_print_alias() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_aliases = mock_print::aliases_context();
+
+        let mut aliases = HashMap::<String, String>::new();
+        aliases.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
+        aliases.insert(
+            "tenter".to_string(),
+            "terrainium enter --biome example_biome2".to_string(),
+        );
+
+        mock_print_aliases
+            .expect()
+            .with(eq(Some(aliases)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: Some(vec!["tenter".to_string(), "NONEXISTENT".to_string()]),
+            env_all: false,
+            env: None,
+            constructors: false,
+            destructors: false,
+        };
+
+        handle_get(
+            false,
+            Some(BiomeArg::Value("example_biome2".to_string())),
+            opts,
+        )?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_constructors_calls_print_constructors() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_constructors = mock_print::constructors_context();
+
+        let constructors = Commands {
+            background: None,
+            foreground: Some(vec![Command {
+                exe: "echo".to_string(),
+                args: Some(vec!["entering terrain".to_string()]),
+            }]),
+        };
+
+        mock_print_constructors
+            .expect()
+            .with(eq(Some(constructors)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: false,
+            env: None,
+            constructors: true,
+            destructors: false,
+        };
+
+        handle_get(false, Some(BiomeArg::None), opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_destructors_calls_print_destructors() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_destructors = mock_print::destructors_context();
+
+        let destructors = Commands {
+            background: None,
+            foreground: Some(vec![Command {
+                exe: "echo".to_string(),
+                args: Some(vec!["exiting terrain".to_string()]),
+            }]),
+        };
+
+        mock_print_destructors
+            .expect()
+            .with(eq(Some(destructors)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: None,
+            env_all: false,
+            env: None,
+            constructors: false,
+            destructors: true,
+        };
+
+        handle_get(false, Some(BiomeArg::None), opts)?;
+        return Ok(());
+    }
+
+    #[test]
+    #[serial]
+    fn handle_get_mix() -> Result<()> {
+        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
+        mock_get_parsed_terrain
+            .expect()
+            .return_once(|| Ok(test_data::test_data_terrain_full()))
+            .times(1);
+
+        let mock_print_env = mock_print::env_context();
+        let mut envs = HashMap::<String, String>::new();
+        envs.insert("EDITOR".to_string(), "vim".to_string());
+        envs.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
+        mock_print_env
+            .expect()
+            .with(eq(Some(envs)))
+            .return_once(|_| Ok(()));
+
+        let mock_print_aliases = mock_print::aliases_context();
+        let mut aliases = HashMap::<String, String>::new();
+        aliases.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
+        aliases.insert(
+            "tenter".to_string(),
+            "terrainium enter".to_string(),
+        );
+        mock_print_aliases
+            .expect()
+            .with(eq(Some(aliases)))
+            .return_once(|_| Ok(()));
+
+        let mock_print_constructors = mock_print::constructors_context();
+        let constructors = Commands {
+            background: None,
+            foreground: Some(vec![Command {
+                exe: "echo".to_string(),
+                args: Some(vec!["entering terrain".to_string()]),
+            }]),
+        };
+        mock_print_constructors
+            .expect()
+            .with(eq(Some(constructors)))
+            .return_once(|_| Ok(()));
+
+        let mock_print_destructors = mock_print::destructors_context();
+        let destructors = Commands {
+            background: None,
+            foreground: Some(vec![Command {
+                exe: "echo".to_string(),
+                args: Some(vec!["exiting terrain".to_string()]),
+            }]),
+        };
+        mock_print_destructors
+            .expect()
+            .with(eq(Some(destructors)))
+            .return_once(|_| Ok(()));
+
+        let opts = GetOpts {
+            alias_all: false,
+            alias: Some(vec!["tenter".to_string(), "NONEXISTENT".to_string()]),
+            env_all: false,
+            env: Some(vec!["EDITOR".to_string(), "NONEXISTENT".to_string()]),
+            constructors: true,
+            destructors: true,
+        };
+
+        handle_get(false, Some(BiomeArg::None), opts)?;
+        return Ok(());
     }
 }
