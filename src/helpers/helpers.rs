@@ -17,7 +17,8 @@ pub mod fs {
 
     use anyhow::{anyhow, Context, Ok, Result};
 
-    use crate::{handlers::helpers::get_terrainium_config_path, types::terrain::Terrain};
+    use super::get_terrainium_config_path;
+    use crate::types::terrain::Terrain;
 
     pub fn create_config_dir() -> Result<PathBuf> {
         let config_path =

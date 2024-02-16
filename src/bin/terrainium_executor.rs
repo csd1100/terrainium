@@ -3,7 +3,7 @@ use std::{fs::File, path::PathBuf, process::Command};
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use terrainium::{
-    handlers::helpers::get_process_log_file_path,
+    helpers::helpers::get_process_log_file_path,
     types::executor::{Executable, ExecutorArgs, Status},
 };
 
@@ -44,8 +44,12 @@ fn main() -> Result<()> {
         cmd.args(&args);
     }
 
-    let child = cmd.spawn().unwrap_or_else(|_| panic!("command {:?}, to start with args {:?}",
-        &command.exe, &command.args));
+    let child = cmd.spawn().unwrap_or_else(|_| {
+        panic!(
+            "command {:?}, to start with args {:?}",
+            &command.exe, &command.args
+        )
+    });
 
     let status_file_name = format!("status-{}.json", command.uuid);
     let status_file_path = get_process_log_file_path(&cli.id, status_file_name.clone())?;

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
 
 use crate::types::{
-    args::{BiomeArg, Pair},
+    args::{BiomeArg, UpdateOpts},
     biomes::Biome,
     terrain::parse_terrain,
 };
@@ -11,16 +11,16 @@ use crate::types::{
 use crate::shell::zsh::ops;
 
 #[double]
-use super::helpers::fs;
+use crate::helpers::helpers::fs;
 
-pub fn handle_update(
-    set_biome: Option<String>,
-    new: Option<String>,
-    biome: Option<BiomeArg>,
-    env: Option<Vec<Pair>>,
-    alias: Option<Vec<Pair>>,
-    backup: bool,
-) -> Result<()> {
+pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
+    let UpdateOpts {
+        new,
+        biome,
+        env,
+        alias,
+    } = opts;
+
     let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
 
     if backup {
@@ -77,27 +77,25 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        handlers::helpers::mock_fs,
+        helpers::helpers::mock_fs,
         shell::zsh::mock_ops,
         types::{
-            args::{BiomeArg, Pair},
+            args::{BiomeArg, Pair, UpdateOpts},
             biomes::Biome,
-            terrain::test_data::test_data_terrain_full,
+            terrain::test_data,
         },
     };
 
-    use super::handle_update;
-
     #[test]
     #[serial]
-    fn handle_update_only_sets_default_biome() -> Result<()> {
+    fn handle_only_sets_default_biome() -> Result<()> {
         let mock_terrain_path = mock_fs::get_terrain_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
-        let mut expected = test_data_terrain_full();
+        let mut expected = test_data::terrain_full();
         expected.update_default_biome("example_biome2".to_string())?;
 
         let mock_write_terrain = mock_fs::write_terrain_context();
@@ -116,7 +114,7 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
-        let terrain = test_data_terrain_full();
+        let terrain = test_data::terrain_full();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
         generate_and_compile_context
@@ -156,12 +154,14 @@ mod test {
             value: "nano".to_string(),
         }];
 
-        handle_update(
+        super::handle(
             Some("example_biome2".to_string()),
-            None,
-            None,
-            Some(env_vars),
-            None,
+            UpdateOpts {
+                new: None,
+                biome: None,
+                env: Some(env_vars),
+                alias: None,
+            },
             false,
         )?;
 
@@ -170,7 +170,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn handle_update_updates_terrain_and_creates_backup() -> Result<()> {
+    fn handle_updates_terrain_and_creates_backup() -> Result<()> {
         let mock_terrain_path = mock_fs::get_terrain_toml_context();
         mock_terrain_path
             .expect()
@@ -196,7 +196,7 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        let mut expected = test_data_terrain_full();
+        let mut expected = test_data::terrain_full();
         expected.update(Some(BiomeArg::Default), Some(env_vars), Some(aliases))?;
 
         let mock_write_terrain = mock_fs::write_terrain_context();
@@ -215,7 +215,7 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
-        let terrain = test_data_terrain_full();
+        let terrain = test_data::terrain_full();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
         generate_and_compile_context
@@ -262,14 +262,23 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        handle_update(None, None, None, Some(env_vars), Some(aliases), true)?;
+        super::handle(
+            None,
+            UpdateOpts {
+                new: None,
+                biome: None,
+                env: Some(env_vars),
+                alias: Some(aliases),
+            },
+            true,
+        )?;
 
         return Ok(());
     }
 
     #[test]
     #[serial]
-    fn handle_update_updates_specified_biome() -> Result<()> {
+    fn handle_updates_specified_biome() -> Result<()> {
         let mock_terrain_path = mock_fs::get_terrain_toml_context();
         mock_terrain_path
             .expect()
@@ -285,7 +294,7 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        let mut expected = test_data_terrain_full();
+        let mut expected = test_data::terrain_full();
         expected.update(
             Some(BiomeArg::Value("example_biome2".to_string())),
             Some(env_vars),
@@ -308,7 +317,7 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
-        let terrain = test_data_terrain_full();
+        let terrain = test_data::terrain_full();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
         generate_and_compile_context
@@ -355,12 +364,14 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        handle_update(
+        super::handle(
             None,
-            None,
-            Some(BiomeArg::Value("example_biome2".to_string())),
-            Some(env_vars),
-            Some(aliases),
+            UpdateOpts {
+                new: None,
+                biome: Some(BiomeArg::Value("example_biome2".to_string())),
+                env: Some(env_vars),
+                alias: Some(aliases),
+            },
             false,
         )?;
 
@@ -368,7 +379,7 @@ mod test {
     }
     #[test]
     #[serial]
-    fn handle_update_creates_new_biome() -> Result<()> {
+    fn handle_creates_new_biome() -> Result<()> {
         let mock_terrain_path = mock_fs::get_terrain_toml_context();
         mock_terrain_path
             .expect()
@@ -385,7 +396,7 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        let mut expected = test_data_terrain_full();
+        let mut expected = test_data::terrain_full();
         expected.add_biome(&"new".to_string(), Biome::new())?;
         expected.update(
             Some(BiomeArg::Value("new".to_string())),
@@ -411,7 +422,7 @@ mod test {
 
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
 
-        let mut expected = test_data_terrain_full();
+        let mut expected = test_data::terrain_full();
         expected.add_biome(&"new".to_string(), Biome::new())?;
         expected.update(
             Some(BiomeArg::Value("new".to_string())),
@@ -473,12 +484,14 @@ mod test {
             value: "new_value".to_string(),
         }];
 
-        handle_update(
+        super::handle(
             None,
-            Some("new".to_string()),
-            None,
-            Some(env_vars),
-            Some(aliases),
+            UpdateOpts {
+                new: Some("new".to_string()),
+                biome: None,
+                env: Some(env_vars),
+                alias: Some(aliases),
+            },
             false,
         )?;
 

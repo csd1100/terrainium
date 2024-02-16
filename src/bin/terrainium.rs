@@ -1,15 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
 use terrainium::{
-    handlers::{
-        args::{
-            handle_construct, handle_deconstruct, handle_edit, handle_enter, handle_exit,
-            handle_generate, handle_get,
-        },
-        init::handle_init,
-        update::handle_update,
-    },
-    types::args::{TerrainiumArgs, UpdateOpts, Verbs},
+    handlers::{construct, deconstruct, edit, enter, exit, generate, get, init, update},
+    types::args::{TerrainiumArgs, Verbs},
 };
 
 fn main() -> Result<()> {
@@ -20,24 +13,18 @@ fn main() -> Result<()> {
             central,
             full,
             edit,
-        } => handle_init(central, full, edit),
-        Verbs::Edit => handle_edit(),
+        } => init::handle(central, full, edit),
+        Verbs::Edit => edit::handle(),
         Verbs::Update {
             set_biome,
-            opts:
-                UpdateOpts {
-                    new,
-                    biome,
-                    env,
-                    alias,
-                },
+            opts,
             backup,
-        } => handle_update(set_biome, new, biome, env, alias, backup),
-        Verbs::Get { biome, all, opts } => handle_get(all, biome, opts),
-        Verbs::Enter { biome } => handle_enter(biome),
-        Verbs::Exit { biome } => handle_exit(biome),
-        Verbs::Construct { biome } => handle_construct(biome, None),
-        Verbs::Deconstruct { biome } => handle_deconstruct(biome),
-        Verbs::Generate => handle_generate(),
+        } => update::handle(set_biome, opts, backup),
+        Verbs::Get { biome, all, opts } => get::handle(all, biome, opts),
+        Verbs::Enter { biome } => enter::handle(biome),
+        Verbs::Exit { biome } => exit::handle(biome),
+        Verbs::Construct { biome } => construct::handle(biome, None),
+        Verbs::Deconstruct { biome } => deconstruct::handle(biome),
+        Verbs::Generate => generate::handle(),
     }
 }

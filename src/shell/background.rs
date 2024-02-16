@@ -3,7 +3,7 @@ use std::{collections::HashMap, fs::File};
 use anyhow::{anyhow, Result};
 
 use crate::{
-    handlers::{
+    helpers::{
         constants::{TERRAINIUM_EXECUTOR, TERRAINIUM_SESSION_ID},
         helpers::get_process_log_file_path,
     },

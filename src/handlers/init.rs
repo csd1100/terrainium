@@ -11,9 +11,9 @@ use crate::shell::editor::edit;
 use crate::shell::zsh::ops;
 
 #[double]
-use crate::handlers::helpers::fs;
+use crate::helpers::helpers::fs;
 
-pub fn handle_init(central: bool, full: bool, edit: bool) -> Result<()> {
+pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
     if !fs::is_terrain_present().context("failed to validate if terrain already exists")? {
         fs::create_config_dir().context("unable to create config directory")?;
 
@@ -75,12 +75,10 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        handlers::helpers::mock_fs,
+        helpers::helpers::mock_fs,
         shell::{editor::mock_edit, zsh::mock_ops},
         types::{args::BiomeArg, terrain::Terrain},
     };
-
-    use super::handle_init;
 
     #[test]
     #[serial]
@@ -136,7 +134,7 @@ mod test {
             .return_once(|_, _, _| Ok(()))
             .times(1);
 
-        handle_init(false, false, false)?;
+        super::handle(false, false, false)?;
 
         Ok(())
     }
@@ -204,7 +202,7 @@ mod test {
             )
             .return_once(|_, _, _| Ok(()))
             .times(1);
-        handle_init(false, true, false)?;
+        super::handle(false, true, false)?;
 
         Ok(())
     }
@@ -263,7 +261,7 @@ mod test {
             .return_once(|_, _, _| Ok(()))
             .times(1);
 
-        handle_init(true, false, false)?;
+        super::handle(true, false, false)?;
 
         Ok(())
     }
@@ -331,7 +329,7 @@ mod test {
             .return_once(|_| Ok(()))
             .times(1);
 
-        handle_init(false, false, true)?;
+        super::handle(false, false, true)?;
 
         Ok(())
     }
@@ -342,7 +340,7 @@ mod test {
         let mock_is_present = mock_fs::is_terrain_present_context();
         mock_is_present.expect().return_once(|| Ok(true));
 
-        let err = handle_init(false, false, false).unwrap_err().to_string();
+        let err = super::handle(false, false, false).unwrap_err().to_string();
 
         assert_eq!(err, "terrain for this project is already present. edit existing terrain with `terrain edit` command");
 

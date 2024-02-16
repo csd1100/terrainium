@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::Path, process::Output};
 use mockall::automock;
 
 use crate::{
-    handlers::{
+    helpers::{
         constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
         helpers::fs,
     },
