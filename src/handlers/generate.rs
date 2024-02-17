@@ -4,7 +4,7 @@ use mockall_double::double;
 use crate::types::terrain::parse_terrain;
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::zsh::ops;
@@ -38,7 +38,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::zsh::mock_ops,
         types::{args::BiomeArg, terrain::test_data},
     };

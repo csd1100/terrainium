@@ -3,7 +3,7 @@ use std::{fs::File, path::PathBuf, process::Command};
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use terrainium::{
-    helpers::helpers::fs,
+    helpers::operations::fs,
     types::executor::{Executable, ExecutorArgs, Status},
 };
 

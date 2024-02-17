@@ -20,7 +20,7 @@ fn main() -> Result<()> {
             opts,
             backup,
         } => update::handle(set_biome, opts, backup),
-        Verbs::Get { biome, all, opts } => get::handle(all, biome, opts),
+        Verbs::Get { biome, opts } => get::handle(biome, opts),
         Verbs::Enter { biome } => enter::handle(biome),
         Verbs::Exit => exit::handle(),
         Verbs::Construct { biome } => construct::handle(biome),

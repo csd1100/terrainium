@@ -6,14 +6,14 @@ use mockall_double::double;
 use crate::types::args::{BiomeArg, GetOpts};
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[double]
 use crate::templates::get::print;
 
-pub fn handle(all: bool, biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
+pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
     let terrain = fs::get_parsed_terrain()?;
-    if opts.is_empty() || all {
+    if opts.is_empty() {
         let mut terrain = terrain
             .get_printable_terrain(biome)
             .context("failed to get printable terrain")?;
@@ -94,7 +94,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         templates::get::mock_print,
         types::{
             args::{BiomeArg, GetOpts},
@@ -130,39 +130,7 @@ mod test {
             constructors: false,
             destructors: false,
         };
-        super::handle(true, None, opts)?;
-        Ok(())
-    }
-
-    #[test]
-    #[serial]
-    fn get_empty_opts_calls_print_all() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
-            .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
-            .times(1);
-
-        let mock_print_all = mock_print::all_context();
-
-        let mut printable = test_data::terrain_full().get_printable_terrain(None)?;
-        printable.all = true;
-
-        mock_print_all
-            .expect()
-            .with(eq(printable))
-            .return_once(|_| Ok(()));
-
-        let opts = GetOpts {
-            alias_all: false,
-            alias: None,
-            env_all: false,
-            env: None,
-            constructors: false,
-            destructors: false,
-        };
-
-        super::handle(false, None, opts)?;
+        super::handle(None, opts)?;
         Ok(())
     }
 
@@ -195,7 +163,7 @@ mod test {
             destructors: false,
         };
 
-        super::handle(false, None, opts)?;
+        super::handle(None, opts)?;
         Ok(())
     }
 
@@ -228,7 +196,7 @@ mod test {
             destructors: false,
         };
 
-        super::handle(false, None, opts)?;
+        super::handle(None, opts)?;
         Ok(())
     }
 
@@ -264,11 +232,7 @@ mod test {
             destructors: false,
         };
 
-        super::handle(
-            false,
-            Some(BiomeArg::Value("example_biome2".to_string())),
-            opts,
-        )?;
+        super::handle(Some(BiomeArg::Value("example_biome2".to_string())), opts)?;
         Ok(())
     }
 
@@ -304,11 +268,7 @@ mod test {
             destructors: false,
         };
 
-        super::handle(
-            false,
-            Some(BiomeArg::Value("example_biome2".to_string())),
-            opts,
-        )?;
+        super::handle(Some(BiomeArg::Value("example_biome2".to_string())), opts)?;
         Ok(())
     }
 
@@ -348,7 +308,7 @@ mod test {
             destructors: false,
         };
 
-        super::handle(false, Some(BiomeArg::None), opts)?;
+        super::handle(Some(BiomeArg::None), opts)?;
         Ok(())
     }
 
@@ -388,7 +348,7 @@ mod test {
             destructors: true,
         };
 
-        super::handle(false, Some(BiomeArg::None), opts)?;
+        super::handle(Some(BiomeArg::None), opts)?;
         Ok(())
     }
 
@@ -460,7 +420,7 @@ mod test {
             destructors: true,
         };
 
-        super::handle(false, Some(BiomeArg::None), opts)?;
+        super::handle(Some(BiomeArg::None), opts)?;
         Ok(())
     }
 }

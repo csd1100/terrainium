@@ -8,13 +8,13 @@ use crate::{
     helpers::constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
     helpers::{
         constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_SELECTED_BIOME},
-        helpers::merge_hashmaps,
+        operations::merge_hashmaps,
     },
     types::args::BiomeArg,
 };
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::zsh::ops;
@@ -76,7 +76,7 @@ mod test {
     use crate::{
         helpers::{
             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV},
-            helpers::mock_fs,
+            operations::mock_fs,
         },
         shell::zsh::mock_ops,
         types::{args::BiomeArg, terrain::test_data},

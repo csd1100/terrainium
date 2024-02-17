@@ -11,7 +11,7 @@ use crate::shell::editor::edit;
 use crate::shell::zsh::ops;
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
     if !fs::is_terrain_present().context("failed to validate if terrain already exists")? {
@@ -75,7 +75,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::{editor::mock_edit, zsh::mock_ops},
         types::{args::BiomeArg, terrain::Terrain},
     };

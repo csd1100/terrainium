@@ -11,7 +11,7 @@ use crate::types::{
 use crate::shell::zsh::ops;
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
     let UpdateOpts {
@@ -77,7 +77,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::zsh::mock_ops,
         types::{
             args::{BiomeArg, Pair, UpdateOpts},

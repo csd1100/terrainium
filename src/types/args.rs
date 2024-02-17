@@ -35,9 +35,6 @@ pub enum Verbs {
     },
     Generate,
     Get {
-        #[arg(long)]
-        all: bool,
-
         #[arg(short, long)]
         biome: Option<BiomeArg>,
 
@@ -76,7 +73,6 @@ pub struct UpdateOpts {
 }
 
 #[derive(Args, Debug)]
-#[group(conflicts_with("all"))]
 pub struct GetOpts {
     #[arg(long = "alias", group = "aliases")]
     pub alias_all: bool,

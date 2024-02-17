@@ -18,7 +18,7 @@ use crate::types::executor::Executable;
 use crate::shell::execute::spawn;
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[cfg_attr(test, automock)]
 pub mod processes {
@@ -100,7 +100,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::{constants::TERRAINIUM_DEV, helpers::mock_fs},
+        helpers::{constants::TERRAINIUM_DEV, operations::mock_fs},
         shell::execute::mock_spawn,
         types::{
             commands::Command,

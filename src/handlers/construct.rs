@@ -21,8 +21,8 @@ pub mod run {
     use crate::shell::background::processes;
 
     #[double]
-    use crate::helpers::helpers::fs;
-    use crate::helpers::helpers::merge_hashmaps;
+    use crate::helpers::operations::fs;
+    use crate::helpers::operations::merge_hashmaps;
     use crate::types::biomes::Biome;
 
     #[allow(clippy::needless_lifetimes)]
@@ -62,7 +62,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::background::mock_processes,
         types::{commands::Command, terrain::test_data},
     };

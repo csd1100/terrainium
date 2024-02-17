@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::helpers::{find_in_hashmaps, get_merged_hashmaps};
+use crate::helpers::operations::{find_in_hashmaps, get_merged_hashmaps};
 
 use super::{
     commands::{get_merged_commands, Command, Commands},

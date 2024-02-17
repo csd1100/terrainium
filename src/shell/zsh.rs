@@ -8,7 +8,7 @@ use mockall::automock;
 use crate::types::biomes::{Biome, BiomeWithName};
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::execute::spawn;
@@ -34,7 +34,7 @@ pub mod ops {
     use crate::shell::execute::spawn;
 
     #[double]
-    use crate::helpers::helpers::fs;
+    use crate::helpers::operations::fs;
 
     pub fn generate_and_compile(
         central_store: &Path,
@@ -162,7 +162,7 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::execute::mock_spawn,
         types::{args::BiomeArg, terrain::test_data},
     };

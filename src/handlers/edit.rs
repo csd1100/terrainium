@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
 
 #[double]
-use crate::helpers::helpers::fs;
+use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::editor::edit;
@@ -44,7 +44,7 @@ mod test {
     use std::path::PathBuf;
 
     use crate::{
-        helpers::helpers::mock_fs,
+        helpers::operations::mock_fs,
         shell::{editor::mock_edit, zsh::mock_ops},
         types::{args::BiomeArg, terrain::test_data},
     };

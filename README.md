@@ -13,7 +13,7 @@ terrainium <verb> [OPTIONS]
   - `init [OPTIONS]` - Generates terrain.toml in current directory or
     central location.
 
-    - `-c|--central` - Stores terrain in `$XDG_CONFIG_HOME/terrainium/terrains/[...parent_]$(pwd).toml`.
+    - `-c|--central` - Stores terrain in `$XDG_CONFIG_HOME/terrainium/terrains/[...parent_]$(pwd)/terrain.toml`.
     - `-f|--full` - Generates terrain with all possible options.
     - `-e|--edit` - Generates terrain and opens file in `EDITOR`.
 
@@ -36,7 +36,6 @@ terrainium <verb> [OPTIONS]
 
   - `get [OPTIONS]` - Get the values that will be applied
 
-    - `-a|--all` - returns all values. It is selected by default.
     - `-b|--biome <name>` - name of the biome for which values to be retrieved.
       `default` to use default biome. `none` to remove biome get values from terrain.
     - `-a|--alias [name]` - returns value of aliases defined. If `name` is provided
