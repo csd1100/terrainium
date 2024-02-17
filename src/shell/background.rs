@@ -10,7 +10,7 @@ use crate::{
         constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR},
         helpers::get_process_log_file_path,
     },
-    shell::execute::Execute,
+    shell::execute::spawn,
     types::{commands::Command, executor::Executable},
 };
 
@@ -67,7 +67,7 @@ fn start_process_with_session_id(
         .create_new(true)
         .open(spawn_err_logs)?;
 
-    Execute::spawn_and_get_child(command, args, envs, Some(spawn_out), Some(spawn_err))?;
+    spawn::and_get_child(command, args, envs, Some(spawn_out), Some(spawn_err))?;
 
     Ok(())
 }

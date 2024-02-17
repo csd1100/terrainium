@@ -1,17 +1,20 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    process::{Child, Command, Output},
-};
+#[cfg(test)]
+use mockall::automock;
 
-use anyhow::{Context, Ok, Result};
+#[cfg_attr(test, automock)]
+pub mod spawn {
+    use std::{
+        collections::HashMap,
+        fs::File,
+        process::{Child, Command, Output},
+    };
 
-pub struct Execute;
+    use anyhow::{Context, Ok, Result};
 
-impl Execute {
-    pub fn spawn_and_wait(
+    #[allow(clippy::needless_lifetimes)]
+    pub fn and_wait<'a>(
         exe: &str,
-        args: Vec<&str>,
+        args: Vec<&'a str>,
         envs: Option<HashMap<String, String>>,
     ) -> Result<()> {
         let mut command = Command::new(exe);
@@ -27,9 +30,10 @@ impl Execute {
         Ok(())
     }
 
-    pub fn spawn_and_get_child(
+    #[allow(clippy::needless_lifetimes)]
+    pub fn and_get_child<'a>(
         exe: &str,
-        args: Vec<&str>,
+        args: Vec<&'a str>,
         envs: Option<HashMap<String, String>>,
         stdout: Option<File>,
         stderr: Option<File>,
@@ -52,9 +56,10 @@ impl Execute {
         Ok(child_process)
     }
 
-    pub fn run_and_get_output(
+    #[allow(clippy::needless_lifetimes)]
+    pub fn and_get_output<'a>(
         exe: &str,
-        args: Vec<&str>,
+        args: Vec<&'a str>,
         envs: Option<HashMap<String, String>>,
     ) -> Result<Output> {
         let mut command = Command::new(exe);

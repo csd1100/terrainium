@@ -20,7 +20,7 @@ function terrainium_shell_destructor() {
 
 function terrainium_enter() {
     "$TERRAINIUM_EXECUTABLE" construct -b {{ this.name }}
-    #terrainium_shell_constructor
+    terrainium_shell_constructor
 }
 
 function terrainium_exit() {

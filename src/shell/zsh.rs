@@ -1,14 +1,17 @@
 use anyhow::{Context, Result};
+use mockall_double::double;
 use std::{collections::HashMap, path::Path, process::Output};
 
 #[cfg(test)]
 use mockall::automock;
 
-use crate::{
-    helpers::helpers::fs,
-    shell::execute::Execute,
-    types::biomes::{Biome, BiomeWithName},
-};
+use crate::types::biomes::{Biome, BiomeWithName};
+
+#[double]
+use crate::helpers::helpers::fs;
+
+#[double]
+use crate::shell::execute::spawn;
 
 const MAIN_TEMPLATE: &str = include_str!("../../templates/zsh_final_script.hbs");
 const ALIAS_TEMPLATE: &str = include_str!("../../templates/zsh_aliases.hbs");
@@ -19,14 +22,19 @@ const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_destructors
 #[cfg_attr(test, automock)]
 pub mod ops {
     use anyhow::{Context, Result};
+    use mockall_double::double;
     use std::{collections::HashMap, path::Path};
 
     use crate::{
         helpers::constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
-        helpers::helpers::fs,
-        shell::execute::Execute,
         types::biomes::Biome,
     };
+
+    #[double]
+    use crate::shell::execute::spawn;
+
+    #[double]
+    use crate::helpers::helpers::fs;
 
     pub fn generate_and_compile(
         central_store: &Path,
@@ -50,7 +58,7 @@ pub mod ops {
         let mut zsh_args = vec!["-i"];
         zsh_args.append(&mut args);
 
-        Execute::spawn_and_wait("/bin/zsh", zsh_args, envs)?;
+        spawn::and_wait("/bin/zsh", zsh_args, envs)?;
         Ok(())
     }
 
@@ -59,6 +67,7 @@ pub mod ops {
             fs::get_central_store_path().context("unable to get terrains config path")?;
         init_file.push(format!("terrain-{}.zwc", &biome_name));
         let init_file = init_file.to_string_lossy().to_string();
+
         let mut envs = HashMap::<String, String>::new();
         envs.insert(TERRAINIUM_INIT_FILE.to_string(), init_file.clone());
         envs.insert(
@@ -81,7 +90,7 @@ fn run_via_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result
     let mut zsh_args = vec!["-c"];
     zsh_args.append(&mut args);
 
-    Execute::run_and_get_output("/bin/zsh", zsh_args, envs)
+    spawn::and_get_output("/bin/zsh", zsh_args, envs)
 }
 
 fn generate_zsh_script(
@@ -138,4 +147,216 @@ fn get_fpath() -> Result<String> {
     let envs: HashMap<String, String> = std::env::vars().collect();
     let output = run_via_zsh(vec![some], Some(envs))?;
     Ok(String::from_utf8(output.stdout)?)
+}
+
+#[cfg(test)]
+mod test {
+    use std::{
+        collections::HashMap,
+        os::unix::process::ExitStatusExt,
+        path::PathBuf,
+        process::{ExitStatus, Output},
+    };
+
+    use anyhow::Result;
+    use serial_test::serial;
+
+    use crate::{
+        helpers::helpers::mock_fs,
+        shell::execute::mock_spawn,
+        types::{args::BiomeArg, terrain::test_data},
+    };
+
+    #[test]
+    #[serial]
+    fn generates_and_compiles_all() -> Result<()> {
+        let terrain = test_data::terrain_full();
+
+        let mock_fs_write = mock_fs::write_file_context();
+        mock_fs_write
+            .expect()
+            .withf(|path, content| {
+                let path_eq =
+                    path == PathBuf::from("/tmp/test/terrain-example_biome.zsh").as_path();
+                let zsh_eq = content == DEFAULT_BIOME_ZSH;
+                path_eq && zsh_eq
+            })
+            .return_once(|_, _| Ok(()))
+            .times(1);
+
+        let exp_args =
+            vec!["-c",
+            "zcompile -URz /tmp/test/terrain-example_biome.zwc /tmp/test/terrain-example_biome.zsh",
+        ];
+        let mock_spawn_get_output = mock_spawn::and_get_output_context();
+        mock_spawn_get_output
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_args;
+                let envs_eq = envs.is_none();
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| {
+                Ok(Output {
+                    status: ExitStatus::from_raw(0),
+                    stdout: Vec::<u8>::new(),
+                    stderr: Vec::<u8>::new(),
+                })
+            });
+
+        super::ops::generate_and_compile(
+            &PathBuf::from("/tmp/test/"),
+            "example_biome".to_string(),
+            terrain.get(Some(BiomeArg::Default))?,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn spawn_with_args_and_envs() -> Result<()> {
+        let exp_args = vec!["-i"];
+        let mut exp_envs = HashMap::<String, String>::new();
+        exp_envs.insert("k".to_string(), "v".to_string());
+
+        let mock_spawn_and_wait = mock_spawn::and_wait_context();
+        mock_spawn_and_wait
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_args;
+                let envs_eq = *envs.as_ref().unwrap() == exp_envs;
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| Ok(()));
+
+        let mut envs = HashMap::<String, String>::new();
+        envs.insert("k".to_string(), "v".to_string());
+        super::ops::spawn(vec![], Some(envs))?;
+
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn get_zsh_envs() -> Result<()> {
+        let mock_fs_central = mock_fs::get_central_store_path_context();
+        mock_fs_central
+            .expect()
+            .with()
+            .return_once(|| Ok(PathBuf::from("/tmp/test")))
+            .times(1);
+
+        let exp_args = vec!["-c", "echo -n $FPATH"];
+        let mock_spawn_get_output = mock_spawn::and_get_output_context();
+        mock_spawn_get_output
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_args;
+                let envs_eq = *envs.as_ref().unwrap() == std::env::vars().collect();
+
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| {
+                Ok(Output {
+                    status: ExitStatus::from_raw(0),
+                    stdout: Vec::<u8>::from("/tmp/test/path"),
+                    stderr: Vec::<u8>::new(),
+                })
+            });
+
+        let mut expected = HashMap::<String, String>::new();
+        expected.insert(
+            "TERRAINIUM_INIT_FILE".to_string(),
+            "/tmp/test/terrain-example_biome.zwc".to_string(),
+        );
+        expected.insert(
+            "TERRAINIUM_INIT_ZSH".to_string(),
+            "terrain-example_biome.zsh".to_string(),
+        );
+        expected.insert(
+            "FPATH".to_string(),
+            "/tmp/test/terrain-example_biome.zwc:/tmp/test/path".to_string(),
+        );
+
+        let actual = super::ops::get_zsh_envs("example_biome".to_string())?;
+
+        assert_eq!(expected, actual);
+
+        Ok(())
+    }
+
+    const DEFAULT_BIOME_ZSH: &str = "# This file is auto-generated by terrainium
+# DO NOT EDIT MANUALLY USE `terrainium edit` COMMAND TO EDIT TOML
+
+function {
+    # USER DEFINED ALIASES: START
+    alias tedit=\"terrainium edit\"
+    alias tenter=\"terrainium enter --biome example_biome\"
+    # USER DEFINED ALIASES: END
+    # USER DEFINED ENVS: START
+    export EDITOR=\"nvim\"
+    export TEST=\"value\"
+    # USER DEFINED ENVS: END
+}
+
+function terrainium_shell_constructor() {
+    echo entering terrain
+    echo entering biome 'example_biome'
+}
+
+function terrainium_shell_destructor() {
+    echo exiting terrain
+    echo exiting biome 'example_biome'
+}
+
+function terrainium_enter() {
+    \"$TERRAINIUM_EXECUTABLE\" construct -b example_biome
+    terrainium_shell_constructor
+}
+
+function terrainium_exit() {
+    builtin exit
+}
+
+function terrainium_preexec_functions() {
+    tenter=\"(\\$TERRAINIUM_EXECUTABLE enter*|$TERRAINIUM_EXECUTABLE enter*|*terrainium enter*)\"
+    texit=\"(\\$TERRAINIUM_EXECUTABLE exit*|$TERRAINIUM_EXECUTABLE exit*|*terrainium exit*)\"
+    tconstruct=\"(\\$TERRAINIUM_EXECUTABLE construct*|$TERRAINIUM_EXECUTABLE construct*|*terrainium construct*)\"
+    tdeconstruct=\"(\\$TERRAINIUM_EXECUTABLE deconstruct*|$TERRAINIUM_EXECUTABLE deconstruct*|*terrainium deconstruct*)\"
+
+    if [ $TERRAINIUM_ENABLED = \"true\" ]; then
+        case \"$3\" in
+        $~texit)
+            terrainium_exit
+        ;;
+        $~tconstruct)
+            terrainium_shell_constructor
+        ;;
+        $~tdeconstruct)
+            terrainium_shell_destructor
+        ;;
+        esac
+    fi
+}
+
+function terrainium_chpwd_functions() {
+    if [ \"$TERRAINIUM_ENABLED\" != \"true\" ]; then
+        if [ \"$TERRAINIUM_AUTO_APPLY\" = 1 ]; then
+            \"$TERRAINIUM_EXECUTABLE\" enter
+        fi
+    fi
+}
+
+function terrainium_zshexit_functions() {
+    \"$TERRAINIUM_EXECUTABLE\" deconstruct -b example_biome
+    terrainium_shell_destructor
+}
+
+preexec_functions=(terrainium_preexec_functions $preexec_functions)
+chpwd_functions=(terrainium_chpwd_functions $chpwd_functions)
+zshexit_functions=(terrainium_zshexit_functions $zshexit_functions)
+";
 }

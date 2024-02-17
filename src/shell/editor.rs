@@ -7,7 +7,7 @@ pub mod edit {
 
     use anyhow::{Context, Result};
 
-    use crate::shell::execute::Execute;
+    use crate::shell::execute::spawn;
 
     pub fn file(file: &Path) -> Result<()> {
         let editor = std::env::var("EDITOR")
@@ -15,7 +15,7 @@ pub mod edit {
 
         let file = file.to_str().expect("filepath to be converted to string");
 
-        Execute::spawn_and_wait(&editor, vec![file], None)
+        spawn::and_wait(&editor, vec![file], None)
             .context(format!("failed to start editor {}", editor))?;
 
         Ok(())
