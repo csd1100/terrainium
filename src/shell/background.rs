@@ -6,7 +6,10 @@ use anyhow::Result;
 use mockall::automock;
 
 use crate::{
-    helpers::{constants::TERRAINIUM_EXECUTOR, helpers::get_process_log_file_path},
+    helpers::{
+        constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR},
+        helpers::get_process_log_file_path,
+    },
     shell::execute::Execute,
     types::{commands::Command, executor::Executable},
 };
@@ -42,7 +45,7 @@ fn start_process_with_session_id(
     let exec_arg = serde_json::to_string(&exec_arg_json)?;
     let mut command = TERRAINIUM_EXECUTOR;
 
-    let dev = std::env::var("DEV");
+    let dev = std::env::var(TERRAINIUM_DEV);
 
     if dev.is_ok() && dev.unwrap() == *"true" {
         command = "./target/debug/terrainium_executor";

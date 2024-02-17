@@ -53,8 +53,6 @@ terrainium <verb> [OPTIONS]
 
   - `exit` - exits terrain.
 
-    - `-b|--biome <name>` - name of the biome to be used. Values can be same as `enter`.
-
   - `construct [OPTIONS]` - runs commands specified in construct block.
 
     - `-b|--biome <name>` - name of the biome to be used. Values can be same as `enter`.
@@ -72,7 +70,7 @@ terrainium <verb> [OPTIONS]
 - For zsh add this to your `.zshrc`
 
 ```sh
-if [ "$TERRAINIUM_ENABLED" = "1" ];then
+if [ "$TERRAINIUM_ENABLED" = "true" ];then
     autoload -Uzw "${TERRAINIUM_INIT_FILE}"
     "${TERRAINIUM_INIT_ZSH}"
     builtin unfunction -- "${TERRAINIUM_INIT_ZSH}"

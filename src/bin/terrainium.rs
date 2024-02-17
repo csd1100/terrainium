@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         } => update::handle(set_biome, opts, backup),
         Verbs::Get { biome, all, opts } => get::handle(all, biome, opts),
         Verbs::Enter { biome } => enter::handle(biome),
-        Verbs::Exit { biome } => exit::handle(biome),
+        Verbs::Exit => exit::handle(),
         Verbs::Construct { biome } => construct::handle(biome),
         Verbs::Deconstruct { biome } => deconstruct::handle(biome),
         Verbs::Generate => generate::handle(),

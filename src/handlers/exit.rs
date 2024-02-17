@@ -1,11 +1,6 @@
-use anyhow::{Context, Result};
-use mockall_double::double;
+use anyhow::Result;
 
-use crate::types::args::BiomeArg;
-
-#[double]
-use super::deconstruct::run;
-
-pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
-    run::destructors(biome).context("unable to deconstruct biome")
+// just placeholder; all the work should be done by shell integration
+pub fn handle() -> Result<()> {
+    Ok(())
 }

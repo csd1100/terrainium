@@ -4,7 +4,11 @@ use std::{collections::HashMap, path::Path, process::Output};
 #[cfg(test)]
 use mockall::automock;
 
-use crate::{helpers::helpers::fs, shell::execute::Execute, types::biomes::Biome};
+use crate::{
+    helpers::helpers::fs,
+    shell::execute::Execute,
+    types::biomes::{Biome, BiomeWithName},
+};
 
 const MAIN_TEMPLATE: &str = include_str!("../../templates/zsh_final_script.hbs");
 const ALIAS_TEMPLATE: &str = include_str!("../../templates/zsh_aliases.hbs");
@@ -72,7 +76,7 @@ pub mod ops {
     }
 }
 
-pub fn run_via_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result<Output> {
+fn run_via_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result<Output> {
     let mut args = args;
     let mut zsh_args = vec!["-c"];
     zsh_args.append(&mut args);
@@ -94,7 +98,13 @@ fn generate_zsh_script(
     handlebar.register_template_string("destructors", DESTRUCTORS_TEMPLATE)?;
 
     let text = handlebar
-        .render("main", &environment)
+        .render(
+            "main",
+            &BiomeWithName {
+                name: biome_name.to_string(),
+                biome: environment,
+            },
+        )
         .context("failed to render script template")?;
 
     let mut path = central_store.to_path_buf();

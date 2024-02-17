@@ -48,10 +48,7 @@ pub enum Verbs {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
-    Exit {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
-    },
+    Exit,
     Construct {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
@@ -127,15 +124,9 @@ impl FromStr for BiomeArg {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "none" => {
-                Ok(BiomeArg::None)
-            }
-            "default" => {
-                Ok(BiomeArg::Default)
-            }
-            _ => {
-                Ok(BiomeArg::Value(s.to_string()))
-            }
+            "none" => Ok(BiomeArg::None),
+            "default" => Ok(BiomeArg::Default),
+            _ => Ok(BiomeArg::Value(s.to_string())),
         }
     }
 }
@@ -199,7 +190,7 @@ mod test {
         let expected = "expected a `key=value` pair";
         let val = "testval";
 
-        let actual   = Pair::from_str(val).unwrap_err().to_string();
+        let actual = Pair::from_str(val).unwrap_err().to_string();
         assert_eq!(expected, actual);
 
         Ok(())

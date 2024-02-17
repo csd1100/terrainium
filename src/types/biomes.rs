@@ -139,3 +139,9 @@ impl Default for Biome {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct BiomeWithName {
+    pub name: String,
+    pub biome: Biome,
+}
