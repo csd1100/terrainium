@@ -54,6 +54,8 @@ mod test {
         // cleanup
         if let Some(editor) = real_editor {
             std::env::set_var("EDITOR", editor)
+        } else {
+            std::env::remove_var("EDITOR")
         }
 
         Ok(())

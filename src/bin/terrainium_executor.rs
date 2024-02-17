@@ -3,25 +3,19 @@ use std::{fs::File, path::PathBuf, process::Command};
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use terrainium::{
-    helpers::helpers::get_process_log_file_path,
+    helpers::helpers::fs,
     types::executor::{Executable, ExecutorArgs, Status},
 };
 
-fn create_log_file(session_id: &String, filename: String) -> Result<(File, PathBuf)> {
-    let out_file = &get_process_log_file_path(session_id, filename.clone())
-        .context(format!("Unable to get log file path: {}", filename))?;
-    let out = File::options()
-        .append(true)
-        .create_new(true)
-        .open(out_file)
-        .context(format!("Unable to create and open file:{:?}", &out_file))?;
-    Ok((out, out_file.to_path_buf()))
+fn create_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {
+    fs::get_process_log_file(session_id, filename.clone())
+        .context(format!("Unable to get log file path: {}", filename))
 }
 
 fn create_log_files(
     session_id: &String,
     process_uuid: &String,
-) -> Result<((File, PathBuf), (File, PathBuf))> {
+) -> Result<((PathBuf, File), (PathBuf, File))> {
     let out_file = format!("std_out-{}.log", process_uuid);
     let err_file = format!("std_err-{}.log", process_uuid);
     Ok((
@@ -34,7 +28,7 @@ fn main() -> Result<()> {
     let cli = ExecutorArgs::parse();
     let string_arg = cli.exec;
     let command: Executable = serde_json::from_str(&string_arg)?;
-    let ((out, outfile_path), (err, errfile_path)) = create_log_files(&cli.id, &command.uuid)
+    let ((outfile_path, out), (errfile_path, err)) = create_log_files(&cli.id, &command.get_uuid())
         .context("Unable to get stdout and stderr files")?;
 
     let mut cmd = Command::new(&command.exe);
@@ -51,15 +45,14 @@ fn main() -> Result<()> {
         )
     });
 
-    let status_file_name = format!("status-{}.json", command.uuid);
-    let status_file_path = get_process_log_file_path(&cli.id, status_file_name.clone())?;
+    let status_file_name = format!("status-{}.json", command.get_uuid());
+    let (status_file_path, status_file) =
+        fs::get_process_log_file(&cli.id, status_file_name.clone())?;
     {
-        let (status_file, _) = create_log_file(&cli.id, status_file_name)?;
-
         serde_json::to_writer_pretty(
             &status_file,
             &Status {
-                uuid: command.uuid,
+                uuid: command.get_uuid(),
                 pid: child.id(),
                 cmd: command.exe,
                 args: command.args,

@@ -13,7 +13,10 @@ use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain};
 
 #[cfg_attr(test, automock)]
 pub mod fs {
-    use std::path::{Path, PathBuf};
+    use std::{
+        fs::File,
+        path::{Path, PathBuf},
+    };
 
     use anyhow::{anyhow, Context, Ok, Result};
 
@@ -93,6 +96,23 @@ pub mod fs {
     pub fn get_parsed_terrain() -> Result<Terrain> {
         let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
         super::parse_terrain(&toml_file)
+    }
+
+    pub fn get_process_log_file(
+        session_id: &String,
+        filename: String,
+    ) -> Result<(PathBuf, File)> {
+        let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
+        super::create_dir_if_not_exist(&tmp)?;
+
+        let mut out_path = tmp.clone();
+        out_path.push(filename);
+        let out = File::options()
+            .append(true)
+            .create_new(true)
+            .open(&out_path)?;
+
+        Ok((out_path, out))
     }
 }
 
@@ -187,14 +207,6 @@ pub fn find_in_hashmaps(
         return Err(anyhow!("Not Defined"));
     };
     Ok(return_map)
-}
-
-pub fn get_process_log_file_path(session_id: &String, filename: String) -> Result<PathBuf> {
-    let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
-    create_dir_if_not_exist(&tmp)?;
-    let mut out_path = tmp.clone();
-    out_path.push(filename);
-    Ok(out_path)
 }
 
 #[cfg(test)]

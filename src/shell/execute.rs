@@ -6,7 +6,7 @@ pub mod spawn {
     use std::{
         collections::HashMap,
         fs::File,
-        process::{Child, Command, Output},
+        process::{Command, Output},
     };
 
     use anyhow::{Context, Ok, Result};
@@ -31,13 +31,13 @@ pub mod spawn {
     }
 
     #[allow(clippy::needless_lifetimes)]
-    pub fn and_get_child<'a>(
+    pub fn with_stdout_stderr<'a>(
         exe: &str,
         args: Vec<&'a str>,
         envs: Option<HashMap<String, String>>,
         stdout: Option<File>,
         stderr: Option<File>,
-    ) -> Result<Child> {
+    ) -> Result<()> {
         let mut command = Command::new(exe);
         command.args(args.clone());
         if let Some(envs) = &envs {
@@ -49,11 +49,11 @@ pub mod spawn {
         if let Some(stderr) = stderr {
             command.stderr(stderr);
         }
-        let child_process = command.spawn().context(format!(
+        command.spawn().context(format!(
             "Unable to execute command: {} with args: {:?} and env vars: {:?}",
             exe, args, envs
         ))?;
-        Ok(child_process)
+        Ok(())
     }
 
     #[allow(clippy::needless_lifetimes)]
