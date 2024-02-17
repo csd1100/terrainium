@@ -16,6 +16,14 @@ args = ["entering terrain"]
 exe = "echo"
 args = ["exiting terrain"]
 
+[[terrain.constructors.background]]
+exe = "run"
+args = ["something"]
+
+[[terrain.destructors.background]]
+exe = "stop"
+args = ["something"]
+
 [biomes.example_biome.env]
 EDITOR = "nvim"
 

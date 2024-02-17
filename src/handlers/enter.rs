@@ -24,28 +24,23 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
     let selected = terrain
         .get(biome.clone())
         .context("unable to select biome")?;
-    let mut envs = selected.env;
 
-    if envs.is_none() {
-        envs = Some(HashMap::<String, String>::new());
+    let mut envs = HashMap::<String, String>::new();
+    envs.insert(TERRAINIUM_ENABLED.to_string(), "1".to_string());
+    envs.insert(
+        TERRAINIUM_SESSION_ID.to_string(),
+        Uuid::new_v4().to_string(),
+    );
+    let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
+        .context("unable to set zsh environment varibles")?;
+    let mut merged = merge_hashmaps(&envs.clone(), &zsh_env);
+
+    run::constructors(biome, Some(&merged)).context("unable to construct biome")?;
+
+    if let Some(biome_env) = selected.env {
+        merged = merge_hashmaps(&merged, &biome_env);
     }
-
-    if let Some(envs) = envs.as_mut() {
-        envs.insert(TERRAINIUM_ENABLED.to_string(), "1".to_string());
-        envs.insert(
-            TERRAINIUM_SESSION_ID.to_string(),
-            Uuid::new_v4().to_string(),
-        );
-    }
-
-    if let Some(envs) = envs {
-        let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
-            .context("unable to set zsh environment varibles")?;
-        let merged = merge_hashmaps(&envs.clone(), &zsh_env);
-
-        run::constructors(biome, Some(&merged)).context("unable to construct biome")?;
-        ops::spawn(vec!["-s"], Some(merged)).context("unable to start zsh")?;
-    }
+    ops::spawn(vec!["-s"], Some(merged)).context("unable to start zsh")?;
 
     Ok(())
 }
@@ -82,22 +77,22 @@ mod test {
             .times(1);
 
         let mut expected = HashMap::<String, String>::new();
-        expected.insert("EDITOR".to_string(), "nvim".to_string());
-        expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_constructors = mock_run::constructors_context();
         mock_constructors
             .expect()
             .withf(move |biome, envs| {
-                let biome_eq = *biome == None;
-                envs.unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let biome_eq = biome.is_none();
+                let env_len_eq = expected.len() == envs.unwrap().len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(exp_v, envs.unwrap().get(exp_k).expect("to be present"));
                     }
                 });
-                return biome_eq;
+                biome_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -106,6 +101,7 @@ mod test {
         expected.insert("EDITOR".to_string(), "nvim".to_string());
         expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_spawn = mock_ops::spawn_context();
@@ -113,18 +109,22 @@ mod test {
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                envs.as_ref().unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let env_len_eq = expected.len() == envs.as_ref().unwrap().len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(
+                            exp_v,
+                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
+                        );
                     }
                 });
-                return args_eq;
+                args_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
 
         super::handle(None)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -144,9 +144,8 @@ mod test {
             .times(1);
 
         let mut expected = HashMap::<String, String>::new();
-        expected.insert("EDITOR".to_string(), "nano".to_string());
-        expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_constructors = mock_run::constructors_context();
@@ -154,12 +153,13 @@ mod test {
             .expect()
             .withf(move |biome, envs| {
                 let biome_eq = *biome == Some(BiomeArg::Value("example_biome2".to_string()));
-                envs.unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let env_len_eq = envs.unwrap().len() == expected.len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(exp_v, envs.unwrap().get(exp_k).expect("to be present"));
                     }
                 });
-                return biome_eq;
+                biome_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -168,6 +168,7 @@ mod test {
         expected.insert("EDITOR".to_string(), "nano".to_string());
         expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_spawn = mock_ops::spawn_context();
@@ -175,18 +176,22 @@ mod test {
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                envs.as_ref().unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let env_len_eq = envs.as_ref().unwrap().len() == expected.len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(
+                            exp_v,
+                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
+                        );
                     }
                 });
-                return args_eq;
+                args_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
 
         super::handle(Some(BiomeArg::Value("example_biome2".to_string())))?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -206,23 +211,23 @@ mod test {
             .times(1);
 
         let mut expected = HashMap::<String, String>::new();
-        expected.insert("VAR1".to_string(), "val1".to_string());
-        expected.insert("VAR2".to_string(), "val2".to_string());
-        expected.insert("VAR3".to_string(), "val3".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_constructors = mock_run::constructors_context();
         mock_constructors
             .expect()
             .withf(move |biome, envs| {
-                let biome_eq = *biome == None;
-                envs.unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let biome_eq = biome.is_none();
+
+                let env_len_eq = envs.unwrap().len() == expected.len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(exp_v, envs.unwrap().get(exp_k).expect("to be present"));
                     }
                 });
-                return biome_eq;
+                biome_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -232,6 +237,7 @@ mod test {
         expected.insert("VAR2".to_string(), "val2".to_string());
         expected.insert("VAR3".to_string(), "val3".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
 
         // do not validate TERRAINIUM_SESSION_ID as it is uuid
         let mock_spawn = mock_ops::spawn_context();
@@ -239,17 +245,21 @@ mod test {
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                envs.as_ref().unwrap().iter().for_each(|(act_k, act_v)| {
-                    if act_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(act_v, expected.get(act_k).expect("to be present"));
+                let env_len_eq = envs.as_ref().unwrap().len() == expected.len();
+                expected.iter().for_each(|(exp_k, exp_v)| {
+                    if exp_k != "TERRAINIUM_SESSION_ID" {
+                        assert_eq!(
+                            exp_v,
+                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
+                        );
                     }
                 });
-                return args_eq;
+                args_eq && env_len_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
 
         super::handle(None)?;
-        return Ok(());
+        Ok(())
     }
 }

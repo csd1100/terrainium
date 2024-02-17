@@ -40,6 +40,7 @@ pub mod ops {
         Ok(())
     }
 
+    #[allow(clippy::needless_lifetimes)]
     pub fn spawn<'a>(args: Vec<&'a str>, envs: Option<HashMap<String, String>>) -> Result<()> {
         let mut args = args;
         let mut zsh_args = vec!["-i"];

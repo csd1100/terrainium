@@ -165,7 +165,7 @@ mod test {
             false,
         )?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod test {
             true,
         )?;
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -375,7 +375,7 @@ mod test {
             false,
         )?;
 
-        return Ok(());
+        Ok(())
     }
     #[test]
     #[serial]
@@ -495,6 +495,6 @@ mod test {
             false,
         )?;
 
-        return Ok(());
+        Ok(())
     }
 }

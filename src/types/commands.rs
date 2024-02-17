@@ -21,6 +21,14 @@ impl Commands {
             background,
         }
     }
+
+    pub fn has_background(&self) -> bool {
+        self.background.is_some()
+    }
+
+    pub fn has_foreground(&self) -> bool {
+        self.foreground.is_some()
+    }
 }
 
 fn get_merged_vecs(from: &Option<Vec<Command>>, to: &Option<Vec<Command>>) -> Option<Vec<Command>> {

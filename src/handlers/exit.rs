@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
+use mockall_double::double;
 
 use crate::types::args::BiomeArg;
 
-use super::deconstruct;
+#[double]
+use super::deconstruct::run;
 
 pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
-    deconstruct::handle(biome).context("unable to call destructors")
+    run::destructors(biome).context("unable to deconstruct biome")
 }

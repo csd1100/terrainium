@@ -1,18 +1,37 @@
 use std::{collections::HashMap, fs::File};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
+
+#[cfg(test)]
+use mockall::automock;
 
 use crate::{
-    helpers::{
-        constants::{TERRAINIUM_EXECUTOR, TERRAINIUM_SESSION_ID},
-        helpers::get_process_log_file_path,
-    },
-    types::{
-        commands::{Command, Commands},
-        executor::Executable,
-    },
+    helpers::{constants::TERRAINIUM_EXECUTOR, helpers::get_process_log_file_path},
     shell::execute::Execute,
+    types::{commands::Command, executor::Executable},
 };
+
+#[cfg_attr(test, automock)]
+pub mod processes {
+    use std::collections::HashMap;
+
+    use anyhow::{anyhow, Result};
+
+    use crate::{helpers::constants::TERRAINIUM_SESSION_ID, types::commands::Command};
+
+    pub fn start(background: Vec<Command>, envs: HashMap<String, String>) -> Result<()> {
+        if let Some(session_id) = envs.get(TERRAINIUM_SESSION_ID) {
+            super::iterate_over_commands_and_spawn(session_id, background, envs.clone())?;
+        } else if let Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
+            super::iterate_over_commands_and_spawn(&session_id, background, envs.clone())?;
+        } else {
+            return Err(anyhow!(
+                "Unable to get terrainium session id to start background processes"
+            ));
+        }
+        Ok(())
+    }
+}
 
 fn start_process_with_session_id(
     session_id: String,
@@ -58,11 +77,7 @@ fn iterate_over_commands_and_spawn(
     let errors: Result<Vec<_>> = background
         .into_iter()
         .map(|command| {
-            start_process_with_session_id(
-                session_id.to_string(),
-                command,
-                Some(envs.clone()),
-            )
+            start_process_with_session_id(session_id.to_string(), command, Some(envs.clone()))
         })
         .collect();
 
@@ -71,24 +86,4 @@ fn iterate_over_commands_and_spawn(
     } else {
         Ok(())
     }
-}
-
-pub fn start_background_processes(
-    commands: Option<Commands>,
-    envs: &HashMap<String, String>,
-) -> Result<()> {
-    if let Some(commands) = commands {
-        if let Some(background) = commands.background {
-            if let Some(session_id) = envs.get(TERRAINIUM_SESSION_ID) {
-                iterate_over_commands_and_spawn(session_id, background, envs.clone())?;
-            } else if let Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
-                iterate_over_commands_and_spawn(&session_id, background, envs.clone())?;
-            } else {
-                return Err(anyhow!(
-                    "Unable to get terrainium session id to start background processes"
-                ));
-            }
-        }
-    }
-    Ok(())
 }

@@ -131,7 +131,7 @@ mod test {
             destructors: false,
         };
         super::handle(true, None, opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -163,7 +163,7 @@ mod test {
         };
 
         super::handle(false, None, opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -196,7 +196,7 @@ mod test {
         };
 
         super::handle(false, None, opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -229,7 +229,7 @@ mod test {
         };
 
         super::handle(false, None, opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -269,7 +269,7 @@ mod test {
             Some(BiomeArg::Value("example_biome2".to_string())),
             opts,
         )?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -309,7 +309,7 @@ mod test {
             Some(BiomeArg::Value("example_biome2".to_string())),
             opts,
         )?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -324,7 +324,10 @@ mod test {
         let mock_print_constructors = mock_print::constructors_context();
 
         let constructors = Commands {
-            background: None,
+            background: Some(vec![Command {
+                exe: "run".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
             foreground: Some(vec![Command {
                 exe: "echo".to_string(),
                 args: Some(vec!["entering terrain".to_string()]),
@@ -346,7 +349,7 @@ mod test {
         };
 
         super::handle(false, Some(BiomeArg::None), opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -361,7 +364,10 @@ mod test {
         let mock_print_destructors = mock_print::destructors_context();
 
         let destructors = Commands {
-            background: None,
+            background: Some(vec![Command {
+                exe: "stop".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
             foreground: Some(vec![Command {
                 exe: "echo".to_string(),
                 args: Some(vec!["exiting terrain".to_string()]),
@@ -383,7 +389,7 @@ mod test {
         };
 
         super::handle(false, Some(BiomeArg::None), opts)?;
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -415,7 +421,10 @@ mod test {
 
         let mock_print_constructors = mock_print::constructors_context();
         let constructors = Commands {
-            background: None,
+            background: Some(vec![Command {
+                exe: "run".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
             foreground: Some(vec![Command {
                 exe: "echo".to_string(),
                 args: Some(vec!["entering terrain".to_string()]),
@@ -428,7 +437,10 @@ mod test {
 
         let mock_print_destructors = mock_print::destructors_context();
         let destructors = Commands {
-            background: None,
+            background: Some(vec![Command {
+                exe: "stop".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
             foreground: Some(vec![Command {
                 exe: "echo".to_string(),
                 args: Some(vec!["exiting terrain".to_string()]),
@@ -449,6 +461,6 @@ mod test {
         };
 
         super::handle(false, Some(BiomeArg::None), opts)?;
-        return Ok(());
+        Ok(())
     }
 }

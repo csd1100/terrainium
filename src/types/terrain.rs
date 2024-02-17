@@ -384,7 +384,10 @@ mod test {
                     args: Some(vec![String::from("entering biome 'example_biome'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "run".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         let destructor = Commands {
             foreground: Some(vec![
@@ -397,7 +400,10 @@ mod test {
                     args: Some(vec![String::from("exiting biome 'example_biome'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "stop".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         let expected = Biome {
             env: Some(env),
@@ -1180,7 +1186,10 @@ pub mod test_data {
                     args: Some(vec![String::from("entering biome 'example_biome'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "run".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         let destructor = Commands {
             foreground: Some(vec![
@@ -1193,7 +1202,10 @@ pub mod test_data {
                     args: Some(vec![String::from("exiting biome 'example_biome'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "stop".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         Biome {
             env: Some(env),
@@ -1224,7 +1236,10 @@ pub mod test_data {
                     args: Some(vec![String::from("entering biome 'example_biome2'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "run".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         let destructor = Commands {
             foreground: Some(vec![
@@ -1237,7 +1252,10 @@ pub mod test_data {
                     args: Some(vec![String::from("exiting biome 'example_biome2'")]),
                 },
             ]),
-            background: None,
+            background: Some(vec![Command {
+                exe: "stop".to_string(),
+                args: Some(vec!["something".to_string()]),
+            }]),
         };
         Biome {
             env: Some(env),
@@ -1259,14 +1277,20 @@ pub mod test_data {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("entering terrain")]),
             }]),
-            background: None,
+            background: Some(vec![Command {
+                exe: String::from("run"),
+                args: Some(vec![String::from("something")]),
+            }]),
         };
         let destructor = Commands {
             foreground: Some(vec![Command {
                 exe: String::from("echo"),
                 args: Some(vec![String::from("exiting terrain")]),
             }]),
-            background: None,
+            background: Some(vec![Command {
+                exe: String::from("stop"),
+                args: Some(vec![String::from("something")]),
+            }]),
         };
 
         let biome1_name = "example_biome";

@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         Verbs::Get { biome, all, opts } => get::handle(all, biome, opts),
         Verbs::Enter { biome } => enter::handle(biome),
         Verbs::Exit { biome } => exit::handle(biome),
-        Verbs::Construct { biome } => construct::handle(biome, None),
+        Verbs::Construct { biome } => construct::handle(biome),
         Verbs::Deconstruct { biome } => deconstruct::handle(biome),
         Verbs::Generate => generate::handle(),
     }
