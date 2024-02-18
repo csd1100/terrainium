@@ -23,7 +23,7 @@ use crate::helpers::operations::fs;
 use crate::shell::zsh::ops;
 
 pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
-    let toml_path = fs::get_terrain_toml()?;
+    let toml_path = fs::get_current_dir_toml()?;
     let terrain = fs::get_parsed_terrain()?;
     let name: String = fs::get_terrain_name();
 
@@ -95,7 +95,7 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_default() -> Result<()> {
-        let mock_toml_path = mock_fs::get_terrain_toml_context();
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));
@@ -176,7 +176,7 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_selected() -> Result<()> {
-        let mock_toml_path = mock_fs::get_terrain_toml_context();
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));
@@ -257,7 +257,7 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_main() -> Result<()> {
-        let mock_toml_path = mock_fs::get_terrain_toml_context();
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));

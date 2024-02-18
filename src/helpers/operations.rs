@@ -11,6 +11,8 @@ use mockall::automock;
 
 use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain};
 
+use super::constants::TERRAINIUM_TOML_PATH;
+
 #[cfg_attr(test, automock)]
 pub mod fs {
     use std::{
@@ -18,7 +20,7 @@ pub mod fs {
         path::{Path, PathBuf},
     };
 
-    use anyhow::{anyhow, Context, Ok, Result};
+    use anyhow::{Context, Ok, Result};
 
     use super::get_terrainium_config_path;
     use crate::types::terrain::Terrain;
@@ -77,19 +79,12 @@ pub mod fs {
         Ok(dirname)
     }
 
+    pub fn get_current_dir_toml() -> Result<PathBuf> {
+        super::get_terrain_toml_path(false)
+    }
+
     pub fn get_terrain_toml() -> Result<PathBuf> {
-        if super::is_local_terrain_present()
-            .context("failed to check whether local terrain.toml exists")?
-        {
-            get_local_terrain_path()
-        } else if super::is_central_terrain_present()
-            .context("failed to check whether central terrain.toml exists")?
-        {
-            return get_central_terrain_path();
-        } else {
-            let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
-            return Err(err);
-        }
+        super::get_terrain_toml_path(true)
     }
 
     pub fn write_file(path: &Path, contents: String) -> Result<()> {
@@ -105,7 +100,7 @@ pub mod fs {
     }
 
     pub fn get_parsed_terrain() -> Result<Terrain> {
-        let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+        let toml_file = get_current_dir_toml().context("unable to get terrain.toml path")?;
         super::parse_terrain(&toml_file)
     }
 
@@ -121,6 +116,25 @@ pub mod fs {
             .open(&out_path)?;
 
         Ok((out_path, out))
+    }
+}
+
+fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {
+    if active {
+        if let std::result::Result::Ok(toml_path) = std::env::var(TERRAINIUM_TOML_PATH) {
+            return Ok(PathBuf::from(toml_path));
+        }
+    }
+
+    if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
+        fs::get_local_terrain_path()
+    } else if is_central_terrain_present()
+        .context("failed to check whether central terrain.toml exists")?
+    {
+        return fs::get_central_terrain_path();
+    } else {
+        let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
+        return Err(err);
     }
 }
 
