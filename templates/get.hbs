@@ -1,0 +1,7 @@
+{{#if all}}
+Default Biome: {{#if default_biome}}{{ default_biome }}{{else}}none{{/if}}          Selected Biome: {{ selected_biome }}
+{{/if}}
+{{> env biome.env }}
+{{> aliases biome.alias }}
+{{> constructors biome.constructors }}
+{{> destructors biome.destructors }}

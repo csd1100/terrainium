@@ -1,16 +1,17 @@
-
-[env]
+[terrain.env]
 VAR1 = "val1"
 VAR2 = "val2"
 VAR3 = "val3"
 
-[aliases]
+[terrain.alias]
 alias1 = "run1"
 alias2 = "run2"
 alias3 = "run3"
 
-[construct]
-exec = ["run1", "something-new"]
+[[terrain.constructors.foreground]]
+exe = "run1"
+args = ["something-new"]
 
-[deconstruct]
-exec = ["stop1", "something-old"]
+[[terrain.destructors.foreground]]
+exe = "stop1"
+args = ["something-old"]

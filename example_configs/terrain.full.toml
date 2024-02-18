@@ -1,45 +1,53 @@
-default_biome = "one"
+default_biome = "example_biome"
 
-[env]
-VAR1 = "val1"
-VAR2 = "val2"
-VAR3 = "val3"
+[terrain.env]
+EDITOR = "vim"
+TEST = "value"
 
-[aliases]
-alias1 = "run1"
-alias2 = "run2"
-alias3 = "run3"
+[terrain.alias]
+tedit = "terrainium edit"
+tenter = "terrainium enter"
 
-[construct]
-exec = ["run1", "something-new"]
+[[terrain.constructors.foreground]]
+exe = "echo"
+args = ["entering terrain"]
 
-[deconstruct]
-exec = ["stop1", "something-old"]
+[[terrain.destructors.foreground]]
+exe = "echo"
+args = ["exiting terrain"]
 
-[[biomes]]
-name = "one"
-[biomes.env]
-VAR1 = "val11"
+[[terrain.constructors.background]]
+exe = "run"
+args = ["something"]
 
-[biomes.aliases]
-alias1 = "run11"
+[[terrain.destructors.background]]
+exe = "stop"
+args = ["something"]
 
-[biomes.construct]
-exec = ["run4"]
+[biomes.example_biome.env]
+EDITOR = "nvim"
 
-[biomes.deconstruct]
-exec = ["stop4"]
+[biomes.example_biome.alias]
+tenter = "terrainium enter --biome example_biome"
 
-[[biomes]]
-name = "two"
-[biomes.env]
-VAR1 = "val21"
+[[biomes.example_biome.constructors.foreground]]
+exe = "echo"
+args = ["entering biome 'example_biome'"]
 
-[biomes.aliases]
-alias1 = "run21"
+[[biomes.example_biome.destructors.foreground]]
+exe = "echo"
+args = ["exiting biome 'example_biome'"]
 
-[biomes.construct]
-exec = ["run8"]
+[biomes.example_biome2.env]
+EDITOR = "nano"
 
-[biomes.deconstruct]
-exec = ["stop8"]
+[biomes.example_biome2.alias]
+tenter = "terrainium enter --biome example_biome2"
+
+[[biomes.example_biome2.constructors.foreground]]
+exe = "echo"
+args = ["entering biome 'example_biome2'"]
+
+[[biomes.example_biome2.destructors.foreground]]
+exe = "echo"
+args = ["exiting biome 'example_biome2'"]

@@ -2,12 +2,22 @@
 name = "terrainium"
 version = "0.1.0"
 edition = "2021"
+default-run = "terrainium"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.79"
 clap = { version = "4.4.18", features = ["derive"] }
-serde = { version = "1.0.195", features = ["derive"] }
+handlebars = "5.1.0"
+home = "0.5.9"
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
 thiserror = "1.0.56"
-toml = "0.8.8"
+toml = "0.8.9"
+uuid = { version = "1.7.0", features = ["v4"] }
+mockall_double = "0.3.1"
+
+[dev-dependencies]
+mockall = { version = "0.12.1" }
+serial_test = "3.0.0"
