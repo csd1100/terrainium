@@ -21,7 +21,7 @@ pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Resu
         alias,
     } = opts;
 
-    let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
+    let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
 
     if backup {
         let bkp = toml_file.with_extension("toml.bkp");
@@ -89,7 +89,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_only_sets_default_biome() -> Result<()> {
-        let mock_terrain_path = mock_fs::get_terrain_toml_context();
+        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
@@ -171,7 +171,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_updates_terrain_and_creates_backup() -> Result<()> {
-        let mock_terrain_path = mock_fs::get_terrain_toml_context();
+        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
@@ -279,7 +279,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_updates_specified_biome() -> Result<()> {
-        let mock_terrain_path = mock_fs::get_terrain_toml_context();
+        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
@@ -380,7 +380,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_creates_new_biome() -> Result<()> {
-        let mock_terrain_path = mock_fs::get_terrain_toml_context();
+        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))

@@ -12,7 +12,7 @@ use crate::shell::zsh::ops;
 use crate::types::terrain::parse_terrain;
 
 pub fn handle() -> Result<()> {
-    let toml_file = fs::get_terrain_toml().context("unable to get terrain.toml path")?;
+    let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
 
     edit::file(&toml_file).context("failed to start editor")?;
 
@@ -52,7 +52,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_edit_opens_editor_and_compiles_scripts() -> Result<()> {
-        let mock_get_toml_path = mock_fs::get_terrain_toml_context();
+        let mock_get_toml_path = mock_fs::get_current_dir_toml_context();
         mock_get_toml_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))

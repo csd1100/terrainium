@@ -30,7 +30,8 @@ terrainium <verb> [OPTIONS]
 
     - `-s|--set-biome <name>` - set default `biome`. Cannot be used with other options.
     - `-b|--biome <biome_value>` - biome to update. Updates default if `default`
-      is used. Updates terrain if `none` is used. Cannot be used with `-n` flag.
+      is used. Updates terrain if `none` is used. Will update currently active terrain
+      if `current` is used. Cannot be used with `-n` flag.
     - `-n|--new <new>` creates a new biome with `name`. If `-e`|`-a` are passed with
       this, the environment variable and alias will be set for the new biome.
       Cannot be used with `-b` flag.
@@ -47,7 +48,8 @@ terrainium <verb> [OPTIONS]
     will return all values.
 
     - `-b|--biome <name>` - name of the biome for which values to be retrieved.
-      `default` to use default biome. `none` to remove biome get values from terrain.
+    Gets values of default biome if `default` is used. Gets main terrain if `none` is used.
+    Will get values of currently active terrain if `current` is used.
     - `--alias` - returns value of all aliases defined.
     - `--env` - returns value of all environment variables defined.
     - `-e [name]` - returns value of environment variable with `name`.
@@ -63,15 +65,9 @@ terrainium <verb> [OPTIONS]
 
   - `exit` - exits terrain.
 
-  - `construct [OPTIONS]` - runs commands specified in construct block.
+  - `construct` - runs commands specified in constructor block.
 
-    - `-b|--biome <name>` - name of the biome to be used. Values can be same as
-      `terrainium enter`.
-
-  - `deconstruct [OPTIONS]` - runs commands specified in destructor block.
-
-    - `-b|--biome <name>` - name of the biome to be used. Values can be same as
-      `terrainium enter`.
+  - `deconstruct` - runs commands specified in destructor block.
 
   - `-h|--help` - shows help.
 

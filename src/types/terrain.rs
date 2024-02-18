@@ -64,12 +64,16 @@ impl Terrain {
     pub fn get_selected_biome_name(&self, selected: &Option<BiomeArg>) -> Result<String> {
         if let Some(selected) = selected {
             match selected {
+                BiomeArg::None => Ok("none".to_string()),
+                BiomeArg::Default => self.get_default_biome_name(),
+                BiomeArg::Current(biome) => match self.get_biome(biome) {
+                    Ok(_) => Ok(biome.to_string()),
+                    Err(e) => Err(e),
+                },
                 BiomeArg::Value(biome) => match self.get_biome(biome) {
                     Ok(_) => Ok(biome.to_string()),
                     Err(e) => Err(e),
                 },
-                BiomeArg::None => Ok("none".to_string()),
-                BiomeArg::Default => self.get_default_biome_name(),
             }
         } else if self.default_biome.is_some() {
             self.get_default_biome_name()

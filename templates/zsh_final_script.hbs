@@ -11,20 +11,26 @@ function {
 }
 
 function terrainium_shell_constructor() {
+    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
 {{> constructors this.biome.constructors }}
+    fi
 }
 
 function terrainium_shell_destructor() {
+    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
 {{> destructors this.biome.destructors }}
+    fi
 }
 
 function terrainium_enter() {
-    "$TERRAINIUM_EXECUTABLE" construct -b {{ this.name }}
+    "$TERRAINIUM_EXECUTABLE" construct
     terrainium_shell_constructor
 }
 
 function terrainium_exit() {
-    builtin exit
+    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
+        builtin exit
+    fi
 }
 
 function terrainium_preexec_functions() {
@@ -57,7 +63,7 @@ function terrainium_chpwd_functions() {
 }
 
 function terrainium_zshexit_functions() {
-    "$TERRAINIUM_EXECUTABLE" deconstruct -b {{ this.name }}
+    "$TERRAINIUM_EXECUTABLE" deconstruct
     terrainium_shell_destructor
 }
 

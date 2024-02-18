@@ -11,6 +11,8 @@ use mockall::automock;
 
 use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain};
 
+use super::constants::TERRAINIUM_TOML_PATH;
+
 #[cfg_attr(test, automock)]
 pub mod fs {
     use std::{
@@ -18,10 +20,10 @@ pub mod fs {
         path::{Path, PathBuf},
     };
 
-    use anyhow::{anyhow, Context, Ok, Result};
+    use anyhow::{Context, Ok, Result};
 
     use super::get_terrainium_config_path;
-    use crate::types::terrain::Terrain;
+    use crate::types::{args::BiomeArg, terrain::Terrain};
 
     pub fn create_config_dir() -> Result<PathBuf> {
         let config_path =
@@ -32,6 +34,17 @@ pub mod fs {
         super::create_dir_if_not_exist(get_central_store_path()?.as_path())
             .context("unable to create terrains directory in terrainium config directory")?;
         Ok(config_path)
+    }
+
+    pub fn get_terrain_name() -> String {
+        let dir = std::env::current_dir();
+        let default_name = format!("some-terrain-{}", uuid::Uuid::new_v4());
+        match dir {
+            std::result::Result::Ok(cwd) => cwd
+                .file_name()
+                .map_or(default_name, |val| val.to_string_lossy().to_string()),
+            Err(_) => default_name,
+        }
     }
 
     pub fn get_central_terrain_path() -> Result<PathBuf> {
@@ -66,19 +79,22 @@ pub mod fs {
         Ok(dirname)
     }
 
-    pub fn get_terrain_toml() -> Result<PathBuf> {
-        if super::is_local_terrain_present()
-            .context("failed to check whether local terrain.toml exists")?
-        {
-            get_local_terrain_path()
-        } else if super::is_central_terrain_present()
-            .context("failed to check whether central terrain.toml exists")?
-        {
-            return get_central_terrain_path();
-        } else {
-            let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
-            return Err(err);
-        }
+    pub fn get_current_dir_toml() -> Result<PathBuf> {
+        super::get_terrain_toml_path(false)
+    }
+
+    fn get_active_terrain_toml() -> Result<PathBuf> {
+        super::get_terrain_toml_path(true)
+    }
+
+    pub fn get_terrain_toml_from_biome(biome: &Option<BiomeArg>) -> Result<PathBuf> {
+        biome.as_ref().map_or(get_current_dir_toml(), |arg| {
+            if let BiomeArg::Current(_) = arg {
+                get_active_terrain_toml()
+            } else {
+                get_current_dir_toml()
+            }
+        })
     }
 
     pub fn write_file(path: &Path, contents: String) -> Result<()> {
@@ -94,14 +110,11 @@ pub mod fs {
     }
 
     pub fn get_parsed_terrain() -> Result<Terrain> {
-        let toml_file = get_terrain_toml().context("unable to get terrain.toml path")?;
+        let toml_file = get_current_dir_toml().context("unable to get terrain.toml path")?;
         super::parse_terrain(&toml_file)
     }
 
-    pub fn get_process_log_file(
-        session_id: &String,
-        filename: String,
-    ) -> Result<(PathBuf, File)> {
+    pub fn get_process_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {
         let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
         super::create_dir_if_not_exist(&tmp)?;
 
@@ -113,6 +126,25 @@ pub mod fs {
             .open(&out_path)?;
 
         Ok((out_path, out))
+    }
+}
+
+fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {
+    if active {
+        if let std::result::Result::Ok(toml_path) = std::env::var(TERRAINIUM_TOML_PATH) {
+            return Ok(PathBuf::from(toml_path));
+        }
+    }
+
+    if is_local_terrain_present().context("failed to check whether local terrain.toml exists")? {
+        fs::get_local_terrain_path()
+    } else if is_central_terrain_present()
+        .context("failed to check whether central terrain.toml exists")?
+    {
+        return fs::get_central_terrain_path();
+    } else {
+        let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
+        return Err(err);
     }
 }
 

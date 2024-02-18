@@ -10,7 +10,7 @@ use crate::helpers::operations::fs;
 use crate::shell::zsh::ops;
 
 pub fn handle() -> Result<()> {
-    let terrain = parse_terrain(&fs::get_terrain_toml()?)?;
+    let terrain = parse_terrain(&fs::get_current_dir_toml()?)?;
     let central_store = fs::get_central_store_path()?;
     let result: Result<Vec<_>> = terrain
         .into_iter()
@@ -46,7 +46,7 @@ mod test {
     #[test]
     #[serial]
     fn handle_generate_generates_scripts() -> Result<()> {
-        let mock_get_toml_path = mock_fs::get_terrain_toml_context();
+        let mock_get_toml_path = mock_fs::get_current_dir_toml_context();
         mock_get_toml_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))

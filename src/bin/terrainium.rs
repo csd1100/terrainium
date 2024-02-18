@@ -21,10 +21,10 @@ fn main() -> Result<()> {
             backup,
         } => update::handle(set_biome, opts, backup),
         Verbs::Get { biome, opts } => get::handle(biome, opts),
+        Verbs::Generate => generate::handle(),
         Verbs::Enter { biome } => enter::handle(biome),
         Verbs::Exit => exit::handle(),
-        Verbs::Construct { biome } => construct::handle(biome),
-        Verbs::Deconstruct { biome } => deconstruct::handle(biome),
-        Verbs::Generate => generate::handle(),
+        Verbs::Construct => construct::handle(),
+        Verbs::Deconstruct => deconstruct::handle(),
     }
 }

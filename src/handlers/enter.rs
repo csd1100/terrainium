@@ -7,7 +7,10 @@ use uuid::Uuid;
 use crate::{
     helpers::constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
     helpers::{
-        constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_SELECTED_BIOME},
+        constants::{
+            TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV,
+            TERRAINIUM_SELECTED_BIOME, TERRAINIUM_TERRAIN_NAME, TERRAINIUM_TOML_PATH,
+        },
         operations::merge_hashmaps,
     },
     types::args::BiomeArg,
@@ -20,10 +23,17 @@ use crate::helpers::operations::fs;
 use crate::shell::zsh::ops;
 
 pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
+    let toml_path = fs::get_current_dir_toml()?;
     let terrain = fs::get_parsed_terrain()?;
+    let name: String = fs::get_terrain_name();
 
     let mut envs = HashMap::<String, String>::new();
     envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+    envs.insert(
+        TERRAINIUM_TOML_PATH.to_string(),
+        toml_path.to_string_lossy().to_string(),
+    );
+    envs.insert(TERRAINIUM_TERRAIN_NAME.to_string(), name);
     envs.insert(
         TERRAINIUM_SESSION_ID.to_string(),
         Uuid::new_v4().to_string(),
@@ -35,17 +45,28 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
     let dev = std::env::var(TERRAINIUM_DEV);
     if dev.is_ok() && dev.unwrap() == *"true" {
-        let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-        pwd.push("target/debug/terrainium");
+        let pwd = std::env::current_dir().context("unable to get current_dir")?;
+        let mut terrainium = pwd.clone();
+        terrainium.push("target/debug/terrainium");
+        let mut terrainium_executor = pwd.clone();
+        terrainium_executor.push("target/debug/terrainium_executor");
 
         envs.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
-            pwd.to_string_lossy().to_string(),
+            terrainium.to_string_lossy().to_string(),
+        );
+        envs.insert(
+            TERRAINIUM_EXECUTOR_ENV.to_string(),
+            terrainium_executor.to_string_lossy().to_string(),
         );
     } else {
         envs.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
             "terrainium".to_string(),
+        );
+        envs.insert(
+            TERRAINIUM_EXECUTOR_ENV.to_string(),
+            "terrainium_executor".to_string(),
         );
     }
 
@@ -67,7 +88,7 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, path::PathBuf};
 
     use anyhow::{Context, Result};
     use mockall::predicate::eq;
@@ -75,7 +96,7 @@ mod test {
 
     use crate::{
         helpers::{
-            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV},
+            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV},
             operations::mock_fs,
         },
         shell::zsh::mock_ops,
@@ -85,6 +106,14 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_default() -> Result<()> {
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
+        mock_toml_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));
+
+        let mock_name = mock_fs::get_terrain_name_context();
+        mock_name.expect().return_const("test-terrain".to_string());
+
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
             .expect()
@@ -103,23 +132,42 @@ mod test {
         expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
         expected.insert(
+            "TERRAINIUM_TERRAIN_NAME".to_string(),
+            "test-terrain".to_string(),
+        );
+        expected.insert(
+            "TERRAINIUM_TOML_PATH".to_string(),
+            "./example_configs/terrain.full.toml".to_string(),
+        );
+        expected.insert(
             "TERRAINIUM_SELECTED_BIOME".to_string(),
             "example_biome".to_string(),
         );
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 
@@ -150,6 +198,14 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_selected() -> Result<()> {
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
+        mock_toml_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));
+
+        let mock_name = mock_fs::get_terrain_name_context();
+        mock_name.expect().return_const("test-terrain".to_string());
+
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
             .expect()
@@ -168,23 +224,42 @@ mod test {
         expected.insert("TEST".to_string(), "value".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
         expected.insert(
+            "TERRAINIUM_TERRAIN_NAME".to_string(),
+            "test-terrain".to_string(),
+        );
+        expected.insert(
+            "TERRAINIUM_TOML_PATH".to_string(),
+            "./example_configs/terrain.full.toml".to_string(),
+        );
+        expected.insert(
             "TERRAINIUM_SELECTED_BIOME".to_string(),
             "example_biome2".to_string(),
         );
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 
@@ -215,6 +290,14 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_main() -> Result<()> {
+        let mock_toml_path = mock_fs::get_current_dir_toml_context();
+        mock_toml_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")));
+
+        let mock_name = mock_fs::get_terrain_name_context();
+        mock_name.expect().return_const("test-terrain".to_string());
+
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
             .expect()
@@ -233,21 +316,40 @@ mod test {
         expected.insert("VAR2".to_string(), "val2".to_string());
         expected.insert("VAR3".to_string(), "val3".to_string());
         expected.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+        expected.insert(
+            "TERRAINIUM_TERRAIN_NAME".to_string(),
+            "test-terrain".to_string(),
+        );
+        expected.insert(
+            "TERRAINIUM_TOML_PATH".to_string(),
+            "./example_configs/terrain.full.toml".to_string(),
+        );
         expected.insert("TERRAINIUM_SELECTED_BIOME".to_string(), "none".to_string());
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 
