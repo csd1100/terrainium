@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use mockall_double::double;
 
 #[double]
@@ -6,9 +6,6 @@ use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::editor::edit;
-
-#[double]
-use crate::shell::zsh::ops;
 use crate::types::terrain::parse_terrain;
 
 pub fn handle() -> Result<()> {
@@ -16,21 +13,7 @@ pub fn handle() -> Result<()> {
 
     edit::file(&toml_file).context("failed to start editor")?;
 
-    let terrain = parse_terrain(&toml_file)?;
-    let central_store = fs::get_central_store_path()?;
-    let result: Result<Vec<_>> = terrain
-        .into_iter()
-        .map(|(biome_name, environment)| {
-            ops::generate_and_compile(&central_store, biome_name, environment)
-        })
-        .collect();
-
-    if result.is_err() {
-        return Err(anyhow!(format!(
-            "Error while generating and compiling scripts, error: {}",
-            result.unwrap_err()
-        )));
-    }
+    super::generate::generate_and_compile(parse_terrain(&toml_file)?)?;
 
     Ok(())
 }

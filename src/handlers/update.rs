@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use mockall_double::double;
 
 use crate::types::{
@@ -8,10 +8,9 @@ use crate::types::{
 };
 
 #[double]
-use crate::shell::zsh::ops;
-
-#[double]
 use crate::helpers::operations::fs;
+
+use super::generate::generate_and_compile;
 
 pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
     let UpdateOpts {
@@ -50,20 +49,7 @@ pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Resu
     fs::write_terrain(toml_file.as_path(), &terrain)
         .context("failed to write updated terrain.toml")?;
 
-    let central_store = fs::get_central_store_path()?;
-    let result: Result<Vec<_>> = terrain
-        .into_iter()
-        .map(|(biome_name, environment)| {
-            ops::generate_and_compile(&central_store, biome_name, environment)
-        })
-        .collect();
-
-    if result.is_err() {
-        return Err(anyhow!(format!(
-            "Error while generating and compiling scripts, error: {}",
-            result.unwrap_err()
-        )));
-    }
+    generate_and_compile(terrain)?;
 
     Ok(())
 }

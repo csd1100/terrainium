@@ -8,9 +8,6 @@ use crate::types::terrain::Terrain;
 use crate::shell::editor::edit;
 
 #[double]
-use crate::shell::zsh::ops;
-
-#[double]
 use crate::helpers::operations::fs;
 
 pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
@@ -37,21 +34,7 @@ pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
             terrain_toml_path.to_string_lossy()
         );
 
-        let central_store =
-            fs::get_central_store_path().context("unable to get central store path")?;
-        let result: Result<Vec<_>> = terrain
-            .into_iter()
-            .map(|(biome_name, environment)| {
-                ops::generate_and_compile(&central_store, biome_name, environment)
-            })
-            .collect();
-
-        if result.is_err() {
-            return Err(anyhow!(format!(
-                "Error while generating and compiling scripts, error: {}",
-                result.unwrap_err()
-            )));
-        }
+        super::generate::generate_and_compile(terrain)?;
 
         if edit {
             println!("editing...");
