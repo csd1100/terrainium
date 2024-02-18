@@ -135,13 +135,9 @@ Aliases:
     tenter=\"terrainium enter\"
 Constructors:
     foreground:
-        echo entering terrain
-        echo entering biome 'example_biome'
-Destructors:
+        echo entering terrain \n        echo entering biome 'example_biome' \nDestructors:
     foreground:
-        echo exiting terrain
-        echo exiting biome 'example_biome'
-"
+        echo exiting terrain \n        echo exiting biome 'example_biome' \n"
         .to_string();
 
         let mut terrain = terrain.get_printable_terrain(Some(biome_arg))?;
