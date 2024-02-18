@@ -23,7 +23,7 @@ pub mod fs {
     use anyhow::{Context, Ok, Result};
 
     use super::get_terrainium_config_path;
-    use crate::types::terrain::Terrain;
+    use crate::types::{args::BiomeArg, terrain::Terrain};
 
     pub fn create_config_dir() -> Result<PathBuf> {
         let config_path =
@@ -83,8 +83,18 @@ pub mod fs {
         super::get_terrain_toml_path(false)
     }
 
-    pub fn get_terrain_toml() -> Result<PathBuf> {
+    fn get_active_terrain_toml() -> Result<PathBuf> {
         super::get_terrain_toml_path(true)
+    }
+
+    pub fn get_terrain_toml_from_biome(biome: &Option<BiomeArg>) -> Result<PathBuf> {
+        biome.as_ref().map_or(get_current_dir_toml(), |arg| {
+            if let BiomeArg::Current(_) = arg {
+                get_active_terrain_toml()
+            } else {
+                get_current_dir_toml()
+            }
+        })
     }
 
     pub fn write_file(path: &Path, contents: String) -> Result<()> {

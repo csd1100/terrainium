@@ -10,9 +10,12 @@ use crate::helpers::operations::fs;
 
 #[double]
 use crate::templates::get::print;
+use crate::types::terrain;
 
 pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
-    let terrain = fs::get_parsed_terrain()?;
+    let terrain_toml_path = fs::get_terrain_toml_from_biome(&biome)?;
+    let terrain = terrain::parse_terrain(&terrain_toml_path)?;
+
     if opts.is_empty() {
         let mut terrain = terrain
             .get_printable_terrain(biome)
@@ -87,7 +90,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, path::PathBuf};
 
     use anyhow::Result;
     use mockall::predicate::eq;
@@ -106,10 +109,11 @@ mod test {
     #[test]
     #[serial]
     fn get_all_calls_print_all() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(None))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_all = mock_print::all_context();
@@ -137,10 +141,11 @@ mod test {
     #[test]
     #[serial]
     fn get_env_all_calls_print_env_with_all() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(None))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_env = mock_print::env_context();
@@ -170,10 +175,11 @@ mod test {
     #[test]
     #[serial]
     fn get_env_calls_print_env() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(None))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_env = mock_print::env_context();
@@ -203,10 +209,11 @@ mod test {
     #[test]
     #[serial]
     fn get_alias_all_calls_print_alias_with_all() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::Value("example_biome2".to_string()))))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_aliases = mock_print::aliases_context();
@@ -239,10 +246,11 @@ mod test {
     #[test]
     #[serial]
     fn get_alias_calls_print_alias() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::Value("example_biome2".to_string()))))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_aliases = mock_print::aliases_context();
@@ -275,10 +283,11 @@ mod test {
     #[test]
     #[serial]
     fn get_constructors_calls_print_constructors() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::None)))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_constructors = mock_print::constructors_context();
@@ -315,10 +324,11 @@ mod test {
     #[test]
     #[serial]
     fn get_destructors_calls_print_destructors() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::None)))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_destructors = mock_print::destructors_context();
@@ -355,10 +365,11 @@ mod test {
     #[test]
     #[serial]
     fn get_mix() -> Result<()> {
-        let mock_get_parsed_terrain = mock_fs::get_parsed_terrain_context();
-        mock_get_parsed_terrain
+        let mock_get_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_get_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::None)))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let mock_print_env = mock_print::env_context();

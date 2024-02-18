@@ -3,6 +3,8 @@ use std::str::FromStr;
 use anyhow::{anyhow, Ok};
 use clap::{Args, Parser, Subcommand};
 
+use crate::helpers::constants::TERRAINIUM_SELECTED_BIOME;
+
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct TerrainiumArgs {
@@ -113,6 +115,7 @@ pub enum BiomeArg {
     Default,
     None,
     Value(String),
+    Current(String),
 }
 
 impl FromStr for BiomeArg {
@@ -122,6 +125,13 @@ impl FromStr for BiomeArg {
         match s {
             "none" => Ok(BiomeArg::None),
             "default" => Ok(BiomeArg::Default),
+            "current" => {
+                if let std::result::Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
+                    Ok(BiomeArg::Current(current))
+                } else {
+                    Err(anyhow!("no active biome found"))
+                }
+            }
             _ => Ok(BiomeArg::Value(s.to_string())),
         }
     }
