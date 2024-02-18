@@ -418,6 +418,9 @@ mod test {
     #[test]
     #[serial]
     fn returns_err_if_no_session_id() -> Result<()> {
+        let real_session_id = std::env::var("TERRAINIUM_SESSION_ID").ok();
+        std::env::remove_var("TERRAINIUM_SESSION_ID");
+
         let commands = vec![
             Command {
                 exe: "command1".to_string(),
@@ -440,6 +443,12 @@ mod test {
             actual
         );
 
+        // cleanup
+        if let Some(session_id) = real_session_id {
+            std::env::set_var("TERRAINIUM_SESSION_ID", session_id)
+        } else {
+            std::env::remove_var("TERRAINIUM_SESSION_ID")
+        }
         Ok(())
     }
 
