@@ -1,12 +1,17 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[cfg(test)]
 use mockall::automock;
 
-use crate::types::args::BiomeArg;
+use crate::{helpers::constants::TERRAINIUM_SELECTED_BIOME, types::args::BiomeArg};
 
-pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
-    run::constructors(biome, None)
+pub fn handle() -> Result<()> {
+    let biome = if let std::result::Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
+        BiomeArg::Current(current)
+    } else {
+        return Err(anyhow!("no active biome found"));
+    };
+    run::constructors(Some(biome), None)
 }
 
 #[cfg_attr(test, automock)]
@@ -15,22 +20,23 @@ pub mod run {
     use mockall_double::double;
     use std::collections::HashMap;
 
+    use crate::helpers::operations::merge_hashmaps;
     use crate::types::args::BiomeArg;
+    use crate::types::terrain;
 
     #[double]
     use crate::shell::background::processes;
 
     #[double]
     use crate::helpers::operations::fs;
-    use crate::helpers::operations::merge_hashmaps;
-    use crate::types::biomes::Biome;
 
     #[allow(clippy::needless_lifetimes)]
     pub fn constructors<'a>(
         biome: Option<BiomeArg>,
         envs: Option<&'a HashMap<String, String>>,
     ) -> Result<()> {
-        let terrain: Biome = fs::get_parsed_terrain()?
+        let terrain_toml = fs::get_terrain_toml_from_biome(&biome)?;
+        let terrain = terrain::parse_terrain(&terrain_toml)?
             .get(biome)
             .context("unable to select a biome to call constructors")?;
 
@@ -56,24 +62,29 @@ pub mod run {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, path::PathBuf};
 
     use anyhow::{anyhow, Result};
+    use mockall::predicate::eq;
     use serial_test::serial;
 
     use crate::{
         helpers::operations::mock_fs,
         shell::background::mock_processes,
-        types::{commands::Command, terrain::test_data},
+        types::{args::BiomeArg, commands::Command},
     };
 
     #[test]
     #[serial]
     fn construct_start_background_processes() -> Result<()> {
-        let mock_terrain = mock_fs::get_parsed_terrain_context();
-        mock_terrain
+        let real_selected_biome = std::env::var("TERRAINIUM_SELECTED_BIOME").ok();
+        std::env::set_var("TERRAINIUM_SELECTED_BIOME", "example_biome");
+
+        let mock_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::Current("example_biome".to_string()))))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let expected_commands: Vec<Command> = vec![Command {
@@ -95,18 +106,28 @@ mod test {
             })
             .return_once(|_, _| Ok(()));
 
-        super::handle(None)?;
+        super::handle()?;
 
+        // cleanup
+        if let Some(selected_biome) = real_selected_biome {
+            std::env::set_var("TERRAINIUM_SELECTED_BIOME", selected_biome)
+        } else {
+            std::env::remove_var("TERRAINIUM_SELECTED_BIOME")
+        }
         Ok(())
     }
 
     #[test]
     #[serial]
     fn returns_err_if_background_process_spawn_has_error() -> Result<()> {
-        let mock_terrain = mock_fs::get_parsed_terrain_context();
-        mock_terrain
+        let real_selected_biome = std::env::var("TERRAINIUM_SELECTED_BIOME").ok();
+        std::env::set_var("TERRAINIUM_SELECTED_BIOME", "example_biome");
+
+        let mock_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
+        mock_terrain_toml
             .expect()
-            .return_once(|| Ok(test_data::terrain_full()))
+            .with(eq(Some(BiomeArg::Current("example_biome".to_string()))))
+            .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
         let expected_commands: Vec<Command> = vec![Command {
@@ -128,9 +149,16 @@ mod test {
             })
             .return_once(|_, _| Err(anyhow!("unable to run something")));
 
-        let error = super::handle(None).unwrap_err().to_string();
+        let error = super::handle().unwrap_err().to_string();
 
         assert_eq!("error while starting background processes", error);
+
+        // cleanup
+        if let Some(selected_biome) = real_selected_biome {
+            std::env::set_var("TERRAINIUM_SELECTED_BIOME", selected_biome)
+        } else {
+            std::env::remove_var("TERRAINIUM_SELECTED_BIOME")
+        }
 
         Ok(())
     }

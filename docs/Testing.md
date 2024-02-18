@@ -42,7 +42,6 @@
 - `get`
 
   - without any option returns all
-  - `--all` returns everything
   - `-b` returns all for specific biome and also of main terrain if not defined
   - `--alias` returns all aliases
   - `-a` returns alias passed in as option to arg
@@ -55,6 +54,7 @@
 
 - `enter`
 
+  - shell has started with options
   - by default enters default biome if defined otherwise main terrain
   - `-b` if specified enters specific biome and if terrainium is already enabled
     and `-b` passed can be used to change biome
@@ -64,8 +64,6 @@
 - `exit`
 
   - by default exits entirely
-  - `-b` if specified exits the biome but not terrain and destructors for only
-    biome called
   - background and foreground destructors called
   - background destructors logged at `/tmp/terrainium-<session-id>` dir
 

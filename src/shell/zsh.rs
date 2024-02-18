@@ -303,22 +303,28 @@ function {
 }
 
 function terrainium_shell_constructor() {
-    echo entering terrain
-    echo entering biome 'example_biome'
+    if [ \"$TERRAINIUM_ENABLED\" = \"true\" ]; then
+        echo entering terrain
+        echo entering biome 'example_biome'
+    fi
 }
 
 function terrainium_shell_destructor() {
-    echo exiting terrain
-    echo exiting biome 'example_biome'
+    if [ \"$TERRAINIUM_ENABLED\" = \"true\" ]; then
+        echo exiting terrain
+        echo exiting biome 'example_biome'
+    fi
 }
 
 function terrainium_enter() {
-    \"$TERRAINIUM_EXECUTABLE\" construct -b example_biome
+    \"$TERRAINIUM_EXECUTABLE\" construct
     terrainium_shell_constructor
 }
 
 function terrainium_exit() {
-    builtin exit
+    if [ \"$TERRAINIUM_ENABLED\" = \"true\" ]; then
+        builtin exit
+    fi
 }
 
 function terrainium_preexec_functions() {
@@ -351,7 +357,7 @@ function terrainium_chpwd_functions() {
 }
 
 function terrainium_zshexit_functions() {
-    \"$TERRAINIUM_EXECUTABLE\" deconstruct -b example_biome
+    \"$TERRAINIUM_EXECUTABLE\" deconstruct
     terrainium_shell_destructor
 }
 

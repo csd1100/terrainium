@@ -63,15 +63,9 @@ terrainium <verb> [OPTIONS]
 
   - `exit` - exits terrain.
 
-  - `construct [OPTIONS]` - runs commands specified in construct block.
+  - `construct` - runs commands specified in constructor block.
 
-    - `-b|--biome <name>` - name of the biome to be used. Values can be same as
-      `terrainium enter`.
-
-  - `deconstruct [OPTIONS]` - runs commands specified in destructor block.
-
-    - `-b|--biome <name>` - name of the biome to be used. Values can be same as
-      `terrainium enter`.
+  - `deconstruct` - runs commands specified in destructor block.
 
   - `-h|--help` - shows help.
 
