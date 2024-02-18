@@ -8,8 +8,8 @@ use crate::{
     helpers::constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
     helpers::{
         constants::{
-            TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_SELECTED_BIOME,
-            TERRAINIUM_TERRAIN_NAME, TERRAINIUM_TOML_PATH,
+            TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV,
+            TERRAINIUM_SELECTED_BIOME, TERRAINIUM_TERRAIN_NAME, TERRAINIUM_TOML_PATH,
         },
         operations::merge_hashmaps,
     },
@@ -45,17 +45,28 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
     let dev = std::env::var(TERRAINIUM_DEV);
     if dev.is_ok() && dev.unwrap() == *"true" {
-        let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-        pwd.push("target/debug/terrainium");
+        let pwd = std::env::current_dir().context("unable to get current_dir")?;
+        let mut terrainium = pwd.clone();
+        terrainium.push("target/debug/terrainium");
+        let mut terrainium_executor = pwd.clone();
+        terrainium_executor.push("target/debug/terrainium_executor");
 
         envs.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
-            pwd.to_string_lossy().to_string(),
+            terrainium.to_string_lossy().to_string(),
+        );
+        envs.insert(
+            TERRAINIUM_EXECUTOR_ENV.to_string(),
+            terrainium_executor.to_string_lossy().to_string(),
         );
     } else {
         envs.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
             "terrainium".to_string(),
+        );
+        envs.insert(
+            TERRAINIUM_EXECUTOR_ENV.to_string(),
+            "terrainium_executor".to_string(),
         );
     }
 
@@ -85,7 +96,7 @@ mod test {
 
     use crate::{
         helpers::{
-            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV},
+            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV},
             operations::mock_fs,
         },
         shell::zsh::mock_ops,
@@ -135,17 +146,28 @@ mod test {
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 
@@ -216,17 +238,28 @@ mod test {
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 
@@ -295,17 +328,28 @@ mod test {
         expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
-            let mut pwd = std::env::current_dir().context("unable to get current_dir")?;
-            pwd.push("target/debug/terrainium");
+            let pwd = std::env::current_dir().context("unable to get current_dir")?;
+            let mut terrainium = pwd.clone();
+            terrainium.push("target/debug/terrainium");
+            let mut terrainium_executor = pwd.clone();
+            terrainium_executor.push("target/debug/terrainium_executor");
 
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
-                pwd.to_string_lossy().to_string(),
+                terrainium.to_string_lossy().to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                terrainium_executor.to_string_lossy().to_string(),
             );
         } else {
             expected.insert(
                 TERRAINIUM_EXECUTABLE_ENV.to_string(),
                 "terrainium".to_string(),
+            );
+            expected.insert(
+                TERRAINIUM_EXECUTOR_ENV.to_string(),
+                "terrainium_executor".to_string(),
             );
         }
 

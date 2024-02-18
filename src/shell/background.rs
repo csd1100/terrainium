@@ -7,7 +7,7 @@ use mockall::automock;
 use mockall_double::double;
 
 use crate::{
-    helpers::constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR},
+    helpers::constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR, TERRAINIUM_EXECUTOR_ENV},
     types::commands::Command,
 };
 
@@ -49,11 +49,13 @@ fn start_process_with_session_id(
 ) -> Result<()> {
     let exec_arg_json: Executable = command.into();
     let exec_arg = serde_json::to_string(&exec_arg_json)?;
-    let mut command = TERRAINIUM_EXECUTOR;
+    let mut command = TERRAINIUM_EXECUTOR.to_string();
 
     let dev = std::env::var(TERRAINIUM_DEV);
     if dev.is_ok() && dev.unwrap() == *"true" {
-        command = "./target/debug/terrainium_executor";
+        if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+            command = executor;
+        }
     }
 
     let args = vec!["--id", &session_id, "--exec", &exec_arg];
@@ -67,7 +69,7 @@ fn start_process_with_session_id(
         format!("spawn-err-{}.log", exec_arg_json.get_uuid()),
     )?;
 
-    spawn::with_stdout_stderr(command, args, envs, Some(spawn_out), Some(spawn_err))?;
+    spawn::with_stdout_stderr(&command, args, envs, Some(spawn_out), Some(spawn_err))?;
 
     Ok(())
 }
@@ -100,7 +102,10 @@ mod test {
     use serial_test::serial;
 
     use crate::{
-        helpers::{constants::TERRAINIUM_DEV, operations::mock_fs},
+        helpers::{
+            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR_ENV},
+            operations::mock_fs,
+        },
         shell::execute::mock_spawn,
         types::{
             commands::Command,
@@ -183,10 +188,12 @@ mod test {
         mock_spawn_process
             .expect()
             .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor";
+                let mut command = "terrainium_executor".to_string();
                 let dev = std::env::var(TERRAINIUM_DEV);
                 if dev.is_ok() && dev.unwrap() == *"true" {
-                    command = "./target/debug/terrainium_executor";
+                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+                        command = executor;
+                    }
                 }
                 let exe_eq = exe == command;
 
@@ -213,10 +220,12 @@ mod test {
         mock_spawn_process
             .expect()
             .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor";
+                let mut command = "terrainium_executor".to_string();
                 let dev = std::env::var(TERRAINIUM_DEV);
                 if dev.is_ok() && dev.unwrap() == *"true" {
-                    command = "./target/debug/terrainium_executor";
+                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+                        command = executor;
+                    }
                 }
                 let exe_eq = exe == command;
 
@@ -341,10 +350,12 @@ mod test {
         mock_spawn_process
             .expect()
             .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor";
+                let mut command = "terrainium_executor".to_string();
                 let dev = std::env::var(TERRAINIUM_DEV);
                 if dev.is_ok() && dev.unwrap() == *"true" {
-                    command = "./target/debug/terrainium_executor";
+                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+                        command = executor;
+                    }
                 }
                 let exe_eq = exe == command;
 
@@ -367,10 +378,12 @@ mod test {
         mock_spawn_process
             .expect()
             .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor";
+                let mut command = "terrainium_executor".to_string();
                 let dev = std::env::var(TERRAINIUM_DEV);
                 if dev.is_ok() && dev.unwrap() == *"true" {
-                    command = "./target/debug/terrainium_executor";
+                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+                        command = executor;
+                    }
                 }
                 let exe_eq = exe == command;
 
