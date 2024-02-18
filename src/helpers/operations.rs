@@ -34,6 +34,14 @@ pub mod fs {
         Ok(config_path)
     }
 
+    pub fn get_terrain_name() -> String {
+        let dir = std::env::current_dir();
+        match dir {
+            std::result::Result::Ok(cwd) => cwd.to_string_lossy().to_string(),
+            Err(_) => format!("some-terrain-{}", uuid::Uuid::new_v4()),
+        }
+    }
+
     pub fn get_central_terrain_path() -> Result<PathBuf> {
         let mut dirname = get_central_store_path()?;
         dirname.push("terrain.toml");
@@ -98,10 +106,7 @@ pub mod fs {
         super::parse_terrain(&toml_file)
     }
 
-    pub fn get_process_log_file(
-        session_id: &String,
-        filename: String,
-    ) -> Result<(PathBuf, File)> {
+    pub fn get_process_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {
         let tmp = PathBuf::from(format!("/tmp/terrainium-{}", session_id));
         super::create_dir_if_not_exist(&tmp)?;
 
