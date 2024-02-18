@@ -16,6 +16,9 @@ pub fn handle() -> Result<()> {
 
 pub fn generate_and_compile(terrain: Terrain) -> Result<()> {
     let central_store = fs::get_central_store_path()?;
+
+    fs::remove_all_script_files(central_store.as_path())?;
+
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
@@ -60,6 +63,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
             .times(1);
 
         let terrain = test_data::terrain_full();

@@ -119,7 +119,6 @@ fn generate_zsh_script(
     let mut path = central_store.to_path_buf();
     path.push(format!("terrain-{}.zsh", biome_name));
 
-    println!("updating environment scripts");
     fs::write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
     Ok(())
 }
@@ -134,9 +133,6 @@ fn compile(central_store: &Path, biome_name: &String) -> Result<()> {
     let zwc = zwc.to_string_lossy().to_string();
 
     let command = format!("zcompile -URz {} {}", zwc, zsh);
-    println!("[command: {:?}]\n", command);
-
-    println!("compiling zsh scripts");
     run_via_zsh(vec![&command], None)?;
 
     Ok(())

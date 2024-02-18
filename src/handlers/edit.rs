@@ -54,6 +54,13 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
+
         let terrain = test_data::terrain_full();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
