@@ -35,13 +35,10 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
         if alias_all {
             print::aliases(terrain.alias.to_owned()).context("unable to print aliases")?;
         } else if let Some(alias) = alias {
-            let found_alias = Some(
-                terrain
-                    .find_aliases(alias)
-                    .context("unable to get aliases")?,
-            );
+            let found_alias = terrain
+                .find_aliases(alias)
+                .context("unable to get aliases")?;
             let aliases: HashMap<String, String> = found_alias
-                .expect("to be present")
                 .iter()
                 .map(|(k, v)| {
                     if v.is_none() {
@@ -60,9 +57,8 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
         if env_all {
             print::env(terrain.env.to_owned()).context("unable to print env vars")?;
         } else if let Some(env) = env {
-            let found_env = Some(terrain.find_envs(env).context("unable to get env vars")?);
+            let found_env = terrain.find_envs(env).context("unable to get env vars")?;
             let env: HashMap<String, String> = found_env
-                .expect("to be present")
                 .iter()
                 .map(|(k, v)| {
                     if v.is_none() {

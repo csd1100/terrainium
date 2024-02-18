@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use mockall_double::double;
 
-use crate::types::terrain::parse_terrain;
+use crate::types::terrain::{parse_terrain, Terrain};
 
 #[double]
 use crate::helpers::operations::fs;
@@ -11,7 +11,14 @@ use crate::shell::zsh::ops;
 
 pub fn handle() -> Result<()> {
     let terrain = parse_terrain(&fs::get_current_dir_toml()?)?;
+    generate_and_compile(terrain)
+}
+
+pub fn generate_and_compile(terrain: Terrain) -> Result<()> {
     let central_store = fs::get_central_store_path()?;
+
+    fs::remove_all_script_files(central_store.as_path())?;
+
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
@@ -20,13 +27,13 @@ pub fn handle() -> Result<()> {
         .collect();
 
     if result.is_err() {
-        return Err(anyhow!(format!(
+        Err(anyhow!(format!(
             "Error while generating and compiling scripts, error: {}",
             result.unwrap_err()
-        )));
+        )))
+    } else {
+        Ok(())
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -56,6 +63,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
             .times(1);
 
         let terrain = test_data::terrain_full();

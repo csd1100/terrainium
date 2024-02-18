@@ -8,9 +8,6 @@ use crate::types::terrain::Terrain;
 use crate::shell::editor::edit;
 
 #[double]
-use crate::shell::zsh::ops;
-
-#[double]
 use crate::helpers::operations::fs;
 
 pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
@@ -37,21 +34,7 @@ pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
             terrain_toml_path.to_string_lossy()
         );
 
-        let central_store =
-            fs::get_central_store_path().context("unable to get central store path")?;
-        let result: Result<Vec<_>> = terrain
-            .into_iter()
-            .map(|(biome_name, environment)| {
-                ops::generate_and_compile(&central_store, biome_name, environment)
-            })
-            .collect();
-
-        if result.is_err() {
-            return Err(anyhow!(format!(
-                "Error while generating and compiling scripts, error: {}",
-                result.unwrap_err()
-            )));
-        }
+        super::generate::generate_and_compile(terrain)?;
 
         if edit {
             println!("editing...");
@@ -122,6 +105,13 @@ mod test {
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
 
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
+
         let terrain = Terrain::new().get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
         generate_and_compile_context
@@ -160,8 +150,6 @@ mod test {
             .return_once(|| Ok(false))
             .times(1);
 
-        // toml deserializes vec in different order so string equals will fail
-        // so just check if called with any string containing default_biome
         let write_terrain_context = mock_fs::write_terrain_context();
         write_terrain_context
             .expect()
@@ -178,6 +166,13 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
+
         let terrain = Terrain::default();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
@@ -191,7 +186,6 @@ mod test {
             .return_once(|_, _, _| Ok(()))
             .times(1);
 
-        let generate_and_compile_context = mock_ops::generate_and_compile_context();
         let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
         generate_and_compile_context
             .expect()
@@ -248,6 +242,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
 
         let terrain = Terrain::new().get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
@@ -307,6 +308,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")));
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
 
         let terrain = Terrain::new().get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();

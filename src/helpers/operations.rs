@@ -127,6 +127,22 @@ pub mod fs {
 
         Ok((out_path, out))
     }
+
+    pub fn remove_all_script_files(central_store: &Path) -> Result<()> {
+        if let std::result::Result::Ok(entries) = std::fs::read_dir(central_store) {
+            for entry in entries {
+                let std::result::Result::Ok(entry) = entry else {
+                    continue;
+                };
+                if let Some(ext) = entry.path().extension() {
+                    if ext.to_str() == Some("zwc") || ext.to_str() == Some("zsh") {
+                        std::fs::remove_file(entry.path())?;
+                    }
+                };
+            }
+        }
+        Ok(())
+    }
 }
 
 fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {

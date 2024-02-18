@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use mockall_double::double;
 
 use crate::types::{
@@ -8,10 +8,9 @@ use crate::types::{
 };
 
 #[double]
-use crate::shell::zsh::ops;
-
-#[double]
 use crate::helpers::operations::fs;
+
+use super::generate::generate_and_compile;
 
 pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
     let UpdateOpts {
@@ -50,20 +49,7 @@ pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Resu
     fs::write_terrain(toml_file.as_path(), &terrain)
         .context("failed to write updated terrain.toml")?;
 
-    let central_store = fs::get_central_store_path()?;
-    let result: Result<Vec<_>> = terrain
-        .into_iter()
-        .map(|(biome_name, environment)| {
-            ops::generate_and_compile(&central_store, biome_name, environment)
-        })
-        .collect();
-
-    if result.is_err() {
-        return Err(anyhow!(format!(
-            "Error while generating and compiling scripts, error: {}",
-            result.unwrap_err()
-        )));
-    }
+    generate_and_compile(terrain)?;
 
     Ok(())
 }
@@ -112,6 +98,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
             .times(1);
 
         let terrain = test_data::terrain_full();
@@ -213,6 +206,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
             .times(1);
 
         let terrain = test_data::terrain_full();
@@ -317,6 +317,13 @@ mod test {
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
             .times(1);
 
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
+            .times(1);
+
         let terrain = test_data::terrain_full();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
@@ -418,6 +425,13 @@ mod test {
         get_central_store_path_context
             .expect()
             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
+            .times(1);
+
+        let remove_all_script_files = mock_fs::remove_all_script_files_context();
+        remove_all_script_files
+            .expect()
+            .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
+            .return_once(|_| Ok(()))
             .times(1);
 
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
