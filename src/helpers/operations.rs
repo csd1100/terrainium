@@ -36,9 +36,12 @@ pub mod fs {
 
     pub fn get_terrain_name() -> String {
         let dir = std::env::current_dir();
+        let default_name = format!("some-terrain-{}", uuid::Uuid::new_v4());
         match dir {
-            std::result::Result::Ok(cwd) => cwd.to_string_lossy().to_string(),
-            Err(_) => format!("some-terrain-{}", uuid::Uuid::new_v4()),
+            std::result::Result::Ok(cwd) => cwd
+                .file_name()
+                .map_or(default_name, |val| val.to_string_lossy().to_string()),
+            Err(_) => default_name,
         }
     }
 
