@@ -25,6 +25,12 @@ pub fn parse_terrain(path: &PathBuf) -> Result<Terrain> {
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Terrain {
+    #[serde(
+        default = "schema_url",
+        rename(serialize = "$schema")
+    )]
+    schema: String,
+
     terrain: Biome,
     default_biome: Option<String>,
     biomes: Option<HashMap<String, Biome>>,
@@ -33,6 +39,7 @@ pub struct Terrain {
 impl Terrain {
     pub fn new() -> Terrain {
         Terrain {
+            schema: schema_url(),
             terrain: Biome::new(),
             default_biome: None,
             biomes: None,
@@ -227,6 +234,7 @@ impl Default for Terrain {
         biomes.insert(biome_name.clone(), biome);
 
         Self {
+            schema: schema_url(),
             terrain: main,
             default_biome: Some(biome_name),
             biomes: Some(biomes),
@@ -251,6 +259,11 @@ impl IntoIterator for Terrain {
 
         iter.into_iter()
     }
+}
+
+pub fn schema_url() -> String {
+    "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+        .to_string()
 }
 
 #[cfg(test)]
@@ -571,6 +584,7 @@ mod test {
     #[test]
     fn get_env_throws_err_if_no_env_defined() -> Result<()> {
         let terrain = Terrain {
+            schema: super::schema_url(),
             terrain: Biome {
                 env: None,
                 alias: None,
@@ -594,6 +608,7 @@ mod test {
     #[test]
     fn get_alias_throws_err_if_no_aliases_defined() -> Result<()> {
         let terrain = Terrain {
+            schema: super::schema_url(),
             terrain: Biome {
                 env: None,
                 alias: None,
@@ -1309,6 +1324,7 @@ pub mod test_data {
         biomes.insert(biome2_name.to_owned(), biome2);
 
         Terrain {
+            schema: super::schema_url(),
             terrain: Biome {
                 env: Some(env),
                 alias: Some(alias),
@@ -1348,6 +1364,7 @@ pub mod test_data {
             background: None,
         };
         Terrain {
+            schema: super::schema_url(),
             terrain: Biome {
                 env: Some(env),
                 alias: Some(alias),
