@@ -48,8 +48,8 @@ terrainium <verb> [OPTIONS]
     will return all values.
 
     - `-b|--biome <name>` - name of the biome for which values to be retrieved.
-    Gets values of default biome if `default` is used. Gets main terrain if `none` is used.
-    Will get values of currently active terrain if `current` is used.
+      Gets values of default biome if `default` is used. Gets main terrain if `none` is used.
+      Will get values of currently active terrain if `current` is used.
     - `--alias` - returns value of all aliases defined.
     - `--env` - returns value of all environment variables defined.
     - `-e [name]` - returns value of environment variable with `name`.
@@ -170,3 +170,6 @@ status-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.json        # ->  # status of proces
 
 - If `TERRAINIUM_DEV` is set to `true`, `terrainium` and `terrainium_executor`
   binaries will be use from debug directory.
+- Feature `terrain-schema` can be used to generate json schema for `terrain.toml`.
+  `schema` argument can be passed to `terrainium` command when built with
+  `terrain-schema` feature that will generate a schema json at path `./schema/terrain-schema.json`.
