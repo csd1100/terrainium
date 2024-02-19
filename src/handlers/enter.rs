@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
 use uuid::Uuid;
 
@@ -23,6 +23,11 @@ use crate::helpers::operations::fs;
 use crate::shell::zsh::ops;
 
 pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
+    let enabled = std::env::var(TERRAINIUM_ENABLED);
+    if enabled.is_ok() && enabled.unwrap() == *"true" {
+        return Err(anyhow!("other terrain is already active"));
+    }
+
     let toml_path = fs::get_current_dir_toml()?;
     let terrain = fs::get_parsed_terrain()?;
     let name: String = fs::get_terrain_name();
@@ -106,6 +111,9 @@ mod test {
     #[test]
     #[serial]
     fn enter_enters_default() -> Result<()> {
+        let enabled = std::env::var("TERRAINIUM_ENABLED").ok();
+        std::env::remove_var("TERRAINIUM_ENABLED");
+
         let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
@@ -192,12 +200,22 @@ mod test {
             .times(1);
 
         super::handle(None)?;
+
+        // cleanup
+        if let Some(enabled) = enabled {
+            std::env::set_var("TERRAINIUM_ENABLED", enabled)
+        } else {
+            std::env::remove_var("TERRAINIUM_ENABLED")
+        }
         Ok(())
     }
 
     #[test]
     #[serial]
     fn enter_enters_selected() -> Result<()> {
+        let enabled = std::env::var("TERRAINIUM_ENABLED").ok();
+        std::env::remove_var("TERRAINIUM_ENABLED");
+
         let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
@@ -284,12 +302,22 @@ mod test {
             .times(1);
 
         super::handle(Some(BiomeArg::Value("example_biome2".to_string())))?;
+
+        // cleanup
+        if let Some(enabled) = enabled {
+            std::env::set_var("TERRAINIUM_ENABLED", enabled)
+        } else {
+            std::env::remove_var("TERRAINIUM_ENABLED")
+        }
         Ok(())
     }
 
     #[test]
     #[serial]
     fn enter_enters_main() -> Result<()> {
+        let enabled = std::env::var("TERRAINIUM_ENABLED").ok();
+        std::env::remove_var("TERRAINIUM_ENABLED");
+
         let mock_toml_path = mock_fs::get_current_dir_toml_context();
         mock_toml_path
             .expect()
@@ -374,6 +402,32 @@ mod test {
             .times(1);
 
         super::handle(None)?;
+
+        // cleanup
+        if let Some(enabled) = enabled {
+            std::env::set_var("TERRAINIUM_ENABLED", enabled)
+        } else {
+            std::env::remove_var("TERRAINIUM_ENABLED")
+        }
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn returns_error_if_already_enabled() -> Result<()> {
+        let enabled = std::env::var("TERRAINIUM_ENABLED").ok();
+        std::env::set_var("TERRAINIUM_ENABLED", "true");
+
+        let actual = super::handle(None).unwrap_err().to_string();
+
+        assert_eq!("other terrain is already active", actual);
+
+        // cleanup
+        if let Some(enabled) = enabled {
+            std::env::set_var("TERRAINIUM_ENABLED", enabled)
+        } else {
+            std::env::remove_var("TERRAINIUM_ENABLED")
+        }
         Ok(())
     }
 }
