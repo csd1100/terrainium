@@ -4,6 +4,8 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -20,6 +22,7 @@ pub fn parse_terrain(path: &PathBuf) -> Result<Terrain> {
     Ok(terrain)
 }
 
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Terrain {
     terrain: Biome,

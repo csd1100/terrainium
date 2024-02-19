@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use anyhow::{Ok, Result};
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::helpers::operations::{find_in_hashmaps, get_merged_hashmaps};
@@ -10,6 +12,7 @@ use super::{
     errors::TerrainiumErrors,
 };
 
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Biome {
     pub env: Option<HashMap<String, String>>,

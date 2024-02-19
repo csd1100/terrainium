@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Terrain",
+  "type": "object",
+  "required": [
+    "terrain"
+  ],
+  "properties": {
+    "terrain": {
+      "$ref": "#/definitions/Biome"
+    },
+    "default_biome": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "biomes": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "$ref": "#/definitions/Biome"
+      }
+    }
+  },
+  "definitions": {
+    "Biome": {
+      "type": "object",
+      "properties": {
+        "env": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "alias": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "constructors": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "destructors": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Commands": {
+      "type": "object",
+      "properties": {
+        "foreground": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Command"
+          }
+        },
+        "background": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Command"
+          }
+        }
+      }
+    },
+    "Command": {
+      "type": "object",
+      "required": [
+        "exe"
+      ],
+      "properties": {
+        "exe": {
+          "type": "string"
+        },
+        "args": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
