@@ -50,6 +50,8 @@ pub enum Verbs {
     Exit,
     Construct,
     Deconstruct,
+    #[cfg(feature = "terrain-schema")]
+    Schema,
 }
 
 #[derive(Args, Debug)]

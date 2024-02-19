@@ -1,11 +1,15 @@
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Commands {
     pub foreground: Option<Vec<Command>>,
     pub background: Option<Vec<Command>>,
 }
 
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Command {
     pub exe: String,
@@ -65,6 +69,4 @@ pub fn get_merged_commands(from: &Option<Commands>, to: &Option<Commands>) -> Op
 }
 
 #[cfg(test)]
-mod test {
-
-}
+mod test {}
