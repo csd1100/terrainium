@@ -25,10 +25,7 @@ pub fn parse_terrain(path: &PathBuf) -> Result<Terrain> {
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Terrain {
-    #[serde(
-        default = "schema_url",
-        rename(serialize = "$schema")
-    )]
+    #[serde(default = "schema_url", rename(serialize = "$schema"))]
     schema: String,
 
     terrain: Biome,
