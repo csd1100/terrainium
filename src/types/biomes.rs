@@ -31,6 +31,14 @@ impl Biome {
         }
     }
 
+    pub fn get_constructors(self) -> Option<Commands> {
+        self.constructors
+    }
+
+    pub fn get_detructors(self) -> Option<Commands> {
+        self.destructors
+    }
+
     pub fn update_env(&mut self, k: String, v: String) {
         if self.env.is_none() {
             self.env = Some(HashMap::<String, String>::new());

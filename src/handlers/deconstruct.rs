@@ -1,54 +1,11 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
-#[cfg(test)]
-use mockall::automock;
+use crate::types::biomes::Biome;
 
-use crate::{helpers::constants::TERRAINIUM_SELECTED_BIOME, types::args::BiomeArg};
+use super::build;
 
 pub fn handle() -> Result<()> {
-    let biome = if let std::result::Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
-        BiomeArg::Current(current)
-    } else {
-        return Err(anyhow!("no active biome found"));
-    };
-    run::destructors(Some(biome))
-}
-
-#[cfg_attr(test, automock)]
-pub mod run {
-    use anyhow::{Context, Result};
-    use mockall_double::double;
-    use std::collections::HashMap;
-
-    use crate::types::args::BiomeArg;
-    use crate::types::terrain;
-
-    #[double]
-    use crate::shell::background::processes;
-
-    #[double]
-    use crate::helpers::operations::fs;
-
-    pub fn destructors(biome: Option<BiomeArg>) -> Result<()> {
-        let terrain_toml = fs::get_terrain_toml_from_biome(&biome)?;
-        let terrain = terrain::parse_terrain(&terrain_toml)?
-            .get(biome)
-            .context("unable to select a biome to call destructors")?;
-
-        let envs = terrain.env.unwrap_or(HashMap::<String, String>::new());
-        terrain
-            .destructors
-            .and_then(|destructors| {
-                destructors
-                    .background
-                    .map(|commands| Some(processes::start(commands, envs)))
-            })
-            .flatten()
-            .transpose()
-            .context("error while starting background processes")?;
-
-        Ok(())
-    }
+    build::build(Biome::get_detructors)
 }
 
 #[cfg(test)]
@@ -67,14 +24,14 @@ mod test {
 
     #[test]
     #[serial]
-    fn deconstruct_start_background_processes() -> Result<()> {
+    fn deconstruct_none_start_background_processes() -> Result<()> {
         let real_selected_biome = std::env::var("TERRAINIUM_SELECTED_BIOME").ok();
-        std::env::set_var("TERRAINIUM_SELECTED_BIOME", "example_biome");
+        std::env::set_var("TERRAINIUM_SELECTED_BIOME", "none");
 
         let mock_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
         mock_terrain_toml
             .expect()
-            .with(eq(Some(BiomeArg::Current("example_biome".to_string()))))
+            .with(eq(Some(BiomeArg::None)))
             .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
@@ -84,7 +41,7 @@ mod test {
         }];
 
         let mut expected_envs = HashMap::<String, String>::new();
-        expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        expected_envs.insert("EDITOR".to_string(), "vim".to_string());
         expected_envs.insert("TEST".to_string(), "value".to_string());
 
         let start_background_process = mock_processes::start_context();
@@ -118,7 +75,7 @@ mod test {
         let mock_terrain_toml = mock_fs::get_terrain_toml_from_biome_context();
         mock_terrain_toml
             .expect()
-            .with(eq(Some(BiomeArg::Current("example_biome".to_string()))))
+            .with(eq(Some(BiomeArg::Value("example_biome".to_string()))))
             .return_once(|_| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
 
