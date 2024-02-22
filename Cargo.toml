@@ -21,6 +21,9 @@ uuid = { version = "1.7.0", features = ["v4"] }
 mockall_double = "0.3.1"
 prost = "0.12"
 prost-types = "0.12"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
+tracing-appender = { version = "0.2.3" }
 
 [dependencies.schemars]
 version = "0.8.16"

@@ -12,3 +12,6 @@ pub(crate) const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub(crate) const TERRAINIUM_EXECUTOR: &str = "terrainium_executor";
 pub(crate) const TERRAINIUM_EXECUTOR_ENV: &str = "TERRAINIUM_EXECUTOR";
 pub(crate) const TERRAINIUM_EXECUTABLE_ENV: &str = "TERRAINIUM_EXECUTABLE";
+
+pub const TERRAINIUMD_SOCK: &str = "/tmp/terrainiumd/unix.sock";
+pub const TERRAINIUMD_TMP: &str = "/tmp/terrainiumd/";

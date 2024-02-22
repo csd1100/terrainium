@@ -164,7 +164,7 @@ fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {
     }
 }
 
-fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
+pub fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
     if !Path::try_exists(dir)? {
         println!("creating a directory at path {}", dir.to_string_lossy());
         std::fs::create_dir_all(dir)?;

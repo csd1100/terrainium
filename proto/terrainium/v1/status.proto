@@ -36,7 +36,7 @@ message StatusResponse {
     string terrain_name = 2;
     string biome = 3;
     TerrainStatus status = 4;
-    repeated ProcessStatus ps = 5;
+    map<uint32, ProcessStatus> ps = 5;
   }
 
   enum TerrainStatus {
