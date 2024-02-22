@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+message StatusRequest {
+  oneof session {
+    string session_id = 1;
+    History history = 2;
+  }
+  oneof operation {
+    bool list_background = 3;
+    ProcessRequest process_requst = 4;
+  }
+
+  enum History {
+    HISTORY_UNSPECIFIED = 0;
+    HISTORY_LAST = 1;
+    HISTORY_LAST_1 = 2;
+    HISTORY_LAST_2 = 3;
+  }
+
+  message ProcessRequest {
+    uint32 background_pid = 1;
+    uint32 no_of_std_lines = 2;
+  }
+}
+
+message StatusResponse {
+  oneof response {
+    Status status = 1;
+    ProcessStatus ps = 2;
+  }
+
+  message Status {
+    string session_id = 1;
+    string terrain_name = 2;
+    string biome = 3;
+    TerrainStatus status = 4;
+    repeated ProcessStatus ps = 5;
+  }
+
+  enum TerrainStatus {
+    TERRAIN_STATUS_UNSPECIFIED = 0;
+    TERRAIN_STATUS_ACTIVE = 1;
+    TERRAIN_STATUS_INACTIVE = 2;
+  }
+
+  message ProcessStatus {
+    uint32 pid = 1;
+    string uuid = 2;
+    string command = 3;
+    repeated string args = 4;
+    Status status = 5;
+    string stdout_file_path = 6;
+    string stderr_file_path = 7;
+    string stdout_lines = 8;
+    string stderr_lines = 9;
+    int32 exit_code = 10;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      STATUS_RUNNING = 1;
+      STATUS_STOPPED = 2;
+      STATUS_ERROR = 3;
+    }
+  }
+}
