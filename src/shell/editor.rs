@@ -9,7 +9,7 @@ pub mod edit {
     use mockall_double::double;
 
     #[double]
-    use crate::shell::execute::spawn;
+    use crate::shell::process::spawn;
 
     pub fn file(file: &Path) -> Result<()> {
         let editor = std::env::var("EDITOR")
@@ -31,7 +31,7 @@ mod test {
     use anyhow::Result;
     use serial_test::serial;
 
-    use crate::shell::execute::mock_spawn;
+    use crate::shell::process::mock_spawn;
 
     #[test]
     #[serial]

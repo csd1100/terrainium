@@ -15,7 +15,7 @@ use crate::{
 use crate::types::executor::Executable;
 
 #[double]
-use crate::shell::execute::spawn;
+use crate::shell::process::spawn;
 
 #[double]
 use crate::helpers::operations::fs;
@@ -106,7 +106,7 @@ mod test {
             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR_ENV},
             operations::mock_fs,
         },
-        shell::execute::mock_spawn,
+        shell::process::mock_spawn,
         types::{
             commands::Command,
             executor::{Executable, MockExecutable},

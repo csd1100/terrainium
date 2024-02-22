@@ -11,7 +11,7 @@ use crate::types::biomes::{Biome, BiomeWithName};
 use crate::helpers::operations::fs;
 
 #[double]
-use crate::shell::execute::spawn;
+use crate::shell::process::spawn;
 
 const MAIN_TEMPLATE: &str = include_str!("../../templates/zsh_final_script.hbs");
 const ALIAS_TEMPLATE: &str = include_str!("../../templates/zsh_aliases.hbs");
@@ -31,7 +31,7 @@ pub mod ops {
     };
 
     #[double]
-    use crate::shell::execute::spawn;
+    use crate::shell::process::spawn;
 
     #[double]
     use crate::helpers::operations::fs;
@@ -159,7 +159,7 @@ mod test {
 
     use crate::{
         helpers::operations::mock_fs,
-        shell::execute::mock_spawn,
+        shell::process::mock_spawn,
         types::{args::BiomeArg, terrain::test_data},
     };
 
