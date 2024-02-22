@@ -2,4 +2,11 @@ syntax = "proto3";
 
 package terrainium.v1;
 
-message ActivateRequest {}
+message ActivateRequest {
+  string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string toml_path = 4;
+}
+
+message ActivateResponse {}

@@ -145,6 +145,15 @@ pub mod fs {
     }
 }
 
+#[cfg_attr(test, automock)]
+pub mod misc {
+    use uuid::Uuid;
+
+    pub fn get_uuid() -> String {
+        Uuid::new_v4().to_string()
+    }
+}
+
 fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {
     if active {
         if let std::result::Result::Ok(toml_path) = std::env::var(TERRAINIUM_TOML_PATH) {
@@ -157,10 +166,10 @@ fn get_terrain_toml_path(active: bool) -> Result<PathBuf> {
     } else if is_central_terrain_present()
         .context("failed to check whether central terrain.toml exists")?
     {
-        return fs::get_central_terrain_path();
+        fs::get_central_terrain_path()
     } else {
         let err = anyhow!("unable to get terrain.toml for this project. initialize terrain with `terrainium init` command");
-        return Err(err);
+        Err(err)
     }
 }
 
@@ -189,9 +198,8 @@ fn get_config_path() -> Result<PathBuf> {
                 return Ok(config_dir);
             }
             return Ok(home);
-        } else {
-            return Err(TerrainiumErrors::InvalidHomeDirectory.into());
         }
+        return Err(TerrainiumErrors::InvalidHomeDirectory.into());
     }
     Err(TerrainiumErrors::UnableToFindHome.into())
 }

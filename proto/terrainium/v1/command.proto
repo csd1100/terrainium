@@ -3,18 +3,21 @@ syntax = "proto3";
 package terrainium.v1;
 
 import "terrainium/v1/activate.proto";
+import "terrainium/v1/execute.proto";
 import "terrainium/v1/status.proto";
 
 message Command {
   CommandType type = 1;
   oneof args {
     ActivateRequest activate = 2;
-    StatusRequest status = 3;
+    ExecuteRequest execute = 3;
+    StatusRequest status = 4;
   }
 
   enum CommandType {
     COMMAND_TYPE_UNSPECIFIED = 0;
-    COMMAND_TYPE_EXECUTE = 1;
-    COMMAND_TYPE_STATUS = 2;
+    COMMAND_TYPE_ACTIVATE = 1;
+    COMMAND_TYPE_EXECUTE = 2;
+    COMMAND_TYPE_STATUS = 3;
   }
 }

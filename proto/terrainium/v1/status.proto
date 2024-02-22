@@ -34,9 +34,10 @@ message StatusResponse {
   message Status {
     string session_id = 1;
     string terrain_name = 2;
-    string biome = 3;
-    TerrainStatus status = 4;
-    map<uint32, ProcessStatus> ps = 5;
+    string biome_name = 3;
+    string toml_path = 4;
+    TerrainStatus status = 5;
+    map<uint32, ProcessStatus> ps = 6;
   }
 
   enum TerrainStatus {

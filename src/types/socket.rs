@@ -6,6 +6,8 @@ use std::{
 };
 
 use anyhow::Result;
+#[cfg(test)]
+use mockall::automock;
 use prost::{bytes::Bytes, Message};
 
 use crate::helpers::constants::TERRAINIUMD_SOCK;
@@ -14,6 +16,7 @@ pub struct Unix {
     stream: UnixStream,
 }
 
+#[cfg_attr(test, automock)]
 impl Unix {
     pub fn new() -> Result<Self> {
         let stream = UnixStream::connect(TERRAINIUMD_SOCK)?;
@@ -21,7 +24,7 @@ impl Unix {
         Ok(socket)
     }
 
-    pub fn write(&mut self, data: impl Message) -> Result<()> {
+    pub fn write<T: Message + 'static>(&mut self, data: T) -> Result<()> {
         let stream = self.deref_mut();
         stream.write_all(&data.encode_to_vec())?;
         stream.shutdown(Shutdown::Write)?;

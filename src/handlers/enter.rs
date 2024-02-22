@@ -2,52 +2,37 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
-use uuid::Uuid;
 
 use crate::{
-    helpers::constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID},
     helpers::{
         constants::{
-            TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV,
-            TERRAINIUM_SELECTED_BIOME, TERRAINIUM_TERRAIN_NAME, TERRAINIUM_TOML_PATH,
+            TERRAINIUM_DEV, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV,
+            TERRAINIUM_SELECTED_BIOME, TERRAINIUM_SESSION_ID, TERRAINIUM_TERRAIN_NAME,
+            TERRAINIUM_TOML_PATH,
         },
         operations::merge_hashmaps,
+    },
+    proto::{
+        self,
+        command::{Args, CommandType},
+        ActivateRequest,
     },
     types::args::BiomeArg,
 };
 
 #[double]
+use crate::types::socket::Unix;
+
+#[double]
 use crate::helpers::operations::fs;
+
+#[double]
+use crate::helpers::operations::misc;
 
 #[double]
 use crate::shell::zsh::ops;
 
-pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
-    let enabled = std::env::var(TERRAINIUM_ENABLED);
-    if enabled.is_ok() && enabled.unwrap() == *"true" {
-        return Err(anyhow!("other terrain is already active"));
-    }
-
-    let toml_path = fs::get_current_dir_toml()?;
-    let terrain = fs::get_parsed_terrain()?;
-    let name: String = fs::get_terrain_name();
-
-    let mut envs = HashMap::<String, String>::new();
-    envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-    envs.insert(
-        TERRAINIUM_TOML_PATH.to_string(),
-        toml_path.to_string_lossy().to_string(),
-    );
-    envs.insert(TERRAINIUM_TERRAIN_NAME.to_string(), name);
-    envs.insert(
-        TERRAINIUM_SESSION_ID.to_string(),
-        Uuid::new_v4().to_string(),
-    );
-    envs.insert(
-        TERRAINIUM_SELECTED_BIOME.to_string(),
-        terrain.get_selected_biome_name(&biome)?,
-    );
-
+fn add_executables(map: &mut HashMap<String, String>) -> Result<()> {
     let dev = std::env::var(TERRAINIUM_DEV);
     if dev.is_ok() && dev.unwrap() == *"true" {
         let pwd = std::env::current_dir().context("unable to get current_dir")?;
@@ -56,24 +41,59 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
         let mut terrainium_executor = pwd.clone();
         terrainium_executor.push("target/debug/terrainium_executor");
 
-        envs.insert(
+        map.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
             terrainium.to_string_lossy().to_string(),
         );
-        envs.insert(
+        map.insert(
             TERRAINIUM_EXECUTOR_ENV.to_string(),
             terrainium_executor.to_string_lossy().to_string(),
         );
+        Ok(())
     } else {
-        envs.insert(
+        map.insert(
             TERRAINIUM_EXECUTABLE_ENV.to_string(),
             "terrainium".to_string(),
         );
-        envs.insert(
+        map.insert(
             TERRAINIUM_EXECUTOR_ENV.to_string(),
             "terrainium_executor".to_string(),
         );
+        Ok(())
     }
+}
+
+pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
+    let enabled = std::env::var(TERRAINIUM_ENABLED);
+    if enabled.is_ok() && enabled.unwrap() == *"true" {
+        return Err(anyhow!("other terrain is already active"));
+    }
+
+    let terrain = fs::get_parsed_terrain()?;
+
+    let terrain_name: String = fs::get_terrain_name();
+    let toml_path = fs::get_current_dir_toml()?.to_string_lossy().to_string();
+    let session_id = misc::get_uuid();
+    let biome_name = terrain.get_selected_biome_name(&biome)?;
+
+    let mut envs = HashMap::<String, String>::new();
+    envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+    envs.insert(TERRAINIUM_TOML_PATH.to_string(), toml_path.clone());
+    envs.insert(TERRAINIUM_TERRAIN_NAME.to_string(), terrain_name.clone());
+    envs.insert(TERRAINIUM_SESSION_ID.to_string(), session_id.clone());
+    envs.insert(TERRAINIUM_SELECTED_BIOME.to_string(), biome_name.clone());
+    add_executables(&mut envs)?;
+
+    let mut socket = Unix::new()?;
+    socket.write(proto::Command {
+        r#type: CommandType::Activate.into(),
+        args: Some(Args::Activate(ActivateRequest {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+        })),
+    })?;
 
     let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
         .context("unable to set zsh environment varibles")?;
@@ -102,10 +122,11 @@ mod test {
     use crate::{
         helpers::{
             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV},
-            operations::mock_fs,
+            operations::{mock_fs, mock_misc},
         },
+        proto,
         shell::zsh::mock_ops,
-        types::{args::BiomeArg, terrain::test_data},
+        types::{args::BiomeArg, socket::MockUnix, terrain::test_data},
     };
 
     #[test]
@@ -121,6 +142,10 @@ mod test {
 
         let mock_name = mock_fs::get_terrain_name_context();
         mock_name.expect().return_const("test-terrain".to_string());
+
+        let session_id = String::from("session_id");
+        let mock_session_id = mock_misc::get_uuid_context();
+        mock_session_id.expect().return_const(session_id.clone());
 
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
@@ -151,7 +176,8 @@ mod test {
             "TERRAINIUM_SELECTED_BIOME".to_string(),
             "example_biome".to_string(),
         );
-        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), session_id);
+
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
             let pwd = std::env::current_dir().context("unable to get current_dir")?;
@@ -179,22 +205,32 @@ mod test {
             );
         }
 
-        // do not validate TERRAINIUM_SESSION_ID as it is uuid
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                r#type: proto::command::CommandType::Activate.into(),
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "example_biome".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            Ok(mocket)
+        });
+
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                let env_len_eq = expected.len() == envs.as_ref().unwrap().len();
-                expected.iter().for_each(|(exp_k, exp_v)| {
-                    if exp_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(
-                            exp_v,
-                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
-                        );
-                    }
-                });
-                args_eq && env_len_eq
+                let env_eq = *envs.as_ref().unwrap() == expected;
+                args_eq && env_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -223,6 +259,10 @@ mod test {
 
         let mock_name = mock_fs::get_terrain_name_context();
         mock_name.expect().return_const("test-terrain".to_string());
+
+        let session_id = String::from("session_id");
+        let mock_session_id = mock_misc::get_uuid_context();
+        mock_session_id.expect().return_const(session_id.clone());
 
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
@@ -253,7 +293,11 @@ mod test {
             "TERRAINIUM_SELECTED_BIOME".to_string(),
             "example_biome2".to_string(),
         );
-        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
+        expected.insert(
+            "TERRAINIUM_SESSION_ID".to_string(),
+            "session_id".to_string(),
+        );
+
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
             let pwd = std::env::current_dir().context("unable to get current_dir")?;
@@ -281,22 +325,32 @@ mod test {
             );
         }
 
-        // do not validate TERRAINIUM_SESSION_ID as it is uuid
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                r#type: proto::command::CommandType::Activate.into(),
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "example_biome2".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            Ok(mocket)
+        });
+
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                let env_len_eq = envs.as_ref().unwrap().len() == expected.len();
-                expected.iter().for_each(|(exp_k, exp_v)| {
-                    if exp_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(
-                            exp_v,
-                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
-                        );
-                    }
-                });
-                args_eq && env_len_eq
+                let env_eq = *envs.as_ref().unwrap() == expected;
+                args_eq && env_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -326,6 +380,10 @@ mod test {
         let mock_name = mock_fs::get_terrain_name_context();
         mock_name.expect().return_const("test-terrain".to_string());
 
+        let session_id = String::from("session_id");
+        let mock_session_id = mock_misc::get_uuid_context();
+        mock_session_id.expect().return_const(session_id.clone());
+
         let mock_terrain = mock_fs::get_parsed_terrain_context();
         mock_terrain
             .expect()
@@ -353,7 +411,8 @@ mod test {
             "./example_configs/terrain.full.toml".to_string(),
         );
         expected.insert("TERRAINIUM_SELECTED_BIOME".to_string(), "none".to_string());
-        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "1".to_string());
+        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "session_id".to_string());
+
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
             let pwd = std::env::current_dir().context("unable to get current_dir")?;
@@ -381,22 +440,33 @@ mod test {
             );
         }
 
-        // do not validate TERRAINIUM_SESSION_ID as it is uuid
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                r#type: proto::command::CommandType::Activate.into(),
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "none".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            Ok(mocket)
+        });
+
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
             .expect()
             .withf(move |args, envs| {
                 let args_eq = *args == vec!["-s"];
-                let env_len_eq = envs.as_ref().unwrap().len() == expected.len();
-                expected.iter().for_each(|(exp_k, exp_v)| {
-                    if exp_k != "TERRAINIUM_SESSION_ID" {
-                        assert_eq!(
-                            exp_v,
-                            envs.as_ref().unwrap().get(exp_k).expect("to be present")
-                        );
-                    }
-                });
-                args_eq && env_len_eq
+                let env_eq = *envs.as_ref().unwrap() == expected;
+                args_eq && env_eq
             })
             .return_once(|_, _| Ok(()))
             .times(1);

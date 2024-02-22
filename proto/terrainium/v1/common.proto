@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+import "google/protobuf/any.proto";
+
+message Error {
+  string error_message = 1;
+}
+
+message Response {
+  oneof result {
+    google.protobuf.Any success = 1;
+    Error error = 2;
+  }
+}
