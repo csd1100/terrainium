@@ -2,4 +2,4 @@ syntax = "proto3";
 
 package terrainium.v1;
 
-message ExecuteRequest {}
+message ActivateRequest {}
