@@ -1,13 +1,17 @@
-use std::{io::Read, os::unix::net::UnixStream};
+use anyhow::{anyhow, Context, Result};
+use prost::Message;
 
-use anyhow::{Context, Result};
-use prost::{bytes::Bytes, Message};
+use crate::{
+    proto::{command::CommandType, Command},
+    types::socket,
+};
 
-use crate::proto::Command;
-
-pub fn handle(mut stream: UnixStream) -> Result<()> {
-    let mut data = vec![];
-    stream.read_to_end(&mut data)?;
-    let _data: Command = Command::decode(Bytes::from(data)).context("unable to parse command")?;
+pub fn handle(mut socket: socket::Unix) -> Result<()> {
+    let data: Command = Command::decode(socket.read()?).context("unable to parse command")?;
+    match CommandType::try_from(data.r#type)? {
+        CommandType::Unspecified => return Err(anyhow!("unspecified command found")),
+        CommandType::Execute => println!("Execute"),
+        CommandType::Status => println!("Status: {:?}", data),
+    }
     Ok(())
 }

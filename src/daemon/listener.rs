@@ -20,7 +20,6 @@ impl Listener {
 
 impl Drop for Listener {
     fn drop(&mut self) {
-        // There's no way to return a useful error here
         std::fs::remove_file(&self.path).unwrap();
     }
 }

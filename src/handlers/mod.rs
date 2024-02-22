@@ -1,3 +1,4 @@
+pub mod build;
 pub mod construct;
 pub mod deconstruct;
 pub mod edit;
@@ -6,6 +7,6 @@ pub mod exit;
 pub mod generate;
 pub mod get;
 pub mod init;
-pub mod update;
 pub mod schema;
-pub mod build;
+pub mod status;
+pub mod update;

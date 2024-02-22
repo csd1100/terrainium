@@ -3,7 +3,7 @@ use clap::Parser;
 #[cfg(feature = "terrain-schema")]
 use terrainium::handlers::schema;
 use terrainium::{
-    handlers::{construct, deconstruct, edit, enter, exit, generate, get, init, update},
+    handlers::{construct, deconstruct, edit, enter, exit, generate, get, init, status, update},
     types::args::{TerrainiumArgs, Verbs},
 };
 
@@ -28,6 +28,11 @@ fn main() -> Result<()> {
         Verbs::Exit => exit::handle(),
         Verbs::Construct => construct::handle(),
         Verbs::Deconstruct => deconstruct::handle(),
+        Verbs::Status {
+            session,
+            list_processes,
+            process_id,
+        } => status::handle(session, list_processes, process_id),
         #[cfg(feature = "terrain-schema")]
         Verbs::Schema => schema::handle(),
     }

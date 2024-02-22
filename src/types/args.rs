@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, Ok};
 use clap::{Args, Parser, Subcommand};
 
-use crate::helpers::constants::TERRAINIUM_SELECTED_BIOME;
+use crate::helpers::constants::{TERRAINIUM_SELECTED_BIOME, TERRAINIUM_SESSION_ID};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -50,6 +50,16 @@ pub enum Verbs {
     Exit,
     Construct,
     Deconstruct,
+    Status {
+        #[arg(short, long, default_value = "current")]
+        session: Session,
+
+        #[arg(short, long, group = "processes", default_value = "false")]
+        list_processes: bool,
+
+        #[arg(short, long, group = "processes")]
+        process_id: Option<u32>,
+    },
     #[cfg(feature = "terrain-schema")]
     Schema,
 }
@@ -156,6 +166,37 @@ impl FromStr for Pair {
         };
 
         Ok(pair)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Session {
+    Current(String),
+    Last,
+    Last1,
+    Last2,
+}
+
+impl FromStr for Session {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "current" => {
+                if let std::result::Result::Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
+                    Ok(Session::Current(session_id))
+                } else {
+                    Err(anyhow!("no active terrain"))
+                }
+            }
+            "last" => Ok(Session::Last),
+            "last~1" => Ok(Session::Last1),
+            "last~2" => Ok(Session::Last2),
+            _ => Err(anyhow!(format!(
+                "invalid value {}, value can be current, last, last~1, last~2",
+                s
+            ))),
+        }
     }
 }
 

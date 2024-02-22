@@ -21,7 +21,7 @@ pub fn handle(parent: &Span) {
                     Ok(stream) => {
                         event!(Level::DEBUG, "successful connection");
                         thread::spawn(|| {
-                            let res = connection::handle(stream);
+                            let res = connection::handle(stream.into());
                             if let Err(err) = res {
                                 event!(Level::ERROR, "error while handling the connection: {err}")
                             }
