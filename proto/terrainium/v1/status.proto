@@ -54,9 +54,7 @@ message StatusResponse {
     Status status = 5;
     string stdout_file_path = 6;
     string stderr_file_path = 7;
-    string stdout_lines = 8;
-    string stderr_lines = 9;
-    int32 exit_code = 10;
+    int32 exit_code = 8;
 
     enum Status {
       STATUS_UNSPECIFIED = 0;

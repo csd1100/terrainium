@@ -3,18 +3,14 @@ use anyhow::Result;
 use crate::{
     proto::{
         self,
-        command::{Args, CommandType},
+        command::Args,
         status_request::{History, Operation, ProcessRequest},
         Command, StatusRequest,
     },
     types::{args::Session, socket},
 };
 
-pub fn handle(
-    session: Session,
-    list_processes: bool,
-    process_id: Option<u32>,
-) -> Result<()> {
+pub fn handle(session: Session, list_processes: bool, process_id: Option<u32>) -> Result<()> {
     let op = if list_processes {
         Some(Operation::ListBackground(true))
     } else {
@@ -33,7 +29,6 @@ pub fn handle(
 
     let mut socket = socket::Unix::new()?;
     socket.write(Command {
-        r#type: CommandType::Status.into(),
         args: Some(Args::Status(request)),
     })?;
     Ok(())

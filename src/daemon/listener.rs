@@ -12,7 +12,7 @@ pub struct Listener {
 
 impl Listener {
     pub fn bind(path: impl AsRef<Path>) -> Result<Self> {
-        std::fs::remove_file(&path)?;
+        let _ = std::fs::remove_file(&path);
         let path = path.as_ref().to_owned();
         Ok(UnixListener::bind(&path).map(|listener| Self { path, listener })?)
     }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
+use prost::Message;
 
 use crate::{
     helpers::{
@@ -12,11 +13,7 @@ use crate::{
         },
         operations::merge_hashmaps,
     },
-    proto::{
-        self,
-        command::{Args, CommandType},
-        ActivateRequest,
-    },
+    proto::{self, command::Args, ActivateRequest},
     types::args::BiomeArg,
 };
 
@@ -86,7 +83,6 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
     let mut socket = Unix::new()?;
     socket.write(proto::Command {
-        r#type: CommandType::Activate.into(),
         args: Some(Args::Activate(ActivateRequest {
             session_id,
             terrain_name,
@@ -94,6 +90,22 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
             toml_path,
         })),
     })?;
+
+    let response = socket
+        .read()
+        .context("error while reading response from daemon")?;
+    let response = proto::Response::decode(response).context("error while decoding response")?;
+    let result = response.result.ok_or(anyhow!("no result in response"))?;
+
+    match result {
+        proto::response::Result::Success(_) => {}
+        proto::response::Result::Error(err) => {
+            return Err(anyhow!(format!(
+                "error in operation: {}",
+                err.error_message
+            )));
+        }
+    }
 
     let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
         .context("unable to set zsh environment varibles")?;
@@ -117,6 +129,8 @@ mod test {
 
     use anyhow::{Context, Result};
     use mockall::predicate::eq;
+    use prost::{bytes::BytesMut, Message};
+    use prost_types::Any;
     use serial_test::serial;
 
     use crate::{
@@ -124,7 +138,7 @@ mod test {
             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV},
             operations::{mock_fs, mock_misc},
         },
-        proto,
+        proto::{self, ActivateResponse},
         shell::zsh::mock_ops,
         types::{args::BiomeArg, socket::MockUnix, terrain::test_data},
     };
@@ -152,6 +166,34 @@ mod test {
             .expect()
             .return_once(|| Ok(test_data::terrain_full()))
             .times(1);
+
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "example_biome".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            mocket.expect_read().return_once(|| {
+                let mut buf = BytesMut::new();
+                proto::Response {
+                    result: Some(proto::response::Result::Success(Any::from_msg(
+                        &ActivateResponse {},
+                    )?)),
+                }
+                .encode(&mut buf)?;
+                Ok(buf.into())
+            });
+            Ok(mocket)
+        });
 
         let mock_zsh_env = mock_ops::get_zsh_envs_context();
         mock_zsh_env
@@ -205,25 +247,6 @@ mod test {
             );
         }
 
-        let mocket_new = MockUnix::new_context();
-        mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                r#type: proto::command::CommandType::Activate.into(),
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
-                    terrain_name: "test-terrain".to_string(),
-                    biome_name: "example_biome".to_string(),
-                    toml_path: "./example_configs/terrain.full.toml".to_string(),
-                })),
-            };
-            let mut mocket = MockUnix::default();
-            mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
-                .return_once(|_| Ok(()));
-            Ok(mocket)
-        });
-
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
             .expect()
@@ -269,6 +292,34 @@ mod test {
             .expect()
             .return_once(|| Ok(test_data::terrain_full()))
             .times(1);
+
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "example_biome2".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            mocket.expect_read().return_once(|| {
+                let mut buf = BytesMut::new();
+                proto::Response {
+                    result: Some(proto::response::Result::Success(Any::from_msg(
+                        &ActivateResponse {},
+                    )?)),
+                }
+                .encode(&mut buf)?;
+                Ok(buf.into())
+            });
+            Ok(mocket)
+        });
 
         let mock_zsh_env = mock_ops::get_zsh_envs_context();
         mock_zsh_env
@@ -325,25 +376,6 @@ mod test {
             );
         }
 
-        let mocket_new = MockUnix::new_context();
-        mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                r#type: proto::command::CommandType::Activate.into(),
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
-                    terrain_name: "test-terrain".to_string(),
-                    biome_name: "example_biome2".to_string(),
-                    toml_path: "./example_configs/terrain.full.toml".to_string(),
-                })),
-            };
-            let mut mocket = MockUnix::default();
-            mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
-                .return_once(|_| Ok(()));
-            Ok(mocket)
-        });
-
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
             .expect()
@@ -390,6 +422,35 @@ mod test {
             .return_once(|| Ok(test_data::terrain_without_biomes()))
             .times(1);
 
+        let mocket_new = MockUnix::new_context();
+        mocket_new.expect().returning(|| {
+            let command = proto::Command {
+                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
+                    session_id: "session_id".to_string(),
+                    terrain_name: "test-terrain".to_string(),
+                    biome_name: "none".to_string(),
+                    toml_path: "./example_configs/terrain.full.toml".to_string(),
+                })),
+            };
+
+            let mut mocket = MockUnix::default();
+            mocket
+                .expect_write::<proto::Command>()
+                .with(eq(command))
+                .return_once(|_| Ok(()));
+            mocket.expect_read().return_once(|| {
+                let mut buf = BytesMut::new();
+                proto::Response {
+                    result: Some(proto::response::Result::Success(Any::from_msg(
+                        &ActivateResponse {},
+                    )?)),
+                }
+                .encode(&mut buf)?;
+                Ok(buf.into())
+            });
+            Ok(mocket)
+        });
+
         let mock_zsh_env = mock_ops::get_zsh_envs_context();
         mock_zsh_env
             .expect()
@@ -411,7 +472,10 @@ mod test {
             "./example_configs/terrain.full.toml".to_string(),
         );
         expected.insert("TERRAINIUM_SELECTED_BIOME".to_string(), "none".to_string());
-        expected.insert("TERRAINIUM_SESSION_ID".to_string(), "session_id".to_string());
+        expected.insert(
+            "TERRAINIUM_SESSION_ID".to_string(),
+            "session_id".to_string(),
+        );
 
         let dev = std::env::var(TERRAINIUM_DEV);
         if dev.is_ok() && dev.unwrap() == *"true" {
@@ -439,26 +503,6 @@ mod test {
                 "terrainium_executor".to_string(),
             );
         }
-
-        let mocket_new = MockUnix::new_context();
-        mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                r#type: proto::command::CommandType::Activate.into(),
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
-                    terrain_name: "test-terrain".to_string(),
-                    biome_name: "none".to_string(),
-                    toml_path: "./example_configs/terrain.full.toml".to_string(),
-                })),
-            };
-
-            let mut mocket = MockUnix::default();
-            mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
-                .return_once(|_| Ok(()));
-            Ok(mocket)
-        });
 
         let mock_spawn = mock_ops::spawn_context();
         mock_spawn
