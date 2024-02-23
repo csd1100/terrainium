@@ -3,25 +3,9 @@ syntax = "proto3";
 package terrainium.v1;
 
 message StatusRequest {
-  oneof session {
-    string session_id = 1;
-    History history = 2;
-  }
   oneof operation {
-    bool list_background = 3;
-    ProcessRequest process_requst = 4;
-  }
-
-  enum History {
-    HISTORY_UNSPECIFIED = 0;
-    HISTORY_LAST = 1;
-    HISTORY_LAST_1 = 2;
-    HISTORY_LAST_2 = 3;
-  }
-
-  message ProcessRequest {
-    uint32 background_pid = 1;
-    uint32 no_of_std_lines = 2;
+    bool list_background = 1;
+    uint32 background_pid = 2;
   }
 }
 

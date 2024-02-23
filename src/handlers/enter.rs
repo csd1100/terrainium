@@ -13,7 +13,7 @@ use crate::{
         },
         operations::merge_hashmaps,
     },
-    proto::{self, command::Args, ActivateRequest},
+    proto::{self, ActivateRequest},
     types::args::BiomeArg,
 };
 
@@ -82,9 +82,9 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
     add_executables(&mut envs)?;
 
     let mut socket = Unix::new()?;
-    socket.write(proto::Command {
-        args: Some(Args::Activate(ActivateRequest {
-            session_id,
+    socket.write(proto::Request {
+        session: Some(proto::request::Session::SessionId(session_id)),
+        args: Some(proto::request::Args::Activate(ActivateRequest {
             terrain_name,
             biome_name,
             toml_path,
@@ -130,7 +130,6 @@ mod test {
     use anyhow::{Context, Result};
     use mockall::predicate::eq;
     use prost::{bytes::BytesMut, Message};
-    use prost_types::Any;
     use serial_test::serial;
 
     use crate::{
@@ -138,7 +137,7 @@ mod test {
             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTABLE_ENV, TERRAINIUM_EXECUTOR_ENV},
             operations::{mock_fs, mock_misc},
         },
-        proto::{self, ActivateResponse},
+        proto,
         shell::zsh::mock_ops,
         types::{args::BiomeArg, socket::MockUnix, terrain::test_data},
     };
@@ -168,10 +167,10 @@ mod test {
             .times(1);
 
         let mocket_new = MockUnix::new_context();
-        mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
+        mocket_new.expect().returning(move || {
+            let requst = proto::Request {
+                session: Some(proto::request::Session::SessionId("session_id".to_string())),
+                args: Some(proto::request::Args::Activate(proto::ActivateRequest {
                     terrain_name: "test-terrain".to_string(),
                     biome_name: "example_biome".to_string(),
                     toml_path: "./example_configs/terrain.full.toml".to_string(),
@@ -179,15 +178,17 @@ mod test {
             };
             let mut mocket = MockUnix::default();
             mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
+                .expect_write::<proto::Request>()
+                .with(eq(requst))
                 .return_once(|_| Ok(()));
             mocket.expect_read().return_once(|| {
                 let mut buf = BytesMut::new();
                 proto::Response {
-                    result: Some(proto::response::Result::Success(Any::from_msg(
-                        &ActivateResponse {},
-                    )?)),
+                    result: Some(proto::response::Result::Success(proto::response::Success {
+                        body: Some(proto::response::success::Body::Activate(
+                            proto::ActivateResponse {},
+                        )),
+                    })),
                 }
                 .encode(&mut buf)?;
                 Ok(buf.into())
@@ -295,9 +296,9 @@ mod test {
 
         let mocket_new = MockUnix::new_context();
         mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
+            let request = proto::Request {
+                session: Some(proto::request::Session::SessionId("session_id".to_string())),
+                args: Some(proto::request::Args::Activate(proto::ActivateRequest {
                     terrain_name: "test-terrain".to_string(),
                     biome_name: "example_biome2".to_string(),
                     toml_path: "./example_configs/terrain.full.toml".to_string(),
@@ -305,15 +306,17 @@ mod test {
             };
             let mut mocket = MockUnix::default();
             mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
+                .expect_write::<proto::Request>()
+                .with(eq(request))
                 .return_once(|_| Ok(()));
             mocket.expect_read().return_once(|| {
                 let mut buf = BytesMut::new();
                 proto::Response {
-                    result: Some(proto::response::Result::Success(Any::from_msg(
-                        &ActivateResponse {},
-                    )?)),
+                    result: Some(proto::response::Result::Success(proto::response::Success {
+                        body: Some(proto::response::success::Body::Activate(
+                            proto::ActivateResponse {},
+                        )),
+                    })),
                 }
                 .encode(&mut buf)?;
                 Ok(buf.into())
@@ -424,9 +427,9 @@ mod test {
 
         let mocket_new = MockUnix::new_context();
         mocket_new.expect().returning(|| {
-            let command = proto::Command {
-                args: Some(proto::command::Args::Activate(proto::ActivateRequest {
-                    session_id: "session_id".to_string(),
+            let request = proto::Request {
+                session: Some(proto::request::Session::SessionId("session_id".to_string())),
+                args: Some(proto::request::Args::Activate(proto::ActivateRequest {
                     terrain_name: "test-terrain".to_string(),
                     biome_name: "none".to_string(),
                     toml_path: "./example_configs/terrain.full.toml".to_string(),
@@ -435,15 +438,17 @@ mod test {
 
             let mut mocket = MockUnix::default();
             mocket
-                .expect_write::<proto::Command>()
-                .with(eq(command))
+                .expect_write::<proto::Request>()
+                .with(eq(request))
                 .return_once(|_| Ok(()));
             mocket.expect_read().return_once(|| {
                 let mut buf = BytesMut::new();
                 proto::Response {
-                    result: Some(proto::response::Result::Success(Any::from_msg(
-                        &ActivateResponse {},
-                    )?)),
+                    result: Some(proto::response::Result::Success(proto::response::Success {
+                        body: Some(proto::response::success::Body::Activate(
+                            proto::ActivateResponse {},
+                        )),
+                    })),
                 }
                 .encode(&mut buf)?;
                 Ok(buf.into())

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
 use crate::proto;
@@ -39,22 +40,28 @@ pub enum CommandStatus {
     ERROR,
 }
 
+pub fn status_from(session_id: String, request: proto::ActivateRequest) -> Status {
+    let mut status = Status::from(request);
+    status.session_id = session_id;
+    status
+}
+
 impl From<proto::ActivateRequest> for Status {
     fn from(value: proto::ActivateRequest) -> Self {
         Self {
             terrain_name: value.terrain_name,
             biome_name: value.biome_name,
             toml_path: PathBuf::from(value.toml_path),
-            session_id: value.session_id,
+            session_id: "".to_string(),
             terrain_status: TerrainStatus::ACTIVE,
             process_status: HashMap::new(),
         }
     }
 }
 
-impl Into<i32> for TerrainStatus {
-    fn into(self) -> i32 {
-        match self {
+impl From<TerrainStatus> for i32 {
+    fn from(val: TerrainStatus) -> Self {
+        match val {
             TerrainStatus::ACTIVE => {
                 proto::status_response::TerrainStatus::from_str_name("TERRAIN_STATUS_ACTIVE")
                     .expect("to be converted")
@@ -116,9 +123,14 @@ fn get_process_map(
     map
 }
 
-impl Into<proto::StatusResponse> for Status {
-    fn into(self) -> proto::StatusResponse {
-        proto::StatusResponse {
+impl TryInto<proto::StatusResponse> for Status {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<proto::StatusResponse, Self::Error> {
+        if self.session_id == "" {
+            return Err(anyhow!("session_id not set on status object"));
+        }
+        Ok(proto::StatusResponse {
             response: Some(proto::status_response::Response::Status(
                 proto::status_response::Status {
                     session_id: self.session_id,
@@ -129,6 +141,6 @@ impl Into<proto::StatusResponse> for Status {
                     ps: get_process_map(self.process_status),
                 },
             )),
-        }
+        })
     }
 }

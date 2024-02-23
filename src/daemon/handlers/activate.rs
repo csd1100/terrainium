@@ -7,12 +7,12 @@ use crate::{
 };
 use anyhow::{Context, Result};
 
-pub fn handle(request: ActivateRequest) -> Result<ActivateResponse> {
+pub fn handle(session_id: String, request: ActivateRequest) -> Result<ActivateResponse> {
     let mut tmp_dir = PathBuf::from(format!(
         "/tmp/terrain-{}-{}-{}",
         request.terrain_name.clone(),
         request.biome_name.clone(),
-        request.session_id.clone()
+        session_id.clone()
     ));
     create_dir_if_not_exist(&tmp_dir).context("failed to create terrain temporary directory")?;
 
