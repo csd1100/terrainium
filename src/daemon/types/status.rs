@@ -1,146 +1,72 @@
-use std::{collections::HashMap, path::PathBuf};
+use anyhow::{anyhow, Context, Result};
+use std::{
+    collections::HashMap,
+    fs::File,
+    ops::Deref,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
-use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
-use crate::proto;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct Status {
-    terrain_name: String,
-    biome_name: String,
-    toml_path: PathBuf,
-    session_id: String,
-    terrain_status: TerrainStatus,
-    process_status: HashMap<u32, ProcessStatus>,
+pub struct DaemonStatus {
+    pub active_terrains: HashMap<String, ActiveTerrain>,
+    pub history: [String; 3],
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum TerrainStatus {
-    ACTIVE,
-    INACTIVE,
+impl DaemonStatus {
+    pub fn new() -> Self {
+        DaemonStatus {
+            active_terrains: HashMap::new(),
+            history: ["".to_string(), "".to_string(), "".to_string()],
+        }
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ProcessStatus {
-    pub pid: u32,
-    pub uuid: String,
-    pub cmd: String,
-    pub args: Vec<String>,
-    pub status: CommandStatus,
-    pub stdout_file: PathBuf,
-    pub stderr_file: PathBuf,
-    pub ec: i32,
+impl Default for DaemonStatus {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum CommandStatus {
-    RUNNING,
-    STOPPED,
-    ERROR,
+pub struct ActiveTerrain {
+    pub name: String,
+    pub biome: String,
+    pub toml: PathBuf,
+    pub status_file: PathBuf,
 }
 
-pub fn status_from(session_id: String, request: proto::ActivateRequest) -> Status {
-    let mut status = Status::from(request);
-    status.session_id = session_id;
-    status
-}
-
-impl From<proto::ActivateRequest> for Status {
-    fn from(value: proto::ActivateRequest) -> Self {
-        Self {
-            terrain_name: value.terrain_name,
-            biome_name: value.biome_name,
-            toml_path: PathBuf::from(value.toml_path),
-            session_id: "".to_string(),
-            terrain_status: TerrainStatus::ACTIVE,
-            process_status: HashMap::new(),
+pub fn status_from(daemon_status_file: Arc<Mutex<File>>) -> Result<DaemonStatus> {
+    let res = daemon_status_file.lock();
+    let file = match res {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(anyhow!(
+                "error while acquiring a lock on daemon status file {}",
+                err
+            ))
         }
-    }
+    };
+    let daemon_status: DaemonStatus =
+        serde_json::from_reader(file.deref()).context("error parsing daemon status file")?;
+    Ok(daemon_status)
 }
 
-impl From<TerrainStatus> for i32 {
-    fn from(val: TerrainStatus) -> Self {
-        match val {
-            TerrainStatus::ACTIVE => {
-                proto::status_response::TerrainStatus::from_str_name("TERRAIN_STATUS_ACTIVE")
-                    .expect("to be converted")
-                    .into()
-            }
-            TerrainStatus::INACTIVE => {
-                proto::status_response::TerrainStatus::from_str_name("TERRAIN_STATUS_INACTIVE")
-                    .expect("to be converted")
-                    .into()
-            }
+pub fn status_to(daemon_status_file: Arc<Mutex<File>>, status: DaemonStatus) -> Result<()> {
+    let res = daemon_status_file.lock();
+    let file = match res {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(anyhow!(
+                "error while acquiring a lock on daemon status file {}",
+                err
+            ))
         }
-    }
-}
+    };
 
-impl From<CommandStatus> for i32 {
-    fn from(val: CommandStatus) -> Self {
-        match val {
-            CommandStatus::RUNNING => {
-                proto::status_response::process_status::Status::from_str_name("STATUS_RUNNING")
-                    .expect("to be converted")
-                    .into()
-            }
-            CommandStatus::STOPPED => {
-                proto::status_response::process_status::Status::from_str_name("STATUS_STOPPED")
-                    .expect("to be converted")
-                    .into()
-            }
-            CommandStatus::ERROR => {
-                proto::status_response::process_status::Status::from_str_name("STATUS_ERROR")
-                    .expect("to be converted")
-                    .into()
-            }
-        }
-    }
-}
-
-impl From<ProcessStatus> for proto::status_response::ProcessStatus {
-    fn from(val: ProcessStatus) -> Self {
-        proto::status_response::ProcessStatus {
-            pid: val.pid,
-            uuid: val.uuid,
-            command: val.cmd,
-            args: val.args,
-            status: val.status.into(),
-            stdout_file_path: val.stdout_file.to_string_lossy().to_string(),
-            stderr_file_path: val.stderr_file.to_string_lossy().to_string(),
-            exit_code: val.ec,
-        }
-    }
-}
-
-fn get_process_map(
-    processes: HashMap<u32, ProcessStatus>,
-) -> HashMap<u32, proto::status_response::ProcessStatus> {
-    let mut map = HashMap::<u32, proto::status_response::ProcessStatus>::new();
-    processes.into_iter().for_each(|(id, status)| {
-        map.insert(id, status.into());
-    });
-    map
-}
-
-impl TryInto<proto::StatusResponse> for Status {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<proto::StatusResponse, Self::Error> {
-        if self.session_id.is_empty() {
-            return Err(anyhow!("session_id not set on status object"));
-        }
-        Ok(proto::StatusResponse {
-            response: Some(proto::status_response::Response::Status(
-                proto::status_response::Status {
-                    session_id: self.session_id,
-                    terrain_name: self.terrain_name,
-                    biome_name: self.biome_name,
-                    toml_path: self.toml_path.to_string_lossy().to_string(),
-                    status: self.terrain_status.into(),
-                    ps: get_process_map(self.process_status),
-                },
-            )),
-        })
-    }
+    serde_json::to_writer_pretty(file.deref(), &status)
+        .context("error writing daemon status object to json")?;
+    Ok(())
 }
