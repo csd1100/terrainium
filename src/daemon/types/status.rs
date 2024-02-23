@@ -76,9 +76,9 @@ impl From<TerrainStatus> for i32 {
     }
 }
 
-impl Into<i32> for CommandStatus {
-    fn into(self) -> i32 {
-        match self {
+impl From<CommandStatus> for i32 {
+    fn from(val: CommandStatus) -> Self {
+        match val {
             CommandStatus::RUNNING => {
                 proto::status_response::process_status::Status::from_str_name("STATUS_RUNNING")
                     .expect("to be converted")
@@ -98,17 +98,17 @@ impl Into<i32> for CommandStatus {
     }
 }
 
-impl Into<proto::status_response::ProcessStatus> for ProcessStatus {
-    fn into(self) -> proto::status_response::ProcessStatus {
+impl From<ProcessStatus> for proto::status_response::ProcessStatus {
+    fn from(val: ProcessStatus) -> Self {
         proto::status_response::ProcessStatus {
-            pid: self.pid,
-            uuid: self.uuid,
-            command: self.cmd,
-            args: self.args,
-            status: self.status.into(),
-            stdout_file_path: self.stdout_file.to_string_lossy().to_string(),
-            stderr_file_path: self.stderr_file.to_string_lossy().to_string(),
-            exit_code: self.ec,
+            pid: val.pid,
+            uuid: val.uuid,
+            command: val.cmd,
+            args: val.args,
+            status: val.status.into(),
+            stdout_file_path: val.stdout_file.to_string_lossy().to_string(),
+            stderr_file_path: val.stderr_file.to_string_lossy().to_string(),
+            exit_code: val.ec,
         }
     }
 }
@@ -127,7 +127,7 @@ impl TryInto<proto::StatusResponse> for Status {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<proto::StatusResponse, Self::Error> {
-        if self.session_id == "" {
+        if self.session_id.is_empty() {
             return Err(anyhow!("session_id not set on status object"));
         }
         Ok(proto::StatusResponse {

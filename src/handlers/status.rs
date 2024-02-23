@@ -9,7 +9,7 @@ pub fn handle(session: Session, list_processes: bool, process_id: Option<u32>) -
     let op: Option<proto::status_request::Operation> = if list_processes {
         Some(proto::status_request::Operation::ListBackground(true))
     } else {
-        process_id.map(|id| proto::status_request::Operation::BackgroundPid(id))
+        process_id.map(proto::status_request::Operation::BackgroundPid)
     };
 
     let status_request = proto::StatusRequest {
