@@ -10,7 +10,7 @@ pub fn handle() -> Result<()> {
 mod inner {
     use std::path::PathBuf;
 
-    use crate::{helpers::operations::fs, types::terrain::Terrain};
+    use crate::{helpers::utils::fs, types::terrain::Terrain};
     use anyhow::Result;
     use schemars::schema_for;
 

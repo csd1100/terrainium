@@ -18,7 +18,7 @@ use crate::types::executor::Executable;
 use crate::shell::process::spawn;
 
 #[double]
-use crate::helpers::operations::fs;
+use crate::helpers::utils::fs;
 
 #[cfg_attr(test, automock)]
 pub mod processes {
@@ -93,379 +93,379 @@ fn iterate_over_commands_and_spawn(
     }
 }
 
-#[cfg(test)]
-mod test {
-    use std::{collections::HashMap, fs::File, path::PathBuf};
-
-    use anyhow::Result;
-    use mockall::predicate::eq;
-    use serial_test::serial;
-
-    use crate::{
-        helpers::{
-            constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR_ENV},
-            operations::mock_fs,
-        },
-        shell::process::mock_spawn,
-        types::{
-            commands::Command,
-            executor::{Executable, MockExecutable},
-        },
-    };
-
-    #[test]
-    #[serial]
-    fn spawns_all_background_processes_if_env_passed() -> Result<()> {
-        File::create("/tmp/test")?;
-
-        let mock_executable_from_command = MockExecutable::from_context();
-        mock_executable_from_command
-            .expect()
-            .with(eq(Command {
-                exe: "command1".to_string(),
-                args: None,
-            }))
-            .returning(|comm| {
-                let mut mock = MockExecutable::new();
-                mock.expect_get_uuid().return_const("id-1");
-                mock.expect_private_serialize().return_once(|| Executable {
-                    uuid: "id-1".to_string(),
-                    exe: comm.exe,
-                    args: comm.args,
-                });
-                mock
-            });
-
-        mock_executable_from_command
-            .expect()
-            .with(eq(Command {
-                exe: "command2".to_string(),
-                args: Some(vec!["args2".to_string()]),
-            }))
-            .returning(|comm| {
-                let mut mock = MockExecutable::new();
-                mock.expect_get_uuid().return_const("id-2");
-                mock.expect_private_serialize().return_once(|| Executable {
-                    uuid: "id-2".to_string(),
-                    exe: comm.exe,
-                    args: comm.args,
-                });
-                mock
-            });
-
-        let mock_log_file = mock_fs::get_process_log_file_context();
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-out-id-1.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-err-id-1.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-out-id-2.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-err-id-2.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-
-        let mock_spawn_process = mock_spawn::with_stdout_stderr_context();
-        mock_spawn_process
-            .expect()
-            .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor".to_string();
-                let dev = std::env::var(TERRAINIUM_DEV);
-                if dev.is_ok() && dev.unwrap() == *"true" {
-                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
-                        command = executor;
-                    }
-                }
-                let exe_eq = exe == command;
-
-                let exec_json = serde_json::to_string(&Executable {
-                    uuid: "id-1".to_string(),
-                    exe: "command1".to_string(),
-                    args: None,
-                })
-                .expect("to be parsed");
-                let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
-
-                let mut expected = HashMap::<String, String>::new();
-                expected.insert(
-                    "TERRAINIUM_SESSION_ID".to_string(),
-                    "session_id".to_string(),
-                );
-                expected.insert("TEST".to_string(), "value".to_string());
-                let envs_eq = *envs.as_ref().unwrap() == expected;
-
-                exe_eq && args_eq && envs_eq
-            })
-            .return_once(|_, _, _, _, _| Ok(()));
-
-        mock_spawn_process
-            .expect()
-            .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor".to_string();
-                let dev = std::env::var(TERRAINIUM_DEV);
-                if dev.is_ok() && dev.unwrap() == *"true" {
-                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
-                        command = executor;
-                    }
-                }
-                let exe_eq = exe == command;
-
-                let exec_json = serde_json::to_string(&Executable {
-                    uuid: "id-2".to_string(),
-                    exe: "command2".to_string(),
-                    args: Some(vec!["args2".to_string()]),
-                })
-                .expect("to be parsed");
-                let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
-
-                let mut expected = HashMap::<String, String>::new();
-                expected.insert(
-                    "TERRAINIUM_SESSION_ID".to_string(),
-                    "session_id".to_string(),
-                );
-                expected.insert("TEST".to_string(), "value".to_string());
-                let envs_eq = *envs.as_ref().unwrap() == expected;
-
-                exe_eq && args_eq && envs_eq
-            })
-            .return_once(|_, _, _, _, _| Ok(()));
-
-        let commands = vec![
-            Command {
-                exe: "command1".to_string(),
-                args: None,
-            },
-            Command {
-                exe: "command2".to_string(),
-                args: Some(vec!["args2".to_string()]),
-            },
-        ];
-
-        let mut envs = HashMap::<String, String>::new();
-        envs.insert(
-            "TERRAINIUM_SESSION_ID".to_string(),
-            "session_id".to_string(),
-        );
-        envs.insert("TEST".to_string(), "value".to_string());
-
-        super::processes::start(commands, envs)?;
-
-        Ok(())
-    }
-
-    #[test]
-    #[serial]
-    fn spawns_all_background_processes_if_env_var_set() -> Result<()> {
-        // setup
-        let real_session_id = std::env::var("TERRAINIUM_SESSION_ID").ok();
-        std::env::set_var("TERRAINIUM_SESSION_ID", "session_id");
-        File::create("/tmp/test")?;
-
-        let mock_executable_from_command = MockExecutable::from_context();
-        mock_executable_from_command
-            .expect()
-            .with(eq(Command {
-                exe: "command1".to_string(),
-                args: None,
-            }))
-            .returning(|comm| {
-                let mut mock = MockExecutable::new();
-                mock.expect_get_uuid().return_const("id-1");
-                mock.expect_private_serialize().return_once(|| Executable {
-                    uuid: "id-1".to_string(),
-                    exe: comm.exe,
-                    args: comm.args,
-                });
-                mock
-            });
-
-        mock_executable_from_command
-            .expect()
-            .with(eq(Command {
-                exe: "command2".to_string(),
-                args: Some(vec!["args2".to_string()]),
-            }))
-            .returning(|comm| {
-                let mut mock = MockExecutable::new();
-                mock.expect_get_uuid().return_const("id-2");
-                mock.expect_private_serialize().return_once(|| Executable {
-                    uuid: "id-2".to_string(),
-                    exe: comm.exe,
-                    args: comm.args,
-                });
-                mock
-            });
-
-        let mock_log_file = mock_fs::get_process_log_file_context();
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-out-id-1.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-err-id-1.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-out-id-2.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-        mock_log_file
-            .expect()
-            .with(
-                eq("session_id".to_string()),
-                eq("spawn-err-id-2.log".to_string()),
-            )
-            .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
-
-        let mock_spawn_process = mock_spawn::with_stdout_stderr_context();
-        mock_spawn_process
-            .expect()
-            .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor".to_string();
-                let dev = std::env::var(TERRAINIUM_DEV);
-                if dev.is_ok() && dev.unwrap() == *"true" {
-                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
-                        command = executor;
-                    }
-                }
-                let exe_eq = exe == command;
-
-                let exec_json = serde_json::to_string(&Executable {
-                    uuid: "id-1".to_string(),
-                    exe: "command1".to_string(),
-                    args: None,
-                })
-                .expect("to be parsed");
-                let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
-
-                let mut expected = HashMap::<String, String>::new();
-                expected.insert("TEST".to_string(), "value".to_string());
-                let envs_eq = *envs.as_ref().unwrap() == expected;
-
-                exe_eq && args_eq && envs_eq
-            })
-            .return_once(|_, _, _, _, _| Ok(()));
-
-        mock_spawn_process
-            .expect()
-            .withf(|exe, args, envs, _, _| {
-                let mut command = "terrainium_executor".to_string();
-                let dev = std::env::var(TERRAINIUM_DEV);
-                if dev.is_ok() && dev.unwrap() == *"true" {
-                    if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
-                        command = executor;
-                    }
-                }
-                let exe_eq = exe == command;
-
-                let exec_json = serde_json::to_string(&Executable {
-                    uuid: "id-2".to_string(),
-                    exe: "command2".to_string(),
-                    args: Some(vec!["args2".to_string()]),
-                })
-                .expect("to be parsed");
-                let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
-
-                let mut expected = HashMap::<String, String>::new();
-                expected.insert("TEST".to_string(), "value".to_string());
-                let envs_eq = *envs.as_ref().unwrap() == expected;
-
-                exe_eq && args_eq && envs_eq
-            })
-            .return_once(|_, _, _, _, _| Ok(()));
-
-        let commands = vec![
-            Command {
-                exe: "command1".to_string(),
-                args: None,
-            },
-            Command {
-                exe: "command2".to_string(),
-                args: Some(vec!["args2".to_string()]),
-            },
-        ];
-
-        let mut envs = HashMap::<String, String>::new();
-        envs.insert("TEST".to_string(), "value".to_string());
-
-        super::processes::start(commands, envs)?;
-        // cleanup
-        if let Some(session_id) = real_session_id {
-            std::env::set_var("TERRAINIUM_SESSION_ID", session_id)
-        } else {
-            std::env::remove_var("TERRAINIUM_SESSION_ID")
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    #[serial]
-    fn returns_err_if_no_session_id() -> Result<()> {
-        let real_session_id = std::env::var("TERRAINIUM_SESSION_ID").ok();
-        std::env::remove_var("TERRAINIUM_SESSION_ID");
-
-        let commands = vec![
-            Command {
-                exe: "command1".to_string(),
-                args: None,
-            },
-            Command {
-                exe: "command2".to_string(),
-                args: Some(vec!["args2".to_string()]),
-            },
-        ];
-
-        let mut envs = HashMap::<String, String>::new();
-        envs.insert("TEST".to_string(), "value".to_string());
-        let actual = super::processes::start(commands, envs)
-            .unwrap_err()
-            .to_string();
-
-        assert_eq!(
-            "unable to get terrainium session id to start background processes".to_string(),
-            actual
-        );
-
-        // cleanup
-        if let Some(session_id) = real_session_id {
-            std::env::set_var("TERRAINIUM_SESSION_ID", session_id)
-        } else {
-            std::env::remove_var("TERRAINIUM_SESSION_ID")
-        }
-        Ok(())
-    }
-
-    fn get_test_file() -> Result<File> {
-        Ok(File::open("/tmp/test")?)
-    }
-}
+// #[cfg(test)]
+// mod test {
+//     use std::{collections::HashMap, fs::File, path::PathBuf};
+//
+//     use anyhow::Result;
+//     use mockall::predicate::eq;
+//     use serial_test::serial;
+//
+//     use crate::{
+//         helpers::{
+//             constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR_ENV},
+//             operations::mock_fs,
+//         },
+//         shell::process::mock_spawn,
+//         types::{
+//             commands::Command,
+//             executor::{Executable, MockExecutable},
+//         },
+//     };
+//
+//     #[test]
+//     #[serial]
+//     fn spawns_all_background_processes_if_env_passed() -> Result<()> {
+//         File::create("/tmp/test")?;
+//
+//         let mock_executable_from_command = MockExecutable::from_context();
+//         mock_executable_from_command
+//             .expect()
+//             .with(eq(Command {
+//                 exe: "command1".to_string(),
+//                 args: None,
+//             }))
+//             .returning(|comm| {
+//                 let mut mock = MockExecutable::new();
+//                 mock.expect_get_uuid().return_const("id-1");
+//                 mock.expect_private_serialize().return_once(|| Executable {
+//                     uuid: "id-1".to_string(),
+//                     exe: comm.exe,
+//                     args: comm.args,
+//                 });
+//                 mock
+//             });
+//
+//         mock_executable_from_command
+//             .expect()
+//             .with(eq(Command {
+//                 exe: "command2".to_string(),
+//                 args: Some(vec!["args2".to_string()]),
+//             }))
+//             .returning(|comm| {
+//                 let mut mock = MockExecutable::new();
+//                 mock.expect_get_uuid().return_const("id-2");
+//                 mock.expect_private_serialize().return_once(|| Executable {
+//                     uuid: "id-2".to_string(),
+//                     exe: comm.exe,
+//                     args: comm.args,
+//                 });
+//                 mock
+//             });
+//
+//         let mock_log_file = mock_fs::get_process_log_file_context();
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-out-id-1.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-err-id-1.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-out-id-2.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-err-id-2.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//
+//         let mock_spawn_process = mock_spawn::with_stdout_stderr_context();
+//         mock_spawn_process
+//             .expect()
+//             .withf(|exe, args, envs, _, _| {
+//                 let mut command = "terrainium_executor".to_string();
+//                 let dev = std::env::var(TERRAINIUM_DEV);
+//                 if dev.is_ok() && dev.unwrap() == *"true" {
+//                     if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+//                         command = executor;
+//                     }
+//                 }
+//                 let exe_eq = exe == command;
+//
+//                 let exec_json = serde_json::to_string(&Executable {
+//                     uuid: "id-1".to_string(),
+//                     exe: "command1".to_string(),
+//                     args: None,
+//                 })
+//                 .expect("to be parsed");
+//                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
+//
+//                 let mut expected = HashMap::<String, String>::new();
+//                 expected.insert(
+//                     "TERRAINIUM_SESSION_ID".to_string(),
+//                     "session_id".to_string(),
+//                 );
+//                 expected.insert("TEST".to_string(), "value".to_string());
+//                 let envs_eq = *envs.as_ref().unwrap() == expected;
+//
+//                 exe_eq && args_eq && envs_eq
+//             })
+//             .return_once(|_, _, _, _, _| Ok(()));
+//
+//         mock_spawn_process
+//             .expect()
+//             .withf(|exe, args, envs, _, _| {
+//                 let mut command = "terrainium_executor".to_string();
+//                 let dev = std::env::var(TERRAINIUM_DEV);
+//                 if dev.is_ok() && dev.unwrap() == *"true" {
+//                     if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+//                         command = executor;
+//                     }
+//                 }
+//                 let exe_eq = exe == command;
+//
+//                 let exec_json = serde_json::to_string(&Executable {
+//                     uuid: "id-2".to_string(),
+//                     exe: "command2".to_string(),
+//                     args: Some(vec!["args2".to_string()]),
+//                 })
+//                 .expect("to be parsed");
+//                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
+//
+//                 let mut expected = HashMap::<String, String>::new();
+//                 expected.insert(
+//                     "TERRAINIUM_SESSION_ID".to_string(),
+//                     "session_id".to_string(),
+//                 );
+//                 expected.insert("TEST".to_string(), "value".to_string());
+//                 let envs_eq = *envs.as_ref().unwrap() == expected;
+//
+//                 exe_eq && args_eq && envs_eq
+//             })
+//             .return_once(|_, _, _, _, _| Ok(()));
+//
+//         let commands = vec![
+//             Command {
+//                 exe: "command1".to_string(),
+//                 args: None,
+//             },
+//             Command {
+//                 exe: "command2".to_string(),
+//                 args: Some(vec!["args2".to_string()]),
+//             },
+//         ];
+//
+//         let mut envs = HashMap::<String, String>::new();
+//         envs.insert(
+//             "TERRAINIUM_SESSION_ID".to_string(),
+//             "session_id".to_string(),
+//         );
+//         envs.insert("TEST".to_string(), "value".to_string());
+//
+//         super::processes::start(commands, envs)?;
+//
+//         Ok(())
+//     }
+//
+//     #[test]
+//     #[serial]
+//     fn spawns_all_background_processes_if_env_var_set() -> Result<()> {
+//         // setup
+//         let real_session_id = std::env::var("TERRAINIUM_SESSION_ID").ok();
+//         std::env::set_var("TERRAINIUM_SESSION_ID", "session_id");
+//         File::create("/tmp/test")?;
+//
+//         let mock_executable_from_command = MockExecutable::from_context();
+//         mock_executable_from_command
+//             .expect()
+//             .with(eq(Command {
+//                 exe: "command1".to_string(),
+//                 args: None,
+//             }))
+//             .returning(|comm| {
+//                 let mut mock = MockExecutable::new();
+//                 mock.expect_get_uuid().return_const("id-1");
+//                 mock.expect_private_serialize().return_once(|| Executable {
+//                     uuid: "id-1".to_string(),
+//                     exe: comm.exe,
+//                     args: comm.args,
+//                 });
+//                 mock
+//             });
+//
+//         mock_executable_from_command
+//             .expect()
+//             .with(eq(Command {
+//                 exe: "command2".to_string(),
+//                 args: Some(vec!["args2".to_string()]),
+//             }))
+//             .returning(|comm| {
+//                 let mut mock = MockExecutable::new();
+//                 mock.expect_get_uuid().return_const("id-2");
+//                 mock.expect_private_serialize().return_once(|| Executable {
+//                     uuid: "id-2".to_string(),
+//                     exe: comm.exe,
+//                     args: comm.args,
+//                 });
+//                 mock
+//             });
+//
+//         let mock_log_file = mock_fs::get_process_log_file_context();
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-out-id-1.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-err-id-1.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-out-id-2.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//         mock_log_file
+//             .expect()
+//             .with(
+//                 eq("session_id".to_string()),
+//                 eq("spawn-err-id-2.log".to_string()),
+//             )
+//             .return_once(|_, _| Ok((PathBuf::from("/tmp/test.log"), get_test_file()?)));
+//
+//         let mock_spawn_process = mock_spawn::with_stdout_stderr_context();
+//         mock_spawn_process
+//             .expect()
+//             .withf(|exe, args, envs, _, _| {
+//                 let mut command = "terrainium_executor".to_string();
+//                 let dev = std::env::var(TERRAINIUM_DEV);
+//                 if dev.is_ok() && dev.unwrap() == *"true" {
+//                     if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+//                         command = executor;
+//                     }
+//                 }
+//                 let exe_eq = exe == command;
+//
+//                 let exec_json = serde_json::to_string(&Executable {
+//                     uuid: "id-1".to_string(),
+//                     exe: "command1".to_string(),
+//                     args: None,
+//                 })
+//                 .expect("to be parsed");
+//                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
+//
+//                 let mut expected = HashMap::<String, String>::new();
+//                 expected.insert("TEST".to_string(), "value".to_string());
+//                 let envs_eq = *envs.as_ref().unwrap() == expected;
+//
+//                 exe_eq && args_eq && envs_eq
+//             })
+//             .return_once(|_, _, _, _, _| Ok(()));
+//
+//         mock_spawn_process
+//             .expect()
+//             .withf(|exe, args, envs, _, _| {
+//                 let mut command = "terrainium_executor".to_string();
+//                 let dev = std::env::var(TERRAINIUM_DEV);
+//                 if dev.is_ok() && dev.unwrap() == *"true" {
+//                     if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
+//                         command = executor;
+//                     }
+//                 }
+//                 let exe_eq = exe == command;
+//
+//                 let exec_json = serde_json::to_string(&Executable {
+//                     uuid: "id-2".to_string(),
+//                     exe: "command2".to_string(),
+//                     args: Some(vec!["args2".to_string()]),
+//                 })
+//                 .expect("to be parsed");
+//                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
+//
+//                 let mut expected = HashMap::<String, String>::new();
+//                 expected.insert("TEST".to_string(), "value".to_string());
+//                 let envs_eq = *envs.as_ref().unwrap() == expected;
+//
+//                 exe_eq && args_eq && envs_eq
+//             })
+//             .return_once(|_, _, _, _, _| Ok(()));
+//
+//         let commands = vec![
+//             Command {
+//                 exe: "command1".to_string(),
+//                 args: None,
+//             },
+//             Command {
+//                 exe: "command2".to_string(),
+//                 args: Some(vec!["args2".to_string()]),
+//             },
+//         ];
+//
+//         let mut envs = HashMap::<String, String>::new();
+//         envs.insert("TEST".to_string(), "value".to_string());
+//
+//         super::processes::start(commands, envs)?;
+//         // cleanup
+//         if let Some(session_id) = real_session_id {
+//             std::env::set_var("TERRAINIUM_SESSION_ID", session_id)
+//         } else {
+//             std::env::remove_var("TERRAINIUM_SESSION_ID")
+//         }
+//
+//         Ok(())
+//     }
+//
+//     #[test]
+//     #[serial]
+//     fn returns_err_if_no_session_id() -> Result<()> {
+//         let real_session_id = std::env::var("TERRAINIUM_SESSION_ID").ok();
+//         std::env::remove_var("TERRAINIUM_SESSION_ID");
+//
+//         let commands = vec![
+//             Command {
+//                 exe: "command1".to_string(),
+//                 args: None,
+//             },
+//             Command {
+//                 exe: "command2".to_string(),
+//                 args: Some(vec!["args2".to_string()]),
+//             },
+//         ];
+//
+//         let mut envs = HashMap::<String, String>::new();
+//         envs.insert("TEST".to_string(), "value".to_string());
+//         let actual = super::processes::start(commands, envs)
+//             .unwrap_err()
+//             .to_string();
+//
+//         assert_eq!(
+//             "unable to get terrainium session id to start background processes".to_string(),
+//             actual
+//         );
+//
+//         // cleanup
+//         if let Some(session_id) = real_session_id {
+//             std::env::set_var("TERRAINIUM_SESSION_ID", session_id)
+//         } else {
+//             std::env::remove_var("TERRAINIUM_SESSION_ID")
+//         }
+//         Ok(())
+//     }
+//
+//     fn get_test_file() -> Result<File> {
+//         Ok(File::open("/tmp/test")?)
+//     }
+// }

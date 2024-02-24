@@ -3,8 +3,7 @@ use std::{fs::File, path::PathBuf, process::Command};
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use terrainium::{
-    helpers::operations::fs,
-    types::executor::{Executable, ExecutorArgs, Status},
+    helpers::utils::fs, types::executor::{Executable, ExecutorArgs, Status}
 };
 
 fn create_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {

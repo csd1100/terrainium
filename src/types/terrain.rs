@@ -1,6 +1,6 @@
 use std::{
     collections::{hash_map::IntoIter, HashMap},
-    path::PathBuf,
+    path::Path,
 };
 
 use anyhow::{Context, Result};
@@ -16,7 +16,7 @@ use super::{
     get::PrintableTerrain,
 };
 
-pub fn parse_terrain_from(a_toml_file: &PathBuf) -> Result<Terrain> {
+pub fn parse_terrain_from<P: AsRef<Path>>(a_toml_file: P) -> Result<Terrain> {
     let terrain = std::fs::read_to_string(a_toml_file).context("Unable to read file")?;
     let terrain: Terrain = toml::from_str(&terrain).context("Unable to parse terrain")?;
     Ok(terrain)
@@ -161,7 +161,9 @@ impl Terrain {
     }
 
     pub fn set_default_biome(&mut self, biome: String) -> Result<()> {
-        let _ = self.get_biome(&biome).context("unable to set default biome")?;
+        let _ = self
+            .get_biome(&biome)
+            .context("unable to set default biome")?;
         self.default_biome = Some(biome);
         Ok(())
     }
@@ -296,7 +298,7 @@ mod test {
     #[test]
     fn parse_toml_full() -> Result<()> {
         let expected = test_data::terrain_full();
-        let parsed = parse_terrain_from(&PathBuf::from("./example_configs/terrain.full.toml"))?;
+        let parsed = parse_terrain_from(PathBuf::from("./example_configs/terrain.full.toml"))?;
 
         assert_eq!(expected, parsed);
 
@@ -306,7 +308,7 @@ mod test {
     #[test]
     fn parse_toml_without_biomes() -> Result<()> {
         let expected = test_data::terrain_without_biomes();
-        let parsed = parse_terrain_from(&PathBuf::from(
+        let parsed = parse_terrain_from(PathBuf::from(
             "./example_configs/terrain.without.biomes.toml",
         ))?;
 

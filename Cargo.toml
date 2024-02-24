@@ -33,6 +33,7 @@ features = ["preserve_order", "indexmap"]
 [dev-dependencies]
 mockall = { version = "0.12.1" }
 serial_test = "3.0.0"
+tempfile = "3"
 
 [build-dependencies]
 prost-build = "0.12"
