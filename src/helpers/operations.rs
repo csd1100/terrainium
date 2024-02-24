@@ -123,11 +123,11 @@ fn get_config_path() -> Result<PathBuf> {
 }
 
 fn is_local_terrain_present() -> Result<bool> {
-    Ok(Path::try_exists(&get_local_terrain_path()?)?)
+    Ok(get_local_terrain_path()?.exists())
 }
 
 fn is_central_terrain_present() -> Result<bool> {
-    Ok(Path::try_exists(&get_central_terrain_path()?)?)
+    Ok(get_central_terrain_path()?.exists())
 }
 
 pub fn write_terrain(path: &Path, terrain: &Terrain) -> Result<()> {
@@ -144,7 +144,7 @@ pub fn copy_file(from: &Path, to: &Path) -> Result<u64> {
 }
 
 pub fn create_dir_if_not_exist(dir: &Path) -> Result<bool> {
-    if !Path::try_exists(dir)? {
+    if !dir.exists() {
         println!("creating a directory at path {}", dir.to_string_lossy());
         std::fs::create_dir_all(dir)?;
         return Ok(true);
@@ -260,8 +260,8 @@ mod test {
         map_2.insert("k2".to_string(), "v2".to_string());
 
         // from: some to: some; to overrides from
-        let actual = get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone()))
-            .expect("to be present");
+        let actual =
+            get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone())).expect("to be present");
 
         let mut expected: BTreeMap<String, String> = BTreeMap::<String, String>::new();
         expected.insert("k1".to_string(), "v1".to_string());
@@ -277,16 +277,16 @@ mod test {
         expected.insert("k2".to_string(), "v2".to_string());
 
         // from: some to: some; to overrides from
-        let actual = get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone()))
-            .expect("to be present");
+        let actual =
+            get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone())).expect("to be present");
         assert_eq!(expected, actual);
 
         let mut expected: BTreeMap<String, String> = BTreeMap::<String, String>::new();
         expected.insert("k1".to_string(), "v1".to_string());
         expected.insert("k2".to_string(), "v2".to_string());
 
-        let actual = get_merged_maps(&Some(map_2.clone()), &Some(map_1.clone()))
-            .expect("to be present");
+        let actual =
+            get_merged_maps(&Some(map_2.clone()), &Some(map_1.clone())).expect("to be present");
         assert_eq!(expected, actual);
         Ok(())
     }
