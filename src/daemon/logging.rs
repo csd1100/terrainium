@@ -5,7 +5,7 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, Registry};
 
 use crate::helpers::constants::TERRAINIUMD_TMP;
-use crate::helpers::utils::fs::create_dir_if_not_exist;
+use crate::helpers::operations::create_dir_if_not_exist;
 
 pub fn init_logger() -> Result<()> {
     create_dir_if_not_exist(&PathBuf::from(TERRAINIUMD_TMP))?;

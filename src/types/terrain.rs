@@ -308,7 +308,7 @@ mod test {
     #[test]
     fn parse_toml_without_biomes() -> Result<()> {
         let expected = test_data::terrain_without_biomes();
-        let parsed = parse_terrain_from(PathBuf::from(
+        let parsed = parse_terrain_from(&PathBuf::from(
             "./example_configs/terrain.without.biomes.toml",
         ))?;
 

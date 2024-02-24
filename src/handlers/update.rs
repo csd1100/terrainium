@@ -1,20 +1,16 @@
 use anyhow::{Context, Result};
-use mockall_double::double;
 
 use crate::{
-    helpers::operations::{get_current_dir_toml, get_parsed_terrain, write_terrain},
+    helpers::operations::{copy_file, get_current_dir_toml, get_parsed_terrain, write_terrain},
     types::args::UpdateOpts,
 };
-
-#[double]
-use crate::helpers::utils::fs;
 
 use super::generate::generate_and_compile;
 
 fn backup_terrain() -> Result<()> {
     let terrain_toml = get_current_dir_toml()?;
     let backup = terrain_toml.with_extension("toml.bkp");
-    fs::copy_file(&terrain_toml, &backup).context("unable to backup terrain.toml")?;
+    copy_file(&terrain_toml, &backup).context("unable to backup terrain.toml")?;
     Ok(())
 }
 

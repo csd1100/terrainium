@@ -7,7 +7,10 @@ use mockall::automock;
 use mockall_double::double;
 
 use crate::{
-    helpers::constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR, TERRAINIUM_EXECUTOR_ENV},
+    helpers::{
+        constants::{TERRAINIUM_DEV, TERRAINIUM_EXECUTOR, TERRAINIUM_EXECUTOR_ENV},
+        operations::get_process_log_file,
+    },
     types::commands::Command,
 };
 
@@ -16,9 +19,6 @@ use crate::types::executor::Executable;
 
 #[double]
 use crate::shell::process::spawn;
-
-#[double]
-use crate::helpers::utils::fs;
 
 #[cfg_attr(test, automock)]
 pub mod processes {
@@ -60,11 +60,11 @@ fn start_process_with_session_id(
 
     let args = vec!["--id", &session_id, "--exec", &exec_arg];
 
-    let (_, spawn_out) = fs::get_process_log_file(
+    let (_, spawn_out) = get_process_log_file(
         &session_id,
         format!("spawn-out-{}.log", exec_arg_json.get_uuid()),
     )?;
-    let (_, spawn_err) = fs::get_process_log_file(
+    let (_, spawn_err) = get_process_log_file(
         &session_id,
         format!("spawn-err-{}.log", exec_arg_json.get_uuid()),
     )?;

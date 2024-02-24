@@ -2,12 +2,9 @@ use anyhow::{anyhow, Result};
 use mockall_double::double;
 
 use crate::{
-    helpers::operations::{get_central_store_path, get_current_dir_toml},
+    helpers::operations::{get_central_store_path, get_current_dir_toml, remove_all_script_files},
     types::terrain::{parse_terrain_from, Terrain},
 };
-
-#[double]
-use crate::helpers::utils::fs;
 
 #[double]
 use crate::shell::zsh::ops;
@@ -20,7 +17,7 @@ pub fn handle() -> Result<()> {
 pub fn generate_and_compile(terrain: Terrain) -> Result<()> {
     let central_store = get_central_store_path()?;
 
-    fs::remove_all_script_files(central_store.as_path())?;
+    remove_all_script_files(central_store.as_path())?;
 
     let result: Result<Vec<_>> = terrain
         .into_iter()

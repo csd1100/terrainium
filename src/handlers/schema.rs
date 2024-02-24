@@ -10,14 +10,14 @@ pub fn handle() -> Result<()> {
 mod inner {
     use std::path::PathBuf;
 
-    use crate::{helpers::utils::fs, types::terrain::Terrain};
+    use crate::{helpers::operations::write_file, types::terrain::Terrain};
     use anyhow::Result;
     use schemars::schema_for;
 
     pub fn generate_and_store_schema() -> Result<()> {
         let schema = schema_for!(Terrain);
         let json = serde_json::to_string_pretty(&schema).unwrap();
-        fs::write_file(&PathBuf::from("./schema/terrain-schema.json"), json)?;
+        write_file(&PathBuf::from("./schema/terrain-schema.json"), json)?;
         Ok(())
     }
 }

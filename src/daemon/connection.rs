@@ -9,7 +9,7 @@ use prost::Message;
 use tracing::{event, span, Level};
 
 use crate::{
-    daemon::types::client_status::session_id_from, helpers::utils::fs::create_dir_if_not_exist,
+    daemon::types::client_status::session_id_from, helpers::operations::create_dir_if_not_exist,
     proto, types::socket,
 };
 

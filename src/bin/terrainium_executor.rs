@@ -3,11 +3,12 @@ use std::{fs::File, path::PathBuf, process::Command};
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use terrainium::{
-    helpers::utils::fs, types::executor::{Executable, ExecutorArgs, Status}
+    helpers::operations::get_process_log_file,
+    types::executor::{Executable, ExecutorArgs, Status},
 };
 
 fn create_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {
-    fs::get_process_log_file(session_id, filename.clone())
+    get_process_log_file(session_id, filename.clone())
         .context(format!("Unable to get log file path: {}", filename))
 }
 
@@ -45,8 +46,7 @@ fn main() -> Result<()> {
     });
 
     let status_file_name = format!("status-{}.json", command.get_uuid());
-    let (status_file_path, status_file) =
-        fs::get_process_log_file(&cli.id, status_file_name.clone())?;
+    let (status_file_path, status_file) = get_process_log_file(&cli.id, status_file_name.clone())?;
     {
         serde_json::to_writer_pretty(
             &status_file,

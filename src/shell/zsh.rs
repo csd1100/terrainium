@@ -5,7 +5,10 @@ use std::{collections::HashMap, path::Path, process::Output};
 #[cfg(test)]
 use mockall::automock;
 
-use crate::{helpers::utils::fs, types::biomes::{Biome, BiomeWithName}};
+use crate::{
+    helpers::operations::write_file,
+    types::biomes::{Biome, BiomeWithName},
+};
 
 #[double]
 use crate::shell::process::spawn;
@@ -23,7 +26,10 @@ pub mod ops {
     use std::{collections::HashMap, path::Path};
 
     use crate::{
-        helpers::{constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH}, operations::get_central_store_path},
+        helpers::{
+            constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
+            operations::get_central_store_path,
+        },
         types::biomes::Biome,
     };
 
@@ -113,7 +119,7 @@ fn generate_zsh_script(
     let mut path = central_store.to_path_buf();
     path.push(format!("terrain-{}.zsh", biome_name));
 
-    fs::write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
+    write_file(&path, text).context(format!("failed to write file to path {:?}", &path))?;
     Ok(())
 }
 
