@@ -21,7 +21,7 @@ pub fn build(get_commands: fn(Biome) -> Option<Commands>) -> Result<()> {
     };
 
     let terrain_toml = fs::get_terrain_toml_from_biome(&biome)?;
-    let terrain = terrain::parse_terrain(&terrain_toml)?
+    let terrain = terrain::parse_terrain_from(&terrain_toml)?
         .get(biome)
         .context("unable to select a biome to call constructors")?;
 

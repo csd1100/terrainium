@@ -16,8 +16,8 @@ use super::{
     get::PrintableTerrain,
 };
 
-pub fn parse_terrain(path: &PathBuf) -> Result<Terrain> {
-    let terrain = std::fs::read_to_string(path).context("Unable to read file")?;
+pub fn parse_terrain_from(a_toml_file: &PathBuf) -> Result<Terrain> {
+    let terrain = std::fs::read_to_string(a_toml_file).context("Unable to read file")?;
     let terrain: Terrain = toml::from_str(&terrain).context("Unable to parse terrain")?;
     Ok(terrain)
 }
@@ -281,12 +281,12 @@ mod test {
         terrain::test_data,
     };
 
-    use super::{parse_terrain, Terrain};
+    use super::{parse_terrain_from, Terrain};
 
     #[test]
     fn parse_toml_full() -> Result<()> {
         let expected = test_data::terrain_full();
-        let parsed = parse_terrain(&PathBuf::from("./example_configs/terrain.full.toml"))?;
+        let parsed = parse_terrain_from(&PathBuf::from("./example_configs/terrain.full.toml"))?;
 
         assert_eq!(expected, parsed);
 
@@ -296,7 +296,7 @@ mod test {
     #[test]
     fn parse_toml_without_biomes() -> Result<()> {
         let expected = test_data::terrain_without_biomes();
-        let parsed = parse_terrain(&PathBuf::from(
+        let parsed = parse_terrain_from(&PathBuf::from(
             "./example_configs/terrain.without.biomes.toml",
         ))?;
 

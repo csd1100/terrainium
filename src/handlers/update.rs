@@ -4,7 +4,7 @@ use mockall_double::double;
 use crate::types::{
     args::{BiomeArg, UpdateOpts},
     biomes::Biome,
-    terrain::parse_terrain,
+    terrain::parse_terrain_from,
 };
 
 #[double]
@@ -26,12 +26,13 @@ pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool)
         env,
         alias,
     } = opts;
+
     if backup {
         backup_terrain()?;
     }
 
     let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
-    let mut terrain = parse_terrain(&toml_file)?;
+    let mut terrain = parse_terrain_from(&toml_file)?;
     if let Some(new_default) = set_default_biome {
         terrain
             .update_default_biome(new_default)

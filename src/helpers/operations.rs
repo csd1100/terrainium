@@ -9,7 +9,7 @@ use home::home_dir;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain};
+use crate::types::{errors::TerrainiumErrors, terrain::parse_terrain_from};
 
 use super::constants::TERRAINIUM_TOML_PATH;
 
@@ -111,7 +111,7 @@ pub mod fs {
 
     pub fn get_parsed_terrain() -> Result<Terrain> {
         let toml_file = get_current_dir_toml().context("unable to get terrain.toml path")?;
-        super::parse_terrain(&toml_file)
+        super::parse_terrain_from(&toml_file)
     }
 
     pub fn get_process_log_file(session_id: &String, filename: String) -> Result<(PathBuf, File)> {

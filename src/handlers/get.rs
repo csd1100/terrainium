@@ -14,7 +14,7 @@ use crate::types::terrain;
 
 pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
     let terrain_toml_path = fs::get_terrain_toml_from_biome(&biome)?;
-    let terrain = terrain::parse_terrain(&terrain_toml_path)?;
+    let terrain = terrain::parse_terrain_from(&terrain_toml_path)?;
 
     if opts.is_empty() {
         let mut terrain = terrain

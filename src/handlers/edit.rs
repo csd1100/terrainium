@@ -6,14 +6,14 @@ use crate::helpers::operations::fs;
 
 #[double]
 use crate::shell::editor::edit;
-use crate::types::terrain::parse_terrain;
+use crate::types::terrain::parse_terrain_from;
 
 pub fn handle() -> Result<()> {
     let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
 
     edit::file(&toml_file).context("failed to start editor")?;
 
-    super::generate::generate_and_compile(parse_terrain(&toml_file)?)?;
+    super::generate::generate_and_compile(parse_terrain_from(&toml_file)?)?;
 
     Ok(())
 }

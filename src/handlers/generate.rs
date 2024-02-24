@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use mockall_double::double;
 
-use crate::types::terrain::{parse_terrain, Terrain};
+use crate::types::terrain::{parse_terrain_from, Terrain};
 
 #[double]
 use crate::helpers::operations::fs;
@@ -10,7 +10,7 @@ use crate::helpers::operations::fs;
 use crate::shell::zsh::ops;
 
 pub fn handle() -> Result<()> {
-    let terrain = parse_terrain(&fs::get_current_dir_toml()?)?;
+    let terrain = parse_terrain_from(&fs::get_current_dir_toml()?)?;
     generate_and_compile(terrain)
 }
 
