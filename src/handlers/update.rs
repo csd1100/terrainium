@@ -1,11 +1,7 @@
 use anyhow::{Context, Result};
 use mockall_double::double;
 
-use crate::types::{
-    args::{BiomeArg, UpdateOpts},
-    biomes::Biome,
-    terrain::parse_terrain_from,
-};
+use crate::types::args::UpdateOpts;
 
 #[double]
 use crate::helpers::operations::fs;
@@ -23,35 +19,33 @@ pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool)
     let UpdateOpts {
         new,
         biome,
-        env,
-        alias,
+        envs,
+        aliases,
     } = opts;
 
     if backup {
         backup_terrain()?;
     }
 
-    let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
-    let mut terrain = parse_terrain_from(&toml_file)?;
+    let mut terrain = fs::get_parsed_terrain()?;
+
     if let Some(new_default) = set_default_biome {
-        terrain
-            .update_default_biome(new_default)
-            .context("unable to update default biome")?;
-    } else if let Some(biome) = &new {
-        terrain
-            .add_biome(biome, Biome::new())
-            .context("unable to create a new biome")?;
-        terrain
-            .update(Some(BiomeArg::Value(biome.to_string())), env, alias)
-            .context("failed to update newly created biome")?;
+        terrain.set_default_biome(new_default)?;
+    } else if let Some(biome_name) = new {
+        terrain.add_and_update_biome(biome_name, envs, aliases)?;
     } else {
         terrain
-            .update(biome, env, alias)
+            .update(biome, envs, aliases)
             .context("failed to update biome")?;
     }
 
-    fs::write_terrain(toml_file.as_path(), &terrain)
-        .context("failed to write updated terrain.toml")?;
+    fs::write_terrain(
+        fs::get_current_dir_toml()
+            .context("unable to get terrain.toml path")?
+            .as_path(),
+        &terrain,
+    )
+    .context("failed to write updated terrain.toml")?;
 
     generate_and_compile(terrain)?;
 
@@ -79,14 +73,20 @@ mod test {
     #[test]
     #[serial]
     fn handle_only_sets_default_biome() -> Result<()> {
+        let mut expected = test_data::terrain_full();
+        expected.set_default_biome("example_biome2".to_string())?;
+
+        let mock_terrain = mock_fs::get_parsed_terrain_context();
+        mock_terrain
+            .expect()
+            .return_once(|| Ok(test_data::terrain_full()))
+            .times(1);
+
         let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
             .times(1);
-
-        let mut expected = test_data::terrain_full();
-        expected.update_default_biome("example_biome2".to_string())?;
 
         let mock_write_terrain = mock_fs::write_terrain_context();
         mock_write_terrain
@@ -156,8 +156,8 @@ mod test {
             UpdateOpts {
                 new: None,
                 biome: None,
-                env: Some(env_vars),
-                alias: None,
+                envs: Some(env_vars),
+                aliases: None,
             },
             false,
         )?;
@@ -168,11 +168,13 @@ mod test {
     #[test]
     #[serial]
     fn handle_updates_terrain_and_creates_backup() -> Result<()> {
-        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
-        mock_terrain_path
+        let mock_terrain = mock_fs::get_parsed_terrain_context();
+        mock_terrain
             .expect()
-            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .return_once(|| Ok(test_data::terrain_full()))
             .times(1);
+
+        let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
@@ -196,10 +198,13 @@ mod test {
             key: "new_test".to_string(),
             value: "new_value".to_string(),
         }];
-
         let mut expected = test_data::terrain_full();
         expected.update(Some(BiomeArg::Default), Some(env_vars), Some(aliases))?;
 
+        mock_terrain_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .times(1);
         let mock_write_terrain = mock_fs::write_terrain_context();
         mock_write_terrain
             .expect()
@@ -275,8 +280,8 @@ mod test {
             UpdateOpts {
                 new: None,
                 biome: None,
-                env: Some(env_vars),
-                alias: Some(aliases),
+                envs: Some(env_vars),
+                aliases: Some(aliases),
             },
             true,
         )?;
@@ -287,6 +292,12 @@ mod test {
     #[test]
     #[serial]
     fn handle_updates_specified_biome() -> Result<()> {
+        let mock_terrain = mock_fs::get_parsed_terrain_context();
+        mock_terrain
+            .expect()
+            .return_once(|| Ok(test_data::terrain_full()))
+            .times(1);
+
         let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
@@ -384,8 +395,8 @@ mod test {
             UpdateOpts {
                 new: None,
                 biome: Some(BiomeArg::Value("example_biome2".to_string())),
-                env: Some(env_vars),
-                alias: Some(aliases),
+                envs: Some(env_vars),
+                aliases: Some(aliases),
             },
             false,
         )?;
@@ -395,6 +406,12 @@ mod test {
     #[test]
     #[serial]
     fn handle_creates_new_biome() -> Result<()> {
+        let mock_terrain = mock_fs::get_parsed_terrain_context();
+        mock_terrain
+            .expect()
+            .return_once(|| Ok(test_data::terrain_full()))
+            .times(1);
+
         let mock_terrain_path = mock_fs::get_current_dir_toml_context();
         mock_terrain_path
             .expect()
@@ -511,8 +528,8 @@ mod test {
             UpdateOpts {
                 new: Some("new".to_string()),
                 biome: None,
-                env: Some(env_vars),
-                alias: Some(aliases),
+                envs: Some(env_vars),
+                aliases: Some(aliases),
             },
             false,
         )?;

@@ -74,10 +74,10 @@ pub struct UpdateOpts {
     pub biome: Option<BiomeArg>,
 
     #[arg(short, long)]
-    pub env: Option<Vec<Pair>>,
+    pub envs: Option<Vec<Pair>>,
 
     #[arg(short, long)]
-    pub alias: Option<Vec<Pair>>,
+    pub aliases: Option<Vec<Pair>>,
 }
 
 #[derive(Args, Debug)]

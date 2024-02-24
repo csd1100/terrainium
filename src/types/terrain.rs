@@ -148,12 +148,21 @@ impl Terrain {
         }
     }
 
-    pub fn update_default_biome(&mut self, biome: String) -> Result<()> {
-        if self.get_biome(&biome).is_ok() {
-            self.default_biome = Some(biome);
+    fn get_biome_mut(&mut self, biome: &String) -> Result<&mut Biome> {
+        if let Some(biomes) = &mut self.biomes {
+            if let Some(biome) = biomes.get_mut(biome) {
+                Ok(biome)
+            } else {
+                Err(TerrainiumErrors::BiomeNotFound(biome.to_string()).into())
+            }
         } else {
-            return Err(TerrainiumErrors::BiomeNotFound(biome).into());
+            Err(TerrainiumErrors::BiomesNotDefined.into())
         }
+    }
+
+    pub fn set_default_biome(&mut self, biome: String) -> Result<()> {
+        let _ = self.get_biome(&biome).context("unable to set default biome")?;
+        self.default_biome = Some(biome);
         Ok(())
     }
 
@@ -171,36 +180,37 @@ impl Terrain {
         Ok(())
     }
 
-    fn get_biome_mut(&mut self, biome: &String) -> Result<&mut Biome> {
-        if let Some(biomes) = &mut self.biomes {
-            if let Some(biome) = biomes.get_mut(biome) {
-                Ok(biome)
-            } else {
-                Err(TerrainiumErrors::BiomeNotFound(biome.to_string()).into())
-            }
-        } else {
-            Err(TerrainiumErrors::BiomesNotDefined.into())
-        }
-    }
-
     pub fn update(
         &mut self,
-        biome_args: Option<BiomeArg>,
-        env: Option<Vec<Pair>>,
-        alias: Option<Vec<Pair>>,
+        biome_arg: Option<BiomeArg>,
+        envs: Option<Vec<Pair>>,
+        aliases: Option<Vec<Pair>>,
     ) -> Result<()> {
-        let biome_to_update: &mut Biome = self.select_biome_mut(biome_args)?;
-        if let Some(pairs) = env {
+        let biome_to_update: &mut Biome = self.select_biome_mut(biome_arg)?;
+        if let Some(pairs) = envs {
             pairs
                 .into_iter()
                 .for_each(|pair| biome_to_update.update_env(pair.key, pair.value));
         }
 
-        if let Some(pairs) = alias {
+        if let Some(pairs) = aliases {
             pairs
                 .into_iter()
                 .for_each(|pair| biome_to_update.update_alias(pair.key, pair.value));
         }
+        Ok(())
+    }
+
+    pub fn add_and_update_biome(
+        &mut self,
+        biome_name: String,
+        envs: Option<Vec<Pair>>,
+        alias: Option<Vec<Pair>>,
+    ) -> Result<()> {
+        self.add_biome(&biome_name, Biome::new())
+            .context("unable to create a new biome")?;
+        self.update(Some(BiomeArg::Value(biome_name)), envs, alias)
+            .context("failed to update newly created biome")?;
         Ok(())
     }
 
@@ -759,12 +769,12 @@ mod test {
     }
 
     #[test]
-    fn update_default_biome_works() -> Result<()> {
+    fn set_default_biome_works() -> Result<()> {
         let mut expected = test_data::terrain_full();
         expected.default_biome = Some("example_biome2".to_string());
 
         let mut terrain = test_data::terrain_full();
-        terrain.update_default_biome("example_biome2".to_string())?;
+        terrain.set_default_biome("example_biome2".to_string())?;
         let actual = terrain;
 
         assert_eq!(expected, actual);
@@ -774,11 +784,11 @@ mod test {
 
     #[test]
     fn update_default_biome_returns_error_if_not_found() -> Result<()> {
-        let expected = TerrainiumErrors::BiomeNotFound("non_existent".to_string()).to_string();
+        let expected = "unable to set default biome".to_string();
 
         let mut terrain = test_data::terrain_full();
         let actual = terrain
-            .update_default_biome("non_existent".to_string())
+            .set_default_biome("non_existent".to_string())
             .unwrap_err()
             .to_string();
 
@@ -1131,7 +1141,7 @@ mod test {
             },
         ]);
         terrain.add_biome(&"name".to_string(), biome)?;
-        terrain.update_default_biome("name".to_string())?;
+        terrain.set_default_biome("name".to_string())?;
         terrain.update(biome_args, env, alias)?;
 
         // assertion
