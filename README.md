@@ -21,7 +21,7 @@ terrainium <verb> [OPTIONS]
     central location.
 
     - `-c|--central` - Stores terrain in `$XDG_CONFIG_HOME/terrainium/terrains/[...parent_]$(pwd)/terrain.toml`.
-    - `-f|--full` - Generates example terrain with all possible options.
+    - `-x|--example` - Generates example terrain with all possible options.
     - `-e|--edit` - Generates terrain and opens file in `EDITOR`.
 
   - `edit` - edit terrain with editor specified in `EDITOR` environment variable.

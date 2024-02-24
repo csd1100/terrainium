@@ -10,7 +10,7 @@ use crate::shell::editor::edit;
 #[double]
 use crate::helpers::operations::fs;
 
-pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
+pub fn handle(central: bool, example: bool, edit: bool) -> Result<()> {
     if !fs::is_terrain_present().context("failed to validate if terrain already exists")? {
         fs::create_config_dir().context("unable to create config directory")?;
 
@@ -20,8 +20,8 @@ pub fn handle(central: bool, full: bool, edit: bool) -> Result<()> {
             fs::get_local_terrain_path().context("unable to get local terrain.toml")?
         };
 
-        let terrain: Terrain = if full {
-            Terrain::default()
+        let terrain: Terrain = if example {
+            Terrain::example()
         } else {
             Terrain::new()
         };
@@ -155,7 +155,7 @@ mod test {
             .expect()
             .with(
                 eq(PathBuf::from("./example_configs/terrain.full.toml")),
-                eq(Terrain::default()),
+                eq(Terrain::example()),
             )
             .return_once(|_, _| Ok(()))
             .times(1);
@@ -173,7 +173,7 @@ mod test {
             .return_once(|_| Ok(()))
             .times(1);
 
-        let terrain = Terrain::default();
+        let terrain = Terrain::example();
         let main = terrain.get(Some(BiomeArg::None))?;
         let generate_and_compile_context = mock_ops::generate_and_compile_context();
         generate_and_compile_context

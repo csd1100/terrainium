@@ -203,10 +203,8 @@ impl Terrain {
         }
         Ok(())
     }
-}
 
-impl Default for Terrain {
-    fn default() -> Self {
+    pub fn example() -> Self {
         let main = Biome {
             constructors: Some(Commands {
                 foreground: Some(vec![Command {
@@ -222,11 +220,11 @@ impl Default for Terrain {
                 }]),
                 background: None,
             }),
-            ..Default::default()
+            ..Biome::example()
         };
 
         let mut biomes = HashMap::<String, Biome>::new();
-        let biome = Biome::default();
+        let biome = Biome::example();
         let biome_name = String::from("example_biome");
         biomes.insert(biome_name.clone(), biome);
 

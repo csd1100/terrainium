@@ -118,10 +118,8 @@ impl Biome {
     fn merge_destructors(&self, other: &Self) -> Option<Commands> {
         get_merged_commands(&self.destructors, &other.destructors)
     }
-}
 
-impl Default for Biome {
-    fn default() -> Self {
+    pub fn example() -> Self {
         let name = String::from("example_biome");
         let mut env = HashMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("vim"));

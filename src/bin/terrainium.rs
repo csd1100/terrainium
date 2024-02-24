@@ -13,9 +13,9 @@ fn main() -> Result<()> {
     match opts.verbs {
         Verbs::Init {
             central,
-            full,
+            example,
             edit,
-        } => init::handle(central, full, edit),
+        } => init::handle(central, example, edit),
         Verbs::Edit => edit::handle(),
         Verbs::Update {
             set_biome,

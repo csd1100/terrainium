@@ -124,7 +124,7 @@ mod test {
 
     #[test]
     fn test_printable_terrain() -> Result<()> {
-        let terrain = Terrain::default();
+        let terrain = Terrain::example();
         let biome_arg = BiomeArg::Default;
 
         let expected = "Default Biome: example_biome          Selected Biome: example_biome

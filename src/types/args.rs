@@ -18,8 +18,8 @@ pub enum Verbs {
         #[arg(short, long)]
         central: bool,
 
-        #[arg(short, long)]
-        full: bool,
+        #[arg(short = 'x', long)]
+        example: bool,
 
         #[arg(short, long)]
         edit: bool,
