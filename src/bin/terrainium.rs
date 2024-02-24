@@ -18,10 +18,10 @@ fn main() -> Result<()> {
         } => init::handle(central, example, edit),
         Verbs::Edit => edit::handle(),
         Verbs::Update {
-            set_biome,
+            set_default_biome,
             opts,
             backup,
-        } => update::handle(set_biome, opts, backup),
+        } => update::handle(set_default_biome, opts, backup),
         Verbs::Get { biome, opts } => get::handle(biome, opts),
         Verbs::Generate => generate::handle(),
         Verbs::Enter { biome } => enter::handle(biome),

@@ -29,8 +29,8 @@ pub enum Verbs {
         #[arg(short = 'k', long)]
         backup: bool,
 
-        #[arg(short, long = "set-biome")]
-        set_biome: Option<String>,
+        #[arg(short, long = "set-default")]
+        set_default_biome: Option<String>,
 
         #[command(flatten)]
         opts: UpdateOpts,
@@ -65,7 +65,7 @@ pub enum Verbs {
 }
 
 #[derive(Args, Debug)]
-#[group(conflicts_with("set_biome"))]
+#[group(conflicts_with("set_default_biome"))]
 pub struct UpdateOpts {
     #[arg(short, long, group = "for")]
     pub new: Option<String>,

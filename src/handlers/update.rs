@@ -12,26 +12,29 @@ use crate::helpers::operations::fs;
 
 use super::generate::generate_and_compile;
 
-pub fn handle(set_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
+fn backup_terrain() -> Result<()> {
+    let terrain_toml = fs::get_current_dir_toml()?;
+    let backup = terrain_toml.with_extension("toml.bkp");
+    fs::copy_file(&terrain_toml, &backup).context("unable to backup terrain.toml")?;
+    Ok(())
+}
+
+pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
     let UpdateOpts {
         new,
         biome,
         env,
         alias,
     } = opts;
-
-    let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
-
     if backup {
-        let bkp = toml_file.with_extension("toml.bkp");
-        fs::copy_file(&toml_file, &bkp).context("unable to backup terrain.toml")?;
+        backup_terrain()?;
     }
 
+    let toml_file = fs::get_current_dir_toml().context("unable to get terrain.toml path")?;
     let mut terrain = parse_terrain(&toml_file)?;
-
-    if let Some(default) = set_biome {
+    if let Some(new_default) = set_default_biome {
         terrain
-            .update_default_biome(default)
+            .update_default_biome(new_default)
             .context("unable to update default biome")?;
     } else if let Some(biome) = &new {
         terrain
@@ -165,6 +168,10 @@ mod test {
     #[serial]
     fn handle_updates_terrain_and_creates_backup() -> Result<()> {
         let mock_terrain_path = mock_fs::get_current_dir_toml_context();
+        mock_terrain_path
+            .expect()
+            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .times(1);
         mock_terrain_path
             .expect()
             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))

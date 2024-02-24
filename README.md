@@ -28,7 +28,8 @@ terrainium <verb> [OPTIONS]
 
   - `update OPTIONS` - Updates terrain with options
 
-    - `-s|--set-biome <name>` - set default `biome`. Cannot be used with other options.
+    - `-s|--set-default <name>` - set default `biome`.
+      Cannot be used with other options.
     - `-b|--biome <biome_value>` - biome to update. Updates default if `default`
       is used. Updates terrain if `none` is used. Will update currently active terrain
       if `current` is used. Cannot be used with `-n` flag.
