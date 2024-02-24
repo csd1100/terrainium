@@ -5,7 +5,7 @@ use crate::{
     types::args::UpdateOpts,
 };
 
-use super::generate::generate_and_compile;
+use super::generate::generate_and_compile_all;
 
 fn backup_terrain() -> Result<()> {
     let terrain_toml = get_current_dir_toml()?;
@@ -46,7 +46,7 @@ pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool)
     )
     .context("failed to write updated terrain.toml")?;
 
-    generate_and_compile(terrain)?;
+    generate_and_compile_all(terrain)?;
 
     Ok(())
 }

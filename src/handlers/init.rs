@@ -2,24 +2,32 @@ use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
 use std::path::PathBuf;
 
-use crate::{helpers::operations, types::terrain::Terrain};
+use crate::{
+    helpers::operations::{
+        create_config_dir, get_central_terrain_path, get_local_terrain_path, is_terrain_present,
+        write_terrain,
+    },
+    types::terrain::Terrain,
+};
 
 #[double]
 use crate::shell::editor::edit;
 
+use super::generate::generate_and_compile_all;
+
 pub fn handle(central: bool, example: bool, edit: bool) -> Result<()> {
-    if operations::is_terrain_present().context("failed to validate if terrain already exists")? {
+    if is_terrain_present().context("failed to validate if terrain already exists")? {
         return Err(anyhow!(
             "terrain for this project is already present. edit existing terrain with `terrain edit` command"
         ));
     }
 
-    operations::create_config_dir().context("unable to create config directory")?;
+    create_config_dir().context("unable to create config directory")?;
 
     let terrain_toml_path: PathBuf = if central {
-        operations::get_central_terrain_path().context("unable to get central toml path")?
+        get_central_terrain_path().context("unable to get central toml path")?
     } else {
-        operations::get_local_terrain_path().context("unable to get local terrain.toml")?
+        get_local_terrain_path().context("unable to get local terrain.toml")?
     };
 
     let terrain: Terrain = if example {
@@ -28,7 +36,7 @@ pub fn handle(central: bool, example: bool, edit: bool) -> Result<()> {
         Terrain::new()
     };
 
-    operations::write_terrain(&terrain_toml_path, &terrain)
+    write_terrain(&terrain_toml_path, &terrain)
         .context("failed to write generated terrain to toml file")?;
 
     println!(
@@ -36,7 +44,7 @@ pub fn handle(central: bool, example: bool, edit: bool) -> Result<()> {
         terrain_toml_path.to_string_lossy()
     );
 
-    super::generate::generate_and_compile(terrain)?;
+    generate_and_compile_all(terrain)?;
 
     if edit {
         println!("editing...");
@@ -391,7 +399,6 @@ mod test {
             ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
         ));
         std::fs::create_dir_all(&scripts_dir_path)?;
-
 
         let mut terrain_toml_path = scripts_dir_path.clone();
         terrain_toml_path.push("terrain.toml");

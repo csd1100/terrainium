@@ -10,7 +10,7 @@ pub fn handle() -> Result<()> {
 
     edit::file(&toml_file).context("failed to start editor")?;
 
-    super::generate::generate_and_compile(parse_terrain_from(&toml_file)?)?;
+    super::generate::generate_and_compile_all(parse_terrain_from(&toml_file)?)?;
 
     Ok(())
 }

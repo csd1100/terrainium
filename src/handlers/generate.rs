@@ -11,10 +11,10 @@ use crate::shell::zsh::ops;
 
 pub fn handle() -> Result<()> {
     let terrain = parse_terrain_from(get_current_dir_toml()?)?;
-    generate_and_compile(terrain)
+    generate_and_compile_all(terrain)
 }
 
-pub fn generate_and_compile(terrain: Terrain) -> Result<()> {
+pub fn generate_and_compile_all(terrain: Terrain) -> Result<()> {
     let central_store = get_central_store_path()?;
 
     remove_all_script_files(central_store.as_path())?;
