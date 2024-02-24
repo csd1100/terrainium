@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use anyhow::Result;
 
@@ -22,13 +22,13 @@ use crate::shell::process::spawn;
 
 #[cfg_attr(test, automock)]
 pub mod processes {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use anyhow::{anyhow, Result};
 
     use crate::{helpers::constants::TERRAINIUM_SESSION_ID, types::commands::Command};
 
-    pub fn start(background: Vec<Command>, envs: HashMap<String, String>) -> Result<()> {
+    pub fn start(background: Vec<Command>, envs: BTreeMap<String, String>) -> Result<()> {
         if let Some(session_id) = envs.get(TERRAINIUM_SESSION_ID) {
             super::iterate_over_commands_and_spawn(session_id, background, envs.clone())?;
         } else if let Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
@@ -45,7 +45,7 @@ pub mod processes {
 fn start_process_with_session_id(
     session_id: String,
     command: Command,
-    envs: Option<HashMap<String, String>>,
+    envs: Option<BTreeMap<String, String>>,
 ) -> Result<()> {
     let exec_arg_json: Executable = command.into();
     let exec_arg = serde_json::to_string(&exec_arg_json)?;
@@ -77,7 +77,7 @@ fn start_process_with_session_id(
 fn iterate_over_commands_and_spawn(
     session_id: &String,
     background: Vec<Command>,
-    envs: HashMap<String, String>,
+    envs: BTreeMap<String, String>,
 ) -> Result<()> {
     let errors: Result<Vec<_>> = background
         .into_iter()
@@ -95,7 +95,7 @@ fn iterate_over_commands_and_spawn(
 
 // #[cfg(test)]
 // mod test {
-//     use std::{collections::HashMap, fs::File, path::PathBuf};
+//     use std::{collections::BTreeMap, fs::File, path::PathBuf};
 //
 //     use anyhow::Result;
 //     use mockall::predicate::eq;
@@ -205,7 +205,7 @@ fn iterate_over_commands_and_spawn(
 //                 .expect("to be parsed");
 //                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
 //
-//                 let mut expected = HashMap::<String, String>::new();
+//                 let mut expected = BTreeMap::<String, String>::new();
 //                 expected.insert(
 //                     "TERRAINIUM_SESSION_ID".to_string(),
 //                     "session_id".to_string(),
@@ -237,7 +237,7 @@ fn iterate_over_commands_and_spawn(
 //                 .expect("to be parsed");
 //                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
 //
-//                 let mut expected = HashMap::<String, String>::new();
+//                 let mut expected = BTreeMap::<String, String>::new();
 //                 expected.insert(
 //                     "TERRAINIUM_SESSION_ID".to_string(),
 //                     "session_id".to_string(),
@@ -260,7 +260,7 @@ fn iterate_over_commands_and_spawn(
 //             },
 //         ];
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert(
 //             "TERRAINIUM_SESSION_ID".to_string(),
 //             "session_id".to_string(),
@@ -367,7 +367,7 @@ fn iterate_over_commands_and_spawn(
 //                 .expect("to be parsed");
 //                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
 //
-//                 let mut expected = HashMap::<String, String>::new();
+//                 let mut expected = BTreeMap::<String, String>::new();
 //                 expected.insert("TEST".to_string(), "value".to_string());
 //                 let envs_eq = *envs.as_ref().unwrap() == expected;
 //
@@ -395,7 +395,7 @@ fn iterate_over_commands_and_spawn(
 //                 .expect("to be parsed");
 //                 let args_eq = *args == vec!["--id", "session_id", "--exec", &exec_json];
 //
-//                 let mut expected = HashMap::<String, String>::new();
+//                 let mut expected = BTreeMap::<String, String>::new();
 //                 expected.insert("TEST".to_string(), "value".to_string());
 //                 let envs_eq = *envs.as_ref().unwrap() == expected;
 //
@@ -414,7 +414,7 @@ fn iterate_over_commands_and_spawn(
 //             },
 //         ];
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("TEST".to_string(), "value".to_string());
 //
 //         super::processes::start(commands, envs)?;
@@ -445,7 +445,7 @@ fn iterate_over_commands_and_spawn(
 //             },
 //         ];
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("TEST".to_string(), "value".to_string());
 //         let actual = super::processes::start(commands, envs)
 //             .unwrap_err()

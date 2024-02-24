@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use mockall_double::double;
-use std::{collections::HashMap, path::Path, process::Output};
+use std::{collections::BTreeMap, path::Path, process::Output};
 
 #[cfg(test)]
 use mockall::automock;
@@ -23,7 +23,7 @@ const DESTRUCTORS_TEMPLATE: &str = include_str!("../../templates/zsh_destructors
 pub mod ops {
     use anyhow::{Context, Result};
     use mockall_double::double;
-    use std::{collections::HashMap, path::Path};
+    use std::{collections::BTreeMap, path::Path};
 
     use crate::{
         helpers::{
@@ -53,7 +53,7 @@ pub mod ops {
     }
 
     #[allow(clippy::needless_lifetimes)]
-    pub fn spawn<'a>(args: Vec<&'a str>, envs: Option<HashMap<String, String>>) -> Result<()> {
+    pub fn spawn<'a>(args: Vec<&'a str>, envs: Option<BTreeMap<String, String>>) -> Result<()> {
         let mut args = args;
         let mut zsh_args = vec!["-i"];
         zsh_args.append(&mut args);
@@ -62,13 +62,13 @@ pub mod ops {
         Ok(())
     }
 
-    pub fn get_zsh_envs(biome_name: String) -> Result<HashMap<String, String>> {
+    pub fn get_zsh_envs(biome_name: String) -> Result<BTreeMap<String, String>> {
         let mut init_file =
             get_central_store_path().context("unable to get terrains config path")?;
         init_file.push(format!("terrain-{}.zwc", &biome_name));
         let init_file = init_file.to_string_lossy().to_string();
 
-        let mut envs = HashMap::<String, String>::new();
+        let mut envs = BTreeMap::<String, String>::new();
         envs.insert(TERRAINIUM_INIT_FILE.to_string(), init_file.clone());
         envs.insert(
             TERRAINIUM_INIT_ZSH.to_string(),
@@ -85,7 +85,7 @@ pub mod ops {
     }
 }
 
-fn run_via_zsh(args: Vec<&str>, envs: Option<HashMap<String, String>>) -> Result<Output> {
+fn run_via_zsh(args: Vec<&str>, envs: Option<BTreeMap<String, String>>) -> Result<Output> {
     let mut args = args;
     let mut zsh_args = vec!["-c"];
     zsh_args.append(&mut args);
@@ -140,7 +140,7 @@ fn compile(central_store: &Path, biome_name: &String) -> Result<()> {
 
 fn get_fpath() -> Result<String> {
     let some = "echo -n $FPATH";
-    let envs: HashMap<String, String> = std::env::vars().collect();
+    let envs: BTreeMap<String, String> = std::env::vars().collect();
     let output = run_via_zsh(vec![some], Some(envs))?;
     Ok(String::from_utf8(output.stdout)?)
 }
@@ -148,7 +148,7 @@ fn get_fpath() -> Result<String> {
 // #[cfg(test)]
 // mod test {
 //     use std::{
-//         collections::HashMap,
+//         collections::BTreeMap,
 //         os::unix::process::ExitStatusExt,
 //         path::PathBuf,
 //         process::{ExitStatus, Output},
@@ -212,7 +212,7 @@ fn get_fpath() -> Result<String> {
 //     #[serial]
 //     fn spawn_with_args_and_envs() -> Result<()> {
 //         let exp_args = vec!["-i"];
-//         let mut exp_envs = HashMap::<String, String>::new();
+//         let mut exp_envs = BTreeMap::<String, String>::new();
 //         exp_envs.insert("k".to_string(), "v".to_string());
 //
 //         let mock_spawn_and_wait = mock_spawn::and_wait_context();
@@ -226,7 +226,7 @@ fn get_fpath() -> Result<String> {
 //             })
 //             .return_once(|_, _, _| Ok(()));
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("k".to_string(), "v".to_string());
 //         super::ops::spawn(vec![], Some(envs))?;
 //
@@ -262,7 +262,7 @@ fn get_fpath() -> Result<String> {
 //                 })
 //             });
 //
-//         let mut expected = HashMap::<String, String>::new();
+//         let mut expected = BTreeMap::<String, String>::new();
 //         expected.insert(
 //             "TERRAINIUM_INIT_FILE".to_string(),
 //             "/tmp/test/terrain-example_biome.zwc".to_string(),

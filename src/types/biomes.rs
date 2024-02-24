@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use anyhow::{Ok, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::operations::{find_in_hashmaps, get_merged_hashmaps};
+use crate::helpers::operations::{find_in_maps, get_merged_maps};
 
 use super::{
     commands::{get_merged_commands, Command, Commands},
@@ -15,8 +15,8 @@ use super::{
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Biome {
-    pub env: Option<HashMap<String, String>>,
-    pub alias: Option<HashMap<String, String>>,
+    pub env: Option<BTreeMap<String, String>>,
+    pub alias: Option<BTreeMap<String, String>>,
     pub constructors: Option<Commands>,
     pub destructors: Option<Commands>,
 }
@@ -24,8 +24,8 @@ pub struct Biome {
 impl Biome {
     pub fn new() -> Biome {
         Biome {
-            env: Some(HashMap::<String, String>::new()),
-            alias: Some(HashMap::<String, String>::new()),
+            env: Some(BTreeMap::<String, String>::new()),
+            alias: Some(BTreeMap::<String, String>::new()),
             constructors: None,
             destructors: None,
         }
@@ -41,7 +41,7 @@ impl Biome {
 
     pub fn update_env(&mut self, k: String, v: String) {
         if self.env.is_none() {
-            self.env = Some(HashMap::<String, String>::new());
+            self.env = Some(BTreeMap::<String, String>::new());
         }
 
         if let Some(env) = self.env.as_mut() {
@@ -51,7 +51,7 @@ impl Biome {
 
     pub fn update_alias(&mut self, k: String, v: String) {
         if self.alias.is_none() {
-            self.alias = Some(HashMap::<String, String>::new());
+            self.alias = Some(BTreeMap::<String, String>::new());
         }
 
         if let Some(alias) = self.alias.as_mut() {
@@ -59,15 +59,15 @@ impl Biome {
         }
     }
 
-    pub fn find_envs(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
-        match find_in_hashmaps(&self.env, tofind) {
+    pub fn find_envs(&self, tofind: Vec<String>) -> Result<BTreeMap<String, Option<String>>> {
+        match find_in_maps(&self.env, tofind) {
             Result::Ok(envs) => Ok(envs),
             Err(_) => Err(TerrainiumErrors::EnvsNotDefined.into()),
         }
     }
 
-    pub fn find_aliases(&self, tofind: Vec<String>) -> Result<HashMap<String, Option<String>>> {
-        match find_in_hashmaps(&self.alias, tofind) {
+    pub fn find_aliases(&self, tofind: Vec<String>) -> Result<BTreeMap<String, Option<String>>> {
+        match find_in_maps(&self.alias, tofind) {
             Result::Ok(aliases) => Ok(aliases),
             Err(_err) => Err(TerrainiumErrors::AliasesNotDefined.into()),
         }
@@ -103,12 +103,12 @@ impl Biome {
         }
     }
 
-    fn merge_env(&self, other: &Self) -> Option<HashMap<String, String>> {
-        get_merged_hashmaps(&self.env, &other.env)
+    fn merge_env(&self, other: &Self) -> Option<BTreeMap<String, String>> {
+        get_merged_maps(&self.env, &other.env)
     }
 
-    fn merge_alias(&self, other: &Self) -> Option<HashMap<String, String>> {
-        get_merged_hashmaps(&self.alias, &other.alias)
+    fn merge_alias(&self, other: &Self) -> Option<BTreeMap<String, String>> {
+        get_merged_maps(&self.alias, &other.alias)
     }
 
     fn merge_constructors(&self, other: &Self) -> Option<Commands> {
@@ -121,11 +121,10 @@ impl Biome {
 
     pub fn example() -> Self {
         let name = String::from("example_biome");
-        let mut env = HashMap::<String, String>::new();
-        env.insert(String::from("EDITOR"), String::from("vim"));
-        let mut alias = HashMap::<String, String>::new();
-        alias.insert(String::from("tedit"), String::from("terrainium edit"));
-        alias.insert(String::from("tenter"), String::from("terrainium enter"));
+        let mut env = BTreeMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("nvim"));
+        let mut alias = BTreeMap::<String, String>::new();
+        alias.insert(String::from("tenter"), String::from("terrainium enter --biome example_biome"));
         let constructor = Commands {
             foreground: Some(vec![Command {
                 exe: String::from("echo"),

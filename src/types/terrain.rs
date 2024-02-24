@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::IntoIter, HashMap},
+    collections::{btree_map::IntoIter, BTreeMap},
     path::Path,
 };
 
@@ -30,7 +30,7 @@ pub struct Terrain {
 
     terrain: Biome,
     default_biome: Option<String>,
-    biomes: Option<HashMap<String, Biome>>,
+    biomes: Option<BTreeMap<String, Biome>>,
 }
 
 impl Terrain {
@@ -106,7 +106,7 @@ impl Terrain {
         &self,
         selected: Option<BiomeArg>,
         env: Vec<String>,
-    ) -> Result<HashMap<String, Option<String>>> {
+    ) -> Result<BTreeMap<String, Option<String>>> {
         let environment = self.get(selected)?;
         environment.find_envs(env)
     }
@@ -115,7 +115,7 @@ impl Terrain {
         &self,
         selected: Option<BiomeArg>,
         aliases: Vec<String>,
-    ) -> Result<HashMap<String, Option<String>>> {
+    ) -> Result<BTreeMap<String, Option<String>>> {
         let environment = self.get(selected)?;
         environment.find_aliases(aliases)
     }
@@ -173,7 +173,7 @@ impl Terrain {
             return Err(TerrainiumErrors::BiomeAlreadyExists(name.to_string()).into());
         }
         if self.biomes.is_none() {
-            self.biomes = Some(HashMap::<String, Biome>::new());
+            self.biomes = Some(BTreeMap::<String, Biome>::new());
         }
         self.biomes
             .as_mut()
@@ -217,6 +217,11 @@ impl Terrain {
     }
 
     pub fn example() -> Self {
+        let mut env = BTreeMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("vim"));
+        let mut alias = BTreeMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(String::from("tenter"), String::from("terrainium enter"));
         let main = Biome {
             constructors: Some(Commands {
                 foreground: Some(vec![Command {
@@ -232,10 +237,11 @@ impl Terrain {
                 }]),
                 background: None,
             }),
-            ..Biome::example()
+            env: Some(env),
+            alias: Some(alias),
         };
 
-        let mut biomes = HashMap::<String, Biome>::new();
+        let mut biomes = BTreeMap::<String, Biome>::new();
         let biome = Biome::example();
         let biome_name = String::from("example_biome");
         biomes.insert(biome_name.clone(), biome);
@@ -262,7 +268,7 @@ impl IntoIterator for Terrain {
     type IntoIter = IntoIter<String, Biome>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let mut iter = HashMap::<String, Biome>::new();
+        let mut iter = BTreeMap::<String, Biome>::new();
         iter.insert("none".to_string(), self.terrain.clone());
         if let Some(biomes) = self.biomes.as_ref() {
             biomes.iter().for_each(|(name, biome)| {
@@ -281,7 +287,7 @@ pub fn schema_url() -> String {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashMap, path::PathBuf};
+    use std::{collections::BTreeMap, path::PathBuf};
 
     use anyhow::{anyhow, Result};
 
@@ -397,10 +403,10 @@ mod test {
 
     #[test]
     fn get_merged_biome_returns_merged_biome() -> Result<()> {
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nvim"));
         env.insert(String::from("TEST"), String::from("value"));
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(
             String::from("tenter"),
@@ -563,7 +569,7 @@ mod test {
     fn test_get_env() -> Result<()> {
         let terrain = test_data::terrain_full();
 
-        let mut expected = HashMap::<String, Option<String>>::new();
+        let mut expected = BTreeMap::<String, Option<String>>::new();
         expected.insert("EDITOR".to_owned(), Some("vim".to_owned()));
         expected.insert("TEST".to_owned(), Some("value".to_owned()));
         expected.insert("VAR1".to_owned(), None);
@@ -650,7 +656,7 @@ mod test {
 
         let to_find = vec![String::from("tenter"), String::from("ALIAS1")];
 
-        let mut expected = HashMap::<String, Option<String>>::new();
+        let mut expected = BTreeMap::<String, Option<String>>::new();
         expected.insert("ALIAS1".to_owned(), None);
 
         // test main terrain
@@ -806,8 +812,8 @@ mod test {
             biomes.insert(
                 "new_biome".to_string(),
                 Biome {
-                    env: Some(HashMap::<String, String>::new()),
-                    alias: Some(HashMap::<String, String>::new()),
+                    env: Some(BTreeMap::<String, String>::new()),
+                    alias: Some(BTreeMap::<String, String>::new()),
                     constructors: None,
                     destructors: None,
                 },
@@ -825,13 +831,13 @@ mod test {
     #[test]
     fn add_biome_works_when_none_present() -> Result<()> {
         let mut expected = test_data::terrain_without_biomes();
-        expected.biomes = Some(HashMap::<String, Biome>::new());
+        expected.biomes = Some(BTreeMap::<String, Biome>::new());
         if let Some(biomes) = &mut expected.biomes {
             biomes.insert(
                 "new_biome".to_string(),
                 Biome {
-                    env: Some(HashMap::<String, String>::new()),
-                    alias: Some(HashMap::<String, String>::new()),
+                    env: Some(BTreeMap::<String, String>::new()),
+                    alias: Some(BTreeMap::<String, String>::new()),
                     constructors: None,
                     destructors: None,
                 },
@@ -1080,10 +1086,10 @@ mod test {
     #[test]
     fn create_and_update_new_biome() -> Result<()> {
         // setup
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert("EDITOR".to_string(), "nvim".to_string());
         env.insert("TEST".to_string(), "test".to_string());
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(
             "tenter".to_string(),
             "terrainium enter --biome name".to_string(),
@@ -1111,7 +1117,7 @@ mod test {
         };
         let mut expected = test_data::terrain_without_biomes();
         expected.default_biome = Some("name".to_string());
-        expected.biomes = Some(HashMap::<String, Biome>::new());
+        expected.biomes = Some(BTreeMap::<String, Biome>::new());
         if let Some(biomes) = expected.biomes.as_mut() {
             biomes.insert("name".to_string(), biome);
         } else {
@@ -1154,7 +1160,7 @@ mod test {
 }
 
 pub mod test_data {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use crate::types::{
         biomes::Biome,
@@ -1166,9 +1172,9 @@ pub mod test_data {
     pub fn biome(name: &str, editor: &str) -> Biome {
         let name = name.to_owned();
         let editor = editor.to_owned();
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), editor);
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(
             String::from("tenter"),
             String::from("terrainium enter --biome ") + &name,
@@ -1201,10 +1207,10 @@ pub mod test_data {
     }
 
     pub fn merged_default() -> Biome {
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nvim"));
         env.insert(String::from("TEST"), String::from("value"));
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(
             String::from("tenter"),
@@ -1251,10 +1257,10 @@ pub mod test_data {
     }
 
     pub fn merged_example_biome2() -> Biome {
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nano"));
         env.insert(String::from("TEST"), String::from("value"));
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(
             String::from("tenter"),
@@ -1301,10 +1307,10 @@ pub mod test_data {
     }
 
     pub fn terrain_full() -> Terrain {
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("vim"));
         env.insert(String::from("TEST"), String::from("value"));
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(String::from("tedit"), String::from("terrainium edit"));
         alias.insert(String::from("tenter"), String::from("terrainium enter"));
         let constructor = Commands {
@@ -1332,7 +1338,7 @@ pub mod test_data {
         let biome1 = biome(biome1_name, "nvim");
         let biome2_name = "example_biome2";
         let biome2 = biome(biome2_name, "nano");
-        let mut biomes = HashMap::<String, Biome>::new();
+        let mut biomes = BTreeMap::<String, Biome>::new();
         biomes.insert(biome1_name.to_owned(), biome1);
         biomes.insert(biome2_name.to_owned(), biome2);
 
@@ -1354,11 +1360,11 @@ pub mod test_data {
     }
 
     pub fn terrain_without_biomes() -> Terrain {
-        let mut env = HashMap::<String, String>::new();
+        let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("VAR1"), String::from("val1"));
         env.insert(String::from("VAR2"), String::from("val2"));
         env.insert(String::from("VAR3"), String::from("val3"));
-        let mut alias = HashMap::<String, String>::new();
+        let mut alias = BTreeMap::<String, String>::new();
         alias.insert(String::from("alias1"), String::from("run1"));
         alias.insert(String::from("alias2"), String::from("run2"));
         alias.insert(String::from("alias3"), String::from("run3"));

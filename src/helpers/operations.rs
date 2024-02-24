@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
@@ -182,10 +182,10 @@ pub fn remove_all_script_files(central_store: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn merge_hashmaps(
-    to: &HashMap<String, String>,
-    from: &HashMap<String, String>,
-) -> HashMap<String, String> {
+pub fn merge_maps(
+    to: &BTreeMap<String, String>,
+    from: &BTreeMap<String, String>,
+) -> BTreeMap<String, String> {
     let mut return_map = to.clone();
     let _: Vec<_> = from
         .iter()
@@ -194,10 +194,10 @@ pub fn merge_hashmaps(
     return_map
 }
 
-pub fn get_merged_hashmaps(
-    from: &Option<HashMap<String, String>>,
-    to: &Option<HashMap<String, String>>,
-) -> Option<HashMap<String, String>> {
+pub fn get_merged_maps(
+    from: &Option<BTreeMap<String, String>>,
+    to: &Option<BTreeMap<String, String>>,
+) -> Option<BTreeMap<String, String>> {
     if from.is_some() && !to.is_some() {
         return from.clone();
     }
@@ -207,18 +207,18 @@ pub fn get_merged_hashmaps(
 
     if let Some(from) = &from {
         if let Some(to) = &to {
-            return Some(merge_hashmaps(from, to));
+            return Some(merge_maps(from, to));
         }
     }
 
     None
 }
 
-pub fn find_in_hashmaps(
-    from: &Option<HashMap<String, String>>,
+pub fn find_in_maps(
+    from: &Option<BTreeMap<String, String>>,
     tofind: Vec<String>,
-) -> Result<HashMap<String, Option<String>>> {
-    let return_map: HashMap<String, Option<String>> = if let Some(values) = from {
+) -> Result<BTreeMap<String, Option<String>>> {
+    let return_map: BTreeMap<String, Option<String>> = if let Some(values) = from {
         tofind
             .iter()
             .map(|env| {
@@ -237,55 +237,55 @@ pub fn find_in_hashmaps(
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use anyhow::Result;
 
-    use super::get_merged_hashmaps;
+    use super::get_merged_maps;
 
     #[test]
-    fn test_merge_hashmaps() -> Result<()> {
-        let mut hashmap_1: HashMap<String, String> = HashMap::<String, String>::new();
-        hashmap_1.insert("k1".to_string(), "v1".to_string());
+    fn test_merge_maps() -> Result<()> {
+        let mut map_1: BTreeMap<String, String> = BTreeMap::<String, String>::new();
+        map_1.insert("k1".to_string(), "v1".to_string());
 
         // from: some to: none; from
-        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &None).expect("to be present");
-        assert_eq!(hashmap_1, actual);
+        let actual = get_merged_maps(&Some(map_1.clone()), &None).expect("to be present");
+        assert_eq!(map_1, actual);
 
         // from: none to: some; to
-        let actual = get_merged_hashmaps(&None, &Some(hashmap_1.clone())).expect("to be present");
-        assert_eq!(hashmap_1, actual);
+        let actual = get_merged_maps(&None, &Some(map_1.clone())).expect("to be present");
+        assert_eq!(map_1, actual);
 
-        let mut hashmap_2: HashMap<String, String> = HashMap::<String, String>::new();
-        hashmap_2.insert("k2".to_string(), "v2".to_string());
+        let mut map_2: BTreeMap<String, String> = BTreeMap::<String, String>::new();
+        map_2.insert("k2".to_string(), "v2".to_string());
 
         // from: some to: some; to overrides from
-        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &Some(hashmap_2.clone()))
+        let actual = get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone()))
             .expect("to be present");
 
-        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        let mut expected: BTreeMap<String, String> = BTreeMap::<String, String>::new();
         expected.insert("k1".to_string(), "v1".to_string());
         expected.insert("k2".to_string(), "v2".to_string());
         assert_eq!(expected, actual);
 
-        let mut hashmap_2: HashMap<String, String> = HashMap::<String, String>::new();
-        hashmap_2.insert("k1".to_string(), "new1".to_string());
-        hashmap_2.insert("k2".to_string(), "v2".to_string());
+        let mut map_2: BTreeMap<String, String> = BTreeMap::<String, String>::new();
+        map_2.insert("k1".to_string(), "new1".to_string());
+        map_2.insert("k2".to_string(), "v2".to_string());
 
-        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        let mut expected: BTreeMap<String, String> = BTreeMap::<String, String>::new();
         expected.insert("k1".to_string(), "new1".to_string());
         expected.insert("k2".to_string(), "v2".to_string());
 
         // from: some to: some; to overrides from
-        let actual = get_merged_hashmaps(&Some(hashmap_1.clone()), &Some(hashmap_2.clone()))
+        let actual = get_merged_maps(&Some(map_1.clone()), &Some(map_2.clone()))
             .expect("to be present");
         assert_eq!(expected, actual);
 
-        let mut expected: HashMap<String, String> = HashMap::<String, String>::new();
+        let mut expected: BTreeMap<String, String> = BTreeMap::<String, String>::new();
         expected.insert("k1".to_string(), "v1".to_string());
         expected.insert("k2".to_string(), "v2".to_string());
 
-        let actual = get_merged_hashmaps(&Some(hashmap_2.clone()), &Some(hashmap_1.clone()))
+        let actual = get_merged_maps(&Some(map_2.clone()), &Some(map_1.clone()))
             .expect("to be present");
         assert_eq!(expected, actual);
         Ok(())

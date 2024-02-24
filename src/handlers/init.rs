@@ -122,79 +122,79 @@ mod test {
         Ok(())
     }
 
-    // #[test]
-    // #[serial]
-    // fn init_with_example_creates_and_compiles_terrain() -> Result<()> {
-    //     let test_dir = tempdir()?;
-    //     let home_dir = tempdir()?;
-    //
-    //     let test_dir_path: PathBuf = test_dir.path().into();
-    //     let mock_cwd = mock_fs::get_cwd_context();
-    //     mock_cwd
-    //         .expect()
-    //         .returning(move || {
-    //             let test_dir_path: PathBuf = test_dir_path.clone();
-    //             Ok(test_dir_path)
-    //         })
-    //         .times(5);
-    //
-    //     let home_dir_path: PathBuf = home_dir.path().into();
-    //     let mock_home = mock_fs::get_home_dir_context();
-    //     mock_home
-    //         .expect()
-    //         .returning(move || {
-    //             let home_dir_path: PathBuf = home_dir_path.clone();
-    //             Ok(home_dir_path)
-    //         })
-    //         .times(3);
-    //
-    //     let home_dir_path: PathBuf = home_dir.path().into();
-    //     let test_dir_path: PathBuf = test_dir.path().into();
-    //     let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
-    //         .to_string_lossy()
-    //         .to_string()
-    //         .replace('/', "_");
-    //     let scripts_dir_path = home_dir_path.join(PathBuf::from(
-    //         ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
-    //     ));
-    //
-    //     let terrain = Terrain::example();
-    //     let generate_and_compile_context = mock_ops::generate_and_compile_context();
-    //
-    //     let main = terrain.get(Some(BiomeArg::None))?;
-    //     generate_and_compile_context
-    //         .expect()
-    //         .with(
-    //             eq(scripts_dir_path.clone()),
-    //             eq(String::from("none")),
-    //             eq(main),
-    //         )
-    //         .return_once(|_, _, _| Ok(()))
-    //         .times(1);
-    //
-    //     let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
-    //     generate_and_compile_context
-    //         .expect()
-    //         .with(
-    //             eq(scripts_dir_path.clone()),
-    //             eq(String::from("example_biome")),
-    //             eq(example_biome),
-    //         )
-    //         .return_once(|_, _, _| Ok(()))
-    //         .times(1);
-    //
-    //     super::handle(false, true, false)?;
-    //
-    //     let mut actual_file_path = test_dir_path.clone();
-    //     actual_file_path.push("terrain.toml");
-    //
-    //     let expected =
-    //         std::fs::read_to_string("./example_configs/terrain.full.toml").expect("to be present");
-    //     let actual = std::fs::read_to_string(actual_file_path).expect("to be present");
-    //     assert_eq!(expected, actual);
-    //
-    //     Ok(())
-    // }
+    #[test]
+    #[serial]
+    fn init_with_example_creates_and_compiles_terrain() -> Result<()> {
+        let test_dir = tempdir()?;
+        let home_dir = tempdir()?;
+
+        let test_dir_path: PathBuf = test_dir.path().into();
+        let mock_cwd = mock_fs::get_cwd_context();
+        mock_cwd
+            .expect()
+            .returning(move || {
+                let test_dir_path: PathBuf = test_dir_path.clone();
+                Ok(test_dir_path)
+            })
+            .times(5);
+
+        let home_dir_path: PathBuf = home_dir.path().into();
+        let mock_home = mock_fs::get_home_dir_context();
+        mock_home
+            .expect()
+            .returning(move || {
+                let home_dir_path: PathBuf = home_dir_path.clone();
+                Ok(home_dir_path)
+            })
+            .times(3);
+
+        let home_dir_path: PathBuf = home_dir.path().into();
+        let test_dir_path: PathBuf = test_dir.path().into();
+        let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
+            .to_string_lossy()
+            .to_string()
+            .replace('/', "_");
+        let scripts_dir_path = home_dir_path.join(PathBuf::from(
+            ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
+        ));
+
+        let terrain = Terrain::example();
+        let generate_and_compile_context = mock_ops::generate_and_compile_context();
+
+        let main = terrain.get(Some(BiomeArg::None))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(scripts_dir_path.clone()),
+                eq(String::from("none")),
+                eq(main),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
+        generate_and_compile_context
+            .expect()
+            .with(
+                eq(scripts_dir_path.clone()),
+                eq(String::from("example_biome")),
+                eq(example_biome),
+            )
+            .return_once(|_, _, _| Ok(()))
+            .times(1);
+
+        super::handle(false, true, false)?;
+
+        let mut actual_file_path = test_dir_path.clone();
+        actual_file_path.push("terrain.toml");
+
+        let expected =
+            std::fs::read_to_string("./example_configs/terrain.default.toml").expect("to be present");
+        let actual = std::fs::read_to_string(actual_file_path).expect("to be present");
+        assert_eq!(expected, actual);
+
+        Ok(())
+    }
 
     //     #[test]
     //     #[serial]

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Context, Result};
 use mockall_double::double;
@@ -11,7 +11,7 @@ use crate::{
             TERRAINIUM_SELECTED_BIOME, TERRAINIUM_SESSION_ID, TERRAINIUM_TERRAIN_NAME,
             TERRAINIUM_TOML_PATH,
         },
-        operations::{get_current_dir_toml, get_parsed_terrain, get_terrain_name, merge_hashmaps},
+        operations::{get_current_dir_toml, get_parsed_terrain, get_terrain_name, merge_maps},
     },
     proto::{self, ActivateRequest},
     types::args::BiomeArg,
@@ -29,7 +29,7 @@ use crate::types::socket::Unix;
 #[double]
 use crate::shell::zsh::ops;
 
-fn add_executables(map: &mut HashMap<String, String>) -> Result<()> {
+fn add_executables(map: &mut BTreeMap<String, String>) -> Result<()> {
     let dev = std::env::var(TERRAINIUM_DEV);
     if dev.is_ok() && dev.unwrap() == *"true" {
         let pwd = fs::get_cwd().context("unable to get current_dir")?;
@@ -73,7 +73,7 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
     let session_id = misc::get_uuid();
     let biome_name = terrain.get_selected_biome_name(&biome)?;
 
-    let mut envs = HashMap::<String, String>::new();
+    let mut envs = BTreeMap::<String, String>::new();
     envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
     envs.insert(TERRAINIUM_TOML_PATH.to_string(), toml_path.clone());
     envs.insert(TERRAINIUM_TERRAIN_NAME.to_string(), terrain_name.clone());
@@ -109,14 +109,14 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
     let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
         .context("unable to set zsh environment varibles")?;
-    let mut merged = merge_hashmaps(&envs.clone(), &zsh_env);
+    let mut merged = merge_maps(&envs.clone(), &zsh_env);
 
     let selected = terrain
         .get(biome.clone())
         .context("unable to select biome")?;
-    merged = merge_hashmaps(
+    merged = merge_maps(
         &merged,
-        &selected.env.unwrap_or(HashMap::<String, String>::new()),
+        &selected.env.unwrap_or(BTreeMap::<String, String>::new()),
     );
     ops::spawn(vec!["-s"], Some(merged)).context("unable to start zsh")?;
 
@@ -125,7 +125,7 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 
 // #[cfg(test)]
 // mod test {
-//     use std::{collections::HashMap, path::PathBuf};
+//     use std::{collections::BTreeMap, path::PathBuf};
 //
 //     use anyhow::{Context, Result};
 //     use mockall::predicate::eq;
@@ -200,10 +200,10 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 //         mock_zsh_env
 //             .expect()
 //             .with(eq("example_biome".to_string()))
-//             .return_once(|_| Ok(HashMap::<String, String>::new()))
+//             .return_once(|_| Ok(BTreeMap::<String, String>::new()))
 //             .times(1);
 //
-//         let mut expected = HashMap::<String, String>::new();
+//         let mut expected = BTreeMap::<String, String>::new();
 //         expected.insert("EDITOR".to_string(), "nvim".to_string());
 //         expected.insert("TEST".to_string(), "value".to_string());
 //         expected.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
@@ -328,10 +328,10 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 //         mock_zsh_env
 //             .expect()
 //             .with(eq("example_biome2".to_string()))
-//             .return_once(|_| Ok(HashMap::<String, String>::new()))
+//             .return_once(|_| Ok(BTreeMap::<String, String>::new()))
 //             .times(1);
 //
-//         let mut expected = HashMap::<String, String>::new();
+//         let mut expected = BTreeMap::<String, String>::new();
 //         expected.insert("EDITOR".to_string(), "nano".to_string());
 //         expected.insert("TEST".to_string(), "value".to_string());
 //         expected.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
@@ -460,10 +460,10 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
 //         mock_zsh_env
 //             .expect()
 //             .with(eq("none".to_string()))
-//             .return_once(|_| Ok(HashMap::<String, String>::new()))
+//             .return_once(|_| Ok(BTreeMap::<String, String>::new()))
 //             .times(1);
 //
-//         let mut expected = HashMap::<String, String>::new();
+//         let mut expected = BTreeMap::<String, String>::new();
 //         expected.insert("VAR1".to_string(), "val1".to_string());
 //         expected.insert("VAR2".to_string(), "val2".to_string());
 //         expected.insert("VAR3".to_string(), "val3".to_string());

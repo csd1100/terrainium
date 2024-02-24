@@ -4,7 +4,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 pub mod spawn {
     use std::{
-        collections::HashMap,
+        collections::BTreeMap,
         fs::File,
         process::{Command, Output},
     };
@@ -15,7 +15,7 @@ pub mod spawn {
     pub fn and_wait<'a>(
         exe: &str,
         args: Vec<&'a str>,
-        envs: Option<HashMap<String, String>>,
+        envs: Option<BTreeMap<String, String>>,
     ) -> Result<()> {
         let mut command = Command::new(exe);
         command.args(args.clone());
@@ -34,7 +34,7 @@ pub mod spawn {
     pub fn with_stdout_stderr<'a>(
         exe: &str,
         args: Vec<&'a str>,
-        envs: Option<HashMap<String, String>>,
+        envs: Option<BTreeMap<String, String>>,
         stdout: Option<File>,
         stderr: Option<File>,
     ) -> Result<()> {
@@ -60,7 +60,7 @@ pub mod spawn {
     pub fn and_get_output<'a>(
         exe: &str,
         args: Vec<&'a str>,
-        envs: Option<HashMap<String, String>>,
+        envs: Option<BTreeMap<String, String>>,
     ) -> Result<Output> {
         let mut command = Command::new(exe);
         command.args(args.clone());

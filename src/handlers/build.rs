@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr};
 
 use anyhow::{anyhow, Context, Result};
 
@@ -25,7 +25,7 @@ pub fn build(get_commands: fn(Biome) -> Option<Commands>) -> Result<()> {
     let envs = terrain
         .env
         .clone()
-        .unwrap_or(HashMap::<String, String>::new());
+        .unwrap_or(BTreeMap::<String, String>::new());
 
     let commands = get_commands(terrain);
 
@@ -41,14 +41,14 @@ pub fn build(get_commands: fn(Biome) -> Option<Commands>) -> Result<()> {
 pub mod run {
     use anyhow::Result;
     use mockall_double::double;
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use crate::types::commands::Command;
 
     #[double]
     use crate::shell::background::processes;
 
-    pub fn commands(background: Option<Vec<Command>>, envs: HashMap<String, String>) -> Result<()> {
+    pub fn commands(background: Option<Vec<Command>>, envs: BTreeMap<String, String>) -> Result<()> {
         if let Some(background) = background {
             processes::start(background, envs)?;
         }
@@ -58,7 +58,7 @@ pub mod run {
 
 // #[cfg(test)]
 // mod test {
-//     use std::{collections::HashMap, path::PathBuf};
+//     use std::{collections::BTreeMap, path::PathBuf};
 //
 //     use anyhow::{anyhow, Result};
 //     use serial_test::serial;
@@ -87,7 +87,7 @@ pub mod run {
 //             args: Some(vec!["something".to_string()]),
 //         }];
 //
-//         let mut expected_envs = HashMap::<String, String>::new();
+//         let mut expected_envs = BTreeMap::<String, String>::new();
 //         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         expected_envs.insert("TEST".to_string(), "value".to_string());
 //
@@ -130,7 +130,7 @@ pub mod run {
 //             args: Some(vec!["something".to_string()]),
 //         }];
 //
-//         let mut expected_envs = HashMap::<String, String>::new();
+//         let mut expected_envs = BTreeMap::<String, String>::new();
 //         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         expected_envs.insert("TEST".to_string(), "value".to_string());
 //
@@ -178,7 +178,7 @@ pub mod run {
 //             args: Some(vec!["something".to_string()]),
 //         }];
 //
-//         let mut expected_envs = HashMap::<String, String>::new();
+//         let mut expected_envs = BTreeMap::<String, String>::new();
 //         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         expected_envs.insert("TEST".to_string(), "value".to_string());
 //
@@ -221,7 +221,7 @@ pub mod run {
 //             args: Some(vec!["something".to_string()]),
 //         }];
 //
-//         let mut expected_envs = HashMap::<String, String>::new();
+//         let mut expected_envs = BTreeMap::<String, String>::new();
 //         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         expected_envs.insert("TEST".to_string(), "value".to_string());
 //

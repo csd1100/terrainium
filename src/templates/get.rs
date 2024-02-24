@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 #[cfg(test)]
 use mockall::automock;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::types::{commands::Commands, get::PrintableTerrain};
 
@@ -19,14 +19,14 @@ const DESTRUCTORS: &str = "destructors";
 
 enum Data {
     All(Box<PrintableTerrain>),
-    HashMap(Option<HashMap<String, String>>),
+    BTreeMap(Option<BTreeMap<String, String>>),
     Commands(Option<Commands>),
 }
 
 #[cfg_attr(test, automock)]
 pub mod print {
     use anyhow::{Context, Result};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use super::{
         parse_template, Data, ALIASES, ALIAS_TEMPLATE, CONSTRUCTORS, CONSTRUCTORS_TEMPLATE,
@@ -51,17 +51,17 @@ pub mod print {
         Ok(())
     }
 
-    pub fn env(env: Option<HashMap<String, String>>) -> Result<()> {
-        let text = parse_template(vec![(ENV, ENV_TEMPLATE)], ENV, Data::HashMap(env))?;
+    pub fn env(env: Option<BTreeMap<String, String>>) -> Result<()> {
+        let text = parse_template(vec![(ENV, ENV_TEMPLATE)], ENV, Data::BTreeMap(env))?;
         println!("{}", text);
         Ok(())
     }
 
-    pub fn aliases(aliases: Option<HashMap<String, String>>) -> Result<()> {
+    pub fn aliases(aliases: Option<BTreeMap<String, String>>) -> Result<()> {
         let text = parse_template(
             vec![(ALIASES, ALIAS_TEMPLATE)],
             ALIASES,
-            Data::HashMap(aliases),
+            Data::BTreeMap(aliases),
         )?;
         println!("{}", text);
         Ok(())
@@ -106,7 +106,7 @@ fn parse_template(
 
     match data {
         Data::All(data) => Ok(handlebar.render(template_to_parse, &data)?),
-        Data::HashMap(data) => Ok(handlebar.render(template_to_parse, &data)?),
+        Data::BTreeMap(data) => Ok(handlebar.render(template_to_parse, &data)?),
         Data::Commands(data) => Ok(handlebar.render(template_to_parse, &data)?),
     }
 }
@@ -129,10 +129,10 @@ mod test {
 
         let expected = "Default Biome: example_biome          Selected Biome: example_biome
 Environment Variables:
-    EDITOR=\"vim\"
+    EDITOR=\"nvim\"
 Aliases:
     tedit=\"terrainium edit\"
-    tenter=\"terrainium enter\"
+    tenter=\"terrainium enter --biome example_biome\"
 Constructors:
     foreground:
         echo entering terrain \n        echo entering biome 'example_biome' \nDestructors:

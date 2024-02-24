@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use anyhow::{Context, Result};
 use mockall_double::double;
@@ -38,7 +38,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
             let found_alias = terrain
                 .find_aliases(alias)
                 .context("unable to get aliases")?;
-            let aliases: HashMap<String, String> = found_alias
+            let aliases: BTreeMap<String, String> = found_alias
                 .iter()
                 .map(|(k, v)| {
                     if v.is_none() {
@@ -58,7 +58,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
             print::env(terrain.env.to_owned()).context("unable to print env vars")?;
         } else if let Some(env) = env {
             let found_env = terrain.find_envs(env).context("unable to get env vars")?;
-            let env: HashMap<String, String> = found_env
+            let env: BTreeMap<String, String> = found_env
                 .iter()
                 .map(|(k, v)| {
                     if v.is_none() {
@@ -86,7 +86,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 
 // #[cfg(test)]
 // mod test {
-//     use std::{collections::HashMap, path::PathBuf};
+//     use std::{collections::BTreeMap, path::PathBuf};
 //
 //     use anyhow::Result;
 //     use mockall::predicate::eq;
@@ -146,7 +146,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //
 //         let mock_print_env = mock_print::env_context();
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         envs.insert("TEST".to_string(), "value".to_string());
 //
@@ -180,7 +180,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //
 //         let mock_print_env = mock_print::env_context();
 //
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("EDITOR".to_string(), "nvim".to_string());
 //         envs.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
 //
@@ -214,7 +214,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //
 //         let mock_print_aliases = mock_print::aliases_context();
 //
-//         let mut aliases = HashMap::<String, String>::new();
+//         let mut aliases = BTreeMap::<String, String>::new();
 //         aliases.insert("tedit".to_string(), "terrainium edit".to_string());
 //         aliases.insert(
 //             "tenter".to_string(),
@@ -251,7 +251,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //
 //         let mock_print_aliases = mock_print::aliases_context();
 //
-//         let mut aliases = HashMap::<String, String>::new();
+//         let mut aliases = BTreeMap::<String, String>::new();
 //         aliases.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
 //         aliases.insert(
 //             "tenter".to_string(),
@@ -369,7 +369,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //             .times(1);
 //
 //         let mock_print_env = mock_print::env_context();
-//         let mut envs = HashMap::<String, String>::new();
+//         let mut envs = BTreeMap::<String, String>::new();
 //         envs.insert("EDITOR".to_string(), "vim".to_string());
 //         envs.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
 //         mock_print_env
@@ -378,7 +378,7 @@ pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
 //             .return_once(|_| Ok(()));
 //
 //         let mock_print_aliases = mock_print::aliases_context();
-//         let mut aliases = HashMap::<String, String>::new();
+//         let mut aliases = BTreeMap::<String, String>::new();
 //         aliases.insert("NONEXISTENT".to_string(), "NOT FOUND".to_string());
 //         aliases.insert("tenter".to_string(), "terrainium enter".to_string());
 //         mock_print_aliases
