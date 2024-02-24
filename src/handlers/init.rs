@@ -67,19 +67,12 @@ mod test {
     #[serial]
     fn init_without_any_options_creates_and_compiles_terrain() -> Result<()> {
         let mock_create_dir_ctx = mock_fs::create_config_dir_context();
-        mock_create_dir_ctx
-            .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
-            .times(1);
+        mock_create_dir_ctx.expect().return_once(|| Ok(())).times(1);
 
         let mock_get_local_terrain_ctx = mock_fs::get_local_terrain_path_context();
         mock_get_local_terrain_ctx
             .expect()
-            .return_once(|| {
-                Ok(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                ))
-            })
+            .return_once(|| Ok(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")))
             .times(1);
 
         let is_terrain_present_context = mock_fs::is_terrain_present_context();
@@ -92,9 +85,7 @@ mod test {
         write_terrain_context
             .expect()
             .with(
-                eq(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                )),
+                eq(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")),
                 eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
@@ -133,15 +124,12 @@ mod test {
     #[serial]
     fn init_with_full_creates_and_compiles_terrain() -> Result<()> {
         let mock_create_dir_ctx = mock_fs::create_config_dir_context();
-        mock_create_dir_ctx
-            .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
-            .times(1);
+        mock_create_dir_ctx.expect().return_once(|| Ok(())).times(1);
 
         let mock_get_local_terrain_ctx = mock_fs::get_local_terrain_path_context();
         mock_get_local_terrain_ctx
             .expect()
-            .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
+            .return_once(|| Ok(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")))
             .times(1);
 
         let is_terrain_present_context = mock_fs::is_terrain_present_context();
@@ -154,7 +142,7 @@ mod test {
         write_terrain_context
             .expect()
             .with(
-                eq(PathBuf::from("./example_configs/terrain.full.toml")),
+                eq(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")),
                 eq(Terrain::example()),
             )
             .return_once(|_, _| Ok(()))
@@ -205,19 +193,12 @@ mod test {
     #[serial]
     fn init_with_central_creates_and_compiles_terrain() -> Result<()> {
         let mock_create_dir_ctx = mock_fs::create_config_dir_context();
-        mock_create_dir_ctx
-            .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
-            .times(1);
+        mock_create_dir_ctx.expect().return_once(|| Ok(())).times(1);
 
         let mock_get_central_terrain_ctx = mock_fs::get_central_terrain_path_context();
         mock_get_central_terrain_ctx
             .expect()
-            .return_once(|| {
-                Ok(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                ))
-            })
+            .return_once(|| Ok(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")))
             .times(1);
 
         let is_terrain_present_context = mock_fs::is_terrain_present_context();
@@ -230,9 +211,7 @@ mod test {
         write_terrain_context
             .expect()
             .with(
-                eq(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                )),
+                eq(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")),
                 eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
@@ -271,19 +250,12 @@ mod test {
     #[serial]
     fn init_with_edit_creates_and_compiles_terrain_and_starts_editor() -> Result<()> {
         let mock_create_dir_ctx = mock_fs::create_config_dir_context();
-        mock_create_dir_ctx
-            .expect()
-            .return_once(|| Ok(PathBuf::from("~/.config/terrainium/")))
-            .times(1);
+        mock_create_dir_ctx.expect().return_once(|| Ok(())).times(1);
 
         let mock_get_local_terrain_ctx = mock_fs::get_local_terrain_path_context();
         mock_get_local_terrain_ctx
             .expect()
-            .return_once(|| {
-                Ok(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                ))
-            })
+            .return_once(|| Ok(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")))
             .times(1);
 
         let is_terrain_present_context = mock_fs::is_terrain_present_context();
@@ -296,9 +268,7 @@ mod test {
         write_terrain_context
             .expect()
             .with(
-                eq(PathBuf::from(
-                    "./example_configs/terrain.without.biomes.toml",
-                )),
+                eq(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")),
                 eq(Terrain::new()),
             )
             .return_once(|_, _| Ok(()))
@@ -331,9 +301,7 @@ mod test {
         let mock_edit_file = mock_edit::file_context();
         mock_edit_file
             .expect()
-            .with(eq(PathBuf::from(
-                "./example_configs/terrain.without.biomes.toml",
-            )))
+            .with(eq(PathBuf::from("/tmp/terrainium-init-test/terrain.toml")))
             .return_once(|_| Ok(()))
             .times(1);
 

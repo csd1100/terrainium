@@ -25,7 +25,7 @@ pub mod fs {
     use super::get_terrainium_config_path;
     use crate::types::{args::BiomeArg, terrain::Terrain};
 
-    pub fn create_config_dir() -> Result<PathBuf> {
+    pub fn create_config_dir() -> Result<()> {
         let config_path =
             get_terrainium_config_path().context("unable to get terrainium config path")?;
         println!("[config_path: {:?}]\n", config_path);
@@ -33,7 +33,7 @@ pub mod fs {
             .context("unable to create terrainium config directory")?;
         super::create_dir_if_not_exist(get_central_store_path()?.as_path())
             .context("unable to create terrains directory in terrainium config directory")?;
-        Ok(config_path)
+        Ok(())
     }
 
     pub fn get_terrain_name() -> String {

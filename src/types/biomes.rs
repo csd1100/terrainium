@@ -149,6 +149,12 @@ impl Biome {
     }
 }
 
+impl Default for Biome {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct BiomeWithName {
     pub name: String,

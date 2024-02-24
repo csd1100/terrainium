@@ -48,8 +48,9 @@ terrainium <verb> [OPTIONS]
     will return all values.
 
     - `-b|--biome <name>` - name of the biome for which values to be retrieved.
-      Gets values of default biome if `default` is used. Gets main terrain if `none` is used.
-      Will get values of currently active terrain if `current` is used.
+      Gets values of default biome if `default` is used. Gets main terrain if
+      `none` is used. Will get values of currently active terrain if `current`
+      is used.
     - `--alias` - returns value of all aliases defined.
     - `--env` - returns value of all environment variables defined.
     - `-e [name]` - returns value of environment variable with `name`.
@@ -154,11 +155,16 @@ fi
 
 ```files
 $ ls /tmp/terrainium-94e30640-eaaf-4c4e-9db9-950db177044b/
-spawn-err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log      # ->  # STDERR of terrainium_executor using which process is started
-spawn-out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log      # ->  # STDOUT of terrainium_executor using which process is started
-std_out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log        # ->  # STDOUT of process
-std_err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log        # ->  # STDERR of process
-status-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.json        # ->  # status of process include command, args and exit code
+spawn-err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
+# ->  # STDERR of terrainium_executor using which process is started
+spawn-out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
+# ->  # STDOUT of terrainium_executor using which process is started
+std_out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
+# ->  # STDOUT of process
+std_err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
+# ->  # STDERR of process
+status-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.json
+# ->  # status of process include command, args and exit code
 ```
 
 - In above list of files `6d11dd42-b88f-4c1a-82b8-4171e0d2fd09`

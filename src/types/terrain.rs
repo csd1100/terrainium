@@ -237,6 +237,12 @@ impl Terrain {
     }
 }
 
+impl Default for Terrain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // Note: This IntoIterator returns merged biomes
 impl IntoIterator for Terrain {
     type Item = (String, Biome);
