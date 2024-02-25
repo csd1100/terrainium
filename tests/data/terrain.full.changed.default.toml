@@ -1,0 +1,54 @@
+"$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+default_biome = "example_biome2"
+
+[terrain.env]
+EDITOR = "vim"
+TEST = "value"
+
+[terrain.alias]
+tedit = "terrainium edit"
+tenter = "terrainium enter"
+
+[[terrain.constructors.foreground]]
+exe = "echo"
+args = ["entering terrain"]
+
+[[terrain.constructors.background]]
+exe = "run"
+args = ["something"]
+
+[[terrain.destructors.foreground]]
+exe = "echo"
+args = ["exiting terrain"]
+
+[[terrain.destructors.background]]
+exe = "stop"
+args = ["something"]
+
+[biomes.example_biome.env]
+EDITOR = "nvim"
+
+[biomes.example_biome.alias]
+tenter = "terrainium enter --biome example_biome"
+
+[[biomes.example_biome.constructors.foreground]]
+exe = "echo"
+args = ["entering biome 'example_biome'"]
+
+[[biomes.example_biome.destructors.foreground]]
+exe = "echo"
+args = ["exiting biome 'example_biome'"]
+
+[biomes.example_biome2.env]
+EDITOR = "nano"
+
+[biomes.example_biome2.alias]
+tenter = "terrainium enter --biome example_biome2"
+
+[[biomes.example_biome2.constructors.foreground]]
+exe = "echo"
+args = ["entering biome 'example_biome2'"]
+
+[[biomes.example_biome2.destructors.foreground]]
+exe = "echo"
+args = ["exiting biome 'example_biome2'"]

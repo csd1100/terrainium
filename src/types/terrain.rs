@@ -203,7 +203,7 @@ impl Terrain {
         Ok(())
     }
 
-    pub fn add_and_update_biome(
+    pub fn create_new_biome(
         &mut self,
         biome_name: String,
         envs: Option<Vec<Pair>>,
@@ -304,7 +304,7 @@ mod test {
     #[test]
     fn parse_toml_full() -> Result<()> {
         let expected = test_data::terrain_full();
-        let parsed = parse_terrain_from(PathBuf::from("./example_configs/terrain.full.toml"))?;
+        let parsed = parse_terrain_from(PathBuf::from("./tests/data/terrain.full.toml"))?;
 
         assert_eq!(expected, parsed);
 
@@ -314,9 +314,7 @@ mod test {
     #[test]
     fn parse_toml_without_biomes() -> Result<()> {
         let expected = test_data::terrain_without_biomes();
-        let parsed = parse_terrain_from(&PathBuf::from(
-            "./example_configs/terrain.without.biomes.toml",
-        ))?;
+        let parsed = parse_terrain_from(PathBuf::from("./tests/data/terrain.without.biomes.toml"))?;
 
         assert_eq!(expected, parsed);
 
@@ -327,7 +325,7 @@ mod test {
     // fn to_toml() -> Result<()> {
     // will fail because `toml` sometimes writes it in different order.
     //     let expected =
-    //         std::fs::read_to_string(PathBuf::from("./example_configs/terrain.full.toml"))?;
+    //         std::fs::read_to_string(PathBuf::from("./tests/data/terrain.full.toml"))?;
     //     let parsed = get_full_terrain().to_toml()?;
     //
     //     assert_eq!(expected, parsed);

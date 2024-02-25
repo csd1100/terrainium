@@ -56,7 +56,7 @@ mod test {
         let mut terrain_toml_path: PathBuf = test_dir.path().into();
         terrain_toml_path.push("terrain.toml");
 
-        std::fs::copy("./example_configs/terrain.full.toml", &terrain_toml_path)?;
+        std::fs::copy("./tests/data/terrain.full.toml", &terrain_toml_path)?;
 
         let mock_edit_file = mock_edit::file_context();
         mock_edit_file
