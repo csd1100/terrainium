@@ -1167,16 +1167,20 @@ pub mod test_data {
 
     use super::Terrain;
 
-    pub fn biome(name: &str, editor: &str) -> Biome {
+    pub fn updated_biome(name: &str) -> Biome {
         let name = name.to_owned();
-        let editor = editor.to_owned();
+
         let mut env = BTreeMap::<String, String>::new();
-        env.insert(String::from("EDITOR"), editor);
+        env.insert(String::from("EDITOR"), "UPDATED".to_string());
+        env.insert(String::from("NEW_VAR"), "NEW_VALUE".to_string());
+
         let mut alias = BTreeMap::<String, String>::new();
         alias.insert(
             String::from("tenter"),
             String::from("terrainium enter --biome ") + &name,
         );
+        alias.insert(String::from("new_alias"), String::from("new_value"));
+
         let constructor = Commands {
             foreground: Some(vec![Command {
                 exe: String::from("echo"),
@@ -1198,6 +1202,46 @@ pub mod test_data {
             constructors: Some(constructor),
             destructors: Some(destructor),
         }
+    }
+
+    pub fn biome_with_envs_and_aliases(name: &str, editor: &str) -> Biome {
+        let name = name.to_owned();
+        let editor = editor.to_owned();
+        let mut env = BTreeMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), editor);
+        let mut alias = BTreeMap::<String, String>::new();
+        alias.insert(
+            String::from("tenter"),
+            String::from("terrainium enter --biome ") + &name,
+        );
+        Biome {
+            env: Some(env),
+            alias: Some(alias),
+            constructors: None,
+            destructors: None,
+        }
+    }
+
+    pub fn biome(name: &str, editor: &str) -> Biome {
+        let mut biome = biome_with_envs_and_aliases(name, editor);
+        let constructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("entering biome '") + name + "'"]),
+            }]),
+            background: None,
+        };
+        let destructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("exiting biome '") + name + "'"]),
+            }]),
+            background: None,
+        };
+
+        biome.constructors = Some(constructor);
+        biome.destructors = Some(destructor);
+        biome
     }
 
     pub fn terrain_full_main() -> Biome {
@@ -1390,6 +1434,118 @@ pub mod test_data {
             },
             default_biome: None,
             biomes: None,
+        }
+    }
+
+    pub fn terrain_full_updated_example_biome2() -> Terrain {
+        let mut env = BTreeMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("vim"));
+        env.insert(String::from("TEST"), String::from("value"));
+
+        let mut alias = BTreeMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(String::from("tenter"), String::from("terrainium enter"));
+
+        let constructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("entering terrain")]),
+            }]),
+            background: Some(vec![Command {
+                exe: String::from("run"),
+                args: Some(vec![String::from("something")]),
+            }]),
+        };
+
+        let destructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("exiting terrain")]),
+            }]),
+            background: Some(vec![Command {
+                exe: String::from("stop"),
+                args: Some(vec![String::from("something")]),
+            }]),
+        };
+
+        let biome1_name = "example_biome";
+        let biome1 = biome(biome1_name, "nvim");
+
+        let biome2_name = "example_biome2";
+        let biome2 = updated_biome(biome2_name);
+
+        let mut biomes = BTreeMap::<String, Biome>::new();
+        biomes.insert(biome1_name.to_owned(), biome1);
+        biomes.insert(biome2_name.to_owned(), biome2);
+
+        Terrain {
+            schema: super::schema_url(),
+            terrain: Biome {
+                env: Some(env),
+                alias: Some(alias),
+                constructors: Some(constructor),
+                destructors: Some(destructor),
+            },
+            default_biome: Some("example_biome".to_owned()),
+            biomes: Some(biomes),
+        }
+    }
+
+    pub fn terrain_full_with_new() -> Terrain {
+        let mut env = BTreeMap::<String, String>::new();
+        env.insert(String::from("EDITOR"), String::from("vim"));
+        env.insert(String::from("TEST"), String::from("value"));
+
+        let mut alias = BTreeMap::<String, String>::new();
+        alias.insert(String::from("tedit"), String::from("terrainium edit"));
+        alias.insert(String::from("tenter"), String::from("terrainium enter"));
+
+        let constructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("entering terrain")]),
+            }]),
+            background: Some(vec![Command {
+                exe: String::from("run"),
+                args: Some(vec![String::from("something")]),
+            }]),
+        };
+
+        let destructor = Commands {
+            foreground: Some(vec![Command {
+                exe: String::from("echo"),
+                args: Some(vec![String::from("exiting terrain")]),
+            }]),
+            background: Some(vec![Command {
+                exe: String::from("stop"),
+                args: Some(vec![String::from("something")]),
+            }]),
+        };
+
+        let biome1_name = "example_biome";
+        let biome1 = biome(biome1_name, "nvim");
+
+        let biome2_name = "example_biome2";
+        let biome2 = biome(biome2_name, "nano");
+
+        let biome3_name = "example_biome3";
+        let biome3 = biome_with_envs_and_aliases(biome3_name, "pico");
+
+        let mut biomes = BTreeMap::<String, Biome>::new();
+        biomes.insert(biome1_name.to_owned(), biome1);
+        biomes.insert(biome2_name.to_owned(), biome2);
+        biomes.insert(biome3_name.to_owned(), biome3);
+
+        Terrain {
+            schema: super::schema_url(),
+            terrain: Biome {
+                env: Some(env),
+                alias: Some(alias),
+                constructors: Some(constructor),
+                destructors: Some(destructor),
+            },
+            default_biome: Some("example_biome".to_owned()),
+            biomes: Some(biomes),
         }
     }
 }
