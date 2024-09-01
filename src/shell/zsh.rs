@@ -25,6 +25,9 @@ pub mod ops {
     use mockall_double::double;
     use std::{collections::BTreeMap, path::Path};
 
+    use crate::helpers::utils::Paths;
+    #[double]
+    use crate::shell::process::spawn;
     use crate::{
         helpers::{
             constants::{FPATH, TERRAINIUM_INIT_FILE, TERRAINIUM_INIT_ZSH},
@@ -32,9 +35,6 @@ pub mod ops {
         },
         types::biomes::Biome,
     };
-
-    #[double]
-    use crate::shell::process::spawn;
 
     pub fn generate_and_compile(
         central_store: &Path,
@@ -62,9 +62,9 @@ pub mod ops {
         Ok(())
     }
 
-    pub fn get_zsh_envs(biome_name: String) -> Result<BTreeMap<String, String>> {
+    pub fn get_zsh_envs(biome_name: String, paths: &Paths) -> Result<BTreeMap<String, String>> {
         let mut init_file =
-            get_central_store_path().context("unable to get terrains config path")?;
+            get_central_store_path(paths).context("unable to get terrains config path")?;
         init_file.push(format!("terrain-{}.zwc", &biome_name));
         let init_file = init_file.to_string_lossy().to_string();
 

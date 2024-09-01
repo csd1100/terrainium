@@ -1,21 +1,21 @@
 use anyhow::{anyhow, Result};
 use mockall_double::double;
 
+use crate::helpers::utils::Paths;
+#[double]
+use crate::shell::zsh::ops;
 use crate::{
     helpers::operations::{get_central_store_path, get_current_dir_toml, remove_all_script_files},
     types::terrain::{parse_terrain_from, Terrain},
 };
 
-#[double]
-use crate::shell::zsh::ops;
-
-pub fn handle() -> Result<()> {
-    let terrain = parse_terrain_from(get_current_dir_toml()?)?;
-    generate_and_compile_all(terrain)
+pub fn handle(paths: &Paths) -> Result<()> {
+    let terrain = parse_terrain_from(get_current_dir_toml(paths)?)?;
+    generate_and_compile_all(terrain, paths)
 }
 
-pub fn generate_and_compile_all(terrain: Terrain) -> Result<()> {
-    let central_store = get_central_store_path()?;
+pub fn generate_and_compile_all(terrain: Terrain, paths: &Paths) -> Result<()> {
+    let central_store = get_central_store_path(paths)?;
 
     remove_all_script_files(central_store.as_path())?;
 

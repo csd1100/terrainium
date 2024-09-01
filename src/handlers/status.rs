@@ -12,9 +12,7 @@ pub fn handle(session: Session, list_processes: bool, process_id: Option<u32>) -
         process_id.map(proto::status_request::Operation::BackgroundPid)
     };
 
-    let status_request = proto::StatusRequest {
-        operation: op,
-    };
+    let status_request = proto::StatusRequest { operation: op };
 
     let mut socket = socket::Unix::new()?;
     socket.write(proto::Request {

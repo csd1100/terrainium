@@ -18,24 +18,20 @@ use crate::{
 };
 
 #[double]
-use crate::helpers::utils::fs;
-
-#[double]
 use crate::helpers::utils::misc;
-
+use crate::helpers::utils::Paths;
 #[double]
 use crate::types::socket::Unix;
 
 #[double]
 use crate::shell::zsh::ops;
 
-fn add_executables(map: &mut BTreeMap<String, String>) -> Result<()> {
+fn add_executables(map: &mut BTreeMap<String, String>, paths: &Paths) -> Result<()> {
     let dev = std::env::var(TERRAINIUM_DEV);
-    if dev.is_ok() && dev.unwrap() == *"true" {
-        let pwd = fs::get_cwd().context("unable to get current_dir")?;
-        let mut terrainium = pwd.clone();
+    if dev.is_ok() && dev? == *"true" {
+        let mut terrainium = paths.get_cwd().clone();
         terrainium.push("target/debug/terrainium");
-        let mut terrainium_executor = pwd.clone();
+        let mut terrainium_executor = paths.get_cwd().clone();
         terrainium_executor.push("target/debug/terrainium_executor");
 
         map.insert(
@@ -60,16 +56,16 @@ fn add_executables(map: &mut BTreeMap<String, String>) -> Result<()> {
     }
 }
 
-pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
+pub fn handle(biome: Option<BiomeArg>, paths: &Paths) -> Result<()> {
     let enabled = std::env::var(TERRAINIUM_ENABLED);
-    if enabled.is_ok() && enabled.unwrap() == *"true" {
+    if enabled.is_ok() && enabled? == *"true" {
         return Err(anyhow!("other terrain is already active"));
     }
 
-    let terrain = get_parsed_terrain()?;
+    let terrain = get_parsed_terrain(paths)?;
 
-    let terrain_name: String = get_terrain_name();
-    let toml_path = get_current_dir_toml()?.to_string_lossy().to_string();
+    let terrain_name: String = get_terrain_name(paths.get_cwd());
+    let toml_path = get_current_dir_toml(paths)?.to_string_lossy().to_string();
     let session_id = misc::get_uuid();
     let biome_name = terrain.get_selected_biome_name(&biome)?;
 
@@ -79,7 +75,7 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
     envs.insert(TERRAINIUM_TERRAIN_NAME.to_string(), terrain_name.clone());
     envs.insert(TERRAINIUM_SESSION_ID.to_string(), session_id.clone());
     envs.insert(TERRAINIUM_SELECTED_BIOME.to_string(), biome_name.clone());
-    add_executables(&mut envs)?;
+    add_executables(&mut envs, paths)?;
 
     let mut socket = Unix::new()?;
     socket.write(proto::Request {
@@ -107,7 +103,7 @@ pub fn handle(biome: Option<BiomeArg>) -> Result<()> {
         }
     }
 
-    let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?)
+    let zsh_env = ops::get_zsh_envs(terrain.get_selected_biome_name(&biome)?, paths)
         .context("unable to set zsh environment varibles")?;
     let mut merged = merge_maps(&envs.clone(), &zsh_env);
 

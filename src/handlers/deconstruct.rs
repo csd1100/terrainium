@@ -1,11 +1,11 @@
-use anyhow::Result;
-
+use crate::helpers::utils::Paths;
 use crate::types::biomes::Biome;
+use anyhow::Result;
 
 use super::build;
 
-pub fn handle() -> Result<()> {
-    build::build(Biome::get_detructors)
+pub fn handle(paths: &Paths) -> Result<()> {
+    build::build(Biome::get_detructors, paths)
 }
 
 // #[cfg(test)]

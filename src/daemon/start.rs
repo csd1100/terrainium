@@ -46,7 +46,11 @@ pub fn handle(parent: &Span) {
         .open(PathBuf::from(TERRAINIUMD_STATUS_FILE));
 
     if let Err(err) = daemon_status_file {
-        event!(Level::ERROR, "error while opening daemon status file {:?}", err);
+        event!(
+            Level::ERROR,
+            "error while opening daemon status file {:?}",
+            err
+        );
         panic!("error while opening daemon status file {:?}", err);
     }
     let daemon_status_file = Arc::new(Mutex::new(daemon_status_file.unwrap()));

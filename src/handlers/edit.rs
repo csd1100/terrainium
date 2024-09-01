@@ -1,16 +1,17 @@
 use anyhow::{Context, Result};
 use mockall_double::double;
 
+use crate::helpers::utils::Paths;
 #[double]
 use crate::shell::editor::edit;
 use crate::{helpers::operations::get_current_dir_toml, types::terrain::parse_terrain_from};
 
-pub fn handle() -> Result<()> {
-    let toml_file = get_current_dir_toml().context("unable to get terrain.toml path")?;
+pub fn handle(paths: &Paths) -> Result<()> {
+    let toml_file = get_current_dir_toml(paths).context("unable to get terrain.toml path")?;
 
     edit::file(&toml_file).context("failed to start editor")?;
 
-    super::generate::generate_and_compile_all(parse_terrain_from(&toml_file)?)?;
+    super::generate::generate_and_compile_all(parse_terrain_from(&toml_file)?, paths)?;
 
     Ok(())
 }
@@ -21,11 +22,13 @@ mod test {
     use anyhow::Result;
     use mockall::predicate::eq;
     use serial_test::serial;
-    use tempfile::tempdir;
     use std::path::{Path, PathBuf};
+    use tempfile::tempdir;
 
+    use crate::helpers::utils::get_paths;
     use crate::{
-        helpers::utils::mock_fs, shell::{editor::mock_edit, zsh::mock_ops}, types::{args::BiomeArg, terrain::test_data}
+        shell::{editor::mock_edit, zsh::mock_ops},
+        types::{args::BiomeArg, terrain::test_data},
     };
 
     #[test]
@@ -33,25 +36,10 @@ mod test {
     fn handle_edit_opens_editor_and_compiles_scripts() -> Result<()> {
         let test_dir = tempdir()?;
         let test_dir_path: PathBuf = test_dir.path().into();
-        let mock_cwd = mock_fs::get_cwd_context();
-        mock_cwd
-            .expect()
-            .returning(move || {
-                let test_dir_path: PathBuf = test_dir_path.clone();
-                Ok(test_dir_path)
-            })
-            .times(3);
-
         let home_dir = tempdir()?;
         let home_dir_path: PathBuf = home_dir.path().into();
-        let mock_home = mock_fs::get_home_dir_context();
-        mock_home
-            .expect()
-            .returning(move || {
-                let home_dir_path: PathBuf = home_dir_path.clone();
-                Ok(home_dir_path)
-            })
-            .times(1);
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
 
         let mut terrain_toml_path: PathBuf = test_dir.path().into();
         terrain_toml_path.push("terrain.toml");
@@ -109,7 +97,7 @@ mod test {
             .return_once(|_, _, _| Ok(()))
             .times(1);
 
-        super::handle()?;
+        super::handle(&paths)?;
 
         Ok(())
     }

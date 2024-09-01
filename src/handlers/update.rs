@@ -1,13 +1,18 @@
 use anyhow::{Context, Result};
 
+use super::generate::generate_and_compile_all;
+use crate::helpers::utils::Paths;
 use crate::{
     helpers::operations::{copy_file, get_current_dir_toml, get_parsed_terrain, write_terrain},
     types::args::UpdateOpts,
 };
 
-use super::generate::generate_and_compile_all;
-
-pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool) -> Result<()> {
+pub fn handle(
+    set_default_biome: Option<String>,
+    opts: UpdateOpts,
+    backup: bool,
+    paths: &Paths,
+) -> Result<()> {
     let UpdateOpts {
         new,
         biome,
@@ -16,10 +21,10 @@ pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool)
     } = opts;
 
     if backup {
-        backup_terrain()?;
+        backup_terrain(paths)?;
     }
 
-    let mut terrain = get_parsed_terrain()?;
+    let mut terrain = get_parsed_terrain(paths)?;
 
     if let Some(new_default) = set_default_biome {
         terrain.set_default_biome(new_default)?;
@@ -32,20 +37,20 @@ pub fn handle(set_default_biome: Option<String>, opts: UpdateOpts, backup: bool)
     }
 
     write_terrain(
-        get_current_dir_toml()
+        get_current_dir_toml(paths)
             .context("unable to get terrain.toml path")?
             .as_path(),
         &terrain,
     )
     .context("failed to write updated terrain.toml")?;
 
-    generate_and_compile_all(terrain)?;
+    generate_and_compile_all(terrain, paths)?;
 
     Ok(())
 }
 
-fn backup_terrain() -> Result<()> {
-    let terrain_toml = get_current_dir_toml()?;
+fn backup_terrain(paths: &Paths) -> Result<()> {
+    let terrain_toml = get_current_dir_toml(paths)?;
     let backup = terrain_toml.with_extension("toml.bkp");
     copy_file(&terrain_toml, &backup).context("unable to backup terrain.toml")?;
     Ok(())
@@ -60,8 +65,8 @@ mod test {
     use serial_test::serial;
     use tempfile::tempdir;
 
+    use crate::helpers::utils::get_paths;
     use crate::{
-        helpers::utils::mock_fs,
         shell::zsh::mock_ops,
         types::{
             args::{BiomeArg, Pair},
@@ -73,34 +78,18 @@ mod test {
     #[serial]
     fn handle_only_sets_default_biome() -> Result<()> {
         let test_dir = tempdir()?;
-        let test_dir_path: PathBuf = test_dir.path().into();
-        let mock_cwd = mock_fs::get_cwd_context();
-        mock_cwd
-            .expect()
-            .returning(move || {
-                let test_dir_path: PathBuf = test_dir_path.clone();
-                Ok(test_dir_path)
-            })
-            .times(5);
-
         let home_dir = tempdir()?;
-        let home_dir_path: PathBuf = home_dir.path().into();
-        let mock_home = mock_fs::get_home_dir_context();
-        mock_home
-            .expect()
-            .returning(move || {
-                let home_dir_path: PathBuf = home_dir_path.clone();
-                Ok(home_dir_path)
-            })
-            .times(1);
 
-        let home_dir_path: PathBuf = home_dir.path().into();
         let test_dir_path: PathBuf = test_dir.path().into();
-        let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
+        let home_dir_path: PathBuf = home_dir.path().into();
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
+
+        let scripts_dir_name = Path::canonicalize(paths.get_cwd().as_path())?
             .to_string_lossy()
             .to_string()
             .replace('/', "_");
-        let scripts_dir_path = home_dir_path.join(PathBuf::from(
+        let scripts_dir_path = paths.get_home_dir().join(PathBuf::from(
             ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
         ));
         let terrain = test_data::terrain_full();
@@ -151,6 +140,7 @@ mod test {
                 aliases: None,
             },
             false,
+            &paths,
         )?;
 
         let expected = std::fs::read_to_string("./tests/data/terrain.full.changed.default.toml")?;
@@ -165,34 +155,18 @@ mod test {
     #[serial]
     fn handle_updates_terrain_and_creates_backup() -> Result<()> {
         let test_dir = tempdir()?;
-        let test_dir_path: PathBuf = test_dir.path().into();
-        let mock_cwd = mock_fs::get_cwd_context();
-        mock_cwd
-            .expect()
-            .returning(move || {
-                let test_dir_path: PathBuf = test_dir_path.clone();
-                Ok(test_dir_path)
-            })
-            .times(7);
-
         let home_dir = tempdir()?;
-        let home_dir_path: PathBuf = home_dir.path().into();
-        let mock_home = mock_fs::get_home_dir_context();
-        mock_home
-            .expect()
-            .returning(move || {
-                let home_dir_path: PathBuf = home_dir_path.clone();
-                Ok(home_dir_path)
-            })
-            .times(1);
 
-        let home_dir_path: PathBuf = home_dir.path().into();
         let test_dir_path: PathBuf = test_dir.path().into();
-        let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
+        let home_dir_path: PathBuf = home_dir.path().into();
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
+        let scripts_dir_name = Path::canonicalize(paths.get_cwd().as_path())?
             .to_string_lossy()
             .to_string()
             .replace('/', "_");
-        let scripts_dir_path = home_dir_path.join(PathBuf::from(
+
+        let scripts_dir_path = paths.get_home_dir().join(PathBuf::from(
             ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
         ));
         let terrain = test_data::terrain_full();
@@ -247,6 +221,7 @@ mod test {
                 aliases: None,
             },
             true,
+            &paths,
         )?;
 
         let expected = std::fs::read_to_string("./tests/data/terrain.full.changed.default.toml")?;
@@ -266,34 +241,18 @@ mod test {
     #[serial]
     fn handle_updates_specified_biome() -> Result<()> {
         let test_dir = tempdir()?;
-        let test_dir_path: PathBuf = test_dir.path().into();
-        let mock_cwd = mock_fs::get_cwd_context();
-        mock_cwd
-            .expect()
-            .returning(move || {
-                let test_dir_path: PathBuf = test_dir_path.clone();
-                Ok(test_dir_path)
-            })
-            .times(5);
-
         let home_dir = tempdir()?;
-        let home_dir_path: PathBuf = home_dir.path().into();
-        let mock_home = mock_fs::get_home_dir_context();
-        mock_home
-            .expect()
-            .returning(move || {
-                let home_dir_path: PathBuf = home_dir_path.clone();
-                Ok(home_dir_path)
-            })
-            .times(1);
 
-        let home_dir_path: PathBuf = home_dir.path().into();
         let test_dir_path: PathBuf = test_dir.path().into();
-        let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
+        let home_dir_path: PathBuf = home_dir.path().into();
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
+
+        let scripts_dir_name = Path::canonicalize(paths.get_cwd().as_path())?
             .to_string_lossy()
             .to_string()
             .replace('/', "_");
-        let scripts_dir_path = home_dir_path.join(PathBuf::from(
+        let scripts_dir_path = paths.get_home_dir().join(PathBuf::from(
             ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
         ));
 
@@ -361,6 +320,7 @@ mod test {
                 aliases: Some(aliases),
             },
             false,
+            &paths,
         )?;
 
         let expected =
@@ -376,34 +336,18 @@ mod test {
     #[serial]
     fn handle_creates_new_biome() -> Result<()> {
         let test_dir = tempdir()?;
-        let test_dir_path: PathBuf = test_dir.path().into();
-        let mock_cwd = mock_fs::get_cwd_context();
-        mock_cwd
-            .expect()
-            .returning(move || {
-                let test_dir_path: PathBuf = test_dir_path.clone();
-                Ok(test_dir_path)
-            })
-            .times(5);
-
         let home_dir = tempdir()?;
-        let home_dir_path: PathBuf = home_dir.path().into();
-        let mock_home = mock_fs::get_home_dir_context();
-        mock_home
-            .expect()
-            .returning(move || {
-                let home_dir_path: PathBuf = home_dir_path.clone();
-                Ok(home_dir_path)
-            })
-            .times(1);
 
-        let home_dir_path: PathBuf = home_dir.path().into();
         let test_dir_path: PathBuf = test_dir.path().into();
-        let scripts_dir_name = Path::canonicalize(test_dir_path.as_path())?
+        let home_dir_path: PathBuf = home_dir.path().into();
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
+
+        let scripts_dir_name = Path::canonicalize(paths.get_cwd().as_path())?
             .to_string_lossy()
             .to_string()
             .replace('/', "_");
-        let scripts_dir_path = home_dir_path.join(PathBuf::from(
+        let scripts_dir_path = paths.get_home_dir().join(PathBuf::from(
             ".config/terrainium/terrains/".to_owned() + &scripts_dir_name,
         ));
 
@@ -476,6 +420,7 @@ mod test {
                 aliases: Some(aliases),
             },
             false,
+            &paths,
         )?;
 
         let expected =

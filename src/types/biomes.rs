@@ -124,7 +124,10 @@ impl Biome {
         let mut env = BTreeMap::<String, String>::new();
         env.insert(String::from("EDITOR"), String::from("nvim"));
         let mut alias = BTreeMap::<String, String>::new();
-        alias.insert(String::from("tenter"), String::from("terrainium enter --biome example_biome"));
+        alias.insert(
+            String::from("tenter"),
+            String::from("terrainium enter --biome example_biome"),
+        );
         let constructor = Commands {
             foreground: Some(vec![Command {
                 exe: String::from("echo"),

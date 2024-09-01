@@ -5,19 +5,20 @@ use anyhow::{anyhow, Context, Result};
 #[cfg(test)]
 use mockall::automock;
 
+use crate::helpers::utils::Paths;
 use crate::{
     helpers::{constants::TERRAINIUM_SELECTED_BIOME, operations::get_terrain_toml_from_biome},
     types::{args::BiomeArg, biomes::Biome, commands::Commands, terrain},
 };
 
-pub fn build(get_commands: fn(Biome) -> Option<Commands>) -> Result<()> {
+pub fn build(get_commands: fn(Biome) -> Option<Commands>, paths: &Paths) -> Result<()> {
     let biome = if let std::result::Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
         Some(BiomeArg::from_str(&current)?)
     } else {
         return Err(anyhow!("no active biome found"));
     };
 
-    let terrain_toml = get_terrain_toml_from_biome(&biome)?;
+    let terrain_toml = get_terrain_toml_from_biome(&biome, paths)?;
     let terrain = terrain::parse_terrain_from(terrain_toml)?
         .get(biome)
         .context("unable to select a biome to call constructors")?;
@@ -48,7 +49,10 @@ pub mod run {
     #[double]
     use crate::shell::background::processes;
 
-    pub fn commands(background: Option<Vec<Command>>, envs: BTreeMap<String, String>) -> Result<()> {
+    pub fn commands(
+        background: Option<Vec<Command>>,
+        envs: BTreeMap<String, String>,
+    ) -> Result<()> {
         if let Some(background) = background {
             processes::start(background, envs)?;
         }

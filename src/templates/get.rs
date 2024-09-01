@@ -138,7 +138,7 @@ Constructors:
         echo entering terrain \n        echo entering biome 'example_biome' \nDestructors:
     foreground:
         echo exiting terrain \n        echo exiting biome 'example_biome' \n"
-        .to_string();
+            .to_string();
 
         let mut terrain = terrain.get_printable_terrain(Some(biome_arg))?;
         terrain.all = true;

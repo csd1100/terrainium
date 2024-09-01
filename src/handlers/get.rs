@@ -3,17 +3,17 @@ use std::collections::BTreeMap;
 use anyhow::{Context, Result};
 use mockall_double::double;
 
+use crate::helpers::utils::Paths;
+#[double]
+use crate::templates::get::print;
+use crate::types::terrain;
 use crate::{
     helpers::operations::get_terrain_toml_from_biome,
     types::args::{BiomeArg, GetOpts},
 };
 
-#[double]
-use crate::templates::get::print;
-use crate::types::terrain;
-
-pub fn handle(biome: Option<BiomeArg>, opts: GetOpts) -> Result<()> {
-    let terrain_toml_path = get_terrain_toml_from_biome(&biome)?;
+pub fn handle(biome: Option<BiomeArg>, opts: GetOpts, paths: &Paths) -> Result<()> {
+    let terrain_toml_path = get_terrain_toml_from_biome(&biome, paths)?;
     let terrain = terrain::parse_terrain_from(terrain_toml_path)?;
 
     if opts.is_empty() {

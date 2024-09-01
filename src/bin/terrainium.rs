@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 #[cfg(feature = "terrain-schema")]
 use terrainium::handlers::schema;
+use terrainium::helpers::utils::{get_cwd, get_home_dir, get_paths};
 use terrainium::{
     handlers::{construct, deconstruct, edit, enter, exit, generate, get, init, status, update},
     types::args::{TerrainiumArgs, Verbs},
@@ -9,25 +10,26 @@ use terrainium::{
 
 fn main() -> Result<()> {
     let opts = TerrainiumArgs::parse();
+    let paths = get_paths(get_home_dir()?, get_cwd()?)?;
 
     match opts.verbs {
         Verbs::Init {
             central,
             example,
             edit,
-        } => init::handle(central, example, edit),
-        Verbs::Edit => edit::handle(),
+        } => init::handle(central, example, edit, &paths),
+        Verbs::Edit => edit::handle(&paths),
         Verbs::Update {
             set_default_biome,
             opts,
             backup,
-        } => update::handle(set_default_biome, opts, backup),
-        Verbs::Get { biome, opts } => get::handle(biome, opts),
-        Verbs::Generate => generate::handle(),
-        Verbs::Enter { biome } => enter::handle(biome),
+        } => update::handle(set_default_biome, opts, backup, &paths),
+        Verbs::Get { biome, opts } => get::handle(biome, opts, &paths),
+        Verbs::Generate => generate::handle(&paths),
+        Verbs::Enter { biome } => enter::handle(biome, &paths),
         Verbs::Exit => exit::handle(),
-        Verbs::Construct => construct::handle(),
-        Verbs::Deconstruct => deconstruct::handle(),
+        Verbs::Construct => construct::handle(&paths),
+        Verbs::Deconstruct => deconstruct::handle(&paths),
         Verbs::Status {
             session,
             list_processes,

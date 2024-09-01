@@ -7,7 +7,10 @@ use std::{
 use tracing::{event, span, Level, Span};
 
 use crate::{
-    daemon::types::{client_status::get_status_for_session, status::{status_from, status_to}},
+    daemon::types::{
+        client_status::get_status_for_session,
+        status::{status_from, status_to},
+    },
     helpers::operations::create_dir_if_not_exist,
     proto::{ActivateRequest, ActivateResponse},
 };
