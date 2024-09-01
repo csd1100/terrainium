@@ -5,6 +5,7 @@ use home::home_dir;
 use mockall::automock;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Paths {
     home_dir: PathBuf,
     current_dir: PathBuf,
