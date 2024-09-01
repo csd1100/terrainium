@@ -44,7 +44,7 @@ impl Drop for Unix {
     }
 }
 
-impl std::ops::Deref for Unix {
+impl Deref for Unix {
     type Target = UnixStream;
 
     fn deref(&self) -> &Self::Target {
@@ -52,7 +52,7 @@ impl std::ops::Deref for Unix {
     }
 }
 
-impl std::ops::DerefMut for Unix {
+impl DerefMut for Unix {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.stream
     }

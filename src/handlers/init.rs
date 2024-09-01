@@ -281,7 +281,7 @@ mod test {
         let mut terrain_toml_path = test_dir.into_path();
         terrain_toml_path.push("terrain.toml");
 
-        // create a empty terrain toml file
+        // create an empty terrain toml file
         std::fs::write(terrain_toml_path, "")?;
 
         let err = super::handle(false, false, false, &paths)
@@ -315,7 +315,7 @@ mod test {
 
         let mut terrain_toml_path = scripts_dir_path.clone();
         terrain_toml_path.push("terrain.toml");
-        // create a empty terrain toml file
+        // create an empty terrain toml file
         std::fs::write(terrain_toml_path, "")?;
 
         let err = super::handle(false, false, false, &paths)

@@ -16,7 +16,7 @@ mod inner {
 
     pub fn generate_and_store_schema() -> Result<()> {
         let schema = schema_for!(Terrain);
-        let json = serde_json::to_string_pretty(&schema).unwrap();
+        let json = serde_json::to_string_pretty(&schema)?;
         write_file(&PathBuf::from("./schema/terrain-schema.json"), json)?;
         Ok(())
     }

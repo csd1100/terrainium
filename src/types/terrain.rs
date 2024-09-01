@@ -94,7 +94,7 @@ impl Terrain {
         if selected == *"none" {
             Ok(&self.terrain)
         } else {
-            return self.get_biome(&selected);
+            self.get_biome(&selected)
         }
     }
 
@@ -144,7 +144,7 @@ impl Terrain {
         if selected == *"none" {
             Ok(&mut self.terrain)
         } else {
-            return self.get_biome_mut(&selected);
+            self.get_biome_mut(&selected)
         }
     }
 

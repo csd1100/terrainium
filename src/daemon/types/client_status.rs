@@ -68,8 +68,8 @@ pub fn get_status_for_session(session_id: String, request: ActivateRequest) -> C
     status
 }
 
-impl From<proto::ActivateRequest> for ClientStatus {
-    fn from(value: proto::ActivateRequest) -> Self {
+impl From<ActivateRequest> for ClientStatus {
+    fn from(value: ActivateRequest) -> Self {
         Self {
             terrain_name: value.terrain_name,
             biome_name: value.biome_name,

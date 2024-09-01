@@ -52,7 +52,7 @@ fn start_process_with_session_id(
     let mut command = TERRAINIUM_EXECUTOR.to_string();
 
     let dev = std::env::var(TERRAINIUM_DEV);
-    if dev.is_ok() && dev.unwrap() == *"true" {
+    if dev.is_ok() && dev? == *"true" {
         if let Ok(executor) = std::env::var(TERRAINIUM_EXECUTOR_ENV) {
             command = executor;
         }

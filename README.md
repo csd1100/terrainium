@@ -6,7 +6,7 @@ A command-line utility written in Rust for env management
   development environment for you.
 - This utility will automatically set environment variables, aliases and run specified
   commands in shell or in background.
-- The sample configuration file is stored in [terrain.toml](./example_configs/terrain.full.toml)
+- The sample configuration file is stored in [terrain.toml](./tests/data/terrain.full.toml)
 - Currently only `zsh` is supported.
 
 ## Command-Line Arguments (Usage)
@@ -101,44 +101,44 @@ fi
      1. combine environment variables from `default-biome` and main `terrain`.
         If there are any environment variables redefined in biome they will take
         precedence.
-     1. combine aliases from `default-biome` and main `terrain`.
+     2. combine aliases from `default-biome` and main `terrain`.
         If there are any aliases redefined in biome they will take precedence.
-     1. Specified constructors will be merged from `default-biome` and `terrain`.
-     1. Specified destructors will be merged from `default-biome` and `terrain`.
-     1. start a shell with merged environment variables and aliases.
-     1. run foreground processes in shell created in above steps.
-     1. start running background processes.
-  1. If `-b <biome_name>` is passed:
+     3. Specified constructors will be merged from `default-biome` and `terrain`.
+     4. Specified destructors will be merged from `default-biome` and `terrain`.
+     5. start a shell with merged environment variables and aliases.
+     6. run foreground processes in shell created in above steps.
+     7. start running background processes.
+  2. If `-b <biome_name>` is passed:
      1. if `biome_name` is name of the biome defined, the sub-steps in step 1 will
         be done but for specified biome name.
-     1. if `biome_name` is `default` will do same as step 1.
-     1. if `biome_name` is `none` will not merge with any biome and start `terrain`
+     2. if `biome_name` is `default` will do same as step 1.
+     3. if `biome_name` is `none` will not merge with any biome and start `terrain`
         as is.
 
 ### Example
 
-- If [terrain.toml](./example_configs/terrain.full.toml) is used.
+- If [terrain.toml](./tests/data/terrain.full.toml) is used.
 - When `terrainium enter` is run, the default biome `example_biome` will be applied:
 
   1. environment variables set will be:
      1. `EDITOR=nvim` -- from `example_biome`
-     1. `TEST=value` -- from `terrain`
-  1. aliases set will be:
+     2. `TEST=value` -- from `terrain`
+  2. aliases set will be:
      1. `tedit=terrainium edit` -- from `terrain`
-     1. `tenter=terrainium enter -b example_biome` -- from `example_biome`
-  1. In shell that was started, following commands will be run:
+     2. `tenter=terrainium enter -b example_biome` -- from `example_biome`
+  3. In shell that was started, following commands will be run:
      1. `echo entering terrain` -- from `terrain`
-     1. `echo entering example_biome` -- from `example_biome`
-  1. In background following commands will be run:
+     2. `echo entering example_biome` -- from `example_biome`
+  4. In background following commands will be run:
      1. `run something` -- from terrain.
 
-- When `terrainium exit` is run, the terrain will closed:
+- When `terrainium exit` is run, the terrain will be closed:
   1. In shell that was started by `terrainium enter` following commands will be run:
      1. `echo exiting terrain` -- from `terrain`
-     1. `echo exiting example_biome` -- from `example_biome`
-  1. In background following commands will be run:
+     2. `echo exiting example_biome` -- from `example_biome`
+  2. In background following commands will be run:
      1. `stop something` -- from terrain.
-  1. The shell started by `terrainium enter` will be closed.
+  3. The shell started by `terrainium enter` will be closed.
 
 ### constructors and destructors
 
@@ -148,7 +148,7 @@ fi
 2. `background` - which are separate processes started in background and logs for
    these processes are present in `/tmp/terrainium-$TERRAINIUM_SESSION_ID/` directory.
 
-- When terrain is activated `TERRAINIUM_SESSION_ID` variable is set, it is an UUID
+- When terrain is activated `TERRAINIUM_SESSION_ID` variable is set, it is a UUID
   and changes every session. The STDOUT and STDERR logs of spawned processes are
   stored in `/tmp/terrainium-$TERRAINIUM_SESSION_ID/` directory.
 
@@ -176,7 +176,7 @@ status-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.json
 ## For developers
 
 - If `TERRAINIUM_DEV` is set to `true`, `terrainium` and `terrainium_executor`
-  binaries will be use from debug directory.
+  binaries will be used from debug directory.
 - Feature `terrain-schema` can be used to generate json schema for `terrain.toml`.
   `schema` argument can be passed to `terrainium` command when built with
   `terrain-schema` feature that will generate a schema json at path `./schema/terrain-schema.json`.

@@ -132,7 +132,7 @@ impl FromStr for BiomeArg {
             "none" => Ok(BiomeArg::None),
             "default" => Ok(BiomeArg::Default),
             "current" => {
-                if let std::result::Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
+                if let Result::Ok(current) = std::env::var(TERRAINIUM_SELECTED_BIOME) {
                     Ok(BiomeArg::Current(current))
                 } else {
                     Err(anyhow!("no active biome found"))
@@ -183,7 +183,7 @@ impl FromStr for Session {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "current" => {
-                if let std::result::Result::Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
+                if let Result::Ok(session_id) = std::env::var(TERRAINIUM_SESSION_ID) {
                     Ok(Session::Current(session_id))
                 } else {
                     Err(anyhow!("no active terrain"))
