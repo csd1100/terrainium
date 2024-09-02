@@ -50,3 +50,25 @@ pub mod misc {
         Uuid::new_v4().to_string()
     }
 }
+
+pub mod test_helpers {
+    use crate::helpers::utils::Paths;
+    use anyhow::Result;
+    use std::path::Path;
+
+    pub fn generate_terrain_central_store_path(paths: &Paths) -> Result<String> {
+        let terrain_dir = Path::canonicalize(paths.get_cwd().as_path())?
+            .to_string_lossy()
+            .to_string()
+            .replace('/', "_");
+        let central_store = Path::join(paths.get_home_dir(), ".config")
+            .join("terrainium")
+            .join("terrains")
+            .join(terrain_dir);
+        Ok(central_store.to_str().unwrap().to_string())
+    }
+    pub fn generate_terrain_compiled_zwc_path(paths: &Paths) -> Result<String> {
+        let central_store = generate_terrain_central_store_path(paths)?;
+        Ok(central_store + "/terrain-example_biome.zwc")
+    }
+}

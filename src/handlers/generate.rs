@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
-use mockall_double::double;
 
 use crate::helpers::utils::Paths;
-#[double]
-use crate::shell::zsh::ops;
+use crate::shell::zsh::ops::generate_and_compile;
 use crate::{
     helpers::operations::{get_central_store_path, get_current_dir_toml, remove_all_script_files},
     types::terrain::{parse_terrain_from, Terrain},
@@ -22,7 +20,7 @@ pub fn generate_and_compile_all(terrain: Terrain, paths: &Paths) -> Result<()> {
     let result: Result<Vec<_>> = terrain
         .into_iter()
         .map(|(biome_name, environment)| {
-            ops::generate_and_compile(&central_store, biome_name, environment)
+            generate_and_compile(&central_store, biome_name, environment)
         })
         .collect();
 
@@ -36,79 +34,137 @@ pub fn generate_and_compile_all(terrain: Terrain, paths: &Paths) -> Result<()> {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use std::path::PathBuf;
-//
-//     use anyhow::Result;
-//     use mockall::predicate::eq;
-//     use serial_test::serial;
-//
-//     use crate::{
-//         helpers::operations::mock_fs,
-//         shell::zsh::mock_ops,
-//         types::{args::BiomeArg, terrain::test_data},
-//     };
-//
-//     #[test]
-//     #[serial]
-//     fn handle_generate_generates_scripts() -> Result<()> {
-//         let mock_get_toml_path = mock_fs::get_current_dir_toml_context();
-//         mock_get_toml_path
-//             .expect()
-//             .return_once(|| Ok(PathBuf::from("./example_configs/terrain.full.toml")))
-//             .times(1);
-//
-//         let get_central_store_path_context = mock_fs::get_central_store_path_context();
-//         get_central_store_path_context
-//             .expect()
-//             .return_once(|| Ok(PathBuf::from("~/.config/terrainium/terrains/")))
-//             .times(1);
-//
-//         let remove_all_script_files = mock_fs::remove_all_script_files_context();
-//         remove_all_script_files
-//             .expect()
-//             .withf(|path| path == PathBuf::from("~/.config/terrainium/terrains/").as_path())
-//             .return_once(|_| Ok(()))
-//             .times(1);
-//
-//         let terrain = test_data::terrain_full();
-//         let main = terrain.get(Some(BiomeArg::None))?;
-//         let generate_and_compile_context = mock_ops::generate_and_compile_context();
-//         generate_and_compile_context
-//             .expect()
-//             .with(
-//                 eq(PathBuf::from("~/.config/terrainium/terrains/")),
-//                 eq(String::from("none")),
-//                 eq(main),
-//             )
-//             .return_once(|_, _, _| Ok(()))
-//             .times(1);
-//
-//         let example_biome = terrain.get(Some(BiomeArg::Value("example_biome".to_owned())))?;
-//         generate_and_compile_context
-//             .expect()
-//             .with(
-//                 eq(PathBuf::from("~/.config/terrainium/terrains/")),
-//                 eq(String::from("example_biome")),
-//                 eq(example_biome),
-//             )
-//             .return_once(|_, _, _| Ok(()))
-//             .times(1);
-//
-//         let example_biome2 = terrain.get(Some(BiomeArg::Value("example_biome2".to_owned())))?;
-//         generate_and_compile_context
-//             .expect()
-//             .with(
-//                 eq(PathBuf::from("~/.config/terrainium/terrains/")),
-//                 eq(String::from("example_biome2")),
-//                 eq(example_biome2),
-//             )
-//             .return_once(|_, _, _| Ok(()))
-//             .times(1);
-//
-//         super::handle()?;
-//
-//         Ok(())
-//     }
-// }
+#[cfg(test)]
+mod test {
+    use crate::helpers::utils::get_paths;
+    use crate::helpers::utils::test_helpers::generate_terrain_central_store_path;
+    use crate::shell::process::mock_spawn;
+    use anyhow::Result;
+    use clap::builder::OsStr;
+    use serial_test::serial;
+    use std::fs;
+    use std::os::unix::prelude::ExitStatusExt;
+    use std::path::PathBuf;
+    use std::process::{ExitStatus, Output};
+    use tempfile::tempdir;
+
+    #[test]
+    #[serial]
+    fn handle_generate_generates_scripts() -> Result<()> {
+        // setup terrain.toml
+        let test_dir = tempdir()?;
+        let home_dir = tempdir()?;
+        let test_dir_path: PathBuf = test_dir.path().into();
+        let home_dir_path: PathBuf = home_dir.path().into();
+
+        let paths = get_paths(home_dir_path, test_dir_path)?;
+
+        let mut terrain_toml_path: PathBuf = test_dir.path().into();
+        terrain_toml_path.push("terrain.toml");
+        fs::copy("./tests/data/terrain.full.toml", &terrain_toml_path)?;
+
+        let central_storage = generate_terrain_central_store_path(&paths)?;
+        let mock_spawn_get_output = mock_spawn::and_get_output_context();
+
+        let exp_example_biome_args = vec![
+            "-c".to_owned(),
+            "zcompile -URz ".to_owned()
+                + &central_storage
+                + "/terrain-example_biome.zwc "
+                + &central_storage
+                + "/terrain-example_biome.zsh",
+        ];
+
+        mock_spawn_get_output
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_example_biome_args;
+                let envs_eq = envs.is_none();
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| {
+                Ok(Output {
+                    status: ExitStatus::from_raw(0),
+                    stdout: Vec::<u8>::new(),
+                    stderr: Vec::<u8>::new(),
+                })
+            });
+
+        let exp_example_biome2_args = vec![
+            "-c".to_owned(),
+            "zcompile -URz ".to_owned()
+                + &central_storage
+                + "/terrain-example_biome2.zwc "
+                + &central_storage
+                + "/terrain-example_biome2.zsh",
+        ];
+
+        mock_spawn_get_output
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_example_biome2_args;
+                let envs_eq = envs.is_none();
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| {
+                Ok(Output {
+                    status: ExitStatus::from_raw(0),
+                    stdout: Vec::<u8>::new(),
+                    stderr: Vec::<u8>::new(),
+                })
+            });
+
+        let exp_none_args = vec![
+            "-c".to_owned(),
+            "zcompile -URz ".to_owned()
+                + &central_storage
+                + "/terrain-none.zwc "
+                + &central_storage
+                + "/terrain-none.zsh",
+        ];
+
+        mock_spawn_get_output
+            .expect()
+            .withf(move |exe, args, envs| {
+                let exe_eq = exe == "/bin/zsh";
+                let args_eq = *args == exp_none_args;
+                let envs_eq = envs.is_none();
+                exe_eq && args_eq && envs_eq
+            })
+            .return_once(|_, _, _| {
+                Ok(Output {
+                    status: ExitStatus::from_raw(0),
+                    stdout: Vec::<u8>::new(),
+                    stderr: Vec::<u8>::new(),
+                })
+            });
+
+        fs::create_dir_all(PathBuf::from(&central_storage)).expect("to be created");
+        super::handle(&paths)?;
+
+        let mut assertion_counter = 0;
+        for entry in fs::read_dir(PathBuf::from(&central_storage))? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension().expect("to have extension") == OsStr::from("zsh") {
+                let expected = fs::read_to_string(
+                    "./tests/data/".to_owned() + entry.file_name().to_str().expect("to exist"),
+                )
+                .expect("to be present");
+                let actual = fs::read_to_string(path).expect("to be present");
+                assert_eq!(
+                    expected,
+                    actual,
+                    "failed to assert values for file {:?}",
+                    entry.file_name()
+                );
+                assertion_counter += 1;
+            }
+        }
+        assert_eq!(3, assertion_counter, "expected 3 zsh file assertions");
+
+        Ok(())
+    }
+}
