@@ -8,15 +8,23 @@ pub struct Context {
     central_dir: PathBuf,
 }
 
-const TERRAIN_TOML: &'static str = "terrain.toml";
-const CONFIG_LOCATION: &'static str = ".config/terrainium";
-const TERRAINS_DIR_NAME: &'static str = "terrains";
+const TERRAIN_TOML: &str = "terrain.toml";
+const CONFIG_LOCATION: &str = ".config/terrainium";
+const TERRAINS_DIR_NAME: &str = "terrains";
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Context {
     pub fn new() -> Self {
         Context {
             current_dir: env::current_dir().expect("failed to get current directory"),
-            central_dir: get_central_dir_location(env::current_dir().expect("failed to get current directory")),
+            central_dir: get_central_dir_location(
+                env::current_dir().expect("failed to get current directory"),
+            ),
         }
     }
     pub fn current_dir(&self) -> &PathBuf {
@@ -51,7 +59,8 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
     central_dir.push(CONFIG_LOCATION);
     central_dir.push(TERRAINS_DIR_NAME);
 
-    let terrain_dir_name = Path::canonicalize(current_dir.as_path()).expect("expected current directory to be valid")
+    let terrain_dir_name = Path::canonicalize(current_dir.as_path())
+        .expect("expected current directory to be valid")
         .to_string_lossy()
         .to_string()
         .replace('/', "_");
@@ -81,13 +90,17 @@ mod test {
     #[test]
     fn current_dir_returns_current_dir() -> Result<()> {
         let context = Context::new();
-        assert_eq!(&env::current_dir().expect("failed to get current directory"), context.current_dir());
+        assert_eq!(
+            &env::current_dir().expect("failed to get current directory"),
+            context.current_dir()
+        );
         Ok(())
     }
 
     #[test]
     fn toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let mut expected_terrain_toml = env::current_dir().expect("failed to get current directory");
+        let mut expected_terrain_toml =
+            env::current_dir().expect("failed to get current directory");
         expected_terrain_toml.push("terrain.toml");
 
         let context = Context::new();
@@ -119,7 +132,8 @@ mod test {
 
     fn get_central_dir_location() -> PathBuf {
         let current_dir = env::current_dir().expect("failed to get current directory");
-        let terrain_dir_name = Path::canonicalize(current_dir.as_path()).expect("current directory to be present")
+        let terrain_dir_name = Path::canonicalize(current_dir.as_path())
+            .expect("current directory to be present")
             .to_string_lossy()
             .to_string()
             .replace('/', "_");

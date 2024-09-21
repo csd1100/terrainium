@@ -12,5 +12,8 @@ pub enum Commands {
     Init {
         #[arg(short, long)]
         central: bool,
-    }
+
+        #[arg(short, long)]
+        example: bool,
+    },
 }
