@@ -5,6 +5,7 @@
 - `init`:
 
   - creates a terrain.toml file in same directory
+  - throws error if terrain already exists
   - creates script and zwc files for all biomes in central storage in all scenarios
   - `-c` - creates file in at central storage
   - `-x` - creates a file with example terrain.toml
