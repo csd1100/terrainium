@@ -9,5 +9,8 @@ pub struct ClientArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    Init
+    Init {
+        #[arg(short, long)]
+        central: bool,
+    }
 }

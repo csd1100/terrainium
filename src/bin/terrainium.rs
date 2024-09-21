@@ -9,7 +9,9 @@ fn main() -> Result<()> {
     let context = Context::new();
 
     match args.command {
-        Commands::Init => init::handle(context)?,
+        Commands::Init {
+            central
+        } => init::handle(context, central)?,
     }
 
     Ok(())

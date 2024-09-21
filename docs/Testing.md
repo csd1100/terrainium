@@ -8,6 +8,7 @@
   - throws error if terrain already exists
   - creates script and zwc files for all biomes in central storage in all scenarios
   - `-c` - creates file in at central storage
+  - creates the central storage if not present
   - `-x` - creates a file with example terrain.toml
   - `-e` - creates a file and opens editor
   - `-c -e` creates file in central storage and opens editor
