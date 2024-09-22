@@ -3,24 +3,18 @@
 
 function {
     # USER DEFINED ALIASES: START
-    alias tedit="terrainium edit"
-    alias tenter="terrainium enter"
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
-    export EDITOR="vim"
-    export TEST="value"
     # USER DEFINED ENVS: END
 }
 
 function terrainium_shell_constructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
-        echo entering terrain
     fi
 }
 
 function terrainium_shell_destructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
-        echo exiting terrain
     fi
 }
 

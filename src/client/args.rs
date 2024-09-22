@@ -13,7 +13,7 @@ pub enum Commands {
         #[arg(short, long)]
         central: bool,
 
-        #[arg(short, long)]
+        #[arg(short = 'x', long)]
         example: bool,
     },
 }

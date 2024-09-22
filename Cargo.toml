@@ -24,6 +24,7 @@ prost-types = "0.13.2"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
 tracing-appender = { version = "0.2.3" }
+mockall = { version = "0.13.0" }
 
 [dependencies.schemars]
 version = "0.8.21"
@@ -31,7 +32,6 @@ optional = true
 features = ["preserve_order", "indexmap"]
 
 [dev-dependencies]
-mockall = { version = "0.13.0" }
 serial_test = "3.1.1"
 tempfile = "3.12.0"
 

@@ -1,0 +1,15 @@
+Default Biome: example_biome          Selected Biome: example_biome
+Environment Variables:
+    EDITOR="nvim"
+    PAGER="less"
+Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+Constructors:
+    foreground:
+        /bin/echo entering terrain 
+        /bin/echo entering biome example_biome 
+Destructors:
+    foreground:
+        /bin/echo exiting terrain 
+        /bin/echo exiting biome example_biome 

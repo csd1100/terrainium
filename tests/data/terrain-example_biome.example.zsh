@@ -3,11 +3,11 @@
 
 function {
     # USER DEFINED ALIASES: START
-    alias tenter="terrainium enter --biome example_biome2"
-    alias texit="terrainium edit"
+    alias tenter="terrainium enter --biome example_biome"
+    alias texit="terrainium exit"
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
-    export EDITOR="nano"
+    export EDITOR="nvim"
     export PAGER="less"
     # USER DEFINED ENVS: END
 }
@@ -15,14 +15,14 @@ function {
 function terrainium_shell_constructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
         /bin/echo entering terrain
-        /bin/echo entering biome example_biome2
+        /bin/echo entering biome example_biome
     fi
 }
 
 function terrainium_shell_destructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
         /bin/echo exiting terrain
-        /bin/echo exiting biome example_biome2
+        /bin/echo exiting biome example_biome
     fi
 }
 

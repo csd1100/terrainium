@@ -2,9 +2,11 @@ default_biome = "example_biome"
 
 [terrain.envs]
 EDITOR = "vim"
+PAGER = "less"
 
 [terrain.aliases]
 tenter = "terrainium enter"
+texit = "terrainium exit"
 
 [terrain.constructors]
 background = []
@@ -24,7 +26,7 @@ args = ["exiting terrain"]
 EDITOR = "nvim"
 
 [biomes.example_biome.aliases]
-tenter = "terrainium enter -b example_biome"
+tenter = "terrainium enter --biome example_biome"
 
 [biomes.example_biome.constructors]
 background = []

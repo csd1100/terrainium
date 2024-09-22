@@ -6,7 +6,7 @@ use terrainium::client::types::context::Context;
 
 fn main() -> Result<()> {
     let args = ClientArgs::parse();
-    let context = Context::new();
+    let context = Context::generate();
 
     match args.command {
         Commands::Init { central, example } => init::handle(context, central, example)?,

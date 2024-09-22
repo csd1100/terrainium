@@ -1,10 +1,17 @@
 use crate::common::types::command::Command;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Commands {
     foreground: Vec<Command>,
     background: Vec<Command>,
+}
+
+impl Commands {
+    pub(crate) fn append(&mut self, another: &mut Commands) {
+        self.foreground.append(&mut another.foreground);
+        self.background.append(&mut another.background);
+    }
 }
 
 impl Commands {
