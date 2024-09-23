@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 use mockall::mock;
 use std::collections::BTreeMap;
-use std::process::{Command, Output};
+use std::process::{Command, ExitStatus, Output};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Run {
@@ -43,6 +43,12 @@ impl Run {
         let mut command: Command = self.into();
         command.output().context("failed to get output")
     }
+
+    pub fn wait(self) -> Result<ExitStatus> {
+        let mut command: Command = self.into();
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().context("failed to wait for command")
+    }
 }
 
 mock! {
@@ -52,6 +58,7 @@ mock! {
         pub fn set_args(&mut self, args: Vec<String>);
         pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
         pub fn get_output(self) -> Result<Output>;
+        pub fn wait(self) -> Result<ExitStatus>;
     }
 
     impl Clone for Run {
@@ -64,7 +71,7 @@ mock! {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use crate::common::execute::Run;
     use anyhow::Result;
     use std::collections::BTreeMap;
@@ -145,6 +152,30 @@ mod test {
             "TEST_VALUE\n",
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
+
+        Ok(())
+    }
+
+    #[ignore]
+    #[test]
+    fn test_wait() -> Result<()> {
+        let script = "TEST_SCRIPT".to_string();
+
+        let mut envs: BTreeMap<String, String> = BTreeMap::new();
+        envs.insert(
+            script.clone(),
+            "./tests/scripts/print_num_for_10_sec".to_string(),
+        );
+
+        let run = Run::new(
+            "/bin/bash".to_string(),
+            vec!["-c".to_string(), "$TEST_SCRIPT".to_string()],
+            Some(envs),
+        );
+
+        let output = run.wait().expect("not to fail");
+
+        assert_eq!(0, output.code().expect("to be present"));
 
         Ok(())
     }

@@ -13,7 +13,7 @@
   - `-e` - creates a file and opens editor
   - `-c -e` creates file in central storage and opens editor
   - `-c -x` creates example file in central storage
-  - `-f -e` creates example file locally and opens editor
+  - `-x -e` creates example file locally and opens editor
   - `-c -x -e` creates example file in central storage and opens editor
 
 - `edit`:

@@ -228,7 +228,7 @@ mod test {
             .expect_err("expected an error when selected_biome does not exists")
             .to_string();
 
-        assert_eq!("the biome non_existent_biome does not exists", error);
+        assert_eq!("the biome \"non_existent_biome\" does not exists", error);
 
         Ok(())
     }

@@ -1,4 +1,3 @@
-use crate::common::constants::errors::TerrainiumErrors;
 use crate::common::types::biome::Biome;
 use crate::common::types::command::Command;
 use crate::common::types::commands::Commands;
@@ -60,7 +59,7 @@ impl Terrain {
                 } else if let Some(biome) = self.biomes.get(&selected) {
                     Ok(biome)
                 } else {
-                    Err(anyhow!(TerrainiumErrors::InvalidBiome(selected)))
+                    Err(anyhow!("the biome {:?} does not exists", selected))
                 }
             }
         }

@@ -16,4 +16,6 @@ pub enum Commands {
         #[arg(short = 'x', long)]
         example: bool,
     },
+
+    Edit,
 }

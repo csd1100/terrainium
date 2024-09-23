@@ -2,17 +2,37 @@
 
 default_biome = "dev"
 
-[terrain.env]
+[terrain.envs]
 TERRAINIUM_DEV = "false"
 
-[terrain.alias]
+[terrain.aliases]
 ttest = "cargo check && cargo test"
 
-[biomes.dev.env]
+[terrain.constructors]
+foreground = []
+background = []
+
+[terrain.destructors]
+foreground = []
+background = []
+
+[biomes.dev.envs]
 TERRAINIUM_DEV = "true"
 
-[biomes.test.env]
+[biomes.dev.constructors]
+foreground = []
+background = []
+
+[biomes.dev.destructors]
+foreground = []
+background = []
+
+[biomes.dev.aliases]
+
+[biomes.test.envs]
 TERRAINIUM_DEV = "true"
+
+[biomes.test.aliases]
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
