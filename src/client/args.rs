@@ -18,4 +18,6 @@ pub enum Commands {
     },
 
     Edit,
+
+    Generate,
 }
