@@ -202,7 +202,7 @@ mod test {
             Some("invalid_biome_name".to_string()),
             &PathBuf::new(),
         )
-            .expect("error not to be thrown");
+        .expect("error not to be thrown");
     }
 
     #[test]

@@ -20,7 +20,7 @@ pub fn handle(context: Context) -> Result<()> {
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
     )
-        .expect("terrain to be parsed from toml");
+    .expect("terrain to be parsed from toml");
 
     context.shell().generate_scripts(&context, terrain)?;
 
@@ -49,11 +49,10 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::client::handlers::init::test::{
-        mock_runner_with_compile_expectations, script_path, scripts_dir,
-        setup_mock_with_expectations,
-    };
     use crate::client::types::context::Context;
+    use crate::client::utils::test::{
+        compile_expectations, script_path, scripts_dir, setup_with_expectations,
+    };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockRun;
     use crate::common::shell::{Shell, Zsh};
@@ -104,19 +103,13 @@ pub(crate) mod test {
             .times(1)
             .returning(move |_, _, _| {
                 let mock = MockRun::default();
-                let mock = setup_mock_with_expectations(
+                let mock = setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "example_biome".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
                 );
-                setup_mock_with_expectations(
+                setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "none".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "none".to_string()),
                 )
             });
         let context: Context = Context::build(
@@ -204,19 +197,13 @@ pub(crate) mod test {
             .times(1)
             .returning(move |_, _, _| {
                 let mock = MockRun::default();
-                let mock = setup_mock_with_expectations(
+                let mock = setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "example_biome".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
                 );
-                setup_mock_with_expectations(
+                setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "none".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "none".to_string()),
                 )
             });
         let context: Context = Context::build(
@@ -284,8 +271,8 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
         ))
-            .expect_err("expected to get error")
-            .to_string();
+        .expect_err("expected to get error")
+        .to_string();
 
         assert_eq!("failed to edit terrain because it does not exist.", err);
 
@@ -330,19 +317,13 @@ pub(crate) mod test {
             .times(1)
             .returning(move |_, _, _| {
                 let mock = MockRun::default();
-                let mock = setup_mock_with_expectations(
+                let mock = setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "example_biome".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
                 );
-                setup_mock_with_expectations(
+                setup_with_expectations(
                     mock,
-                    mock_runner_with_compile_expectations(
-                        central_dir_path.clone(),
-                        "none".to_string(),
-                    ),
+                    compile_expectations(central_dir_path.clone(), "none".to_string()),
                 )
             });
         let context: Context = Context::build(
