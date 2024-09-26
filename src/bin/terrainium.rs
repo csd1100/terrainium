@@ -9,9 +9,12 @@ fn main() -> Result<()> {
     let context = Context::generate();
 
     match args.command {
-        Commands::Init { central, example } => {
-            init::handle(context, central, example).context("failed to initialize new terrain")?
-        }
+        Commands::Init {
+            central,
+            example,
+            edit,
+        } => init::handle(context, central, example, edit)
+            .context("failed to initialize new terrain")?,
         Commands::Edit => edit::handle(context).context("failed to edit the terrain")?,
         Commands::Generate => {
             generate::handle(context).context("failed to generate scripts for the terrain")?

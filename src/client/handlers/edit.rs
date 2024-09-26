@@ -6,6 +6,7 @@ use crate::common::types::terrain::Terrain;
 use anyhow::{Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::fs;
+use std::path::PathBuf;
 
 const EDITOR: &str = "EDITOR";
 
@@ -14,6 +15,19 @@ pub fn handle(context: Context) -> Result<()> {
         .toml_path()
         .context("failed to edit terrain because it does not exist.")?;
 
+    run_editor(&toml_path)?;
+
+    let terrain = Terrain::from_toml(
+        fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
+    )
+        .expect("terrain to be parsed from toml");
+
+    context.shell().generate_scripts(&context, terrain)?;
+
+    Ok(())
+}
+
+pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
     let editor = std::env::var(EDITOR).unwrap_or_else(|_| {
         println!("the environment variable EDITOR not set. using 'vi' as text editor");
         "vi".to_string()
@@ -30,21 +44,11 @@ pub fn handle(context: Context) -> Result<()> {
 
     edit.wait()
         .context(format!("failed to edit file {:?}", toml_path))?;
-
-    let terrain = Terrain::from_toml(
-        fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
-    )
-        .expect("terrain to be parsed from toml");
-
-    context
-        .shell()
-        .generate_scripts(&context, terrain)?;
-
     Ok(())
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use crate::client::handlers::init::test::{
         mock_runner_with_compile_expectations, script_path, scripts_dir,
         setup_mock_with_expectations,
@@ -61,7 +65,7 @@ mod test {
     use std::process::ExitStatus;
     use tempfile::tempdir;
 
-    const EDITOR: &str = "EDITOR";
+    pub(crate) const EDITOR: &str = "EDITOR";
 
     #[serial]
     #[test]

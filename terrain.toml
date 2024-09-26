@@ -36,13 +36,13 @@ TERRAINIUM_DEV = "true"
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "./test_scripts/print_num_for_10_sec"]
+args = ["-c", "./tests/scripts/print_num_for_10_sec"]
 [[biomes.test.constructors.foreground]]
 exe = "echo"
 args = ["'entering test biome'"]
 [[biomes.test.destructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "./test_scripts/print_num_for_10_sec"]
+args = ["-c", "./tests/scripts/print_num_for_10_sec"]
 [[biomes.test.destructors.foreground]]
 exe = "echo"
 args = ["'exiting test biome'"]
