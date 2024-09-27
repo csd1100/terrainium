@@ -20,7 +20,7 @@ pub fn handle(context: Context) -> Result<()> {
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
     )
-    .expect("terrain to be parsed from toml");
+        .expect("terrain to be parsed from toml");
 
     context.shell().generate_scripts(&context, terrain)?;
 
@@ -55,7 +55,7 @@ pub(crate) mod test {
     };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockRun;
-    use crate::common::shell::{Shell, Zsh};
+    use crate::common::shell::Zsh;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;
@@ -96,26 +96,19 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|exe, args, env| exe == "/bin/zsh" && args.is_empty() && env.is_none())
-            .times(1)
-            .returning(move |_, _, _| {
-                let mock = MockRun::default();
-                let mock = setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-                );
-                setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "none".to_string()),
-                )
-            });
+        let mock = MockRun::default();
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
+        );
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "none".to_string()),
+        );
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::get(),
+            Zsh::build(mock),
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -190,26 +183,19 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|exe, args, env| exe == "/bin/zsh" && args.is_empty() && env.is_none())
-            .times(1)
-            .returning(move |_, _, _| {
-                let mock = MockRun::default();
-                let mock = setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-                );
-                setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "none".to_string()),
-                )
-            });
+        let mock = MockRun::default();
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
+        );
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "none".to_string()),
+        );
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::get(),
+            Zsh::build(mock),
         );
 
         let mut terrain_toml: PathBuf = central_dir.path().into();
@@ -254,25 +240,18 @@ pub(crate) mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn edit_returns_error_when_no_terrain() -> Result<()> {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mock_run = MockRun::new_context();
-        mock_run
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .return_once(|_, _, _| MockRun::default());
-
-        let err = super::handle(Context::build_without_shell(
+        let err = super::handle(Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            Zsh::build(MockRun::default()),
         ))
-        .expect_err("expected to get error")
-        .to_string();
+            .expect_err("expected to get error")
+            .to_string();
 
         assert_eq!("failed to edit terrain because it does not exist.", err);
 
@@ -310,26 +289,19 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|exe, args, env| exe == "/bin/zsh" && args.is_empty() && env.is_none())
-            .times(1)
-            .returning(move |_, _, _| {
-                let mock = MockRun::default();
-                let mock = setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-                );
-                setup_with_expectations(
-                    mock,
-                    compile_expectations(central_dir_path.clone(), "none".to_string()),
-                )
-            });
+        let mock = MockRun::default();
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
+        );
+        let mock = setup_with_expectations(
+            mock,
+            compile_expectations(central_dir_path.clone(), "none".to_string()),
+        );
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::get(),
+            Zsh::build(mock),
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();

@@ -45,7 +45,7 @@ impl Context {
     pub fn toml_exists(&self) -> bool {
         fs::exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
             || fs::exists(self.central_toml_path())
-                .expect("failed to check if central terrain.toml exists")
+            .expect("failed to check if central terrain.toml exists")
     }
 
     pub fn new_toml_path(&self, central: bool) -> PathBuf {
@@ -103,11 +103,13 @@ impl Context {
     }
 
     #[cfg(test)]
-    pub(crate) fn build_without_shell(current_dir: PathBuf, central_dir: PathBuf) -> Self {
+    pub(crate) fn build_without_paths(shell: Zsh) -> Self {
         Context {
-            current_dir,
-            central_dir,
-            shell: Zsh::get(),
+            current_dir: env::current_dir().expect("failed to get current directory"),
+            central_dir: get_central_dir_location(
+                env::current_dir().expect("failed to get current directory"),
+            ),
+            shell,
         }
     }
 }
@@ -159,17 +161,9 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn current_dir_returns_current_dir() -> Result<()> {
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
-        let context = Context::generate();
+        let context = Context::build_without_paths(Zsh::build(MockRun::default()));
         assert_eq!(
             &env::current_dir().expect("failed to get current directory"),
             context.current_dir()
@@ -177,47 +171,34 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn local_toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
         let mut expected_terrain_toml =
             env::current_dir().expect("failed to get current directory");
         expected_terrain_toml.push("terrain.toml");
 
-        let context = Context::generate();
+        let context = Context::build_without_paths(Zsh::build(MockRun::default()));
 
         assert_eq!(expected_terrain_toml, context.local_toml_path());
 
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn toml_path_return_current_terrain_toml_path() -> Result<()> {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
-
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
 
         let mut expected_terrain_toml: PathBuf = current_dir.path().into();
         expected_terrain_toml.push("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
-        let context =
-            Context::build_without_shell(current_dir.path().into(), central_dir.path().into());
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(MockRun::default()),
+        );
 
         assert_eq!(
             expected_terrain_toml,
@@ -234,25 +215,20 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn toml_path_return_central_terrain_toml_path() -> Result<()> {
         let central_dir = tempdir()?;
         let current_dir = tempdir()?;
 
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
         let mut expected_terrain_toml: PathBuf = central_dir.path().into();
         expected_terrain_toml.push("terrain.toml");
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
-        let context =
-            Context::build_without_shell(current_dir.path().into(), central_dir.path().into());
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(MockRun::default()),
+        );
 
         assert_eq!(
             expected_terrain_toml,
@@ -269,26 +245,21 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn central_toml_path_return_central_terrain_toml_path() -> Result<()> {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
-
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
 
         let mut expected_terrain_toml: PathBuf = central_dir.path().into();
         expected_terrain_toml.push("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
-        let context =
-            Context::build_without_shell(current_dir.path().into(), central_dir.path().into());
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(MockRun::default()),
+        );
 
         assert_eq!(expected_terrain_toml, context.central_toml_path());
 
@@ -302,24 +273,19 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn toml_path_returns_error_if_does_not_exists() -> Result<()> {
         let central_dir = tempdir()?;
         let current_dir = tempdir()?;
 
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
-        let err =
-            Context::build_without_shell(current_dir.path().into(), central_dir.path().into())
-                .toml_path()
-                .expect_err("to error to be thrown")
-                .to_string();
+        let err = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(MockRun::default()),
+        )
+            .toml_path()
+            .expect_err("to error to be thrown")
+            .to_string();
 
         assert_eq!(
             "terrain.toml does not exists, run `terrainium init` to initialize terrain.",
@@ -336,34 +302,18 @@ mod test {
         Ok(())
     }
 
-    #[serial]
     #[test]
     fn central_dir_returns_config_location() -> Result<()> {
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
-        let context = Context::generate();
+        let context = Context::build_without_paths(Zsh::build(MockRun::default()));
         let central_dir = get_central_dir_location();
 
         assert_eq!(&central_dir, context.central_dir());
         Ok(())
     }
 
-    #[serial]
     #[test]
-    fn scripts_dir_returns_config_location() -> Result<()> {
-        let new_mock = MockRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockRun::default());
-
-        let context = Context::generate();
+    fn scripts_dir_returns_scripts_location() -> Result<()> {
+        let context = Context::build_without_paths(Zsh::build(MockRun::default()));
         let mut scripts_dir = get_central_dir_location();
         scripts_dir.push("scripts");
 

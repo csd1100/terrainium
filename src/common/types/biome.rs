@@ -26,6 +26,22 @@ impl Biome {
         }
     }
 
+    pub fn aliases(&self) -> BTreeMap<String, String> {
+        self.aliases.clone()
+    }
+
+    pub(crate) fn envs(&self) -> BTreeMap<String, String> {
+        self.envs.clone()
+    }
+
+    pub(crate) fn constructors(&self) -> Commands {
+        self.constructors.clone()
+    }
+
+    pub(crate) fn destructors(&self) -> Commands {
+        self.destructors.clone()
+    }
+
     pub fn merge(&self, another: &Biome) -> Biome {
         Biome::new(
             self.append_envs(another),
@@ -35,7 +51,7 @@ impl Biome {
         )
     }
 
-    fn append_destructors(&self, another: &Biome) -> Commands {
+    pub(crate) fn append_destructors(&self, another: &Biome) -> Commands {
         let mut destructors = self.destructors.clone();
         let mut another_destructors = another.destructors.clone();
 
@@ -43,7 +59,7 @@ impl Biome {
         destructors
     }
 
-    fn append_constructors(&self, another: &Biome) -> Commands {
+    pub(crate) fn append_constructors(&self, another: &Biome) -> Commands {
         let mut constructors = self.constructors.clone();
         let mut another_constructors = another.constructors.clone();
 
@@ -51,7 +67,7 @@ impl Biome {
         constructors
     }
 
-    fn append_aliases(&self, another: &Biome) -> BTreeMap<String, String> {
+    pub(crate) fn append_aliases(&self, another: &Biome) -> BTreeMap<String, String> {
         let mut aliases = self.aliases.clone();
         let mut another_aliases = another.aliases.clone();
 
@@ -59,7 +75,7 @@ impl Biome {
         aliases
     }
 
-    fn append_envs(&self, another: &Biome) -> BTreeMap<String, String> {
+    pub(crate) fn append_envs(&self, another: &Biome) -> BTreeMap<String, String> {
         let mut envs = self.envs.clone();
         let mut another_envs = another.envs.clone();
 

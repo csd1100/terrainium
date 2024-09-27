@@ -8,16 +8,25 @@ use std::collections::BTreeMap;
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
     default_biome: Option<String>,
-    selected_biome: Option<String>,
+    selected_biome: String,
     merged: Biome,
 }
 
 impl Environment {
     pub fn from(terrain: &Terrain, selected_biome: Option<String>) -> Result<Self> {
         let merged: Biome = terrain.merged(&selected_biome)?;
+
+        let selected = selected_biome.unwrap_or_else(|| {
+            if terrain.default_biome().is_none() {
+                "none".to_string()
+            } else {
+                "default".to_string()
+            }
+        });
+
         Ok(Environment {
             default_biome: terrain.default_biome().clone(),
-            selected_biome,
+            selected_biome: selected,
             merged,
         })
     }
@@ -27,30 +36,34 @@ impl Environment {
         main_template: String,
         templates: BTreeMap<String, String>,
     ) -> Result<String> {
-        let mut handlebars = Handlebars::new();
-        templates.iter().for_each(|(name, template)| {
-            handlebars
-                .register_template_string(name, template)
-                .expect("failed to register template")
-        });
-
-        handlebars
-            .render(&main_template, self)
-            .context("failed to render template ".to_string() + &main_template)
+        render(main_template, templates, self)
     }
 
     #[cfg(test)]
-    pub fn build(
-        default_biome: Option<String>,
-        selected_biome: Option<String>,
-        merged: &Biome,
-    ) -> Self {
+    pub fn build(default_biome: Option<String>, selected_biome: String, merged: &Biome) -> Self {
         Environment {
             default_biome,
             selected_biome,
             merged: merged.clone(),
         }
     }
+}
+
+pub fn render<T: Serialize>(
+    main_template: String,
+    templates: BTreeMap<String, String>,
+    arg: T,
+) -> Result<String> {
+    let mut handlebars = Handlebars::new();
+    templates.iter().for_each(|(name, template)| {
+        handlebars
+            .register_template_string(name, template)
+            .expect("failed to register template")
+    });
+
+    handlebars
+        .render(&main_template, &arg)
+        .context("failed to render template ".to_string() + &main_template)
 }
 
 #[cfg(test)]
@@ -69,7 +82,8 @@ mod test {
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
-        let expected: Environment = Environment::build(None, None, Terrain::default().terrain());
+        let expected: Environment =
+            Environment::build(None, "none".to_string(), Terrain::default().terrain());
 
         let actual = Environment::from(&Terrain::default(), None).expect("no error to be thrown");
 
@@ -82,7 +96,7 @@ mod test {
     fn environment_from_example_but_no_default_or_selected() -> Result<()> {
         let mut terrain = Terrain::example();
         force_set_invalid_default_biome(&mut terrain, None);
-        let expected = Environment::build(None, None, terrain.terrain());
+        let expected = Environment::build(None, "none".to_string(), terrain.terrain());
 
         assert_eq!(expected, Environment::from(&terrain, None)?);
 
@@ -131,7 +145,7 @@ mod test {
 
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
-            Some("example_biome".to_string()),
+            "example_biome".to_string(),
             &Biome::new(
                 expected_envs,
                 expected_aliases,
@@ -149,7 +163,7 @@ mod test {
     }
 
     #[test]
-    fn environment_from_example_terrain_selected_biome_no_default() -> Result<()> {
+    fn environment_from_example_terrain_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
@@ -190,7 +204,7 @@ mod test {
 
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
-            None,
+            "default".to_string(),
             &Biome::new(
                 expected_envs,
                 expected_aliases,
@@ -210,7 +224,7 @@ mod test {
     fn environment_from_example_terrain_none_selected() -> Result<()> {
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
-            Some("none".to_string()),
+            "none".to_string(),
             Terrain::example().terrain(),
         );
 
@@ -275,7 +289,7 @@ mod test {
 
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
-            Some("example_biome2".to_string()),
+            "example_biome2".to_string(),
             &Biome::new(
                 expected_envs,
                 expected_aliases,

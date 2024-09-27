@@ -11,3 +11,4 @@ Cargo.lock
 
 # custom
 .idea
+.DS_Store

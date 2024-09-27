@@ -46,6 +46,54 @@ impl Terrain {
         }
     }
 
+    pub fn merged_aliases(
+        &self,
+        selected_biome: &Option<String>,
+    ) -> Result<BTreeMap<String, String>> {
+        let selected = self.select_biome(selected_biome.clone())?;
+        if selected == &self.terrain {
+            Ok(selected.clone().aliases())
+        } else {
+            Ok(self.terrain.append_aliases(selected))
+        }
+    }
+
+    pub fn merged_envs(
+        &self,
+        selected_biome: &Option<String>,
+    ) -> Result<BTreeMap<String, String>> {
+        let selected = self.select_biome(selected_biome.clone())?;
+        if selected == &self.terrain {
+            Ok(selected.clone().envs())
+        } else {
+            Ok(self.terrain.append_envs(selected))
+        }
+    }
+
+    pub fn merged_constructors(
+        &self,
+        selected_biome: &Option<String>,
+    ) -> Result<Commands> {
+        let selected = self.select_biome(selected_biome.clone())?;
+        if selected == &self.terrain {
+            Ok(selected.clone().constructors())
+        } else {
+            Ok(self.terrain.append_constructors(selected))
+        }
+    }
+
+    pub fn merged_destructors(
+        &self,
+        selected_biome: &Option<String>,
+    ) -> Result<Commands> {
+        let selected = self.select_biome(selected_biome.clone())?;
+        if selected == &self.terrain {
+            Ok(selected.clone().destructors())
+        } else {
+            Ok(self.terrain.append_destructors(selected))
+        }
+    }
+
     fn select_biome(&self, selected: Option<String>) -> Result<&Biome> {
         let selected = match selected {
             None => self.default_biome.clone(),
