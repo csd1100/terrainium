@@ -12,6 +12,8 @@ pub struct Terrain {
     default_biome: Option<String>,
 }
 
+impl Terrain {}
+
 impl Terrain {
     pub fn new(
         terrain: Biome,
@@ -38,7 +40,7 @@ impl Terrain {
     }
 
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
-        let selected = self.select_biome(selected_biome.clone())?;
+        let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
             Ok(selected.clone())
         } else {
@@ -50,7 +52,7 @@ impl Terrain {
         &self,
         selected_biome: &Option<String>,
     ) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome.clone())?;
+        let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
             Ok(selected.clone().aliases())
         } else {
@@ -59,7 +61,7 @@ impl Terrain {
     }
 
     pub fn merged_envs(&self, selected_biome: &Option<String>) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome.clone())?;
+        let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
             Ok(selected.clone().envs())
         } else {
@@ -68,7 +70,7 @@ impl Terrain {
     }
 
     pub fn merged_constructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome.clone())?;
+        let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
             Ok(selected.clone().constructors())
         } else {
@@ -77,7 +79,7 @@ impl Terrain {
     }
 
     pub fn merged_destructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome.clone())?;
+        let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
             Ok(selected.clone().destructors())
         } else {
@@ -85,18 +87,18 @@ impl Terrain {
         }
     }
 
-    fn select_biome(&self, selected: Option<String>) -> Result<&Biome> {
+    pub(crate) fn select_biome(&self, selected: Option<String>) -> Result<(String, &Biome)> {
         let selected = match selected {
             None => self.default_biome.clone(),
             Some(selected) => Some(selected),
         };
         match selected {
-            None => Ok(&self.terrain),
+            None => Ok(("none".to_string(), &self.terrain)),
             Some(selected) => {
                 if selected == "none" {
-                    Ok(&self.terrain)
+                    Ok(("none".to_string(), &self.terrain))
                 } else if let Some(biome) = self.biomes.get(&selected) {
-                    Ok(biome)
+                    Ok((selected, biome))
                 } else {
                     Err(anyhow!("the biome {:?} does not exists", selected))
                 }
@@ -110,6 +112,18 @@ impl Terrain {
 
     pub fn to_toml(&self) -> Result<String> {
         toml::to_string(&self).context("failed to convert terrain to toml")
+    }
+
+    pub(crate) fn set_default(&mut self, new_default: String) {
+        self.default_biome = Some(new_default);
+    }
+
+    pub(crate) fn update(&mut self, biome_name: String, updated: Biome) {
+        if biome_name == "none" {
+            self.terrain = updated
+        } else {
+            self.biomes.insert(biome_name, updated);
+        }
     }
 
     pub fn example() -> Self {

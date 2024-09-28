@@ -1,0 +1,44 @@
+default_biome = "example_biome"
+
+[terrain.envs]
+EDITOR = "vim"
+PAGER = "less"
+
+[terrain.aliases]
+tenter = "terrainium enter"
+texit = "terrainium exit"
+
+[terrain.constructors]
+background = []
+
+[[terrain.constructors.foreground]]
+exe = "/bin/echo"
+args = ["entering terrain"]
+
+[terrain.destructors]
+background = []
+
+[[terrain.destructors.foreground]]
+exe = "/bin/echo"
+args = ["exiting terrain"]
+
+[biomes.example_biome.envs]
+EDITOR = "nano"
+
+[biomes.example_biome.aliases]
+greet = "echo hello"
+tenter = "terrainium enter --biome example_biome"
+
+[biomes.example_biome.constructors]
+background = []
+
+[[biomes.example_biome.constructors.foreground]]
+exe = "/bin/echo"
+args = ["entering biome example_biome"]
+
+[biomes.example_biome.destructors]
+background = []
+
+[[biomes.example_biome.destructors.foreground]]
+exe = "/bin/echo"
+args = ["exiting biome example_biome"]

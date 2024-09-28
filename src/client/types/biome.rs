@@ -83,6 +83,14 @@ impl Biome {
         envs
     }
 
+    pub(crate) fn set_envs(&mut self, envs: BTreeMap<String, String>) {
+        self.envs = envs;
+    }
+
+    pub(crate) fn set_aliases(&mut self, aliases: BTreeMap<String, String>) {
+        self.aliases = aliases;
+    }
+
     pub fn example() -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());

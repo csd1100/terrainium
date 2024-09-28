@@ -1,7 +1,7 @@
 use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
-use terrainium::client::args::{ClientArgs, Commands, GetArgs};
-use terrainium::client::handlers::{edit, generate, get, init};
+use terrainium::client::args::{ClientArgs, Commands, GetArgs, UpdateArgs};
+use terrainium::client::handlers::{edit, generate, get, init, update};
 use terrainium::client::types::context::Context;
 
 fn main() -> Result<()> {
@@ -40,6 +40,25 @@ fn main() -> Result<()> {
             },
         )
         .context("failed to get the terrain values")?,
+        Commands::Update {
+            set_default,
+            biome,
+            new,
+            env,
+            alias,
+            backup,
+        } => update::handle(
+            context,
+            UpdateArgs {
+                set_default,
+                biome,
+                alias,
+                env,
+                new,
+                backup,
+            },
+        )
+        .context("failed to update the terrain values")?,
     }
 
     Ok(())

@@ -179,7 +179,7 @@ mod test {
 
         let context = Context::build_without_paths(Zsh::build(MockRun::default()));
 
-        assert_eq!(expected_terrain_toml, context.local_toml_path());
+        assert_eq!(context.local_toml_path(), expected_terrain_toml);
 
         Ok(())
     }
@@ -261,7 +261,7 @@ mod test {
             Zsh::build(MockRun::default()),
         );
 
-        assert_eq!(expected_terrain_toml, context.central_toml_path());
+        assert_eq!(context.central_toml_path(), expected_terrain_toml);
 
         current_dir
             .close()
@@ -335,7 +335,7 @@ mod test {
 
         let expected_shell = Zsh::build(MockRun::default());
 
-        assert_eq!(expected_shell.exe(), context.shell().exe());
+        assert_eq!(context.shell().exe(), expected_shell.exe());
 
         Ok(())
     }

@@ -87,8 +87,7 @@ mod test {
 
         let actual = Environment::from(&Terrain::default(), None).expect("no error to be thrown");
 
-        assert_eq!(expected, actual);
-
+        assert_eq!(actual, expected);
         Ok(())
     }
 
@@ -98,7 +97,7 @@ mod test {
         force_set_invalid_default_biome(&mut terrain, None);
         let expected = Environment::build(None, "none".to_string(), terrain.terrain());
 
-        assert_eq!(expected, Environment::from(&terrain, None)?);
+        assert_eq!(Environment::from(&terrain, None)?, expected);
 
         Ok(())
     }
@@ -157,8 +156,7 @@ mod test {
         let actual = Environment::from(&Terrain::example(), Some("example_biome".to_string()))
             .expect("no error to be thrown");
 
-        assert_eq!(expected, actual);
-
+        assert_eq!(actual, expected);
         Ok(())
     }
 
@@ -215,8 +213,7 @@ mod test {
 
         let actual = Environment::from(&Terrain::example(), None).expect("no error to be thrown");
 
-        assert_eq!(expected, actual);
-
+        assert_eq!(actual, expected);
         Ok(())
     }
 
@@ -231,8 +228,7 @@ mod test {
         let actual = Environment::from(&Terrain::example(), Some("none".to_string()))
             .expect("no error to be thrown");
 
-        assert_eq!(expected, actual);
-
+        assert_eq!(actual, expected);
         Ok(())
     }
 
@@ -308,8 +304,7 @@ mod test {
         let actual = Environment::from(&terrain, Some("example_biome2".to_string()))
             .expect("no error to be thrown");
 
-        assert_eq!(expected, actual);
-
+        assert_eq!(actual, expected);
         Ok(())
     }
 

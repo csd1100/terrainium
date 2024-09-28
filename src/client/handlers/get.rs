@@ -1,4 +1,4 @@
-use crate::client::args::{BiomeArg, GetArgs};
+use crate::client::args::{option_string_from, GetArgs};
 use crate::client::types::context::Context;
 use crate::client::types::environment::{render, Environment};
 use crate::client::types::terrain::Terrain;
@@ -144,10 +144,6 @@ fn all(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
     Ok(res)
 }
 
-fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String> {
-    option_biome_arg.clone().map(|selected| selected.into())
-}
-
 fn templates() -> BTreeMap<String, String> {
     let mut templates: BTreeMap<String, String> = BTreeMap::new();
     templates.insert(
@@ -217,7 +213,7 @@ mod test {
         let expected =
             read_to_string("./tests/data/terrain-default.rendered").expect("test data to be read");
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -255,7 +251,7 @@ mod test {
         let expected =
             read_to_string("./tests/data/terrain-empty.rendered").expect("test data to be read");
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -294,7 +290,7 @@ mod test {
         let expected = read_to_string("./tests/data/terrain-example_biome.rendered")
             .expect("test data to be read");
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -331,7 +327,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -368,7 +364,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -404,7 +400,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -441,7 +437,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -478,7 +474,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -514,7 +510,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -551,7 +547,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\nEnvironment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -588,7 +584,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -625,7 +621,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
         let expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -663,7 +659,7 @@ mod test {
 
         let expected = "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -701,7 +697,7 @@ mod test {
 
         let expected = "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -741,7 +737,7 @@ mod test {
         expected += "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
         expected += "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -782,7 +778,7 @@ mod test {
         expected += "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
         expected += "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -820,7 +816,7 @@ mod test {
         let mut expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n".to_string();
         expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
@@ -858,7 +854,7 @@ mod test {
         let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
         expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
 
-        assert_eq!(expected, output);
+        assert_eq!(output, expected);
 
         current_dir
             .close()
