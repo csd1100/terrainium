@@ -45,7 +45,7 @@ impl Context {
     pub fn toml_exists(&self) -> bool {
         fs::exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
             || fs::exists(self.central_toml_path())
-            .expect("failed to check if central terrain.toml exists")
+                .expect("failed to check if central terrain.toml exists")
     }
 
     pub fn new_toml_path(&self, central: bool) -> PathBuf {
@@ -283,9 +283,9 @@ mod test {
             central_dir.path().into(),
             Zsh::build(MockRun::default()),
         )
-            .toml_path()
-            .expect_err("to error to be thrown")
-            .to_string();
+        .toml_path()
+        .expect_err("to error to be thrown")
+        .to_string();
 
         assert_eq!(
             "terrain.toml does not exists, run `terrainium init` to initialize terrain.",

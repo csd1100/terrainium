@@ -29,16 +29,16 @@ pub enum Commands {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
 
-        #[arg(long)]
+        #[arg(long, group = "get_alias")]
         aliases: bool,
 
-        #[arg(long)]
+        #[arg(long, group = "get_env")]
         envs: bool,
 
-        #[arg(short)]
+        #[arg(short, group = "get_alias")]
         alias: Vec<String>,
 
-        #[arg(short)]
+        #[arg(short, group = "get_env")]
         env: Vec<String>,
 
         #[arg(short, long)]

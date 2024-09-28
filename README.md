@@ -6,7 +6,7 @@ A command-line utility written in Rust for env management
   development environment for you.
 - This utility will automatically set environment variables, aliases and run specified
   commands in shell or in background.
-- The sample configuration file is stored in [terrain.toml](./tests/data/terrain.full.toml)
+- The sample configuration file is stored in [terrain.toml](./tests/data/terrain.example.toml)
 - Currently only `zsh` is supported.
 
 ## Command-Line Arguments (Usage)
@@ -30,8 +30,8 @@ terrainium <verb> [OPTIONS]
 
         - `-s|--set-default <name>` - set default `biome`.
           Cannot be used with other options.
-        - `-b|--biome <biome_value>` - biome to update. Updates default if `default`
-          is used. Updates terrain if `none` is used. Will update currently active terrain
+        - `-b|--biome <biome_value>` - biome to update.
+          Updates terrain if `none` is used. Will update currently active terrain
           if `current` is used. Cannot be used with `-n` flag.
         - `-n|--new <new>` creates a new biome with `name`. If `-e`|`-a` are passed with
           this, the environment variable and alias will be set for the new biome.
@@ -49,9 +49,8 @@ terrainium <verb> [OPTIONS]
       will return all values.
 
         - `-b|--biome <name>` - name of the biome for which values to be retrieved.
-          Gets values of default biome if `default` is used. Gets main terrain if
-          `none` is used. Will get values of currently active terrain if `current`
-          is used.
+          Gets main terrain if `none` is used. Will get values of currently active
+          terrain if `current` is used.
         - `--alias` - returns value of all aliases defined.
         - `--env` - returns value of all environment variables defined.
         - `-e [name]` - returns value of environment variable with `name`.

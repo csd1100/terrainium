@@ -3,8 +3,8 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::{render, Environment};
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    GET_ALIASES_TEMPLATE_NAME, GET_CONSTRUCTORS_TEMPLATE_NAME, GET_DESTRUCTORS_TEMPLATE_NAME,
-    GET_ENVS_TEMPLATE_NAME, GET_MAIN_TEMPLATE_NAME,
+    DOES_NOT_EXIST, GET_ALIASES_TEMPLATE_NAME, GET_CONSTRUCTORS_TEMPLATE_NAME,
+    GET_DESTRUCTORS_TEMPLATE_NAME, GET_ENVS_TEMPLATE_NAME, GET_MAIN_TEMPLATE_NAME,
 };
 use anyhow::{Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
@@ -37,22 +37,16 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
         return Ok(result);
     }
 
-    if get_args.aliases || get_args.envs {
-        if get_args.aliases {
-            result += &all_aliases(&terrain, &selected_biome)?;
-        }
+    if get_args.aliases {
+        result += &all_aliases(&terrain, &selected_biome)?;
+    } else if !get_args.alias.is_empty() {
+        result += &alias(&get_args, &terrain, &selected_biome)?;
+    }
 
-        if get_args.envs {
-            result += &all_envs(&terrain, &selected_biome)?;
-        }
-    } else {
-        if !get_args.alias.is_empty() {
-            result += &alias(&get_args, &terrain, &selected_biome)?;
-        }
-
-        if !get_args.env.is_empty() {
-            result += &env(&get_args, &terrain, &selected_biome)?;
-        }
+    if get_args.envs {
+        result += &all_envs(&terrain, &selected_biome)?;
+    } else if !get_args.env.is_empty() {
+        result += &env(&get_args, &terrain, &selected_biome)?;
     }
 
     if get_args.constructors {
@@ -73,7 +67,7 @@ fn destructors(terrain: Terrain, selected_biome: &Option<String>) -> Result<Stri
         templates(),
         constructors,
     )
-        .expect("failed to render envs in get template"))
+    .expect("failed to render envs in get template"))
 }
 
 fn constructors(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
@@ -83,7 +77,7 @@ fn constructors(terrain: &Terrain, selected_biome: &Option<String>) -> Result<St
         templates(),
         constructors,
     )
-        .expect("failed to render envs in get template"))
+    .expect("failed to render envs in get template"))
 }
 
 fn env(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
@@ -94,7 +88,7 @@ fn env(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>) -
         if let Some(value) = envs.get(env) {
             requested.insert(env.to_string(), value.to_string());
         } else {
-            requested.insert(env.to_string(), "!!!DOES NOT EXIST!!!".to_string());
+            requested.insert(env.to_string(), DOES_NOT_EXIST.to_string());
         }
     });
 
@@ -112,7 +106,7 @@ fn alias(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>)
         if let Some(value) = aliases.get(alias) {
             requested.insert(alias.to_string(), value.to_string());
         } else {
-            requested.insert(alias.to_string(), "!!!DOES NOT EXIST!!!".to_string());
+            requested.insert(alias.to_string(), DOES_NOT_EXIST.to_string());
         }
     });
 
@@ -121,7 +115,7 @@ fn alias(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>)
         templates(),
         requested,
     )
-        .expect("failed to render aliases in get template"))
+    .expect("failed to render aliases in get template"))
 }
 
 fn all_envs(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
@@ -682,7 +676,7 @@ mod test {
     fn get_destructors() -> Result<()> {
         let current_dir = tempdir()?;
 
-        let detext = Context::build(
+        let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
@@ -703,7 +697,7 @@ mod test {
             destructors: true,
         };
 
-        let output = super::get(detext, args).expect("to not throw an error");
+        let output = super::get(context, args).expect("to not throw an error");
 
         let expected = "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
@@ -787,6 +781,82 @@ mod test {
         expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
         expected += "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
         expected += "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
+
+        assert_eq!(expected, output);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_env_and_all_alias() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockRun::default()),
+        );
+
+        let mut terrain_toml: PathBuf = current_dir.path().into();
+        terrain_toml.push("terrain.toml");
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
+            .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: true,
+            envs: false,
+            alias: vec![],
+            env: vec!["EDITOR".to_string(), "NON_EXISTENT".to_string()],
+            constructors: false,
+            destructors: false,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let mut expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n".to_string();
+        expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
+
+        assert_eq!(expected, output);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_alias_and_all_envs() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockRun::default()),
+        );
+
+        let mut terrain_toml: PathBuf = current_dir.path().into();
+        terrain_toml.push("terrain.toml");
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
+            .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec!["tenter".to_string(), "non_existent".to_string()],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
+        expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
 
         assert_eq!(expected, output);
 

@@ -39,7 +39,7 @@ fn main() -> Result<()> {
                 destructors,
             },
         )
-            .context("failed to get the terrain values")?,
+        .context("failed to get the terrain values")?,
     }
 
     Ok(())

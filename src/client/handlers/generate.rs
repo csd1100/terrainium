@@ -13,7 +13,7 @@ pub fn handle(context: Context) -> Result<()> {
         "failed to read terrain.toml from path {:?}",
         context.toml_path()
     ))?)
-        .expect("expected terrain to created from toml");
+    .expect("expected terrain to created from toml");
 
     context.shell().generate_scripts(&context, terrain)?;
     Ok(())

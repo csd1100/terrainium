@@ -58,10 +58,7 @@ impl Terrain {
         }
     }
 
-    pub fn merged_envs(
-        &self,
-        selected_biome: &Option<String>,
-    ) -> Result<BTreeMap<String, String>> {
+    pub fn merged_envs(&self, selected_biome: &Option<String>) -> Result<BTreeMap<String, String>> {
         let selected = self.select_biome(selected_biome.clone())?;
         if selected == &self.terrain {
             Ok(selected.clone().envs())
@@ -70,10 +67,7 @@ impl Terrain {
         }
     }
 
-    pub fn merged_constructors(
-        &self,
-        selected_biome: &Option<String>,
-    ) -> Result<Commands> {
+    pub fn merged_constructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
         let selected = self.select_biome(selected_biome.clone())?;
         if selected == &self.terrain {
             Ok(selected.clone().constructors())
@@ -82,10 +76,7 @@ impl Terrain {
         }
     }
 
-    pub fn merged_destructors(
-        &self,
-        selected_biome: &Option<String>,
-    ) -> Result<Commands> {
+    pub fn merged_destructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
         let selected = self.select_biome(selected_biome.clone())?;
         if selected == &self.terrain {
             Ok(selected.clone().destructors())

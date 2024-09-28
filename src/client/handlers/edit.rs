@@ -20,7 +20,7 @@ pub fn handle(context: Context) -> Result<()> {
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
     )
-        .expect("terrain to be parsed from toml");
+    .expect("terrain to be parsed from toml");
 
     context.shell().generate_scripts(&context, terrain)?;
 
@@ -250,8 +250,8 @@ pub(crate) mod test {
             central_dir.path().into(),
             Zsh::build(MockRun::default()),
         ))
-            .expect_err("expected to get error")
-            .to_string();
+        .expect_err("expected to get error")
+        .to_string();
 
         assert_eq!("failed to edit terrain because it does not exist.", err);
 

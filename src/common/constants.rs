@@ -9,3 +9,4 @@ pub(crate) const GET_ENVS_TEMPLATE_NAME: &str = "envs";
 pub(crate) const GET_ALIASES_TEMPLATE_NAME: &str = "aliases";
 pub(crate) const GET_CONSTRUCTORS_TEMPLATE_NAME: &str = "constructors";
 pub(crate) const GET_DESTRUCTORS_TEMPLATE_NAME: &str = "destructors";
+pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
