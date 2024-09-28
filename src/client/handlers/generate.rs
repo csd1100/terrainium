@@ -1,19 +1,20 @@
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::shell::Shell;
-use crate::common::types::terrain::Terrain;
 use anyhow::{Context as AnyhowContext, Result};
-use std::fs;
+use std::fs::{create_dir_all, exists, read_to_string};
 
 pub fn handle(context: Context) -> Result<()> {
-    if !fs::exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
-        fs::create_dir_all(context.scripts_dir()).context("failed to create scripts dir")?;
+    if !exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
+        create_dir_all(context.scripts_dir()).context("failed to create scripts dir")?;
     }
 
-    let terrain = Terrain::from_toml(fs::read_to_string(context.toml_path()?).context(format!(
+    let terrain = Terrain::from_toml(read_to_string(context.toml_path()?).context(format!(
         "failed to read terrain.toml from path {:?}",
         context.toml_path()
     ))?)
         .expect("expected terrain to created from toml");
+
     context.shell().generate_scripts(&context, terrain)?;
     Ok(())
 }

@@ -4,11 +4,11 @@ use crate::common::constants::{
     ZSH_ENVS_TEMPLATE_NAME, ZSH_MAIN_TEMPLATE_NAME,
 };
 
+use crate::client::types::environment::Environment;
+use crate::client::types::terrain::Terrain;
 #[double]
 use crate::common::execute::Run;
 use crate::common::shell::{Shell, Zsh};
-use crate::common::types::environment::Environment;
-use crate::common::types::terrain::Terrain;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::collections::BTreeMap;
@@ -181,9 +181,9 @@ impl Zsh {
 
 #[cfg(test)]
 mod test {
+    use crate::client::types::terrain::Terrain;
     use crate::common::execute::MockRun;
     use crate::common::shell::Zsh;
-    use crate::common::types::terrain::Terrain;
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};
@@ -202,7 +202,7 @@ mod test {
             Some("invalid_biome_name".to_string()),
             &PathBuf::new(),
         )
-        .expect("error not to be thrown");
+            .expect("error not to be thrown");
     }
 
     #[test]

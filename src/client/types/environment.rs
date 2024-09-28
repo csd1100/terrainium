@@ -1,5 +1,5 @@
-use crate::common::types::biome::Biome;
-use crate::common::types::terrain::Terrain;
+use crate::client::types::biome::Biome;
+use crate::client::types::terrain::Terrain;
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -68,14 +68,14 @@ pub fn render<T: Serialize>(
 
 #[cfg(test)]
 mod test {
-    use crate::common::types::biome::Biome;
-    use crate::common::types::command::Command;
-    use crate::common::types::commands::Commands;
-    use crate::common::types::environment::Environment;
-    use crate::common::types::terrain::test::{
+    use crate::client::types::biome::Biome;
+    use crate::client::types::commands::Commands;
+    use crate::client::types::environment::Environment;
+    use crate::client::types::terrain::test::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
-    use crate::common::types::terrain::Terrain;
+    use crate::client::types::terrain::Terrain;
+    use crate::common::types::command::Command;
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;

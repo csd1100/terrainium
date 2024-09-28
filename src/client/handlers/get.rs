@@ -1,11 +1,11 @@
 use crate::client::args::{BiomeArg, GetArgs};
 use crate::client::types::context::Context;
+use crate::client::types::environment::{render, Environment};
+use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
     GET_ALIASES_TEMPLATE_NAME, GET_CONSTRUCTORS_TEMPLATE_NAME, GET_DESTRUCTORS_TEMPLATE_NAME,
     GET_ENVS_TEMPLATE_NAME, GET_MAIN_TEMPLATE_NAME,
 };
-use crate::common::types::environment::{render, Environment};
-use crate::common::types::terrain::Terrain;
 use anyhow::{Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::fs::read_to_string;

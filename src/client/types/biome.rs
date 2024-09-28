@@ -1,5 +1,5 @@
+use crate::client::types::commands::Commands;
 use crate::common::types::command::Command;
-use crate::common::types::commands::Commands;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

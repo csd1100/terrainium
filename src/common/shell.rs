@@ -1,7 +1,7 @@
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 #[double]
 use crate::common::execute::Run;
-use crate::common::types::terrain::Terrain;
 use anyhow::Result;
 use mockall_double::double;
 use std::collections::BTreeMap;

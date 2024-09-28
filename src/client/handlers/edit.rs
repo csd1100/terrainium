@@ -1,8 +1,8 @@
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 #[double]
 use crate::common::execute::Run;
 use crate::common::shell::Shell;
-use crate::common::types::terrain::Terrain;
 use anyhow::{Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::fs;

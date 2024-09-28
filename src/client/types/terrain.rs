@@ -1,6 +1,6 @@
-use crate::common::types::biome::Biome;
+use crate::client::types::biome::Biome;
+use crate::client::types::commands::Commands;
 use crate::common::types::command::Command;
-use crate::common::types::commands::Commands;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -160,10 +160,10 @@ impl Terrain {
 
 #[cfg(test)]
 pub mod test {
-    use crate::common::types::biome::Biome;
+    use crate::client::types::biome::Biome;
+    use crate::client::types::commands::Commands;
+    use crate::client::types::terrain::Terrain;
     use crate::common::types::command::Command;
-    use crate::common::types::commands::Commands;
-    use crate::common::types::terrain::Terrain;
     use std::collections::BTreeMap;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {

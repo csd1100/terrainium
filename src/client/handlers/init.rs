@@ -1,7 +1,7 @@
 use crate::client::handlers::edit;
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::shell::Shell;
-use crate::common::types::terrain::Terrain;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::fs;
 use std::fs::File;
