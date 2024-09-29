@@ -8,4 +8,5 @@ message ActivateRequest {
   string toml_path = 3;
 }
 
-message ActivateResponse {}
+message ActivateResponse {
+}

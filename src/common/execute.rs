@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
 
+use crate::common::types::pb;
 use mockall::mock;
 use std::collections::BTreeMap;
-use std::process::{Command, ExitStatus, Output};
+use std::process::{Command, ExitStatus, Output, Stdio};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Run {
@@ -21,6 +22,31 @@ impl From<Run> for Command {
             vars
         };
         let mut command = Command::new(value.exe);
+        command.args(value.args).envs(envs);
+        command
+    }
+}
+
+impl Into<Run> for pb::Command {
+    fn into(self) -> Run {
+        Run {
+            exe: self.exe,
+            args: self.args,
+            envs: Some(self.envs),
+        }
+    }
+}
+
+impl From<Run> for tokio::process::Command {
+    fn from(value: Run) -> tokio::process::Command {
+        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
+        let envs = if let Some(mut envs) = value.envs {
+            vars.append(&mut envs);
+            vars
+        } else {
+            vars
+        };
+        let mut command = tokio::process::Command::new(value.exe);
         command.args(value.args).envs(envs);
         command
     }
@@ -49,6 +75,23 @@ impl Run {
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().context("failed to wait for command")
     }
+
+    pub async fn async_get_output(self) -> Result<Output> {
+        let mut command: tokio::process::Command = self.into();
+        command.output().await.context("failed to get output")
+    }
+
+    pub async fn async_wait(
+        self,
+        stdout: Option<Stdio>,
+        stderr: Option<Stdio>,
+    ) -> Result<ExitStatus> {
+        let mut command: tokio::process::Command = self.into();
+        command.stdout(stdout.unwrap_or(Stdio::null()));
+        command.stderr(stderr.unwrap_or(Stdio::null()));
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().await.context("failed to wait for command")
+    }
 }
 
 mock! {
@@ -59,6 +102,8 @@ mock! {
         pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
         pub fn get_output(self) -> Result<Output>;
         pub fn wait(self) -> Result<ExitStatus>;
+        pub async fn async_get_output(self) -> Result<Output>;
+        pub async fn async_wait(self) -> Result<ExitStatus>;
     }
 
     impl Clone for Run {

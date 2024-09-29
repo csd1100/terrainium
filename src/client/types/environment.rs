@@ -31,6 +31,18 @@ impl Environment {
         })
     }
 
+    pub fn default_biome(&self) -> &Option<String> {
+        &self.default_biome
+    }
+
+    pub fn selected_biome(&self) -> &String {
+        &self.selected_biome
+    }
+
+    pub fn merged(&self) -> &Biome {
+        &self.merged
+    }
+
     pub(crate) fn to_rendered(
         &self,
         main_template: String,
@@ -123,7 +135,13 @@ mod test {
                 vec!["entering biome example_biome".to_string()],
             ),
         ];
-        let expected_constructor_background: Vec<Command> = vec![];
+        let expected_constructor_background: Vec<Command> = vec![Command::new(
+            "/bin/bash".to_string(),
+            vec![
+                "-c".to_string(),
+                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            ],
+        )];
         let expected_destructor_foreground: Vec<Command> = vec![
             Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
             Command::new(
@@ -181,7 +199,13 @@ mod test {
                 vec!["entering biome example_biome".to_string()],
             ),
         ];
-        let expected_constructor_background: Vec<Command> = vec![];
+        let expected_constructor_background: Vec<Command> = vec![Command::new(
+            "/bin/bash".to_string(),
+            vec![
+                "-c".to_string(),
+                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            ],
+        )];
         let expected_destructor_foreground: Vec<Command> = vec![
             Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
             Command::new(

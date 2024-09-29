@@ -111,13 +111,12 @@ fi
 2. If `-b <biome_name>` is passed:
     1. if `biome_name` is name of the biome defined, the sub-steps in step 1 will
        be done but for specified biome name.
-    2. if `biome_name` is `default` will do same as step 1.
-    3. if `biome_name` is `none` will not merge with any biome and start `terrain`
+    2. if `biome_name` is `none` will not merge with any biome and start `terrain`
        as is.
 
 ### Example
 
-- If [terrain.toml](./tests/data/terrain.full.toml) is used.
+- If [terrain.toml](./tests/data/terrain.example.toml) is used.
 - When `terrainium enter` is run, the default biome `example_biome` will be applied:
 
 1. environment variables set will be:
@@ -147,32 +146,14 @@ fi
 
 1. `foreground` - Which are run in shell activated by `terrainium enter` command.
 2. `background` - which are separate processes started in background and logs for
-   these processes are present in `/tmp/terrainium-$TERRAINIUM_SESSION_ID/` directory.
+   these processes are present in `/tmp/terrainiumd/terrains/<terrain_name>-$TERRAINIUM_SESSION_ID/` directory.
 
 - When terrain is activated `TERRAINIUM_SESSION_ID` variable is set, it is a UUID
-  and changes every session. The STDOUT and STDERR logs of spawned processes are
-  stored in `/tmp/terrainium-$TERRAINIUM_SESSION_ID/` directory.
+  and changes every session.
 
-- created files will be named similar to following:
-
-```files
-$ ls /tmp/terrainium-94e30640-eaaf-4c4e-9db9-950db177044b/
-spawn-err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
-# ->  # STDERR of terrainium_executor using which process is started
-spawn-out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
-# ->  # STDOUT of terrainium_executor using which process is started
-std_out-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
-# ->  # STDOUT of process
-std_err-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.log
-# ->  # STDERR of process
-status-6d11dd42-b88f-4c1a-82b8-4171e0d2fd09.json
-# ->  # status of process include command, args and exit code
-```
-
-- In above list of files `6d11dd42-b88f-4c1a-82b8-4171e0d2fd09`
-  is UUID for specific process started using `terrainium_executor`. i.e.
-  logs are for single background process.
-- And `94e30640-eaaf-4c4e-9db9-950db177044b` is `TERRAINIUM_SESSION_ID`.
+- **Note:** The paths used in background process must be absolute as they are run
+  by daemon. You can use `$TERRAIN_DIR` environment variable to use paths from project
+  without having to specify entire absolute path.
 
 ## For developers
 

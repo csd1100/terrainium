@@ -54,7 +54,7 @@ impl Terrain {
     ) -> Result<BTreeMap<String, String>> {
         let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
-            Ok(selected.clone().aliases())
+            Ok(selected.aliases().clone())
         } else {
             Ok(self.terrain.append_aliases(selected))
         }
@@ -63,7 +63,7 @@ impl Terrain {
     pub fn merged_envs(&self, selected_biome: &Option<String>) -> Result<BTreeMap<String, String>> {
         let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
-            Ok(selected.clone().envs())
+            Ok(selected.envs().clone())
         } else {
             Ok(self.terrain.append_envs(selected))
         }
@@ -72,7 +72,7 @@ impl Terrain {
     pub fn merged_constructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
         let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
-            Ok(selected.clone().constructors())
+            Ok(selected.constructors().clone())
         } else {
             Ok(self.terrain.append_constructors(selected))
         }
@@ -81,7 +81,7 @@ impl Terrain {
     pub fn merged_destructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
         let selected = self.select_biome(selected_biome.clone())?.1;
         if selected == &self.terrain {
-            Ok(selected.clone().destructors())
+            Ok(selected.destructors().clone())
         } else {
             Ok(self.terrain.append_destructors(selected))
         }
@@ -143,7 +143,13 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
             )],
-            vec![],
+            vec![Command::new(
+                "/bin/bash".to_string(),
+                vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
+            )],
         );
 
         let destructors: Commands = Commands::new(

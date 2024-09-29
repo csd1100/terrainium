@@ -8,6 +8,14 @@ pub struct Commands {
 }
 
 impl Commands {
+    pub fn foreground(&self) -> &Vec<Command> {
+        self.foreground.as_ref()
+    }
+
+    pub fn background(&self) -> &Vec<Command> {
+        self.background.as_ref()
+    }
+
     pub(crate) fn append(&mut self, another: &mut Commands) {
         self.foreground.append(&mut another.foreground);
         self.background.append(&mut another.background);

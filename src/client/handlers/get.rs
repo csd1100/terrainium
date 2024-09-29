@@ -191,6 +191,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -230,6 +231,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -268,6 +270,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -307,6 +310,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -344,6 +348,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -381,6 +386,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -417,6 +423,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -454,6 +461,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -491,6 +499,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -527,6 +536,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -564,6 +574,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -601,6 +612,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -638,6 +650,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -657,7 +670,7 @@ mod test {
 
         let output = super::get(context, args).expect("to not throw an error");
 
-        let expected = "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
+        let expected = "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
 
         assert_eq!(output, expected);
 
@@ -676,6 +689,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -714,6 +728,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -734,7 +749,7 @@ mod test {
         let output = super::get(context, args).expect("to not throw an error");
 
         let mut expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\nEnvironment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n".to_string();
-        expected += "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
+        expected += "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
         expected += "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
         assert_eq!(output, expected);
@@ -754,6 +769,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -775,7 +791,7 @@ mod test {
 
         let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
         expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
-        expected += "Constructors:\n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
+        expected += "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
         expected += "Destructors:\n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
 
         assert_eq!(output, expected);
@@ -795,6 +811,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -833,6 +850,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();

@@ -2,45 +2,6 @@ syntax = "proto3";
 
 package terrainium.v1;
 
-import "terrainium/v1/activate.proto";
-import "terrainium/v1/execute.proto";
-import "terrainium/v1/status.proto";
-
-message Request {
-  oneof session {
-    string session_id = 1;
-    History history = 2;
-  }
-
-  oneof args {
-    ActivateRequest activate = 11;
-    ExecuteRequest execute = 12;
-    StatusRequest status = 13;
-  }
-
-  enum History {
-    HISTORY_UNSPECIFIED = 0;
-    HISTORY_LAST = 1;
-    HISTORY_LAST_1 = 2;
-    HISTORY_LAST_2 = 3;
-  }
-}
-
-message Response {
-  oneof result {
-    Error error = 1;
-    Success success = 2;
-  }
-
-  message Error {
-    string error_message = 1;
-  }
-
-  message Success {
-    oneof body {
-      ActivateResponse activate = 11;
-      ExecuteResponse execute = 12;
-      StatusResponse status = 13;
-    }
-  }
+message Error {
+  string error_message = 1;
 }

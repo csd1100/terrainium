@@ -26,20 +26,20 @@ impl Biome {
         }
     }
 
-    pub fn aliases(&self) -> BTreeMap<String, String> {
-        self.aliases.clone()
+    pub fn aliases(&self) -> &BTreeMap<String, String> {
+        &self.aliases
     }
 
-    pub(crate) fn envs(&self) -> BTreeMap<String, String> {
-        self.envs.clone()
+    pub(crate) fn envs(&self) -> &BTreeMap<String, String> {
+        &self.envs
     }
 
-    pub(crate) fn constructors(&self) -> Commands {
-        self.constructors.clone()
+    pub(crate) fn constructors(&self) -> &Commands {
+        &self.constructors
     }
 
-    pub(crate) fn destructors(&self) -> Commands {
-        self.destructors.clone()
+    pub(crate) fn destructors(&self) -> &Commands {
+        &self.destructors
     }
 
     pub fn merge(&self, another: &Biome) -> Biome {

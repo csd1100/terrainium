@@ -71,6 +71,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         // execute
@@ -128,6 +129,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         // execute
@@ -189,6 +191,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         super::handle(context, false, false, false)
@@ -227,6 +230,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         fs::remove_dir(&central_dir).expect("temp directory to be removed");
@@ -267,6 +271,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml_path: PathBuf = current_dir.path().into();
@@ -305,6 +310,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         super::handle(context, true, true, false)?;
@@ -371,6 +377,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockRun::default()),
+            None,
         );
 
         let mut terrain_toml_path: PathBuf = central_dir.path().into();
@@ -412,6 +419,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         super::handle(context, false, true, false)?;
@@ -510,6 +518,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         // execute

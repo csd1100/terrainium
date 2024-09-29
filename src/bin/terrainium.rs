@@ -1,12 +1,16 @@
 use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
+use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, Commands, GetArgs, UpdateArgs};
-use terrainium::client::handlers::{edit, generate, get, init, update};
+use terrainium::client::handlers::{construct, edit, generate, get, init, update};
+use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
+use terrainium::common::constants::TERRAINIUMD_SOCKET;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-    let context = Context::generate();
+    let mut context = Context::generate(None);
 
     match args.command {
         Commands::Init {
@@ -59,6 +63,11 @@ fn main() -> Result<()> {
             },
         )
         .context("failed to update the terrain values")?,
+        Commands::Construct { biome } => {
+            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+            context.set_client(client);
+            construct::handle(&mut context, biome).await?
+        }
     }
 
     Ok(())

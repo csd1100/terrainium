@@ -68,6 +68,11 @@ pub enum Commands {
         #[arg(short = 'k', long)]
         backup: bool,
     },
+
+    Construct {
+        #[arg(short, long)]
+        biome: Option<BiomeArg>,
+    },
 }
 
 #[derive(Debug, Clone)]

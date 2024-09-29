@@ -109,6 +109,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -196,6 +197,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         let mut terrain_toml: PathBuf = central_dir.path().into();
@@ -249,6 +251,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockRun::default()),
+            None,
         ))
         .expect_err("expected to get error")
         .to_string();
@@ -302,6 +305,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
+            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
