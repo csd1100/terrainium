@@ -2,10 +2,12 @@ use crate::common::types::socket::{
     socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop, Socket,
 };
 use anyhow::Result;
+#[cfg(test)]
 use mockall::mock;
 use prost_types::Any;
 use tokio::net::UnixStream;
 
+#[derive(Debug)]
 pub struct DaemonSocket {
     stream: UnixStream,
 }
@@ -38,6 +40,7 @@ impl Socket for DaemonSocket {
     }
 }
 
+#[cfg(test)]
 mock! {
     #[derive(Debug)]
     pub DaemonSocket {

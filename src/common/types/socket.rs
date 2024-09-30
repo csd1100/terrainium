@@ -54,7 +54,6 @@ pub async fn socket_write_and_stop(socket: &mut impl Socket, payload: Any) -> Re
 
     socket.stop_write().await?;
 
-    println!("Executing: {:?}", payload);
     Ok(())
 }
 

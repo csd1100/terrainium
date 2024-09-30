@@ -3,6 +3,7 @@ use crate::common::types::socket::{
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context as AnyhowContext};
+#[cfg(test)]
 use mockall::mock;
 use prost_types::Any;
 use std::path::PathBuf;
@@ -56,6 +57,7 @@ impl Client {
     }
 }
 
+#[cfg(test)]
 mock! {
     #[derive(Debug)]
     pub Client {

@@ -1,10 +1,11 @@
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::execute::ExecuteHandler;
 #[double]
-use crate::daemon::types::server_socket::DaemonSocket;
+use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
 use mockall_double::double;
 use prost_types::Any;
+use tracing::instrument;
 
 pub mod execute;
 
@@ -12,10 +13,9 @@ pub(crate) trait RequestHandler {
     async fn handle(request: Any) -> Any;
 }
 
+#[instrument]
 pub async fn handle_request(mut daemon_socket: DaemonSocket) {
-    println!("handling daemon socket");
     let data: Result<Any> = daemon_socket.read().await;
-    println!("received: {:?}", data);
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
             "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request).await,
@@ -40,7 +40,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
 #[cfg(test)]
 mod tests {
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
-    use crate::daemon::types::server_socket::MockDaemonSocket;
+    use crate::daemon::types::daemon_socket::MockDaemonSocket;
     use prost_types::Any;
     use std::collections::BTreeMap;
 

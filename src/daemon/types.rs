@@ -1,2 +1,2 @@
 pub mod daemon;
-pub mod server_socket;
+pub mod daemon_socket;

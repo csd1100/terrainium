@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 
-use crate::common::types::pb;
+#[cfg(test)]
 use mockall::mock;
 use std::collections::BTreeMap;
 use std::process::{Command, ExitStatus, Output, Stdio};
@@ -24,16 +24,6 @@ impl From<Run> for Command {
         let mut command = Command::new(value.exe);
         command.args(value.args).envs(envs);
         command
-    }
-}
-
-impl Into<Run> for pb::Command {
-    fn into(self) -> Run {
-        Run {
-            exe: self.exe,
-            args: self.args,
-            envs: Some(self.envs),
-        }
     }
 }
 
@@ -94,6 +84,7 @@ impl Run {
     }
 }
 
+#[cfg(test)]
 mock! {
     #[derive(Debug)]
     pub Run {
@@ -103,7 +94,7 @@ mock! {
         pub fn get_output(self) -> Result<Output>;
         pub fn wait(self) -> Result<ExitStatus>;
         pub async fn async_get_output(self) -> Result<Output>;
-        pub async fn async_wait(self) -> Result<ExitStatus>;
+        pub async fn async_wait(self, stdout: Option<Stdio>, stderr: Option<Stdio>) -> Result<ExitStatus>;
     }
 
     impl Clone for Run {

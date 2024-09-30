@@ -1,17 +1,21 @@
 use crate::common::constants::TERRAINIUMD_TMP_DIR;
+#[double]
 use crate::common::execute::Run;
 use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse, Operation};
 use crate::daemon::handlers::RequestHandler;
 use anyhow::{Context, Result};
+use mockall_double::double;
 use prost_types::Any;
 use tokio::fs;
 use tokio::fs::create_dir_all;
 use tokio::task::JoinSet;
+use tracing::instrument;
 
 pub(crate) struct ExecuteHandler;
 
 impl RequestHandler for ExecuteHandler {
+    #[instrument]
     async fn handle(request: Any) -> Any {
         let exe_request: Result<ExecuteRequest> = request
             .to_msg()
@@ -19,7 +23,6 @@ impl RequestHandler for ExecuteHandler {
 
         match exe_request {
             Ok(request) => {
-                println!("Received request: {:?}", request);
                 tokio::spawn(execute(request));
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to Any")
             }
@@ -37,16 +40,16 @@ async fn execute(request: ExecuteRequest) {
     let mut set = JoinSet::new();
 
     let commands = request.commands;
-    println!("Executing commands: {:?}", commands);
     let iter = commands.into_iter().enumerate();
+
+    let terrain_dir = format!("{}/{}", TERRAINIUMD_TMP_DIR, terrain_name);
+    create_dir_all(&terrain_dir.clone())
+        .await
+        .expect("create terrain dir");
 
     for (idx, command) in iter {
         let terrain_dir = format!("{}/{}", TERRAINIUMD_TMP_DIR, terrain_name);
-        create_dir_all(&terrain_dir.clone())
-            .await
-            .expect("create terrain dir");
-
-        let operation = Operation::from_i32(request.operation).expect("invalid operation");
+        let operation = Operation::try_from(request.operation).expect("invalid operation");
 
         let op = match operation {
             Operation::Unspecified => "unspecified",
@@ -54,7 +57,7 @@ async fn execute(request: ExecuteRequest) {
             Operation::Destructors => "destructors",
         }
         .to_string();
-        let run: Run = command.into();
+        let run: Run = Run::new(command.exe, command.args, Some(command.envs));
         set.spawn(async move {
             let log_file = fs::File::options()
                 .create(true)
@@ -81,4 +84,8 @@ async fn execute(request: ExecuteRequest) {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    #[tokio::test]
+    async fn spawns_process() {}
+}
