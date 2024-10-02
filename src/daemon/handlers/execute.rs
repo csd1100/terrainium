@@ -4,25 +4,24 @@ use crate::common::execute::Run;
 use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse, Operation};
 use crate::daemon::handlers::RequestHandler;
-use crate::daemon::types::context::Context;
-use anyhow::{Context as AnyhowContext, Result};
+use anyhow::{Context, Result};
 use mockall_double::double;
 use prost_types::Any;
+use tokio::fs;
 use tokio::fs::create_dir_all;
 use tokio::task::JoinSet;
-use tokio::{fs, select};
 use tracing::{event, instrument, Level};
 
 pub(crate) struct ExecuteHandler;
 
 impl RequestHandler for ExecuteHandler {
     #[instrument(skip(request))]
-    async fn handle(context: Context, request: Any) -> Any {
+    async fn handle(request: Any) -> Any {
+        event!(Level::INFO, "handling ExecuteRequest");
         let exe_request: Result<ExecuteRequest> = request
             .to_msg()
             .context("failed to convert request to type ExecuteRequest");
 
-        event!(Level::INFO, "handling ExecuteRequest");
         event!(
             Level::DEBUG,
             "result of attempting to parse request: {:#?}",
@@ -36,7 +35,7 @@ impl RequestHandler for ExecuteHandler {
                     "spawning task to execute request {:#?}",
                     request
                 );
-                tokio::spawn(execute(context, request));
+                tokio::spawn(execute(request));
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to Any")
             }
             Err(err) => {
@@ -44,14 +43,14 @@ impl RequestHandler for ExecuteHandler {
                 Any::from_msg(&pb::Error {
                     error_message: err.to_string(),
                 })
-                    .expect("to be converted to Any")
+                .expect("to be converted to Any")
             }
         }
     }
 }
 
 #[instrument(skip(request))]
-async fn execute(context: Context, request: ExecuteRequest) {
+async fn execute(request: ExecuteRequest) {
     let terrain_name = request.terrain_name;
 
     let mut set = JoinSet::new();
@@ -79,7 +78,7 @@ async fn execute(context: Context, request: ExecuteRequest) {
             Operation::Constructors => "constructors",
             Operation::Destructors => "destructors",
         }
-            .to_string();
+        .to_string();
         let run: Run = Run::new(command.exe, command.args, Some(command.envs));
 
         event!(Level::INFO, "spawning operation: {:?}", op);
@@ -127,15 +126,36 @@ async fn execute(context: Context, request: ExecuteRequest) {
             }
         });
     }
+    let _results = set.join_all().await;
+}
 
-    let results = set.join_all();
-    let token = context.token();
-    select! {
-        _ = token.cancelled() => {
-            event!(Level::INFO, "execute operation cancelled by cancellation token");
-        }
-        _ = results => {
-            event!(Level::INFO, "execute operation completed successfully");
-        }
+#[cfg(test)]
+mod tests {
+    use crate::common::types::pb::{Command, ExecuteRequest, Operation};
+    use crate::daemon::handlers::RequestHandler;
+    use prost_types::Any;
+    use std::collections::BTreeMap;
+
+    #[tokio::test]
+    async fn spawns_process() {
+        let mut envs: BTreeMap<String, String> = BTreeMap::new();
+        envs.insert("EDITOR".to_string(), "nvim".to_string());
+        envs.insert("PAGER".to_string(), "less".to_string());
+        let expected = ExecuteRequest {
+            terrain_name: "terrainium".to_string(),
+            operation: i32::from(Operation::Constructors),
+            commands: vec![Command {
+                exe: "/bin/bash".to_string(),
+                args: vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
+                envs,
+            }],
+        };
+
+        let request = Any::from_msg(&expected).expect("to be converted to any");
+
+        super::ExecuteHandler::handle(request).await;
     }
 }

@@ -61,7 +61,7 @@ impl Context {
     pub fn toml_exists(&self) -> bool {
         fs::exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
             || fs::exists(self.central_toml_path())
-            .expect("failed to check if central terrain.toml exists")
+                .expect("failed to check if central terrain.toml exists")
     }
 
     pub fn new_toml_path(&self, central: bool) -> PathBuf {
@@ -217,7 +217,7 @@ mod test {
         let mut expected_map = BTreeMap::<String, String>::new();
         expected_map.insert(
             "TERRAIN_DIR".to_string(),
-            env::current_dir()
+            std::env::current_dir()
                 .expect("to be found")
                 .display()
                 .to_string(),
@@ -344,9 +344,9 @@ mod test {
             Zsh::build(MockRun::default()),
             None,
         )
-            .toml_path()
-            .expect_err("to error to be thrown")
-            .to_string();
+        .toml_path()
+        .expect_err("to error to be thrown")
+        .to_string();
 
         assert_eq!(
             "terrain.toml does not exists, run `terrainium init` to initialize terrain.",
@@ -406,6 +406,15 @@ mod test {
         let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
         assert_eq!(context.name(), "terrainium");
     }
+
+    // #[test]
+    // fn socket_return_socket_witout_panic() {
+    //     let mut context = Context::build_without_paths(
+    //         Zsh::build(MockRun::default()),
+    //         Some(MockClient::default()),
+    //     );
+    //     context.socket();
+    // }
 
     #[should_panic]
     #[test]
