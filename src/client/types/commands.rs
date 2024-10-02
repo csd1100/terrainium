@@ -1,6 +1,10 @@
 use crate::common::types::command::Command;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
+
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Commands {
     foreground: Vec<Command>,

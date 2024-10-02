@@ -5,14 +5,24 @@ use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
+
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Terrain {
+    #[serde(default = "schema_url", rename(serialize = "$schema"))]
+    schema: String,
+
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
     default_biome: Option<String>,
 }
 
-impl Terrain {}
+pub fn schema_url() -> String {
+    "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+        .to_string()
+}
 
 impl Terrain {
     pub fn new(
@@ -21,6 +31,7 @@ impl Terrain {
         default_biome: Option<String>,
     ) -> Self {
         Terrain {
+            schema: schema_url(),
             terrain,
             biomes,
             default_biome,
@@ -172,6 +183,12 @@ impl Terrain {
         biomes.insert(String::from("example_biome"), example_biome);
 
         Terrain::new(terrain, biomes, Some(String::from("example_biome")))
+    }
+}
+
+impl Default for Terrain {
+    fn default() -> Self {
+        Terrain::new(Biome::default(), BTreeMap::new(), None)
     }
 }
 

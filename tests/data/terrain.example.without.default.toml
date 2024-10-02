@@ -1,3 +1,4 @@
+"$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
 [terrain.envs]
 EDITOR = "vim"
 PAGER = "less"

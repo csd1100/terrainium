@@ -3,11 +3,18 @@
   "title": "Terrain",
   "type": "object",
   "required": [
+    "biomes",
     "terrain"
   ],
   "properties": {
     "terrain": {
       "$ref": "#/definitions/Biome"
+    },
+    "biomes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Biome"
+      }
     },
     "default_biome": {
       "type": [
@@ -15,77 +22,56 @@
         "null"
       ]
     },
-    "biomes": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": {
-        "$ref": "#/definitions/Biome"
-      }
+    "schema": {
+      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json",
+      "type": "string"
     }
   },
   "definitions": {
     "Biome": {
       "type": "object",
+      "required": [
+        "aliases",
+        "constructors",
+        "destructors",
+        "envs"
+      ],
       "properties": {
-        "env": {
-          "type": [
-            "object",
-            "null"
-          ],
+        "envs": {
+          "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
-        "alias": {
-          "type": [
-            "object",
-            "null"
-          ],
+        "aliases": {
+          "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
         "constructors": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Commands"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/Commands"
         },
         "destructors": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Commands"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/Commands"
         }
       }
     },
     "Commands": {
       "type": "object",
+      "required": [
+        "background",
+        "foreground"
+      ],
       "properties": {
         "foreground": {
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "$ref": "#/definitions/Command"
           }
         },
         "background": {
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "$ref": "#/definitions/Command"
           }
@@ -95,6 +81,7 @@
     "Command": {
       "type": "object",
       "required": [
+        "args",
         "exe"
       ],
       "properties": {
@@ -102,10 +89,7 @@
           "type": "string"
         },
         "args": {
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "type": "string"
           }

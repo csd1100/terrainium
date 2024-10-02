@@ -2,6 +2,10 @@ use crate::common::types::pb;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
+
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Command {
     exe: String,

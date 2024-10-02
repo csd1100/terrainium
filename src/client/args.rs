@@ -6,11 +6,11 @@ use std::str::FromStr;
 #[command()]
 pub struct ClientArgs {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Verbs,
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub enum Verbs {
     Init {
         #[arg(short, long)]
         central: bool,
@@ -78,6 +78,9 @@ pub enum Commands {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
+
+    #[cfg(feature = "terrain-schema")]
+    Schema,
 }
 
 #[derive(Debug, Clone)]
