@@ -80,9 +80,9 @@ terrainium <verb> [OPTIONS]
 
 ```sh
 if [ "$TERRAINIUM_ENABLED" = "true" ];then
-    autoload -Uzw "${TERRAINIUM_INIT_FILE}"
-    "${TERRAINIUM_INIT_ZSH}"
-    builtin unfunction -- "${TERRAINIUM_INIT_ZSH}"
+    autoload -Uzw "${TERRAINIUM_INIT_SCRIPT}"
+    "${terrainium_init}"
+    builtin unfunction -- "${terrainium_init}"
     terrainium_enter
 fi
 ```

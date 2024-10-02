@@ -2,7 +2,7 @@ use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
-use terrainium::client::handlers::{construct, destruct, edit, generate, get, init, update};
+use terrainium::client::handlers::{construct, destruct, edit, enter, generate, get, init, update};
 use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
 use terrainium::common::constants::TERRAINIUMD_SOCKET;
@@ -22,10 +22,13 @@ async fn main() -> Result<()> {
             edit,
         } => init::handle(context, central, example, edit)
             .context("failed to initialize new terrain")?,
+
         Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
+
         Verbs::Generate => {
             generate::handle(context).context("failed to generate scripts for the terrain")?
         }
+
         Verbs::Get {
             biome,
             aliases,
@@ -47,6 +50,7 @@ async fn main() -> Result<()> {
             },
         )
         .context("failed to get the terrain values")?,
+
         Verbs::Update {
             set_default,
             biome,
@@ -66,15 +70,23 @@ async fn main() -> Result<()> {
             },
         )
         .context("failed to update the terrain values")?,
+
         Verbs::Construct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
             context.set_client(client);
             construct::handle(&mut context, biome).await?
         }
+
         Verbs::Destruct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
             context.set_client(client);
             destruct::handle(&mut context, biome).await?
+        }
+
+        Verbs::Enter { biome } => {
+            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+            context.set_client(client);
+            enter::handle(&mut context, biome).await?
         }
 
         #[cfg(feature = "terrain-schema")]

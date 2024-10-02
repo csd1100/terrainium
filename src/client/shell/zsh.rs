@@ -1,12 +1,12 @@
-use crate::client::types::context::Context;
-use crate::common::constants::{
-    ZSH_ALIASES_TEMPLATE_NAME, ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME,
-    ZSH_ENVS_TEMPLATE_NAME, ZSH_MAIN_TEMPLATE_NAME,
-};
-
 use crate::client::shell::{Shell, Zsh};
+use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
+use crate::common::constants::{
+    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, ZSH_ALIASES_TEMPLATE_NAME,
+    ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
+    ZSH_MAIN_TEMPLATE_NAME,
+};
 #[double]
 use crate::common::execute::Run;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
@@ -76,6 +76,38 @@ impl Shell for Zsh {
         runner.get_output()
     }
 
+    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<()> {
+        let mut runner = self.runner();
+        runner.set_args(vec!["-i".to_string()]);
+        runner.set_envs(Some(envs));
+
+        runner.without_wait()
+    }
+
+    fn generate_envs(&self, context: &Context, biome: String) -> Result<BTreeMap<String, String>> {
+        let scripts_dir = context.scripts_dir();
+        let compiled_script = Self::compiled_script_path(&scripts_dir, &biome)
+            .to_str()
+            .expect("path to be converted to string")
+            .to_string();
+
+        let mut envs = BTreeMap::new();
+
+        let updated_fpath = format!("{}:{}", compiled_script, self.get_fpath()?);
+        envs.insert(FPATH.to_string(), updated_fpath);
+
+        envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
+        envs.insert(
+            TERRAIN_INIT_FN.to_string(),
+            Self::script_path(&scripts_dir, &biome)
+                .to_str()
+                .expect("path to be converted to string")
+                .to_string(),
+        );
+
+        Ok(envs)
+    }
+
     fn templates() -> BTreeMap<String, String> {
         let mut templates: BTreeMap<String, String> = BTreeMap::new();
         templates.insert(
@@ -103,21 +135,42 @@ impl Shell for Zsh {
 }
 
 impl Zsh {
+    fn get_fpath(&self) -> Result<String> {
+        let command = "/bin/echo -n $FPATH";
+        let args = vec!["-c".to_string(), command.to_string()];
+
+        let mut runner = self.runner();
+        runner.set_args(args);
+
+        let output = runner.get_output().context("failed to get fpath")?.stdout;
+        String::from_utf8(output).context("failed to convert stdout to string")
+    }
+
     fn create_and_compile(
         &self,
         terrain: &Terrain,
         scripts_dir: &Path,
         biome_name: String,
     ) -> Result<()> {
-        let mut script_path: PathBuf = scripts_dir.into();
-        script_path.push(format!("terrain-{}.zsh", biome_name));
+        let script_path = Self::script_path(scripts_dir, &biome_name);
         self.create_script(terrain, Some(biome_name.to_string()), &script_path)?;
 
-        let mut compiled_script_path: PathBuf = scripts_dir.into();
-        compiled_script_path.push(format!("terrain-{}.zwc", biome_name));
+        let compiled_script_path = Self::compiled_script_path(scripts_dir, &biome_name);
         self.compile_script(&script_path, &compiled_script_path)?;
 
         Ok(())
+    }
+
+    fn compiled_script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
+        let mut compiled_script_path: PathBuf = scripts_dir.into();
+        compiled_script_path.push(format!("terrain-{}.zwc", biome_name));
+        compiled_script_path
+    }
+
+    fn script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
+        let mut script_path: PathBuf = scripts_dir.into();
+        script_path.push(format!("terrain-{}.zsh", biome_name));
+        script_path
     }
 
     fn create_script(

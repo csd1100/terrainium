@@ -51,7 +51,7 @@ impl Terrain {
     }
 
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
-        let selected = self.select_biome(selected_biome.clone())?.1;
+        let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
             Ok(selected.clone())
         } else {
@@ -63,7 +63,7 @@ impl Terrain {
         &self,
         selected_biome: &Option<String>,
     ) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome.clone())?.1;
+        let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
             Ok(selected.aliases().clone())
         } else {
@@ -72,7 +72,7 @@ impl Terrain {
     }
 
     pub fn merged_envs(&self, selected_biome: &Option<String>) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome.clone())?.1;
+        let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
             Ok(selected.envs().clone())
         } else {
@@ -81,7 +81,7 @@ impl Terrain {
     }
 
     pub fn merged_constructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome.clone())?.1;
+        let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
             Ok(selected.constructors().clone())
         } else {
@@ -90,7 +90,7 @@ impl Terrain {
     }
 
     pub fn merged_destructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome.clone())?.1;
+        let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
             Ok(selected.destructors().clone())
         } else {
@@ -98,10 +98,10 @@ impl Terrain {
         }
     }
 
-    pub(crate) fn select_biome(&self, selected: Option<String>) -> Result<(String, &Biome)> {
+    pub(crate) fn select_biome(&self, selected: &Option<String>) -> Result<(String, &Biome)> {
         let selected = match selected {
             None => self.default_biome.clone(),
-            Some(selected) => Some(selected),
+            Some(selected) => Some(selected.clone()),
         };
         match selected {
             None => Ok(("none".to_string(), &self.terrain)),

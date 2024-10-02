@@ -17,4 +17,8 @@ pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
 pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
 pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
 
+pub const FPATH: &str = "FPATH";
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
+pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
+pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
+pub const TERRAIN_INIT_FN: &str = "terrain_init";

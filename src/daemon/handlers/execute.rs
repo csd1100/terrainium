@@ -3,6 +3,7 @@ use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 use crate::common::execute::Run;
 use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse, Operation};
+use crate::common::utils::timestamp;
 use crate::daemon::handlers::RequestHandler;
 use anyhow::{Context, Result};
 use mockall_double::double;
@@ -120,19 +121,4 @@ async fn execute(request: ExecuteRequest) {
         });
     }
     let _results = set.join_all().await;
-}
-
-fn timestamp() -> String {
-    if let Ok(now) = time::OffsetDateTime::now_local() {
-        now.format(
-            &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
-                .expect("time format to be parsed"),
-        )
-    } else {
-        time::OffsetDateTime::now_utc().format(
-            &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
-                .expect("time format to be parsed"),
-        )
-    }
-    .expect("time to be formatted")
 }

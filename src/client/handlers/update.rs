@@ -40,7 +40,7 @@ pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
             let biome_name = update_args.new.expect("new biome to be some");
             terrain.update(biome_name, biome);
         } else {
-            let (name, selected) = terrain.select_biome(option_string_from(&update_args.biome))?;
+            let (name, selected) = terrain.select_biome(&option_string_from(&update_args.biome))?;
             let updated = selected.merge(&biome);
             terrain.update(name, updated);
         }

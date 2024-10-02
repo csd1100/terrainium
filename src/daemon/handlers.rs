@@ -1,5 +1,6 @@
 use crate::common::types::pb;
 use crate::common::types::socket::Socket;
+use crate::daemon::handlers::activate::ActivateHandler;
 use crate::daemon::handlers::execute::ExecuteHandler;
 #[double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
@@ -8,6 +9,7 @@ use mockall_double::double;
 use prost_types::Any;
 use tracing::{event, instrument, Level};
 
+pub mod activate;
 pub mod execute;
 
 pub(crate) trait RequestHandler {
@@ -22,9 +24,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
             "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request).await,
-            "/terrainium.v1.ActivateRequest" => {
-                todo!()
-            }
+            "/terrainium.v1.ActivateRequest" => ActivateHandler::handle(request).await,
             "/terrainium.v1.StatusRequest" => {
                 todo!()
             }

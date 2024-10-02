@@ -68,6 +68,12 @@ impl Run {
         child.wait().context("failed to wait for command")
     }
 
+    pub fn without_wait(self) -> Result<()> {
+        let mut command: tokio::process::Command = self.into();
+        command.spawn().context("failed to run command")?;
+        Ok(())
+    }
+
     #[instrument]
     pub async fn async_get_output(self) -> Result<Output> {
         event!(Level::INFO, "running async get_output for {:?}", self);
@@ -118,6 +124,7 @@ mock! {
         pub fn wait(self) -> Result<ExitStatus>;
         pub async fn async_get_output(self) -> Result<Output>;
         pub async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
+        pub fn without_wait(self) -> Result<()>;
     }
 
     impl Clone for Run {

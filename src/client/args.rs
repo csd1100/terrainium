@@ -79,6 +79,11 @@ pub enum Verbs {
         biome: Option<BiomeArg>,
     },
 
+    Enter {
+        #[arg(short, long)]
+        biome: Option<BiomeArg>,
+    },
+
     #[cfg(feature = "terrain-schema")]
     Schema,
 }

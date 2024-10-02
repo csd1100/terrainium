@@ -17,6 +17,12 @@ pub trait Shell: Debug + PartialEq {
     fn update_rc(data: String) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
+    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<()>;
+    fn generate_envs(
+        &self,
+        context: &Context,
+        biome_arg: String,
+    ) -> Result<BTreeMap<String, String>>;
     fn templates() -> BTreeMap<String, String>;
 }
 

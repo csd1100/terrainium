@@ -8,6 +8,7 @@ use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
+use std::collections::BTreeMap;
 use std::fs::read_to_string;
 
 fn operation_from_string(op: &str) -> pb::Operation {
@@ -16,6 +17,34 @@ fn operation_from_string(op: &str) -> pb::Operation {
     } else {
         pb::Operation::Destructors
     }
+}
+
+pub fn execute_request(
+    context: &mut Context,
+    operation: &str,
+    terrain: &Terrain,
+    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
+    selected_biome: Option<String>,
+    envs: BTreeMap<String, String>,
+) -> Result<ExecuteRequest> {
+    let commands = get_commands(&terrain, &selected_biome)
+        .context(format!("failed to merge {}", operation))?;
+
+    let commands: Vec<pb::Command> = commands
+        .background()
+        .iter()
+        .map(|command| {
+            let mut command: pb::Command = command.clone().into();
+            command.envs = envs.clone();
+            command
+        })
+        .collect();
+
+    Ok(ExecuteRequest {
+        terrain_name: context.name(),
+        operation: i32::from(operation_from_string(operation)),
+        commands,
+    })
 }
 
 pub async fn handle(
@@ -29,31 +58,23 @@ pub async fn handle(
     )
     .expect("terrain to be parsed from toml");
 
-    let commands = get_commands(&terrain, &option_string_from(&biome_arg))
-        .context(format!("failed to merge {}", operation))?;
+    let selected_biome = option_string_from(&biome_arg);
 
     let mut envs = terrain
-        .merged_envs(&option_string_from(&biome_arg))
+        .merged_envs(&selected_biome)
         .context("failed to merge envs")?;
-
     let mut final_envs = context.terrainium_envs().clone();
     final_envs.append(&mut envs);
 
-    let commands: Vec<pb::Command> = commands
-        .background()
-        .iter()
-        .map(|command| {
-            let mut command: pb::Command = command.clone().into();
-            command.envs = final_envs.clone();
-            command
-        })
-        .collect();
-
-    let request = ExecuteRequest {
-        terrain_name: context.name(),
-        operation: i32::from(operation_from_string(operation)),
-        commands,
-    };
+    let request = execute_request(
+        context,
+        operation,
+        &terrain,
+        get_commands,
+        selected_biome,
+        final_envs,
+    )
+    .context("failed to convert commands to execute request")?;
 
     let client = context.socket();
 
