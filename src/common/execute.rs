@@ -3,7 +3,8 @@ use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
 use std::collections::BTreeMap;
-use std::process::{Command, ExitStatus, Output, Stdio};
+use std::process::{Command, ExitStatus, Output};
+use tokio::fs;
 use tracing::{event, instrument, Level};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -74,21 +75,33 @@ impl Run {
         command.output().await.context("failed to get output")
     }
 
-    pub async fn async_wait(
-        self,
-        stdout: Option<Stdio>,
-        stderr: Option<Stdio>,
-    ) -> Result<ExitStatus> {
+    pub async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
         event!(
             Level::INFO,
-            "running async process with wait for {:?}, with stdout: {:?}, and stderr: {:?}",
+            "running async process with wait for {:?}, with logs in file: {:?}",
             &self,
-            stdout,
-            stderr
+            log_path,
         );
+
+        let log_file = fs::File::options()
+            .create(true)
+            .append(true)
+            .open(log_path)
+            .await
+            .expect("failed to create / append to log file");
+
+        let stdout: std::fs::File = log_file
+            .try_clone()
+            .await
+            .expect("failed to clone file handle")
+            .into_std()
+            .await;
+
+        let stderr: std::fs::File = log_file.into_std().await;
+
         let mut command: tokio::process::Command = self.into();
-        command.stdout(stdout.unwrap_or(Stdio::null()));
-        command.stderr(stderr.unwrap_or(Stdio::null()));
+        command.stdout(stdout);
+        command.stderr(stderr);
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
     }
@@ -104,7 +117,7 @@ mock! {
         pub fn get_output(self) -> Result<Output>;
         pub fn wait(self) -> Result<ExitStatus>;
         pub async fn async_get_output(self) -> Result<Output>;
-        pub async fn async_wait(self, stdout: Option<Stdio>, stderr: Option<Stdio>) -> Result<ExitStatus>;
+        pub async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
     }
 
     impl Clone for Run {

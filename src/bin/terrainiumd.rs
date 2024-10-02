@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
         let _ = tokio::spawn(async move {
             handle_request(DaemonSocket::new(socket)).await;
         })
-            .await;
+        .await;
     }
 
     Ok(())

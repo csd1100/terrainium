@@ -2,7 +2,7 @@ use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, Commands, GetArgs, UpdateArgs};
-use terrainium::client::handlers::{construct, edit, generate, get, init, update};
+use terrainium::client::handlers::{construct, destruct, edit, generate, get, init, update};
 use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
 use terrainium::common::constants::TERRAINIUMD_SOCKET;
@@ -67,6 +67,11 @@ async fn main() -> Result<()> {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
             context.set_client(client);
             construct::handle(&mut context, biome).await?
+        }
+        Commands::Destruct { biome } => {
+            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+            context.set_client(client);
+            destruct::handle(&mut context, biome).await?
         }
     }
 

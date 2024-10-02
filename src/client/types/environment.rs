@@ -149,8 +149,14 @@ mod test {
                 vec!["exiting biome example_biome".to_string()],
             ),
         ];
-        let expected_destructor_background: Vec<Command> = vec![];
 
+        let expected_destructor_background: Vec<Command> = vec![Command::new(
+            "/bin/bash".to_string(),
+            vec![
+                "-c".to_string(),
+                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            ],
+        )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
             expected_constructor_background,
@@ -213,8 +219,14 @@ mod test {
                 vec!["exiting biome example_biome".to_string()],
             ),
         ];
-        let expected_destructor_background: Vec<Command> = vec![];
 
+        let expected_destructor_background: Vec<Command> = vec![Command::new(
+            "/bin/bash".to_string(),
+            vec![
+                "-c".to_string(),
+                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            ],
+        )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
             expected_constructor_background,

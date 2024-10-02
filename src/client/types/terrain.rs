@@ -157,7 +157,13 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
             )],
-            vec![],
+            vec![Command::new(
+                "/bin/bash".to_string(),
+                vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
+            )],
         );
 
         let example_biome = Biome::new(envs, aliases, constructors, destructors);

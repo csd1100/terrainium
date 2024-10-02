@@ -2,17 +2,11 @@ use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::CONSTRUCTORS;
+use crate::common::constants::DESTRUCTORS;
 use anyhow::Result;
 
 pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Result<()> {
-    background::handle(
-        context,
-        CONSTRUCTORS,
-        Terrain::merged_constructors,
-        biome_arg,
-    )
-    .await
+    background::handle(context, DESTRUCTORS, Terrain::merged_destructors, biome_arg).await
 }
 
 #[cfg(test)]
@@ -30,7 +24,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[tokio::test]
-    async fn construct_send_message_to_daemon() {
+    async fn destruct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -61,7 +55,7 @@ mod tests {
 
                 let expected = ExecuteRequest {
                     terrain_name,
-                    operation: i32::from(Operation::Constructors),
+                    operation: i32::from(Operation::Destructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),
                         args: vec![
@@ -94,7 +88,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn construct_send_message_to_daemon_and_error() {
+    async fn destruct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -125,7 +119,7 @@ mod tests {
 
                 let expected = ExecuteRequest {
                     terrain_name,
-                    operation: i32::from(Operation::Constructors),
+                    operation: i32::from(Operation::Destructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),
                         args: vec![

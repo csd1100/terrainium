@@ -73,6 +73,11 @@ pub enum Commands {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
     },
+
+    Destruct {
+        #[arg(short, long)]
+        biome: Option<BiomeArg>,
+    },
 }
 
 #[derive(Debug, Clone)]

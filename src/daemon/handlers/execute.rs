@@ -1,4 +1,4 @@
-use crate::common::constants::TERRAINIUMD_TMP_DIR;
+use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 #[double]
 use crate::common::execute::Run;
 use crate::common::types::pb;
@@ -7,7 +7,6 @@ use crate::daemon::handlers::RequestHandler;
 use anyhow::{Context, Result};
 use mockall_double::double;
 use prost_types::Any;
-use tokio::fs;
 use tokio::fs::create_dir_all;
 use tokio::task::JoinSet;
 use tracing::{event, instrument, Level};
@@ -75,55 +74,35 @@ async fn execute(request: ExecuteRequest) {
 
         let op = match operation {
             Operation::Unspecified => "unspecified",
-            Operation::Constructors => "constructors",
-            Operation::Destructors => "destructors",
+            Operation::Constructors => CONSTRUCTORS,
+            Operation::Destructors => DESTRUCTORS,
         }
         .to_string();
+
         let run: Run = Run::new(command.exe, command.args, Some(command.envs));
 
-        let now = if let Ok(now) = time::OffsetDateTime::now_local() {
-            now.format(
-                &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
-                    .expect("time format to be parsed"),
-            )
-        } else {
-            time::OffsetDateTime::now_utc().format(
-                &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
-                    .expect("time format to be parsed"),
-            )
-        }
-        .expect("time to be formatted");
+        let now = timestamp();
 
         event!(Level::INFO, "spawning operation: {:?}", op);
         set.spawn(async move {
-            let log_file = fs::File::options()
-                .create(true)
-                .append(true)
-                .open(format!("{}/{}.{}.{}.log", terrain_dir, op, idx, now))
-                .await
-                .expect("failed to create / append to log file");
-
-            let stdout: std::fs::File = log_file
-                .try_clone()
-                .await
-                .expect("failed to clone file handle")
-                .into_std()
-                .await;
-
-            let stderr: std::fs::File = log_file.into_std().await;
-
             let process = format!("{:#?}", run);
 
-            event!(Level::INFO, "starting process for command: {:?}", run);
+            event!(
+                Level::INFO,
+                "operation:{}, starting process for command: {:?}",
+                op,
+                run
+            );
             let res = run
-                .async_wait(Some(stdout.into()), Some(stderr.into()))
+                .async_wait(&format!("{}/{}.{}.{}.log", terrain_dir, op, idx, now))
                 .await;
 
             match res {
                 Ok(exit_code) => {
                     event!(
                         Level::INFO,
-                        "completed executing command with exit code: {}, process: {}",
+                        "operation:{}, completed executing command with exit code: {}, process: {}",
+                        op,
                         exit_code,
                         process
                     );
@@ -131,7 +110,8 @@ async fn execute(request: ExecuteRequest) {
                 Err(err) => {
                     event!(
                         Level::WARN,
-                        "failed to spawn command with error: {:?}, process:{}",
+                        "operation:{}, failed to spawn command with error: {:?}, process:{}",
+                        op,
                         err,
                         process
                     );
@@ -140,4 +120,19 @@ async fn execute(request: ExecuteRequest) {
         });
     }
     let _results = set.join_all().await;
+}
+
+fn timestamp() -> String {
+    if let Ok(now) = time::OffsetDateTime::now_local() {
+        now.format(
+            &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
+                .expect("time format to be parsed"),
+        )
+    } else {
+        time::OffsetDateTime::now_utc().format(
+            &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
+                .expect("time format to be parsed"),
+        )
+    }
+    .expect("time to be formatted")
 }
