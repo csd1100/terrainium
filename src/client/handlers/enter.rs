@@ -5,7 +5,6 @@ use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
 use crate::common::types::pb;
-use crate::common::types::pb::activate_response::Execute;
 use crate::common::types::pb::{ActivateResponse, Error};
 use crate::common::types::socket::Socket;
 use crate::common::utils::timestamp;
@@ -66,18 +65,8 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
     let activate_response: Result<ActivateResponse> =
         Any::to_msg(&response).context("failed to convert to execute response from Any");
 
-    if let Ok(activate_response) = activate_response {
-        let execute_response = activate_response
-            .execute
-            .expect("activate response to have execute response");
-        match execute_response {
-            Execute::Error(err) => {
-                return Err(anyhow!("error response from daemon {}", err.error_message));
-            }
-            Execute::Success(_) => {
-                println!("Success");
-            }
-        }
+    if let Ok(_activate_response) = activate_response {
+        println!("Success");
     } else {
         let error: Error = Any::to_msg(&response).context("failed to convert to error from Any")?;
         return Err(anyhow!(
@@ -98,9 +87,8 @@ mod test {
         FPATH, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
     };
     use crate::common::execute::MockRun;
-    use crate::common::types::pb::activate_response::Execute;
     use crate::common::types::pb::{
-        ActivateRequest, ActivateResponse, Command, ExecuteRequest, ExecuteResponse, Operation,
+        ActivateRequest, ActivateResponse, Command, ExecuteRequest, Operation,
     };
     use prost_types::Any;
     use serial_test::serial;
@@ -223,10 +211,7 @@ mod test {
             .return_once(move |_| Ok(()));
 
         mocket.expect_read().with().times(1).return_once(|| {
-            Ok(Any::from_msg(&ActivateResponse {
-                execute: Some(Execute::Success(ExecuteResponse {})),
-            })
-            .expect("to be converted to any"))
+            Ok(Any::from_msg(&ActivateResponse {}).expect("to be converted to any"))
         });
 
         let mut context = Context::build(

@@ -22,10 +22,8 @@ pub struct ExecuteRequest {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommandState {
-    pid: u32,
     command: Command,
     log_path: String,
-    exit_code: i32,
     status: CommandStatus,
 }
 
@@ -38,7 +36,7 @@ pub struct Command {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CommandStatus {
-    Initialized,
+    Starting,
     Running,
     Failed(i32),
     Succeeded,
@@ -50,6 +48,36 @@ impl TerrainState {
     }
     pub fn from_json(json: &str) -> Result<Self> {
         serde_json::from_str(json).context("Failed to deserialize TerrainState")
+    }
+    pub fn terrain_name(&self) -> &str {
+        self.terrain_name.as_str()
+    }
+    pub fn timestamp(&self) -> &str {
+        self.timestamp.as_str()
+    }
+    pub fn execute_request(&self) -> &ExecuteRequest {
+        &self.execute_request
+    }
+    pub fn execute_request_mut(&mut self) -> &mut ExecuteRequest {
+        &mut self.execute_request
+    }
+}
+
+impl ExecuteRequest {
+    pub fn operation(&self) -> &str {
+        self.operation.as_str()
+    }
+    pub fn set_command_state(&mut self, idx: usize, command_status: CommandStatus) {
+        self.commands_state
+            .get_mut(idx)
+            .expect("to be present")
+            .status = command_status;
+    }
+    pub fn set_log_path(&mut self, idx: usize, log_path: String) {
+        self.commands_state
+            .get_mut(idx)
+            .expect("to be present")
+            .log_path = log_path;
     }
 }
 
@@ -81,15 +109,13 @@ impl From<pb::ExecuteRequest> for ExecuteRequest {
             .commands
             .into_iter()
             .map(|command| CommandState {
-                pid: u32::MAX,
                 command: Command {
                     exe: command.exe,
                     args: command.args,
                     env: command.envs,
                 },
                 log_path: "".to_string(),
-                exit_code: i32::MAX,
-                status: CommandStatus::Initialized,
+                status: CommandStatus::Starting,
             })
             .collect();
 

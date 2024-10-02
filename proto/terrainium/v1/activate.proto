@@ -13,8 +13,4 @@ message ActivateRequest {
 }
 
 message ActivateResponse {
-  oneof execute {
-    Error error = 1;
-    ExecuteResponse success = 2;
-  }
 }

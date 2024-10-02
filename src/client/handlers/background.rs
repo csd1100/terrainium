@@ -27,8 +27,8 @@ pub fn execute_request(
     selected_biome: Option<String>,
     envs: BTreeMap<String, String>,
 ) -> Result<ExecuteRequest> {
-    let commands = get_commands(&terrain, &selected_biome)
-        .context(format!("failed to merge {}", operation))?;
+    let commands =
+        get_commands(terrain, &selected_biome).context(format!("failed to merge {}", operation))?;
 
     let commands: Vec<pb::Command> = commands
         .background()
