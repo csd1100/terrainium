@@ -1,7 +1,7 @@
 use crate::client::handlers::edit;
+use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::shell::Shell;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::fs;
 use std::fs::File;
@@ -43,11 +43,11 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 #[cfg(test)]
 pub(crate) mod test {
     use crate::client::handlers::edit::test::EDITOR;
+    use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;

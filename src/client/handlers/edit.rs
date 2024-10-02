@@ -1,8 +1,8 @@
+use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 #[double]
 use crate::common::execute::Run;
-use crate::common::shell::Shell;
 use anyhow::{Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::fs;
@@ -49,13 +49,13 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;

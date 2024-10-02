@@ -1,7 +1,7 @@
+use crate::client::shell::{Shell, Zsh};
 #[double]
 use crate::client::types::client::Client;
 use crate::common::constants::TERRAIN_DIR;
-use crate::common::shell::{Shell, Zsh};
 use anyhow::{anyhow, Result};
 use home::home_dir;
 use mockall_double::double;
@@ -172,8 +172,8 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 #[cfg(test)]
 mod test {
     use super::Context;
+    use crate::client::shell::{Shell, Zsh};
     use crate::common::execute::MockRun;
-    use crate::common::shell::{Shell, Zsh};
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;

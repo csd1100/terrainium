@@ -1,8 +1,8 @@
 use crate::client::args::{option_string_from, Pair, UpdateArgs};
+use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::shell::Shell;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::fs::{copy, read_to_string, write};
@@ -75,10 +75,10 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 #[cfg(test)]
 mod test {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
+    use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;
     use tempfile::tempdir;

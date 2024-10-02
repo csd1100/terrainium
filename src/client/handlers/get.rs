@@ -172,9 +172,9 @@ fn templates() -> BTreeMap<String, String> {
 #[cfg(test)]
 mod test {
     use crate::client::args::{BiomeArg, GetArgs};
+    use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs::{copy, read_to_string};

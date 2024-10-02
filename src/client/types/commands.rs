@@ -1,4 +1,4 @@
-use crate::common::types::command::Command;
+use crate::client::types::command::Command;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "terrain-schema")]

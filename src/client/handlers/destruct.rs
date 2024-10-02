@@ -11,10 +11,10 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
 
 #[cfg(test)]
 mod tests {
+    use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;

@@ -1,6 +1,6 @@
+use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::shell::Shell;
 use anyhow::{Context as AnyhowContext, Result};
 use std::fs::{create_dir_all, exists, read_to_string};
 
@@ -21,12 +21,12 @@ pub fn handle(context: Context) -> Result<()> {
 
 #[cfg(test)]
 mod test {
+    use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
     use crate::common::execute::MockRun;
-    use crate::common::shell::Zsh;
     use anyhow::Result;
     use std::fs;
     use std::path::PathBuf;
