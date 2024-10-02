@@ -5,7 +5,7 @@ use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
 use tokio_stream::StreamExt;
-use tracing::instrument;
+use tracing::{event, instrument, Level};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, Registry};
 
@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
     let listener = daemon.listener();
 
     while let Some(socket) = listener.next().await.transpose()? {
+        event!(Level::TRACE, "received socket connection");
         let _ = tokio::spawn(async move {
             handle_request(DaemonSocket::new(socket)).await;
         })

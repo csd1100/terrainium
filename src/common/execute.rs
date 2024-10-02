@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use mockall::mock;
 use std::collections::BTreeMap;
 use std::process::{Command, ExitStatus, Output, Stdio};
+use tracing::{event, instrument, Level};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Run {
@@ -66,7 +67,9 @@ impl Run {
         child.wait().context("failed to wait for command")
     }
 
+    #[instrument]
     pub async fn async_get_output(self) -> Result<Output> {
+        event!(Level::INFO, "running async get_output for {:?}", self);
         let mut command: tokio::process::Command = self.into();
         command.output().await.context("failed to get output")
     }
@@ -76,6 +79,13 @@ impl Run {
         stdout: Option<Stdio>,
         stderr: Option<Stdio>,
     ) -> Result<ExitStatus> {
+        event!(
+            Level::INFO,
+            "running async process with wait for {:?}, with stdout: {:?}, and stderr: {:?}",
+            &self,
+            stdout,
+            stderr
+        );
         let mut command: tokio::process::Command = self.into();
         command.stdout(stdout.unwrap_or(Stdio::null()));
         command.stderr(stderr.unwrap_or(Stdio::null()));
