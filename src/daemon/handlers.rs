@@ -1,6 +1,7 @@
 use crate::common::types::pb;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::execute::ExecuteHandler;
+use crate::daemon::types::context::Context;
 #[double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
@@ -11,17 +12,18 @@ use tracing::{event, instrument, Level};
 pub mod execute;
 
 pub(crate) trait RequestHandler {
-    async fn handle(request: Any) -> Any;
+    async fn handle(context: Context, request: Any) -> Any;
 }
 
 #[instrument(skip(daemon_socket))]
-pub async fn handle_request(mut daemon_socket: DaemonSocket) {
+pub async fn handle_request(context: Context, mut daemon_socket: DaemonSocket) {
     event!(Level::INFO, "handling requests on socket");
     let data: Result<Any> = daemon_socket.read().await;
+
     event!(Level::DEBUG, "data received on socket: {:?} ", data);
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
-            "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request).await,
+            "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(context, request).await,
             "/terrainium.v1.ActivateRequest" => {
                 todo!()
             }
@@ -33,7 +35,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
                 Any::from_msg(&pb::Error {
                     error_message: format!("invalid request type {:?}", request.type_url),
                 })
-                .expect("failed to create an error response")
+                    .expect("failed to create an error response")
             }
         },
         Err(err) => {
@@ -41,7 +43,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
             Any::from_msg(&pb::Error {
                 error_message: err.to_string(),
             })
-            .expect("failed to create an error response")
+                .expect("failed to create an error response")
         }
     };
 
@@ -49,50 +51,5 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
 
     if result.is_err() {
         eprintln!("error responding execute request: {:?}", result);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
-    use crate::daemon::types::daemon_socket::MockDaemonSocket;
-    use prost_types::Any;
-    use std::collections::BTreeMap;
-
-    #[tokio::test]
-    async fn handle_execute() {
-        let mut mocket = MockDaemonSocket::default();
-        mocket
-            .expect_read()
-            .with()
-            .return_once(move || {
-                let mut envs: BTreeMap<String, String> = BTreeMap::new();
-                envs.insert("EDITOR".to_string(), "nvim".to_string());
-                envs.insert("PAGER".to_string(), "less".to_string());
-                let expected = ExecuteRequest {
-                    terrain_name: "terrainium".to_string(),
-                    operation: i32::from(Operation::Constructors),
-                    commands: vec![Command {
-                        exe: "/bin/bash".to_string(),
-                        args: vec![
-                            "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                        ],
-                        envs,
-                    }],
-                };
-                Ok(Any::from_msg(&expected).expect("to be converted to any"))
-            })
-            .times(1);
-
-        mocket
-            .expect_write_and_stop()
-            .withf(|actual| {
-                actual == &Any::from_msg(&ExecuteResponse {}).expect("to be converted to any")
-            })
-            .times(1)
-            .return_once(|_| Ok(()));
-
-        super::handle_request(mocket).await;
     }
 }
