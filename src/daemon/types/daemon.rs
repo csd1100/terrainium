@@ -13,18 +13,25 @@ pub struct Daemon {
 
 impl Daemon {
     #[instrument]
-    pub async fn new(path: PathBuf) -> Result<Daemon> {
+    pub async fn new(path: PathBuf, force: bool) -> Result<Daemon> {
         if !path.is_absolute() {
             return Err(anyhow!("path for socket should be absolute"));
         }
 
-        if path.exists() {
+        if path.exists() && force {
             event!(
                 Level::WARN,
                 "cleaning up daemon socket on path: {}",
                 path.display()
             );
             remove_file(&path).expect("dangling socket to be cleaned up");
+        } else {
+            event!(
+                Level::ERROR,
+                "daemon socket already exists on path: {}",
+                path.display()
+            );
+            return Err(anyhow!("daemon socket already exists"));
         }
 
         if !path.parent().expect("socket to have parent").exists() {

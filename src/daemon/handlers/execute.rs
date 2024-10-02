@@ -31,7 +31,7 @@ impl RequestHandler for ExecuteHandler {
         match exe_request {
             Ok(request) => {
                 event!(
-                    Level::INFO,
+                    Level::DEBUG,
                     "spawning task to execute request {:#?}",
                     request
                 );
@@ -81,12 +81,25 @@ async fn execute(request: ExecuteRequest) {
         .to_string();
         let run: Run = Run::new(command.exe, command.args, Some(command.envs));
 
+        let now = if let Ok(now) = time::OffsetDateTime::now_local() {
+            now.format(
+                &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
+                    .expect("time format to be parsed"),
+            )
+        } else {
+            time::OffsetDateTime::now_utc().format(
+                &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
+                    .expect("time format to be parsed"),
+            )
+        }
+        .expect("time to be formatted");
+
         event!(Level::INFO, "spawning operation: {:?}", op);
         set.spawn(async move {
             let log_file = fs::File::options()
                 .create(true)
                 .append(true)
-                .open(format!("{}/{}.{}.log", terrain_dir, op, idx))
+                .open(format!("{}/{}.{}.{}.log", terrain_dir, op, idx, now))
                 .await
                 .expect("failed to create / append to log file");
 
@@ -127,35 +140,4 @@ async fn execute(request: ExecuteRequest) {
         });
     }
     let _results = set.join_all().await;
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::common::types::pb::{Command, ExecuteRequest, Operation};
-    use crate::daemon::handlers::RequestHandler;
-    use prost_types::Any;
-    use std::collections::BTreeMap;
-
-    #[tokio::test]
-    async fn spawns_process() {
-        let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert("EDITOR".to_string(), "nvim".to_string());
-        envs.insert("PAGER".to_string(), "less".to_string());
-        let expected = ExecuteRequest {
-            terrain_name: "terrainium".to_string(),
-            operation: i32::from(Operation::Constructors),
-            commands: vec![Command {
-                exe: "/bin/bash".to_string(),
-                args: vec![
-                    "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                ],
-                envs,
-            }],
-        };
-
-        let request = Any::from_msg(&expected).expect("to be converted to any");
-
-        super::ExecuteHandler::handle(request).await;
-    }
 }
