@@ -1,7 +1,9 @@
 use crate::client::shell::{Shell, Zsh};
 #[double]
 use crate::client::types::client::Client;
-use crate::common::constants::{TERRAINIUM_ENABLED, TERRAIN_DIR};
+use crate::common::constants::{
+    TERRAINIUM_DEV, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAIN_DIR,
+};
 use anyhow::{anyhow, Result};
 use home::home_dir;
 use mockall_double::double;
@@ -124,6 +126,14 @@ impl Context {
             self.current_dir().to_string_lossy().to_string(),
         );
         terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+
+        if self.name() == "terrainium"
+            && env::var(TERRAINIUM_DEV).unwrap_or_else(|_| "false".to_string()) == "true"
+        {
+            let exe = self.current_dir().join("target/debug/terrainium");
+            terrainium_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe.display().to_string());
+        }
+
         terrainium_envs
     }
 
@@ -173,7 +183,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 #[cfg(test)]
 mod test {
     use super::Context;
-    use crate::client::shell::{Shell, Zsh};
+    use crate::client::shell::Zsh;
     use crate::common::constants::TERRAINIUM_ENABLED;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -382,25 +392,6 @@ mod test {
         scripts_dir.push("scripts");
 
         assert_eq!(scripts_dir, context.scripts_dir());
-        Ok(())
-    }
-
-    #[serial]
-    #[test]
-    fn shell_returns_shell() -> Result<()> {
-        let new_mock = MockCommandToRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(move |_, _, _| MockCommandToRun::default());
-
-        let context = Context::generate(None);
-
-        let expected_shell = Zsh::build(MockCommandToRun::default());
-
-        assert_eq!(context.shell().exe(), expected_shell.exe());
-
         Ok(())
     }
 

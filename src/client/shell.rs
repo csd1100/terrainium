@@ -10,14 +10,14 @@ use std::process::{ExitStatus, Output};
 
 pub mod zsh;
 
-pub trait Shell: Debug + PartialEq {
+pub(crate) trait Shell: Debug + PartialEq {
     fn get() -> Self;
-    fn exe(&self) -> String;
     fn runner(&self) -> CommandToRun;
+    #[allow(dead_code)]
     fn update_rc(data: String) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
-    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus>;
+    async fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus>;
     fn generate_envs(
         &self,
         context: &Context,

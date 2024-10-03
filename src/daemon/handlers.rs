@@ -47,6 +47,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
         }
     };
 
+    event!(Level::INFO, "sending response to client: {:#?}", response);
     let result = daemon_socket.write_and_stop(response).await;
 
     if result.is_err() {

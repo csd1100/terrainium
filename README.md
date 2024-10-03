@@ -68,7 +68,7 @@ terrainium <verb> [OPTIONS]
 
     - `construct` - runs commands specified in constructor block.
 
-    - `deconstruct` - runs commands specified in destructor block.
+    - `destruct` - runs commands specified in destructor block.
 
     - `-h|--help` - shows help.
 
@@ -80,10 +80,12 @@ terrainium <verb> [OPTIONS]
 
 ```sh
 if [ "$TERRAINIUM_ENABLED" = "true" ];then
-    autoload -Uzw "${TERRAINIUM_INIT_SCRIPT}"
-    "${terrainium_init}"
+    clear
+    autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
+    "${terrain_init}"
     builtin unfunction -- "${terrainium_init}"
     terrainium_enter
+    echo init....
 fi
 ```
 
@@ -142,7 +144,7 @@ fi
 
 ### constructors and destructors
 
-- When `construct` or `deconstruct` command is run, 2 types of processes are spawned.
+- When `construct` or `destruct` command is run, 2 types of processes are spawned.
 
 1. `foreground` - Which are run in shell activated by `terrainium enter` command.
 2. `background` - which are separate processes started in background and logs for

@@ -3,7 +3,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, ZSH_ALIASES_TEMPLATE_NAME,
+    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, ZSH_ALIASES_TEMPLATE_NAME,
     ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
     ZSH_MAIN_TEMPLATE_NAME,
 };
@@ -30,10 +30,6 @@ impl Shell for Zsh {
             exe: "/bin/zsh".to_string(),
             runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None),
         }
-    }
-
-    fn exe(&self) -> String {
-        self.exe.clone()
     }
 
     fn runner(&self) -> CommandToRun {
@@ -77,12 +73,12 @@ impl Shell for Zsh {
         runner.get_output()
     }
 
-    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus> {
+    async fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus> {
         let mut runner = self.runner();
         runner.set_args(vec!["-i".to_string(), "-s".to_string()]);
         runner.set_envs(Some(envs));
 
-        runner.wait().context("Failed to run zsh")
+        runner.async_spawn().await.context("Failed to run zsh")
     }
 
     fn generate_envs(&self, context: &Context, biome: String) -> Result<BTreeMap<String, String>> {
@@ -96,15 +92,12 @@ impl Shell for Zsh {
 
         let updated_fpath = format!("{}:{}", compiled_script, self.get_fpath()?);
         envs.insert(FPATH.to_string(), updated_fpath);
-
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
         envs.insert(
             TERRAIN_INIT_FN.to_string(),
-            Self::script_path(&scripts_dir, &biome)
-                .to_str()
-                .expect("path to be converted to string")
-                .to_string(),
+            format!("terrain-{}.zsh", biome),
         );
+        envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome);
 
         Ok(envs)
     }

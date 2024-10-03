@@ -27,20 +27,21 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
             .clone(),
     );
 
-    context
-        .shell()
-        .spawn(envs.clone())
-        .context("failed to spawn shell")?;
-
     background::handle(
         context,
         CONSTRUCTORS,
         biome_arg,
         Terrain::merged_constructors,
-        Some(envs),
+        Some(envs.clone()),
     )
     .await
     .context("failed to send background constructors to daemon")?;
+
+    context
+        .shell()
+        .spawn(envs)
+        .await
+        .context("failed to spawn shell")?;
 
     Ok(())
 }
@@ -52,7 +53,7 @@ mod test {
     use crate::client::types::context::Context;
     use crate::common::constants::{
         FPATH, TERRAINIUM_ENABLED, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT,
+        TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -88,8 +89,15 @@ mod test {
             TERRAIN_INIT_SCRIPT.to_string(),
             compiled_script.display().to_string(),
         );
-        expected_envs.insert(TERRAIN_INIT_FN.to_string(), script.display().to_string());
+        expected_envs.insert(
+            TERRAIN_INIT_FN.to_string(),
+            "terrain-example_biome.zsh".to_string(),
+        );
         expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            "example_biome".to_string(),
+        );
 
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         expected_envs.insert(
@@ -117,7 +125,7 @@ mod test {
             .return_once(|_| ());
 
         spawn
-            .expect_wait()
+            .expect_async_spawn()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
 

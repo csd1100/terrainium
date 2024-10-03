@@ -15,6 +15,7 @@ pub trait Execute {
         self,
         log_path: &str,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
+    fn async_spawn(self) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -117,6 +118,12 @@ impl Execute for CommandToRun {
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
     }
+
+    async fn async_spawn(self) -> Result<ExitStatus> {
+        let mut command: tokio::process::Command = self.into();
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().await.context("failed to wait for command")
+    }
 }
 
 #[cfg(test)]
@@ -133,6 +140,7 @@ mock! {
         fn wait(self) -> Result<ExitStatus>;
         async fn async_get_output(self) -> Result<Output>;
         async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
+        async fn async_spawn(self) -> Result<ExitStatus>;
     }
 
     impl Clone for CommandToRun {

@@ -26,7 +26,6 @@ function terrainium_shell_destructor() {
 }
 
 function terrainium_enter() {
-    "$TERRAINIUM_EXECUTABLE" construct
     terrainium_shell_constructor
 }
 
@@ -40,7 +39,7 @@ function terrainium_preexec_functions() {
     tenter="(\$TERRAINIUM_EXECUTABLE enter*|$TERRAINIUM_EXECUTABLE enter*|*terrainium enter*)"
     texit="(\$TERRAINIUM_EXECUTABLE exit*|$TERRAINIUM_EXECUTABLE exit*|*terrainium exit*)"
     tconstruct="(\$TERRAINIUM_EXECUTABLE construct*|$TERRAINIUM_EXECUTABLE construct*|*terrainium construct*)"
-    tdeconstruct="(\$TERRAINIUM_EXECUTABLE deconstruct*|$TERRAINIUM_EXECUTABLE deconstruct*|*terrainium deconstruct*)"
+    tdestruct="(\$TERRAINIUM_EXECUTABLE destruct*|$TERRAINIUM_EXECUTABLE destruct*|*terrainium destruct*)"
 
     if [ $TERRAINIUM_ENABLED = "true" ]; then
         case "$3" in
@@ -50,7 +49,7 @@ function terrainium_preexec_functions() {
         $~tconstruct)
             terrainium_shell_constructor
         ;;
-        $~tdeconstruct)
+        $~tdestruct)
             terrainium_shell_destructor
         ;;
         esac
@@ -66,7 +65,6 @@ function terrainium_chpwd_functions() {
 }
 
 function terrainium_zshexit_functions() {
-    "$TERRAINIUM_EXECUTABLE" deconstruct
     terrainium_shell_destructor
 }
 
