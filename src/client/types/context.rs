@@ -2,8 +2,7 @@ use crate::client::shell::{Shell, Zsh};
 #[double]
 use crate::client::types::client::Client;
 use crate::common::constants::{
-    TERRAINIUM_DEV, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID, TERRAIN_DIR,
-    TERRAIN_SELECTED_BIOME,
+    TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID, TERRAIN_DIR,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -18,7 +17,6 @@ pub struct Context {
     session_id: String,
     current_dir: PathBuf,
     central_dir: PathBuf,
-    selected_biome: String,
     shell: Zsh,
     client: Option<Client>,
 }
@@ -41,15 +39,12 @@ impl Context {
         let session_id =
             env::var(TERRAINIUM_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
 
-        let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
-
         Context {
             session_id,
             current_dir: env::current_dir().expect("failed to get current directory"),
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),
             ),
-            selected_biome,
             shell: Zsh::get(),
             client,
         }
@@ -57,10 +52,6 @@ impl Context {
 
     pub fn session_id(&self) -> &str {
         &self.session_id
-    }
-
-    pub fn selected_biome(&self) -> &str {
-        &self.selected_biome
     }
 
     pub fn current_dir(&self) -> &PathBuf {
@@ -151,10 +142,9 @@ impl Context {
         );
         terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
-        if self.name() == "terrainium"
-            && env::var(TERRAINIUM_DEV).unwrap_or_else(|_| "false".to_string()) == "true"
-        {
-            let exe = self.current_dir().join("target/debug/terrainium");
+        let exe = env::args().nth(0).unwrap();
+        if self.name() == "terrainium" && exe.starts_with("target/") {
+            let exe = self.current_dir().join(exe);
             terrainium_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe.display().to_string());
         }
 
@@ -172,7 +162,6 @@ impl Context {
             session_id: "some".to_string(),
             current_dir,
             central_dir,
-            selected_biome: "".to_string(),
             shell,
             client: socket,
         }
@@ -186,7 +175,6 @@ impl Context {
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),
             ),
-            selected_biome: "".to_string(),
             shell,
             client: socket,
         }

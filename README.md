@@ -72,6 +72,16 @@ terrainium <verb> [OPTIONS]
 
     - `-h|--help` - shows help.
 
+```sh
+terrainiumd [OPTIONS]
+```
+
+- Options:
+    - `-f|--force` - remove existing unix socket and start daemon
+    - `-l|--log-level` - select log level of daemon. Value can be `trace`,
+      `debug`, `info`, `warn` and `error`.
+    - `-h|--help` - shows help.
+
 ## Shell Integration
 
 ### zsh
@@ -148,7 +158,7 @@ fi
 
 1. `foreground` - Which are run in shell activated by `terrainium enter` command.
 2. `background` - which are separate processes started in background and logs for
-   these processes are present in `/tmp/terrainiumd/terrains/<terrain_name>-$TERRAINIUM_SESSION_ID/` directory.
+   these processes are present in `/tmp/terrainiumd/terrains/<terrain_name>/$TERRAINIUM_SESSION_ID/` directory.
 
 - When terrain is activated `TERRAINIUM_SESSION_ID` variable is set, it is a UUID
   and changes every session.
@@ -156,6 +166,13 @@ fi
 - **Note:** The paths used in background process must be absolute as they are run
   by daemon. You can use `$TERRAIN_DIR` environment variable to use paths from project
   without having to specify entire absolute path.
+
+### Terrainium Daemon
+
+- To run background process there is a daemon which will run in background.
+- The daemon will run using unix socket, the socket will be created at `/tmp/terrainiumd/socket`.
+- The daemon will receive request from client (`terrainium`) and will execute background
+  constructors and destructor.
 
 ## For developers
 

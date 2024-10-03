@@ -67,6 +67,7 @@ function terrainium_chpwd_functions() {
 
 function terrainium_zshexit_functions() {
     terrainium_shell_destructor
+    "$TERRAINIUM_EXECUTABLE" exit
 }
 
 preexec_functions=(terrainium_preexec_functions $preexec_functions)

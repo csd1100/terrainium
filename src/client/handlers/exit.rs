@@ -2,22 +2,25 @@ use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::DESTRUCTORS;
+use crate::common::constants::{DESTRUCTORS, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
+use std::env;
 
 pub async fn handle(context: &mut Context) -> Result<()> {
     let session_id = context.session_id();
-    let selected_biome = context.selected_biome();
+    let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
 
     if session_id.is_empty() || selected_biome.is_empty() {
-        return Err(anyhow!("no active terrain found, use `terrainium enter` command to activate a terrain. exiting...."));
+        return Err(anyhow!(
+            "no active terrain found, use `terrainium enter` command to activate a terrain."
+        ));
     }
 
     background::handle(
         context,
         DESTRUCTORS,
-        Some(BiomeArg::Some(selected_biome.to_string())),
+        Some(BiomeArg::Some(selected_biome)),
         Terrain::merged_destructors,
         Some(BTreeMap::<String, String>::new()),
     )
@@ -32,17 +35,26 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
+    use crate::common::constants::TERRAIN_SELECTED_BIOME;
+    use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
+    use serial_test::serial;
     use std::collections::BTreeMap;
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
+    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon() {
+        let orig_selected_biome = set_env_var(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            "example_biome".to_string(),
+        );
+
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -64,6 +76,7 @@ mod tests {
                     current_dir_path.to_str().unwrap().to_string(),
                 );
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+                envs.insert("TERRAINIUM_SESSION_ID".to_string(), "some".to_string());
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -88,7 +101,7 @@ mod tests {
                     && !actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == terrain_toml.display().to_string()
-                    && !actual.is_activate
+                    && actual.is_activate
                     && actual.commands == commands
                     && actual.operation == i32::from(Operation::Destructors)
             })
@@ -109,10 +122,17 @@ mod tests {
         super::handle(&mut context)
             .await
             .expect("no error to be thrown");
+
+        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
     }
 
+    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon_and_error() {
+        let orig_selected_biome = set_env_var(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            "example_biome".to_string(),
+        );
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -134,6 +154,7 @@ mod tests {
                     current_dir_path.to_str().unwrap().to_string(),
                 );
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+                envs.insert("TERRAINIUM_SESSION_ID".to_string(), "some".to_string());
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -155,10 +176,10 @@ mod tests {
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
-                    && actual.session_id.is_empty()
+                    && !actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == terrain_toml.display().to_string()
-                    && !actual.is_activate
+                    && actual.is_activate
                     && actual.commands == commands
                     && actual.operation == i32::from(Operation::Destructors)
             })
@@ -181,9 +202,8 @@ mod tests {
 
         let err = super::handle(&mut context).await.expect_err("to be thrown");
 
-        assert_eq!(
-            err.to_string(),
-            "error response from daemon failed to execute"
-        );
+        assert_eq!(err.to_string(), "failed to run destructors");
+
+        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
     }
 }

@@ -7,7 +7,6 @@ use crate::daemon::handlers::RequestHandler;
 use crate::daemon::types::terrain_state::{operation_name, CommandStatus, TerrainState};
 use anyhow::{Context, Result};
 use prost_types::Any;
-use std::os::unix::process::ExitStatusExt;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -193,7 +192,7 @@ async fn start_process(
                 guard.execute_context_mut().set_command_state(
                     idx,
                     &operation,
-                    CommandStatus::Failed(exit_code.into_raw()),
+                    CommandStatus::Failed(exit_code.code()),
                 );
             }
 
@@ -224,7 +223,7 @@ async fn start_process(
             guard.execute_context_mut().set_command_state(
                 idx,
                 &operation,
-                CommandStatus::Failed(i32::MAX),
+                CommandStatus::Failed(Some(i32::MAX)),
             );
 
             guard

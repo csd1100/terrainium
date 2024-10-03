@@ -36,7 +36,7 @@ pub struct CommandState {
 pub enum CommandStatus {
     Starting,
     Running,
-    Failed(i32),
+    Failed(Option<i32>),
     Succeeded,
 }
 
@@ -76,7 +76,7 @@ impl TerrainState {
                 self.dir_path(),
                 operation,
                 idx,
-                self.end_timestamp.as_str()
+                self.start_timestamp.as_str()
             );
         } else {
             self.execute_context
@@ -143,8 +143,7 @@ impl TerrainState {
 
     pub(crate) async fn readable_file(&self) -> Result<fs::File> {
         fs::File::options()
-            .truncate(true)
-            .write(true)
+            .read(true)
             .open(self.file_path())
             .await
             .context("Failed to read TerrainState file")
