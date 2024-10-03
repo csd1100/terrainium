@@ -1,16 +1,12 @@
-#[double]
-use crate::common::execute::Run;
+use crate::common::execute::CommandToRun;
+use crate::common::execute::Execute;
 use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse};
-use crate::common::utils::timestamp;
-use crate::daemon::handlers::activate::{get_state_dir_path, get_state_file, get_terrain_state};
 use crate::daemon::handlers::RequestHandler;
-use crate::daemon::types::terrain_state::{operation_name, CommandStatus, TerrainState};
+use crate::daemon::types::terrain_state::{CommandStatus, TerrainState};
 use anyhow::{Context, Result};
-use mockall_double::double;
 use prost_types::Any;
 use std::os::unix::process::ExitStatusExt;
-use std::process::ExitStatus;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
@@ -24,6 +20,7 @@ impl RequestHandler for ExecuteHandler {
     #[instrument(skip(request))]
     async fn handle(request: Any) -> Any {
         event!(Level::INFO, "handling ExecuteRequest");
+
         let exe_request: Result<ExecuteRequest> = request
             .to_msg()
             .context("failed to convert request to type ExecuteRequest");
@@ -41,7 +38,9 @@ impl RequestHandler for ExecuteHandler {
                     "spawning task to execute request {:#?}",
                     request
                 );
-                tokio::spawn(execute(request, (false, timestamp())));
+
+                tokio::spawn(execute(request));
+
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to Any")
             }
             Err(err) => {
@@ -56,137 +55,122 @@ impl RequestHandler for ExecuteHandler {
 }
 
 #[instrument(skip(request))]
-pub(crate) async fn execute(request: ExecuteRequest, activate_data: (bool, String)) {
-    let (from_activate, timestamp) = activate_data;
+pub(crate) async fn execute(request: ExecuteRequest) {
     let terrain_state: TerrainState = request.clone().into();
-    let op = operation_name(request.operation);
-    let commands = request.commands;
+
+    let commands = terrain_state.execute_context().commands();
     let iter = commands.into_iter().enumerate();
 
-    let terrain_state = if !from_activate {
-        if !fs::try_exists(get_state_dir_path(&request.terrain_name, &timestamp))
+    if !fs::try_exists(terrain_state.dir_path())
+        .await
+        .expect("failed to check if state dir exists")
+    {
+        fs::create_dir_all(terrain_state.dir_path())
             .await
-            .expect("failed to check if state dir exists")
-        {
-            fs::create_dir_all(get_state_dir_path(&request.terrain_name, &timestamp))
-                .await
-                .expect("failed to create state dir");
-        }
+            .expect("failed to create state dir");
+    }
 
-        let mut file = get_state_file(&request.terrain_name, &timestamp, false, false, true).await;
-        file.write_all(
+    terrain_state
+        .new_file()
+        .await
+        .expect("to create new state file")
+        .write_all(
             terrain_state
                 .to_json()
-                .expect("state to be parsed to json")
+                .expect("to convert state to json")
                 .as_ref(),
         )
         .await
-        .expect("failed to write to state file");
+        .expect("to write state");
 
-        terrain_state
-    } else {
-        get_terrain_state(&request.terrain_name, &timestamp).await
-    };
-
-    let terrain_name = request.terrain_name.clone();
     let arc = Arc::new(Mutex::new(terrain_state));
     let mut set = JoinSet::new();
 
     for (idx, command) in iter {
-        let op = op.clone();
-        let timestamp = timestamp.clone();
-        let terrain_name = terrain_name.clone();
-
-        let log_file = format!(
-            "{}/{}.{}.{}.log",
-            get_state_dir_path(&terrain_name, timestamp.as_str()),
-            op,
-            idx,
-            timestamp
-        );
-
         let state = arc.clone();
         {
             let mut guard = state.lock().await;
+            guard.set_log_path(idx);
             guard
-                .execute_request_mut()
-                .set_log_path(idx, log_file.clone());
-
-            get_state_file(&terrain_name, &timestamp, false, true, false)
+                .writable_file()
                 .await
-                .write_all(
-                    guard
-                        .to_json()
-                        .expect("state to be parsed to json")
-                        .as_ref(),
-                )
+                .expect("to get state file")
+                .write_all(guard.to_json().expect("to convert state to json").as_ref())
                 .await
-                .expect("Failed to write to state file");
-        }
+                .expect("to write state");
 
-        let run: Run = Run::new(command.exe, command.args, Some(command.envs));
-
-        event!(Level::INFO, "spawning operation: {:?}", op);
-
-        let state = arc.clone();
-        set.spawn(async move {
             event!(
                 Level::INFO,
-                "operation:{}, starting process for command: {:?}",
-                op,
-                run
+                "spawning operation: {:?}",
+                guard.execute_context().operation()
             );
-            start_process(idx, run, &log_file, state).await;
+        }
+        set.spawn(async move {
+            start_process(idx, command, state).await;
         });
     }
     let _results = set.join_all().await;
 }
 
-async fn start_process(idx: usize, run: Run, log_file: &str, state: Arc<Mutex<TerrainState>>) {
-    {
-        let mut guard = state.lock().await;
-        guard
-            .execute_request_mut()
-            .set_command_state(idx, CommandStatus::Running);
+async fn start_process(idx: usize, command_to_run: CommandToRun, state: Arc<Mutex<TerrainState>>) {
+    let mut guard = state.lock().await;
 
-        get_state_file(guard.terrain_name(), guard.timestamp(), false, true, false)
-            .await
-            .write_all(
-                guard
-                    .to_json()
-                    .expect("state to be parsed to json")
-                    .as_ref(),
-            )
-            .await
-            .expect("Failed to write to state file");
-    }
+    guard
+        .execute_context_mut()
+        .set_command_state(idx, CommandStatus::Running);
 
-    let res: Result<ExitStatus> = run.async_wait(log_file).await;
+    guard
+        .writable_file()
+        .await
+        .expect("to get state file")
+        .write_all(
+            guard
+                .to_json()
+                .expect("state to be parsed to json")
+                .as_ref(),
+        )
+        .await
+        .expect("Failed to write to state file");
+
+    let log_file = guard.execute_context().log_path(idx).to_string();
+
+    event!(
+        Level::INFO,
+        "operation:{}, starting to execute command with log_file: {}, process: {:?}",
+        guard.execute_context().operation(),
+        log_file,
+        guard.execute_context().command(idx)
+    );
+
+    drop(guard);
+
+    let res = command_to_run.async_wait(&log_file).await;
 
     match res {
         Ok(exit_code) => {
-            // event!(
-            //     Level::INFO,
-            //     "operation:{}, completed executing command with exit code: {}, process: {}",
-            //     op,
-            //     exit_code,
-            //     process
-            // );
-
             let mut guard = state.lock().await;
+            event!(
+                Level::INFO,
+                "operation:{}, completed executing command with exit code: {}, process: {:?}",
+                guard.execute_context().operation(),
+                exit_code,
+                guard.execute_context().command(idx)
+            );
 
             if exit_code.success() {
                 guard
-                    .execute_request_mut()
+                    .execute_context_mut()
                     .set_command_state(idx, CommandStatus::Succeeded);
             } else {
                 guard
-                    .execute_request_mut()
+                    .execute_context_mut()
                     .set_command_state(idx, CommandStatus::Failed(exit_code.into_raw()));
             }
 
-            get_state_file(guard.terrain_name(), guard.timestamp(), false, true, false)
+            guard
+                .writable_file()
                 .await
+                .expect("to get state file")
                 .write_all(
                     guard
                         .to_json()
@@ -198,22 +182,23 @@ async fn start_process(idx: usize, run: Run, log_file: &str, state: Arc<Mutex<Te
         }
 
         Err(err) => {
-            // event!(
-            //     Level::WARN,
-            //     "operation:{}, failed to spawn command with error: {:?}, process:{}",
-            //     op,
-            //     err,
-            //     process
-            // );
-
             let mut guard = state.lock().await;
+            event!(
+                Level::WARN,
+                "operation:{}, failed to spawn command with error: {:?}, process:{:?}",
+                guard.execute_context().operation(),
+                err,
+                guard.execute_context().command(idx)
+            );
 
             guard
-                .execute_request_mut()
+                .execute_context_mut()
                 .set_command_state(idx, CommandStatus::Failed(i32::MAX));
 
-            get_state_file(guard.terrain_name(), guard.timestamp(), false, true, false)
+            guard
+                .writable_file()
                 .await
+                .expect("to get state file")
                 .write_all(
                     guard
                         .to_json()

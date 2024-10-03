@@ -8,7 +8,8 @@ use crate::common::constants::{
     ZSH_MAIN_TEMPLATE_NAME,
 };
 #[double]
-use crate::common::execute::Run;
+use crate::common::execute::CommandToRun;
+use crate::common::execute::Execute;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::collections::BTreeMap;
@@ -27,7 +28,7 @@ impl Shell for Zsh {
     fn get() -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
-            runner: Run::new("/bin/zsh".to_string(), vec![], None),
+            runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None),
         }
     }
 
@@ -35,7 +36,7 @@ impl Shell for Zsh {
         self.exe.clone()
     }
 
-    fn runner(&self) -> Run {
+    fn runner(&self) -> CommandToRun {
         self.runner.clone()
     }
 
@@ -219,7 +220,7 @@ impl Zsh {
     }
 
     #[cfg(test)]
-    pub fn build(runner: Run) -> Self {
+    pub fn build(runner: CommandToRun) -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
             runner,
@@ -227,7 +228,7 @@ impl Zsh {
     }
 
     #[cfg(test)]
-    pub fn runner_ref(&self) -> &Run {
+    pub fn runner_ref(&self) -> &CommandToRun {
         &self.runner
     }
 }
@@ -236,7 +237,7 @@ impl Zsh {
 mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::terrain::Terrain;
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};
@@ -246,7 +247,7 @@ mod test {
     )]
     #[test]
     fn create_script_will_panic_if_invalid_biome_name() {
-        let zsh = Zsh::build(MockRun::default());
+        let zsh = Zsh::build(MockCommandToRun::default());
 
         let terrain = Terrain::example();
 
@@ -260,7 +261,7 @@ mod test {
 
     #[test]
     fn compile_script_should_return_error_if_non_zero_exit_code() {
-        let mut mock_wait = MockRun::default();
+        let mut mock_wait = MockCommandToRun::default();
         mock_wait.expect_get_output().times(1).return_once(|| {
             Ok(Output {
                 status: ExitStatus::from_raw(1),
@@ -278,7 +279,7 @@ mod test {
             .withf(|_| true)
             .return_once(|_| ());
 
-        let mut mock_run = MockRun::default();
+        let mut mock_run = MockCommandToRun::default();
         mock_run.expect_clone().times(1).return_once(|| mock_wait);
         let zsh = Zsh::build(mock_run);
 

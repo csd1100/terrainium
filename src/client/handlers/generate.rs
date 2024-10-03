@@ -26,7 +26,7 @@ mod test {
     use crate::client::utils::test::{
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use std::fs;
     use std::path::PathBuf;
@@ -41,7 +41,7 @@ mod test {
         terrain_toml.push("terrain.toml");
 
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockRun::default();
+        let mock = MockCommandToRun::default();
         let mock = setup_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
@@ -107,7 +107,7 @@ mod test {
         terrain_toml.push("terrain.toml");
 
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockRun::default();
+        let mock = MockCommandToRun::default();
         let mock = setup_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),

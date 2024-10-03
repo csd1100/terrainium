@@ -1,21 +1,46 @@
 use anyhow::{Context, Result};
-
 #[cfg(test)]
 use mockall::mock;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::process::{Command, ExitStatus, Output};
 use tokio::fs;
 use tracing::{event, instrument, Level};
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Run {
+pub trait Execute {
+    fn get_output(self) -> Result<Output>;
+    fn wait(self) -> Result<ExitStatus>;
+    fn without_wait(self) -> Result<()>;
+    fn async_get_output(self) -> impl std::future::Future<Output = Result<Output>> + Send;
+    fn async_wait(
+        self,
+        log_path: &str,
+    ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct CommandToRun {
     exe: String,
     args: Vec<String>,
     envs: Option<BTreeMap<String, String>>,
 }
 
-impl From<Run> for Command {
-    fn from(value: Run) -> Command {
+impl CommandToRun {
+    pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Self {
+        CommandToRun { exe, args, envs }
+    }
+
+    pub fn set_args(&mut self, args: Vec<String>) {
+        self.args = args;
+    }
+
+    pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
+        self.envs = envs;
+    }
+}
+
+impl From<CommandToRun> for Command {
+    fn from(value: CommandToRun) -> Command {
         let mut vars: BTreeMap<String, String> = std::env::vars().collect();
         let envs = if let Some(mut envs) = value.envs {
             vars.append(&mut envs);
@@ -29,8 +54,8 @@ impl From<Run> for Command {
     }
 }
 
-impl From<Run> for tokio::process::Command {
-    fn from(value: Run) -> tokio::process::Command {
+impl From<CommandToRun> for tokio::process::Command {
+    fn from(value: CommandToRun) -> tokio::process::Command {
         let mut vars: BTreeMap<String, String> = std::env::vars().collect();
         let envs = if let Some(mut envs) = value.envs {
             vars.append(&mut envs);
@@ -44,44 +69,32 @@ impl From<Run> for tokio::process::Command {
     }
 }
 
-impl Run {
-    pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Self {
-        Run { exe, args, envs }
-    }
-
-    pub fn set_args(&mut self, args: Vec<String>) {
-        self.args = args;
-    }
-
-    pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
-        self.envs = envs;
-    }
-
-    pub fn get_output(self) -> Result<Output> {
+impl Execute for CommandToRun {
+    fn get_output(self) -> Result<Output> {
         let mut command: Command = self.into();
         command.output().context("failed to get output")
     }
 
-    pub fn wait(self) -> Result<ExitStatus> {
+    fn wait(self) -> Result<ExitStatus> {
         let mut command: Command = self.into();
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().context("failed to wait for command")
     }
 
-    pub fn without_wait(self) -> Result<()> {
+    fn without_wait(self) -> Result<()> {
         let mut command: tokio::process::Command = self.into();
         command.spawn().context("failed to run command")?;
         Ok(())
     }
 
     #[instrument]
-    pub async fn async_get_output(self) -> Result<Output> {
+    async fn async_get_output(self) -> Result<Output> {
         event!(Level::INFO, "running async get_output for {:?}", self);
         let mut command: tokio::process::Command = self.into();
         command.output().await.context("failed to get output")
     }
 
-    pub async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
+    async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
         event!(
             Level::INFO,
             "running async process with wait for {:?}, with logs in file: {:?}",
@@ -116,29 +129,32 @@ impl Run {
 #[cfg(test)]
 mock! {
     #[derive(Debug)]
-    pub Run {
+    pub CommandToRun {
         pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Self;
         pub fn set_args(&mut self, args: Vec<String>);
         pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
-        pub fn get_output(self) -> Result<Output>;
-        pub fn wait(self) -> Result<ExitStatus>;
-        pub async fn async_get_output(self) -> Result<Output>;
-        pub async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
-        pub fn without_wait(self) -> Result<()>;
     }
 
-    impl Clone for Run {
+    impl Execute for CommandToRun {
+        fn get_output(self) -> Result<Output>;
+        fn wait(self) -> Result<ExitStatus>;
+        fn without_wait(self) -> Result<()>;
+        async fn async_get_output(self) -> Result<Output>;
+        async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
+    }
+
+    impl Clone for CommandToRun {
         fn clone(&self) -> Self;
     }
 
-    impl PartialEq for Run {
+    impl PartialEq for CommandToRun {
         fn eq(&self, other: &Self) -> bool;
     }
 }
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::common::execute::Run;
+    use crate::common::execute::{CommandToRun, Execute};
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::env::VarError;
@@ -148,7 +164,7 @@ pub(crate) mod test {
         let test_var = "TEST_VAR".to_string();
         let orig_env = set_env_var(test_var.clone(), "TEST_VALUE".to_string());
 
-        let run = Run::new(
+        let run = CommandToRun::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "echo $TEST_VAR".to_string()],
             None,
@@ -177,7 +193,7 @@ pub(crate) mod test {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(test_var1.clone(), "NEW_VALUE1".to_string());
 
-        let run = Run::new(
+        let run = CommandToRun::new(
             "/bin/bash".to_string(),
             vec![
                 "-c".to_string(),
@@ -208,7 +224,7 @@ pub(crate) mod test {
 
         let args: Vec<String> = vec!["-c".to_string(), "echo \"$TEST_VAR\"".to_string()];
 
-        let mut run = Run::new("/bin/bash".to_string(), vec![], None);
+        let mut run = CommandToRun::new("/bin/bash".to_string(), vec![], None);
         run.set_envs(Some(envs));
         run.set_args(args);
 
@@ -233,7 +249,7 @@ pub(crate) mod test {
             "./tests/scripts/print_num_for_10_sec".to_string(),
         );
 
-        let run = Run::new(
+        let run = CommandToRun::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "$TEST_SCRIPT".to_string()],
             Some(envs),

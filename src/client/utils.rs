@@ -1,14 +1,14 @@
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use std::os::unix::prelude::ExitStatusExt;
     use std::path::{Path, PathBuf};
     use std::process::{ExitStatus, Output};
 
     pub(crate) fn setup_with_expectations(
-        mut mock: MockRun,
-        mock_with_expectations: MockRun,
-    ) -> MockRun {
+        mut mock: MockCommandToRun,
+        mock_with_expectations: MockCommandToRun,
+    ) -> MockCommandToRun {
         mock.expect_clone()
             .with()
             .times(1)
@@ -16,11 +16,14 @@ pub(crate) mod test {
         mock
     }
 
-    pub(crate) fn compile_expectations(central_dir: PathBuf, biome_name: String) -> MockRun {
+    pub(crate) fn compile_expectations(
+        central_dir: PathBuf,
+        biome_name: String,
+    ) -> MockCommandToRun {
         let compile_script_path = compiled_script_path(central_dir.as_path(), &biome_name);
         let script_path = script_path(central_dir.as_path(), &biome_name);
 
-        let mut mock_runner = MockRun::default();
+        let mut mock_runner = MockCommandToRun::default();
         let args = vec![
             "-c".to_string(),
             format!(

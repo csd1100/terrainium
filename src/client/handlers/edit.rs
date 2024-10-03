@@ -2,7 +2,8 @@ use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 #[double]
-use crate::common::execute::Run;
+use crate::common::execute::CommandToRun;
+use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
 use mockall_double::double;
 use std::fs;
@@ -33,7 +34,7 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
         "vi".to_string()
     });
 
-    let edit = Run::new(
+    let edit = CommandToRun::new(
         editor,
         vec![toml_path
             .to_string_lossy()
@@ -55,7 +56,7 @@ pub(crate) mod test {
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
     use crate::common::execute::test::{restore_env_var, set_env_var};
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;
@@ -77,13 +78,13 @@ pub(crate) mod test {
         let mut terrain_toml: PathBuf = current_dir.path().into();
         terrain_toml.push("terrain.toml");
 
-        let mut edit_run = MockRun::default();
+        let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockRun::new_context();
+        let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs| {
@@ -96,7 +97,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockRun::default();
+        let mock = MockCommandToRun::default();
         let mock = setup_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
@@ -165,13 +166,13 @@ pub(crate) mod test {
         let mut terrain_toml: PathBuf = central_dir.path().into();
         terrain_toml.push("terrain.toml");
 
-        let mut edit_run = MockRun::default();
+        let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockRun::new_context();
+        let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs| {
@@ -184,7 +185,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockRun::default();
+        let mock = MockCommandToRun::default();
         let mock = setup_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
@@ -250,7 +251,7 @@ pub(crate) mod test {
         let err = super::handle(Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         ))
         .expect_err("expected to get error")
@@ -273,13 +274,13 @@ pub(crate) mod test {
         let mut terrain_toml: PathBuf = current_dir.path().into();
         terrain_toml.push("terrain.toml");
 
-        let mut edit_run = MockRun::default();
+        let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockRun::new_context();
+        let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs| {
@@ -292,7 +293,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockRun::default();
+        let mock = MockCommandToRun::default();
         let mock = setup_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),

@@ -1,6 +1,5 @@
 use crate::common::types::pb;
 use crate::common::types::socket::Socket;
-use crate::daemon::handlers::activate::ActivateHandler;
 use crate::daemon::handlers::execute::ExecuteHandler;
 #[double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
@@ -9,7 +8,6 @@ use mockall_double::double;
 use prost_types::Any;
 use tracing::{event, instrument, Level};
 
-pub mod activate;
 pub mod execute;
 
 pub(crate) trait RequestHandler {
@@ -19,17 +17,20 @@ pub(crate) trait RequestHandler {
 #[instrument(skip(daemon_socket))]
 pub async fn handle_request(mut daemon_socket: DaemonSocket) {
     event!(Level::INFO, "handling requests on socket");
+
     let data: Result<Any> = daemon_socket.read().await;
     event!(Level::DEBUG, "data received on socket: {:?} ", data);
+
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
             "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request).await,
-            "/terrainium.v1.ActivateRequest" => ActivateHandler::handle(request).await,
+
             "/terrainium.v1.StatusRequest" => {
                 todo!()
             }
             _ => {
                 event!(Level::ERROR, "invalid request type: {:?}", request.type_url);
+
                 Any::from_msg(&pb::Error {
                     error_message: format!("invalid request type {:?}", request.type_url),
                 })
@@ -38,6 +39,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
         },
         Err(err) => {
             event!(Level::ERROR, "failed to read data from socket: {:#?}", err);
+
             Any::from_msg(&pb::Error {
                 error_message: err.to_string(),
             })
@@ -48,6 +50,10 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
     let result = daemon_socket.write_and_stop(response).await;
 
     if result.is_err() {
-        eprintln!("error responding execute request: {:?}", result);
+        event!(
+            Level::ERROR,
+            "error responding execute request: {:?}",
+            result
+        );
     }
 }

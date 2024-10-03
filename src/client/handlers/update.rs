@@ -78,7 +78,7 @@ mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -91,7 +91,7 @@ mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = setup_with_expectations(
-            MockRun::default(),
+            MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
         let mock = setup_with_expectations(
@@ -181,7 +181,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -220,7 +220,7 @@ mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = setup_with_expectations(
-            MockRun::default(),
+            MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
         let mock = setup_with_expectations(
@@ -335,7 +335,7 @@ mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = setup_with_expectations(
-            MockRun::default(),
+            MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
         let mock = setup_with_expectations(
@@ -420,7 +420,7 @@ mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = setup_with_expectations(
-            MockRun::default(),
+            MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
         let mock = setup_with_expectations(
@@ -511,7 +511,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -553,7 +553,7 @@ mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = setup_with_expectations(
-            MockRun::default(),
+            MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
         let mock = setup_with_expectations(

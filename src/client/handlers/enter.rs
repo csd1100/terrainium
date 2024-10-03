@@ -5,9 +5,7 @@ use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
 use crate::common::types::pb;
-use crate::common::types::pb::{ActivateResponse, Error};
 use crate::common::types::socket::Socket;
-use crate::common::utils::timestamp;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use tokio::fs::read_to_string;
@@ -37,23 +35,16 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
         .spawn(envs.clone())
         .context("failed to spawn shell")?;
 
-    let execute_request = execute_request(
+    let request = execute_request(
         context,
         CONSTRUCTORS,
         &terrain,
-        Terrain::merged_constructors,
-        selected_name.to_string(),
+        selected_name,
         envs,
+        Terrain::merged_constructors,
+        true,
     )
-    .context("failed to convert commands to execute request")?;
-
-    let request = pb::ActivateRequest {
-        terrain_name: context.name(),
-        biome_name: selected_name.to_string(),
-        toml_path: context.toml_path()?.display().to_string(),
-        timestamp: timestamp(),
-        execute: Some(execute_request),
-    };
+    .expect("to be created");
 
     let client = context.socket();
 
@@ -62,13 +53,14 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
         .await?;
 
     let response: Any = client.read().await?;
-    let activate_response: Result<ActivateResponse> =
+    let activate_response: Result<pb::ExecuteResponse> =
         Any::to_msg(&response).context("failed to convert to execute response from Any");
 
     if let Ok(_activate_response) = activate_response {
         println!("Success");
     } else {
-        let error: Error = Any::to_msg(&response).context("failed to convert to error from Any")?;
+        let error: pb::Error =
+            Any::to_msg(&response).context("failed to convert to error from Any")?;
         return Err(anyhow!(
             "error response from daemon {}",
             error.error_message
@@ -86,10 +78,8 @@ mod test {
     use crate::common::constants::{
         FPATH, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
     };
-    use crate::common::execute::MockRun;
-    use crate::common::types::pb::{
-        ActivateRequest, ActivateResponse, Command, ExecuteRequest, Operation,
-    };
+    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
     use serial_test::serial;
     use std::collections::BTreeMap;
@@ -130,7 +120,7 @@ mod test {
             format!("{}:{}", compiled_script.display(), EXISTING_FPATH),
         );
 
-        let mut spawn = MockRun::default();
+        let mut spawn = MockCommandToRun::default();
         spawn
             .expect_set_args()
             .withf(|args| *args == vec!["-i"])
@@ -151,7 +141,7 @@ mod test {
 
         spawn.expect_without_wait().times(1).return_once(|| Ok(()));
 
-        let mut fpath = MockRun::default();
+        let mut fpath = MockCommandToRun::default();
         fpath
             .expect_set_args()
             .withf(|args| *args == vec!["-c", "/bin/echo -n $FPATH"])
@@ -164,7 +154,7 @@ mod test {
             })
         });
 
-        let mut shell_runner = MockRun::default();
+        let mut shell_runner = MockCommandToRun::default();
         shell_runner.expect_clone().times(1).return_once(|| fpath);
         shell_runner.expect_clone().times(1).return_once(|| spawn);
         let shell = Zsh::build(shell_runner);
@@ -186,33 +176,30 @@ mod test {
                     .expect("converted to string")
                     .to_string();
 
-                let expected_execute = ExecuteRequest {
-                    terrain_name: terrain_name.clone(),
-                    biome_name: "example_biome".to_string(),
-                    operation: i32::from(Operation::Constructors),
-                    commands: vec![Command {
-                        exe: "/bin/bash".to_string(),
-                        args: vec![
-                            "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                        ],
-                        envs: expected_envs.clone(),
-                    }],
-                };
+                let commands = vec![Command {
+                    exe: "/bin/bash".to_string(),
+                    args: vec![
+                        "-c".to_string(),
+                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    ],
+                    envs: expected_envs.clone(),
+                }];
 
-                let actual: ActivateRequest =
+                let actual: ExecuteRequest =
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == toml_path
-                    && actual.execute.expect("Activate request") == expected_execute
+                    && actual.is_activate
+                    && actual.commands == commands
+                    && actual.operation == i32::from(Operation::Constructors)
             })
             .times(1)
             .return_once(move |_| Ok(()));
 
         mocket.expect_read().with().times(1).return_once(|| {
-            Ok(Any::from_msg(&ActivateResponse {}).expect("to be converted to any"))
+            Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
         });
 
         let mut context = Context::build(

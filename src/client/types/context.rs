@@ -173,7 +173,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::{Shell, Zsh};
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
@@ -188,12 +188,12 @@ mod test {
         let current_dir = env::current_dir().expect("failed to get current directory");
         let central_dir = get_central_dir_location();
 
-        let new_mock = MockRun::new_context();
+        let new_mock = MockCommandToRun::new_context();
         new_mock
             .expect()
             .withf(|_, _, _| true)
             .times(1)
-            .returning(|_, _, _| MockRun::default());
+            .returning(|_, _, _| MockCommandToRun::default());
 
         let actual = Context::generate(None);
         assert_eq!(current_dir, actual.current_dir);
@@ -204,7 +204,7 @@ mod test {
 
     #[test]
     fn current_dir_returns_current_dir() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         assert_eq!(
             &env::current_dir().expect("failed to get current directory"),
             context.current_dir()
@@ -223,7 +223,7 @@ mod test {
                 .to_string(),
         );
 
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         assert_eq!(context.terrainium_envs(), expected_map);
         Ok(())
     }
@@ -234,7 +234,7 @@ mod test {
             env::current_dir().expect("failed to get current directory");
         expected_terrain_toml.push("terrain.toml");
 
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
 
         assert_eq!(context.local_toml_path(), expected_terrain_toml);
 
@@ -254,7 +254,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -285,7 +285,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -317,7 +317,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -341,7 +341,7 @@ mod test {
         let err = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         )
         .toml_path()
@@ -365,7 +365,7 @@ mod test {
 
     #[test]
     fn central_dir_returns_config_location() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         let central_dir = get_central_dir_location();
 
         assert_eq!(&central_dir, context.central_dir());
@@ -374,7 +374,7 @@ mod test {
 
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         let mut scripts_dir = get_central_dir_location();
         scripts_dir.push("scripts");
 
@@ -385,16 +385,16 @@ mod test {
     #[serial]
     #[test]
     fn shell_returns_shell() -> Result<()> {
-        let new_mock = MockRun::new_context();
+        let new_mock = MockCommandToRun::new_context();
         new_mock
             .expect()
             .withf(|_, _, _| true)
             .times(1)
-            .returning(move |_, _, _| MockRun::default());
+            .returning(move |_, _, _| MockCommandToRun::default());
 
         let context = Context::generate(None);
 
-        let expected_shell = Zsh::build(MockRun::default());
+        let expected_shell = Zsh::build(MockCommandToRun::default());
 
         assert_eq!(context.shell().exe(), expected_shell.exe());
 
@@ -403,14 +403,14 @@ mod test {
 
     #[test]
     fn name_return_current_dir_name() {
-        let context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         assert_eq!(context.name(), "terrainium");
     }
 
     // #[test]
     // fn socket_return_socket_witout_panic() {
     //     let mut context = Context::build_without_paths(
-    //         Zsh::build(MockRun::default()),
+    //         Zsh::build(MockCommandToRun::default()),
     //         Some(MockClient::default()),
     //     );
     //     context.socket();
@@ -419,7 +419,8 @@ mod test {
     #[should_panic]
     #[test]
     fn socket_panic() {
-        let mut context = Context::build_without_paths(Zsh::build(MockRun::default()), None);
+        let mut context =
+            Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         context.socket();
     }
 

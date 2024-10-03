@@ -17,13 +17,11 @@ async fn main() -> Result<()> {
     let args = DaemonArgs::parse();
 
     let (subscriber, (_file_guard, _out_guard)) = init_logging(LevelFilter::from(args.log_level));
-
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
     let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)
         .await
         .context("to create new terrainium daemon")?;
-
     let listener = daemon.listener();
 
     while let Some(socket) = listener.next().await.transpose()? {

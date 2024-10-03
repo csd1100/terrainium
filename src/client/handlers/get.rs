@@ -174,7 +174,7 @@ mod test {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs::{copy, read_to_string};
@@ -190,7 +190,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -230,7 +230,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -269,7 +269,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -309,7 +309,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -347,7 +347,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -385,7 +385,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -422,7 +422,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -460,7 +460,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -498,7 +498,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -535,7 +535,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -573,7 +573,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -611,7 +611,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -649,7 +649,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -688,7 +688,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -727,7 +727,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -768,7 +768,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -810,7 +810,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 
@@ -849,7 +849,7 @@ mod test {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             None,
         );
 

@@ -6,6 +6,7 @@ use crate::common::constants::CONSTRUCTORS;
 use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
+use crate::common::utils::timestamp;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::collections::BTreeMap;
@@ -23,9 +24,10 @@ pub fn execute_request(
     context: &mut Context,
     operation: &str,
     terrain: &Terrain,
-    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
     biome_name: String,
     envs: BTreeMap<String, String>,
+    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
+    is_activate: bool,
 ) -> Result<ExecuteRequest> {
     let commands = get_commands(terrain, &Some(biome_name.clone()))
         .context(format!("failed to merge {}", operation))?;
@@ -43,6 +45,13 @@ pub fn execute_request(
     Ok(ExecuteRequest {
         terrain_name: context.name(),
         biome_name,
+        toml_path: context
+            .toml_path()
+            .expect("to be present")
+            .display()
+            .to_string(),
+        is_activate,
+        timestamp: timestamp(),
         operation: i32::from(operation_from_string(operation)),
         commands,
     })
@@ -72,9 +81,10 @@ pub async fn handle(
         context,
         operation,
         &terrain,
-        get_commands,
         selected_biome,
         final_envs,
+        get_commands,
+        false,
     )
     .context("failed to convert commands to execute request")?;
 

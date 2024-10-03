@@ -1,7 +1,7 @@
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 #[double]
-use crate::common::execute::Run;
+use crate::common::execute::CommandToRun;
 use anyhow::Result;
 use mockall_double::double;
 use std::collections::BTreeMap;
@@ -13,7 +13,7 @@ pub mod zsh;
 pub trait Shell: Debug + PartialEq {
     fn get() -> Self;
     fn exe(&self) -> String;
-    fn runner(&self) -> Run;
+    fn runner(&self) -> CommandToRun;
     fn update_rc(data: String) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
@@ -29,5 +29,5 @@ pub trait Shell: Debug + PartialEq {
 #[derive(Debug, PartialEq)]
 pub struct Zsh {
     exe: String,
-    runner: Run,
+    runner: CommandToRun,
 }

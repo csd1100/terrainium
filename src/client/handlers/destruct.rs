@@ -14,7 +14,7 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::common::execute::MockRun;
+    use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
@@ -30,7 +30,7 @@ mod tests {
         let mut terrain_toml: PathBuf = current_dir.path().into();
         terrain_toml.push("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", terrain_toml)
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
         let current_dir_path: PathBuf = current_dir.path().into();
@@ -56,6 +56,9 @@ mod tests {
                 let expected = ExecuteRequest {
                     terrain_name,
                     biome_name: "example_biome".to_string(),
+                    toml_path: terrain_toml.display().to_string(),
+                    is_activate: false,
+                    timestamp: "".to_string(),
                     operation: i32::from(Operation::Destructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),
@@ -79,7 +82,7 @@ mod tests {
         let mut context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             Some(mocket),
         );
 
@@ -95,7 +98,7 @@ mod tests {
         let mut terrain_toml: PathBuf = current_dir.path().into();
         terrain_toml.push("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", terrain_toml)
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
         let current_dir_path: PathBuf = current_dir.path().into();
@@ -121,6 +124,9 @@ mod tests {
                 let expected = ExecuteRequest {
                     terrain_name,
                     biome_name: "example_biome".to_string(),
+                    toml_path: terrain_toml.display().to_string(),
+                    is_activate: false,
+                    timestamp: "".to_string(),
                     operation: i32::from(Operation::Destructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),
@@ -147,7 +153,7 @@ mod tests {
         let mut context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            Zsh::build(MockRun::default()),
+            Zsh::build(MockCommandToRun::default()),
             Some(mocket),
         );
 
