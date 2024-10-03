@@ -1,13 +1,10 @@
 use crate::client::args::{option_string_from, BiomeArg};
-use crate::client::handlers::background::execute_request;
+use crate::client::handlers::background;
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
-use crate::common::types::pb;
-use crate::common::types::socket::Socket;
-use anyhow::{anyhow, Context as AnyhowContext, Result};
-use prost_types::Any;
+use anyhow::{Context as AnyhowContext, Result};
 use tokio::fs::read_to_string;
 
 pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Result<()> {
@@ -18,10 +15,10 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
     )
     .expect("failed to parse terrain from toml");
 
-    let biome_arg = option_string_from(&biome_arg);
-    let (selected_name, _) = terrain.select_biome(&biome_arg)?;
+    let biome = option_string_from(&biome_arg);
+    let (selected_name, _) = terrain.select_biome(&biome)?;
 
-    let mut envs = terrain.merged_envs(&biome_arg)?;
+    let mut envs = terrain.merged_envs(&biome)?;
     envs.append(&mut context.terrainium_envs().clone());
     envs.append(
         &mut context
@@ -35,37 +32,15 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
         .spawn(envs.clone())
         .context("failed to spawn shell")?;
 
-    let request = execute_request(
+    background::handle(
         context,
         CONSTRUCTORS,
-        &terrain,
-        selected_name,
-        envs,
+        biome_arg,
         Terrain::merged_constructors,
-        true,
+        Some(envs),
     )
-    .expect("to be created");
-
-    let client = context.socket();
-
-    client
-        .write_and_stop(Any::from_msg(&request).unwrap())
-        .await?;
-
-    let response: Any = client.read().await?;
-    let activate_response: Result<pb::ExecuteResponse> =
-        Any::to_msg(&response).context("failed to convert to execute response from Any");
-
-    if let Ok(_activate_response) = activate_response {
-        println!("Success");
-    } else {
-        let error: pb::Error =
-            Any::to_msg(&response).context("failed to convert to error from Any")?;
-        return Err(anyhow!(
-            "error response from daemon {}",
-            error.error_message
-        ));
-    }
+    .await
+    .context("failed to send background constructors to daemon")?;
 
     Ok(())
 }
@@ -76,7 +51,8 @@ mod test {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        FPATH, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+        FPATH, TERRAINIUM_ENABLED, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN,
+        TERRAIN_INIT_SCRIPT,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -113,6 +89,7 @@ mod test {
             compiled_script.display().to_string(),
         );
         expected_envs.insert(TERRAIN_INIT_FN.to_string(), script.display().to_string());
+        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         expected_envs.insert(
@@ -123,7 +100,7 @@ mod test {
         let mut spawn = MockCommandToRun::default();
         spawn
             .expect_set_args()
-            .withf(|args| *args == vec!["-i"])
+            .withf(|args| *args == vec!["-i", "-s"])
             .times(1)
             .return_once(|_| ());
 
@@ -139,7 +116,10 @@ mod test {
             .times(1)
             .return_once(|_| ());
 
-        spawn.expect_without_wait().times(1).return_once(|| Ok(()));
+        spawn
+            .expect_wait()
+            .times(1)
+            .return_once(|| Ok(ExitStatus::from_raw(0)));
 
         let mut fpath = MockCommandToRun::default();
         fpath

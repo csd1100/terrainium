@@ -9,8 +9,9 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
     background::handle(
         context,
         CONSTRUCTORS,
-        Terrain::merged_constructors,
         biome_arg,
+        Terrain::merged_constructors,
+        None,
     )
     .await
 }
@@ -51,6 +52,7 @@ mod tests {
                     "TERRAIN_DIR".to_string(),
                     current_dir_path.to_str().unwrap().to_string(),
                 );
+                envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -59,24 +61,24 @@ mod tests {
                     .expect("converted to string")
                     .to_string();
 
-                let expected = ExecuteRequest {
-                    terrain_name,
-                    biome_name: "example_biome".to_string(),
-                    toml_path: terrain_toml.display().to_string(),
-                    is_activate: false,
-                    timestamp: "".to_string(),
-                    operation: i32::from(Operation::Constructors),
-                    commands: vec![Command {
-                        exe: "/bin/bash".to_string(),
-                        args: vec![
-                            "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                        ],
-                        envs,
-                    }],
-                };
+                let commands = vec![Command {
+                    exe: "/bin/bash".to_string(),
+                    args: vec![
+                        "-c".to_string(),
+                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    ],
+                    envs,
+                }];
 
-                *actual == Any::from_msg(&expected).expect("to be converted to any")
+                let actual: ExecuteRequest =
+                    Any::to_msg(actual).expect("failed to convert to Activate request");
+
+                actual.terrain_name == terrain_name
+                    && actual.biome_name == "example_biome"
+                    && actual.toml_path == terrain_toml.display().to_string()
+                    && !actual.is_activate
+                    && actual.commands == commands
+                    && actual.operation == i32::from(Operation::Constructors)
             })
             .times(1)
             .return_once(move |_| Ok(()));
@@ -119,6 +121,7 @@ mod tests {
                     "TERRAIN_DIR".to_string(),
                     current_dir_path.to_str().unwrap().to_string(),
                 );
+                envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -127,24 +130,24 @@ mod tests {
                     .expect("converted to string")
                     .to_string();
 
-                let expected = ExecuteRequest {
-                    terrain_name,
-                    biome_name: "example_biome".to_string(),
-                    toml_path: terrain_toml.display().to_string(),
-                    is_activate: false,
-                    timestamp: "".to_string(),
-                    operation: i32::from(Operation::Constructors),
-                    commands: vec![Command {
-                        exe: "/bin/bash".to_string(),
-                        args: vec![
-                            "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                        ],
-                        envs,
-                    }],
-                };
+                let commands = vec![Command {
+                    exe: "/bin/bash".to_string(),
+                    args: vec![
+                        "-c".to_string(),
+                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    ],
+                    envs,
+                }];
 
-                *actual == Any::from_msg(&expected).expect("to be converted to any")
+                let actual: ExecuteRequest =
+                    Any::to_msg(actual).expect("failed to convert to Activate request");
+
+                actual.terrain_name == terrain_name
+                    && actual.biome_name == "example_biome"
+                    && actual.toml_path == terrain_toml.display().to_string()
+                    && !actual.is_activate
+                    && actual.commands == commands
+                    && actual.operation == i32::from(Operation::Constructors)
             })
             .times(1)
             .return_once(move |_| Ok(()));

@@ -1,7 +1,7 @@
 use crate::client::shell::{Shell, Zsh};
 #[double]
 use crate::client::types::client::Client;
-use crate::common::constants::TERRAIN_DIR;
+use crate::common::constants::{TERRAINIUM_ENABLED, TERRAIN_DIR};
 use anyhow::{anyhow, Result};
 use home::home_dir;
 use mockall_double::double;
@@ -123,6 +123,7 @@ impl Context {
             TERRAIN_DIR.to_string(),
             self.current_dir().to_string_lossy().to_string(),
         );
+        terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
         terrainium_envs
     }
 
@@ -173,6 +174,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::{Shell, Zsh};
+    use crate::common::constants::TERRAINIUM_ENABLED;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -217,11 +219,12 @@ mod test {
         let mut expected_map = BTreeMap::<String, String>::new();
         expected_map.insert(
             "TERRAIN_DIR".to_string(),
-            std::env::current_dir()
+            env::current_dir()
                 .expect("to be found")
                 .display()
                 .to_string(),
         );
+        expected_map.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
         assert_eq!(context.terrainium_envs(), expected_map);

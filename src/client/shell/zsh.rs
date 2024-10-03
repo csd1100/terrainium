@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
-use std::process::Output;
+use std::process::{ExitStatus, Output};
 
 const ZSH_MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
 const ZSH_ENVS_TEMPLATE: &str = include_str!("../../../templates/zsh_env.hbs");
@@ -77,12 +77,12 @@ impl Shell for Zsh {
         runner.get_output()
     }
 
-    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<()> {
+    fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus> {
         let mut runner = self.runner();
-        runner.set_args(vec!["-i".to_string()]);
+        runner.set_args(vec!["-i".to_string(), "-s".to_string()]);
         runner.set_envs(Some(envs));
 
-        runner.without_wait()
+        runner.wait().context("Failed to run zsh")
     }
 
     fn generate_envs(&self, context: &Context, biome: String) -> Result<BTreeMap<String, String>> {

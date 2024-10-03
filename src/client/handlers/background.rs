@@ -20,16 +20,30 @@ fn operation_from_string(op: &str) -> pb::Operation {
     }
 }
 
-pub fn execute_request(
+pub async fn handle(
     context: &mut Context,
     operation: &str,
-    terrain: &Terrain,
-    biome_name: String,
-    envs: BTreeMap<String, String>,
+    biome_arg: Option<BiomeArg>,
     get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
-    is_activate: bool,
-) -> Result<ExecuteRequest> {
-    let commands = get_commands(terrain, &Some(biome_name.clone()))
+    zsh_envs: Option<BTreeMap<String, String>>,
+) -> Result<()> {
+    let terrain = Terrain::from_toml(
+        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
+    )
+    .expect("terrain to be parsed from toml");
+
+    let selected_biome = option_string_from(&biome_arg);
+
+    let mut envs = terrain
+        .merged_envs(&selected_biome)
+        .context("failed to merge envs")?;
+    envs.append(&mut context.terrainium_envs().clone());
+
+    if let Some(zsh_envs) = &zsh_envs {
+        envs.append(&mut zsh_envs.clone());
+    }
+
+    let commands = get_commands(&terrain, &selected_biome)
         .context(format!("failed to merge {}", operation))?;
 
     let commands: Vec<pb::Command> = commands
@@ -42,51 +56,21 @@ pub fn execute_request(
         })
         .collect();
 
-    Ok(ExecuteRequest {
+    let (selected_biome, _) = terrain.select_biome(&selected_biome)?;
+
+    let request = ExecuteRequest {
         terrain_name: context.name(),
-        biome_name,
+        biome_name: selected_biome,
         toml_path: context
             .toml_path()
             .expect("to be present")
             .display()
             .to_string(),
-        is_activate,
+        is_activate: zsh_envs.is_some(),
         timestamp: timestamp(),
         operation: i32::from(operation_from_string(operation)),
         commands,
-    })
-}
-
-pub async fn handle(
-    context: &mut Context,
-    operation: &str,
-    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
-    biome_arg: Option<BiomeArg>,
-) -> Result<()> {
-    let terrain = Terrain::from_toml(
-        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-    )
-    .expect("terrain to be parsed from toml");
-
-    let selected_biome = option_string_from(&biome_arg);
-
-    let mut envs = terrain
-        .merged_envs(&selected_biome)
-        .context("failed to merge envs")?;
-    let mut final_envs = context.terrainium_envs().clone();
-    final_envs.append(&mut envs);
-
-    let (selected_biome, _) = terrain.select_biome(&selected_biome)?;
-    let request = execute_request(
-        context,
-        operation,
-        &terrain,
-        selected_biome,
-        final_envs,
-        get_commands,
-        false,
-    )
-    .context("failed to convert commands to execute request")?;
+    };
 
     let client = context.socket();
 

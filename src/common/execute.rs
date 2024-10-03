@@ -10,7 +10,6 @@ use tracing::{event, instrument, Level};
 pub trait Execute {
     fn get_output(self) -> Result<Output>;
     fn wait(self) -> Result<ExitStatus>;
-    fn without_wait(self) -> Result<()>;
     fn async_get_output(self) -> impl std::future::Future<Output = Result<Output>> + Send;
     fn async_wait(
         self,
@@ -81,12 +80,6 @@ impl Execute for CommandToRun {
         child.wait().context("failed to wait for command")
     }
 
-    fn without_wait(self) -> Result<()> {
-        let mut command: tokio::process::Command = self.into();
-        command.spawn().context("failed to run command")?;
-        Ok(())
-    }
-
     #[instrument]
     async fn async_get_output(self) -> Result<Output> {
         event!(Level::INFO, "running async get_output for {:?}", self);
@@ -138,7 +131,6 @@ mock! {
     impl Execute for CommandToRun {
         fn get_output(self) -> Result<Output>;
         fn wait(self) -> Result<ExitStatus>;
-        fn without_wait(self) -> Result<()>;
         async fn async_get_output(self) -> Result<Output>;
         async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
     }
