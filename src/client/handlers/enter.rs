@@ -21,8 +21,8 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
     .expect("failed to parse terrain from toml");
 
     let biome_arg = option_string_from(&biome_arg);
-
     let (selected_name, _) = terrain.select_biome(&biome_arg)?;
+
     let mut envs = terrain.merged_envs(&biome_arg)?;
     envs.append(&mut context.terrainium_envs().clone());
     envs.append(
@@ -42,7 +42,7 @@ pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Resul
         CONSTRUCTORS,
         &terrain,
         Terrain::merged_constructors,
-        biome_arg,
+        selected_name.to_string(),
         envs,
     )
     .context("failed to convert commands to execute request")?;
@@ -188,6 +188,7 @@ mod test {
 
                 let expected_execute = ExecuteRequest {
                     terrain_name: terrain_name.clone(),
+                    biome_name: "example_biome".to_string(),
                     operation: i32::from(Operation::Constructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),

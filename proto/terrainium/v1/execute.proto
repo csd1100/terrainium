@@ -4,8 +4,9 @@ package terrainium.v1;
 
 message ExecuteRequest {
   string terrain_name = 1;
-  Operation operation = 2;
-  repeated Command commands = 3;
+  string biome_name = 2;
+  Operation operation = 3;
+  repeated Command commands = 4;
 }
 
 enum Operation {

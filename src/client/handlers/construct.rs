@@ -61,6 +61,7 @@ mod tests {
 
                 let expected = ExecuteRequest {
                     terrain_name,
+                    biome_name: "example_biome".to_string(),
                     operation: i32::from(Operation::Constructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),
@@ -125,6 +126,7 @@ mod tests {
 
                 let expected = ExecuteRequest {
                     terrain_name,
+                    biome_name: "example_biome".to_string(),
                     operation: i32::from(Operation::Constructors),
                     commands: vec![Command {
                         exe: "/bin/bash".to_string(),

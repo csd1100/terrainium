@@ -18,7 +18,15 @@ impl Daemon {
             return Err(anyhow!("path for socket should be absolute"));
         }
 
-        if path.exists() && force {
+        if !path.exists() {
+            event!(
+                Level::WARN,
+                "creating directories required for path: {}",
+                path.display()
+            );
+            create_dir_all(path.parent().expect("socket to have parent"))
+                .expect("creating parent directory");
+        } else if path.exists() && force {
             event!(
                 Level::WARN,
                 "cleaning up daemon socket on path: {}",
@@ -32,16 +40,6 @@ impl Daemon {
                 path.display()
             );
             return Err(anyhow!("daemon socket already exists"));
-        }
-
-        if !path.parent().expect("socket to have parent").exists() {
-            event!(
-                Level::WARN,
-                "creating directories required for path: {}",
-                path.display()
-            );
-            create_dir_all(path.parent().expect("socket to have parent"))
-                .expect("creating parent directory");
         }
 
         event!(Level::INFO, "creating daemon on path: {}", path.display());

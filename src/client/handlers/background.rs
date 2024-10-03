@@ -24,11 +24,11 @@ pub fn execute_request(
     operation: &str,
     terrain: &Terrain,
     get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
-    selected_biome: Option<String>,
+    biome_name: String,
     envs: BTreeMap<String, String>,
 ) -> Result<ExecuteRequest> {
-    let commands =
-        get_commands(terrain, &selected_biome).context(format!("failed to merge {}", operation))?;
+    let commands = get_commands(terrain, &Some(biome_name.clone()))
+        .context(format!("failed to merge {}", operation))?;
 
     let commands: Vec<pb::Command> = commands
         .background()
@@ -42,6 +42,7 @@ pub fn execute_request(
 
     Ok(ExecuteRequest {
         terrain_name: context.name(),
+        biome_name,
         operation: i32::from(operation_from_string(operation)),
         commands,
     })
@@ -66,6 +67,7 @@ pub async fn handle(
     let mut final_envs = context.terrainium_envs().clone();
     final_envs.append(&mut envs);
 
+    let (selected_biome, _) = terrain.select_biome(&selected_biome)?;
     let request = execute_request(
         context,
         operation,
