@@ -74,6 +74,7 @@ mod tests {
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
+                    && actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == terrain_toml.display().to_string()
                     && !actual.is_activate
@@ -143,6 +144,7 @@ mod tests {
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
+                    && actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == terrain_toml.display().to_string()
                     && !actual.is_activate

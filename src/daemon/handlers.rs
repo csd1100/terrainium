@@ -1,6 +1,6 @@
 use crate::common::types::pb;
 use crate::common::types::socket::Socket;
-use crate::daemon::handlers::execute::ExecuteHandler;
+use crate::daemon::handlers::run::ExecuteHandler;
 #[double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
@@ -8,7 +8,7 @@ use mockall_double::double;
 use prost_types::Any;
 use tracing::{event, instrument, Level};
 
-pub mod execute;
+pub mod run;
 
 pub(crate) trait RequestHandler {
     async fn handle(request: Any) -> Any;

@@ -2,7 +2,9 @@ use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
-use terrainium::client::handlers::{construct, destruct, edit, enter, generate, get, init, update};
+use terrainium::client::handlers::{
+    construct, destruct, edit, enter, exit, generate, get, init, update,
+};
 use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
 use terrainium::common::constants::TERRAINIUMD_SOCKET;
@@ -87,6 +89,12 @@ async fn main() -> Result<()> {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
             context.set_client(client);
             enter::handle(&mut context, biome).await?
+        }
+
+        Verbs::Exit => {
+            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+            context.set_client(client);
+            exit::handle(&mut context).await?
         }
 
         #[cfg(feature = "terrain-schema")]

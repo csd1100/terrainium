@@ -2,18 +2,29 @@ use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::CONSTRUCTORS;
-use anyhow::Result;
+use crate::common::constants::DESTRUCTORS;
+use anyhow::{anyhow, Context as AnyhowContext, Result};
+use std::collections::BTreeMap;
 
-pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Result<()> {
+pub async fn handle(context: &mut Context) -> Result<()> {
+    let session_id = context.session_id();
+    let selected_biome = context.selected_biome();
+
+    if session_id.is_empty() || selected_biome.is_empty() {
+        return Err(anyhow!("no active terrain found, use `terrainium enter` command to activate a terrain. exiting...."));
+    }
+
     background::handle(
         context,
-        CONSTRUCTORS,
-        biome_arg,
-        Terrain::merged_constructors,
-        None,
+        DESTRUCTORS,
+        Some(BiomeArg::Some(selected_biome.to_string())),
+        Terrain::merged_destructors,
+        Some(BTreeMap::<String, String>::new()),
     )
     .await
+    .context("failed to run destructors")?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -31,7 +42,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[tokio::test]
-    async fn construct_send_message_to_daemon() {
+    async fn destruct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -74,12 +85,12 @@ mod tests {
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
-                    && actual.session_id.is_empty()
+                    && !actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == terrain_toml.display().to_string()
                     && !actual.is_activate
                     && actual.commands == commands
-                    && actual.operation == i32::from(Operation::Constructors)
+                    && actual.operation == i32::from(Operation::Destructors)
             })
             .times(1)
             .return_once(move |_| Ok(()));
@@ -95,13 +106,13 @@ mod tests {
             Some(mocket),
         );
 
-        super::handle(&mut context, None)
+        super::handle(&mut context)
             .await
             .expect("no error to be thrown");
     }
 
     #[tokio::test]
-    async fn construct_send_message_to_daemon_and_error() {
+    async fn destruct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -149,7 +160,7 @@ mod tests {
                     && actual.toml_path == terrain_toml.display().to_string()
                     && !actual.is_activate
                     && actual.commands == commands
-                    && actual.operation == i32::from(Operation::Constructors)
+                    && actual.operation == i32::from(Operation::Destructors)
             })
             .times(1)
             .return_once(move |_| Ok(()));
@@ -168,9 +179,7 @@ mod tests {
             Some(mocket),
         );
 
-        let err = super::handle(&mut context, None)
-            .await
-            .expect_err("to be thrown");
+        let err = super::handle(&mut context).await.expect_err("to be thrown");
 
         assert_eq!(
             err.to_string(),

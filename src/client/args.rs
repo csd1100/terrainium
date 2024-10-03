@@ -84,6 +84,8 @@ pub enum Verbs {
         biome: Option<BiomeArg>,
     },
 
+    Exit,
+
     #[cfg(feature = "terrain-schema")]
     Schema,
 }

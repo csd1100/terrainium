@@ -52,8 +52,8 @@ mod test {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        FPATH, TERRAINIUM_ENABLED, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
+        FPATH, TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID, TERRAIN_ACTIVATION_TIMESTAMP,
+        TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -94,6 +94,7 @@ mod test {
             "terrain-example_biome.zsh".to_string(),
         );
         expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
@@ -177,6 +178,7 @@ mod test {
                     Any::to_msg(actual).expect("failed to convert to Activate request");
 
                 actual.terrain_name == terrain_name
+                    && !actual.session_id.is_empty()
                     && actual.biome_name == "example_biome"
                     && actual.toml_path == toml_path
                     && actual.is_activate

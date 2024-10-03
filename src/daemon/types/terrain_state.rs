@@ -2,28 +2,31 @@ use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 use crate::common::execute::CommandToRun;
 use crate::common::types::pb;
 use crate::common::types::pb::Operation;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TerrainState {
+    session_id: String,
     terrain_name: String,
     biome_name: String,
     toml_path: String,
-    timestamp: String,
+    start_timestamp: String,
+    end_timestamp: String,
     is_activate: bool,
     execute_context: ExecutionContext,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ExecutionContext {
-    operation: String,
-    commands_state: Vec<CommandState>,
+    constructors_state: Vec<CommandState>,
+    destructors_state: Vec<CommandState>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommandState {
+    operation: String,
     command: CommandToRun,
     log_path: String,
     status: CommandStatus,
@@ -51,7 +54,7 @@ impl TerrainState {
     }
 
     pub fn timestamp(&self) -> &str {
-        self.timestamp.as_str()
+        self.end_timestamp.as_str()
     }
 
     pub fn execute_context(&self) -> &ExecutionContext {
@@ -62,29 +65,61 @@ impl TerrainState {
         &mut self.execute_context
     }
 
-    pub fn set_log_path(&mut self, idx: usize) {
-        self.execute_context
-            .commands_state
-            .get_mut(idx)
-            .expect("to be present")
-            .log_path = format!(
-            "{}/{}.{}.{}.log",
-            self.dir_path(),
-            self.execute_context.operation.as_str(),
-            idx,
-            self.timestamp.as_str()
-        );
+    pub fn set_log_path(&mut self, idx: usize, operation: &str) {
+        if operation == CONSTRUCTORS {
+            self.execute_context
+                .constructors_state
+                .get_mut(idx)
+                .expect("to be present")
+                .log_path = format!(
+                "{}/{}.{}.{}.log",
+                self.dir_path(),
+                operation,
+                idx,
+                self.end_timestamp.as_str()
+            );
+        } else {
+            self.execute_context
+                .destructors_state
+                .get_mut(idx)
+                .expect("to be present")
+                .log_path = format!(
+                "{}/{}.{}.{}.log",
+                self.dir_path(),
+                operation,
+                idx,
+                self.end_timestamp.as_str()
+            );
+        }
     }
 
     pub fn dir_path(&self) -> String {
+        let identifier: &str = if !self.session_id.is_empty() {
+            &self.session_id
+        } else if !self.start_timestamp.is_empty() {
+            &self.start_timestamp
+        } else {
+            &self.end_timestamp
+        };
         format!(
             "{}/{}/{}",
-            TERRAINIUMD_TMP_DIR, self.terrain_name, self.timestamp
+            TERRAINIUMD_TMP_DIR, self.terrain_name, identifier
         )
     }
 
     pub fn file_path(&self) -> String {
         format!("{}/state.json", self.dir_path())
+    }
+
+    pub(crate) fn merge(&mut self, other: Self) -> Result<()> {
+        if self.session_id != other.session_id {
+            return Err(anyhow!("cannot merge unrelated terrain states"));
+        }
+
+        self.end_timestamp = other.end_timestamp;
+        self.execute_context.destructors_state = other.execute_context.destructors_state;
+
+        Ok(())
     }
 
     pub(crate) async fn new_file(&self) -> Result<fs::File> {
@@ -106,45 +141,80 @@ impl TerrainState {
             .context("Failed to create TerrainState file")
     }
 
-    // pub(crate) async fn readable_file(&self) -> Result<fs::File> {
-    //     fs::File::options()
-    //         .truncate(true)
-    //         .write(true)
-    //         .open(self.file_path())
-    //         .await
-    //         .context("Failed to create TerrainState file")
-    // }
+    pub(crate) async fn readable_file(&self) -> Result<fs::File> {
+        fs::File::options()
+            .truncate(true)
+            .write(true)
+            .open(self.file_path())
+            .await
+            .context("Failed to read TerrainState file")
+    }
 }
 
 impl ExecutionContext {
-    pub fn operation(&self) -> &str {
-        self.operation.as_str()
+    pub fn commands(&self, operation: &str) -> Vec<CommandToRun> {
+        if operation == CONSTRUCTORS {
+            self.constructors_state
+                .iter()
+                .map(|state| state.command.clone())
+                .collect()
+        } else {
+            self.destructors_state
+                .iter()
+                .map(|state| state.command.clone())
+                .collect()
+        }
     }
 
-    pub fn commands(&self) -> Vec<CommandToRun> {
-        self.commands_state
-            .iter()
-            .map(|state| state.command.clone())
-            .collect()
+    pub fn command(&self, idx: usize, operation: &str) -> &CommandToRun {
+        if operation == CONSTRUCTORS {
+            &self
+                .constructors_state
+                .get(idx)
+                .expect("to be present")
+                .command
+        } else {
+            &self
+                .destructors_state
+                .get(idx)
+                .expect("to be present")
+                .command
+        }
     }
 
-    pub fn command(&self, idx: usize) -> &CommandToRun {
-        &self.commands_state.get(idx).expect("to be present").command
+    pub fn log_path(&self, idx: usize, operation: &str) -> &str {
+        if operation == CONSTRUCTORS {
+            self.constructors_state
+                .get(idx)
+                .expect("to be present")
+                .log_path
+                .as_str()
+        } else {
+            self.destructors_state
+                .get(idx)
+                .expect("to be present")
+                .log_path
+                .as_str()
+        }
     }
 
-    pub fn log_path(&self, idx: usize) -> &str {
-        self.commands_state
-            .get(idx)
-            .expect("to be present")
-            .log_path
-            .as_str()
-    }
-
-    pub fn set_command_state(&mut self, idx: usize, command_status: CommandStatus) {
-        self.commands_state
-            .get_mut(idx)
-            .expect("to be present")
-            .status = command_status;
+    pub fn set_command_state(
+        &mut self,
+        idx: usize,
+        operation: &str,
+        command_status: CommandStatus,
+    ) {
+        if operation == CONSTRUCTORS {
+            self.constructors_state
+                .get_mut(idx)
+                .expect("to be present")
+                .status = command_status;
+        } else {
+            self.destructors_state
+                .get_mut(idx)
+                .expect("to be present")
+                .status = command_status;
+        }
     }
 
     pub fn to_json(&self) -> Result<String> {
@@ -159,11 +229,20 @@ impl ExecutionContext {
 impl From<pb::ExecuteRequest> for TerrainState {
     fn from(value: pb::ExecuteRequest) -> Self {
         let execution_context = value.clone().into();
+
+        let (start_time, end_time) = if operation_name(value.operation) == CONSTRUCTORS {
+            (value.timestamp, "".to_string())
+        } else {
+            ("".to_string(), value.timestamp)
+        };
+
         Self {
+            session_id: value.session_id,
             terrain_name: value.terrain_name,
             biome_name: value.biome_name,
             toml_path: value.toml_path,
-            timestamp: value.timestamp,
+            start_timestamp: start_time,
+            end_timestamp: end_time,
             is_activate: value.is_activate,
             execute_context: execution_context,
         }
@@ -186,15 +265,29 @@ impl From<pb::ExecuteRequest> for ExecutionContext {
             .commands
             .into_iter()
             .map(|command| CommandState {
+                operation: operation_name(value.operation),
                 command: CommandToRun::new(command.exe, command.args, Some(command.envs)),
                 log_path: "".to_string(),
                 status: CommandStatus::Starting,
             })
             .collect();
 
-        Self {
-            operation: operation_name(value.operation),
-            commands_state,
+        if operation_name(value.operation) == CONSTRUCTORS {
+            Self {
+                constructors_state: commands_state,
+                destructors_state: vec![],
+            }
+        } else {
+            Self {
+                constructors_state: vec![],
+                destructors_state: commands_state,
+            }
         }
+    }
+}
+
+impl CommandState {
+    pub fn operation(&self) -> &str {
+        self.operation.as_str()
     }
 }

@@ -2,7 +2,8 @@ use crate::client::shell::{Shell, Zsh};
 #[double]
 use crate::client::types::client::Client;
 use crate::common::constants::{
-    TERRAINIUM_DEV, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAIN_DIR,
+    TERRAINIUM_DEV, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID, TERRAIN_DIR,
+    TERRAIN_SELECTED_BIOME,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -10,11 +11,14 @@ use mockall_double::double;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Context {
+    session_id: String,
     current_dir: PathBuf,
     central_dir: PathBuf,
+    selected_biome: String,
     shell: Zsh,
     client: Option<Client>,
 }
@@ -34,15 +38,31 @@ impl Default for Context {
 
 impl Context {
     pub fn generate(client: Option<Client>) -> Self {
+        let session_id =
+            env::var(TERRAINIUM_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+
+        let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
+
         Context {
+            session_id,
             current_dir: env::current_dir().expect("failed to get current directory"),
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),
             ),
+            selected_biome,
             shell: Zsh::get(),
             client,
         }
     }
+
+    pub fn session_id(&self) -> &str {
+        &self.session_id
+    }
+
+    pub fn selected_biome(&self) -> &str {
+        &self.selected_biome
+    }
+
     pub fn current_dir(&self) -> &PathBuf {
         &self.current_dir
     }
@@ -125,6 +145,10 @@ impl Context {
             TERRAIN_DIR.to_string(),
             self.current_dir().to_string_lossy().to_string(),
         );
+        terrainium_envs.insert(
+            TERRAINIUM_SESSION_ID.to_string(),
+            self.session_id().to_string(),
+        );
         terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         if self.name() == "terrainium"
@@ -145,8 +169,10 @@ impl Context {
         socket: Option<Client>,
     ) -> Self {
         Context {
+            session_id: "some".to_string(),
             current_dir,
             central_dir,
+            selected_biome: "".to_string(),
             shell,
             client: socket,
         }
@@ -155,10 +181,12 @@ impl Context {
     #[cfg(test)]
     pub(crate) fn build_without_paths(shell: Zsh, socket: Option<Client>) -> Self {
         Context {
+            session_id: "some".to_string(),
             current_dir: env::current_dir().expect("failed to get current directory"),
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),
             ),
+            selected_biome: "".to_string(),
             shell,
             client: socket,
         }
@@ -184,7 +212,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::TERRAINIUM_ENABLED;
+    use crate::common::constants::{TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -237,7 +265,19 @@ mod test {
         expected_map.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()), None);
-        assert_eq!(context.terrainium_envs(), expected_map);
+
+        assert!(context
+            .terrainium_envs()
+            .contains_key(TERRAINIUM_SESSION_ID));
+
+        context
+            .terrainium_envs()
+            .iter()
+            .filter(|(key, _)| *key != TERRAINIUM_SESSION_ID)
+            .for_each(|(key, value)| {
+                assert_eq!(value, expected_map.get(key).expect("to be present"));
+            });
+
         Ok(())
     }
 
