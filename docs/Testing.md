@@ -5,14 +5,16 @@
 - `init`:
 
   - creates a terrain.toml file in same directory
+  - throws error if terrain already exists
   - creates script and zwc files for all biomes in central storage in all scenarios
   - `-c` - creates file in at central storage
-  - `-f` - creates a file with example terrain.toml
+  - creates the central storage if not present
+  - `-x` - creates a file with example terrain.toml
   - `-e` - creates a file and opens editor
   - `-c -e` creates file in central storage and opens editor
-  - `-c -f` creates example file in central storage
-  - `-f -e` creates example file locally and opens editor
-  - `-c -f -e` creates example file in central storage and opens editor
+  - `-c -x` creates example file in central storage
+  - `-x -e` creates example file locally and opens editor
+  - `-c -x -e` creates example file in central storage and opens editor
 
 - `edit`:
 

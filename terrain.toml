@@ -2,27 +2,52 @@
 
 default_biome = "dev"
 
-[terrain.env]
+[terrain.envs]
 TERRAINIUM_DEV = "false"
 
-[terrain.alias]
+[terrain.aliases]
 ttest = "cargo check && cargo test"
 
-[biomes.dev.env]
+[terrain.constructors]
+foreground = []
+background = []
+
+[terrain.destructors]
+foreground = []
+background = []
+
+[biomes.dev.envs]
 TERRAINIUM_DEV = "true"
 
-[biomes.test.env]
+[biomes.dev.constructors]
+foreground = []
+background = []
+
+[biomes.dev.destructors]
+foreground = []
+background = []
+
+[biomes.dev.aliases]
+
+[biomes.test.envs]
 TERRAINIUM_DEV = "true"
+
+[biomes.test.aliases]
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "./test_scripts/print_num_for_10_sec"]
+args = ["-c", "$TERRAIN_DIR/tests/scripts/print_num_for_10_sec"]
+
+[[biomes.test.constructors.background]]
+exe = "/bin/zsh"
+args = ["-c", "$TERRAIN_DIR/tests/scripts/exit_with_1"]
+
 [[biomes.test.constructors.foreground]]
 exe = "echo"
 args = ["'entering test biome'"]
 [[biomes.test.destructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "./test_scripts/print_num_for_10_sec"]
+args = ["-c", "./tests/scripts/print_num_for_10_sec"]
 [[biomes.test.destructors.foreground]]
 exe = "echo"
 args = ["'exiting test biome'"]

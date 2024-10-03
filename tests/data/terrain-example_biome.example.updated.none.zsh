@@ -3,22 +3,27 @@
 
 function {
     # USER DEFINED ALIASES: START
-{{> aliases this.merged.aliases }}
+    alias greet="echo hello"
+    alias tenter="terrainium enter --biome example_biome"
+    alias texit="terrainium exit"
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
-{{> envs this.merged.envs }}
+    export EDITOR="nvim"
+    export PAGER="less"
     # USER DEFINED ENVS: END
 }
 
 function terrainium_shell_constructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
-{{> constructors this.merged.constructors }}
+        /bin/echo entering terrain
+        /bin/echo entering biome example_biome
     fi
 }
 
 function terrainium_shell_destructor() {
     if [ "$TERRAINIUM_ENABLED" = "true" ]; then
-{{> destructors this.merged.destructors }}
+        /bin/echo exiting terrain
+        /bin/echo exiting biome example_biome
     fi
 }
 

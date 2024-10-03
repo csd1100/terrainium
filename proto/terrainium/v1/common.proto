@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+message Error {
+  string error_message = 1;
+}
