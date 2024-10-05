@@ -1,8 +1,8 @@
 use crate::common::constants::TERRAINIUMD_TMP_DIR;
 use crate::common::types::pb;
 use crate::common::types::pb::StatusResponse;
+use crate::common::types::terrain_state::TerrainState;
 use crate::daemon::handlers::RequestHandler;
-use crate::daemon::types::terrain_state::TerrainState;
 use anyhow::{Context, Result};
 use prost_types::Any;
 use tokio::fs;
@@ -21,14 +21,14 @@ impl RequestHandler for StatusHandler {
 
         event!(
             Level::DEBUG,
-            "result of attempting to parse request: {:#?}",
+            "result of attempting to parse request: {:?}",
             status_request
         );
 
         match status_request {
             Ok(status_request) => get_status(status_request).await,
             Err(err) => {
-                event!(Level::ERROR, "failed to parse the request {:#?}", err);
+                event!(Level::ERROR, "failed to parse the request {:?}", err);
                 Any::from_msg(&pb::Error {
                     error_message: err.to_string(),
                 })

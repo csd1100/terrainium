@@ -75,9 +75,17 @@ impl From<CommandToRun> for pb::Command {
         Self {
             exe: value.exe,
             args: value.args,
-            envs: value
-                .envs
-                .unwrap_or_else(|| BTreeMap::<String, String>::new()),
+            envs: value.envs.unwrap_or_default(),
+        }
+    }
+}
+
+impl From<pb::Command> for CommandToRun {
+    fn from(value: pb::Command) -> Self {
+        Self {
+            exe: value.exe,
+            args: value.args,
+            envs: Some(value.envs),
         }
     }
 }

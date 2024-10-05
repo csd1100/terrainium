@@ -4,6 +4,7 @@ use crate::common::constants::TERRAINIUM_ENABLED;
 use crate::common::types::pb;
 use crate::common::types::pb::Error;
 use crate::common::types::socket::Socket;
+use crate::common::types::terrain_state::TerrainState;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::env;
@@ -36,8 +37,8 @@ pub async fn handle(context: Context, mut client: Client) -> Result<()> {
         .context("failed to convert status response from any");
 
     if let Ok(status) = status_response {
-        println!("Success");
-        println!("{:#?}", status);
+        let status: TerrainState = status.into();
+        status.render().context("status to be rendered")?;
     } else {
         let error: Error = response
             .to_msg()

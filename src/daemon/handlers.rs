@@ -38,7 +38,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
             }
         },
         Err(err) => {
-            event!(Level::ERROR, "failed to read data from socket: {:#?}", err);
+            event!(Level::ERROR, "failed to read data from socket: {:?}", err);
 
             Any::from_msg(&pb::Error {
                 error_message: err.to_string(),
@@ -47,7 +47,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
         }
     };
 
-    event!(Level::INFO, "sending response to client: {:#?}", response);
+    event!(Level::INFO, "sending response to client: {:?}", response);
     let result = daemon_socket.write_and_stop(response).await;
 
     if result.is_err() {

@@ -147,6 +147,11 @@ impl TerrainState {
             .await
             .context("Failed to read TerrainState file")
     }
+
+    pub(crate) fn render(&self) -> Result<()> {
+        println!("TerrainState: {:#?}", self);
+        Ok(())
+    }
 }
 
 impl ExecutionContext {
@@ -224,6 +229,22 @@ impl ExecutionContext {
     }
 }
 
+impl CommandState {
+    pub fn operation(&self) -> &str {
+        self.operation.as_str()
+    }
+}
+
+pub fn operation_name(operation: i32) -> String {
+    let operation = pb::Operation::try_from(operation).expect("invalid operation");
+    match operation {
+        pb::Operation::Unspecified => "unspecified",
+        pb::Operation::Constructors => CONSTRUCTORS,
+        pb::Operation::Destructors => DESTRUCTORS,
+    }
+    .to_string()
+}
+
 impl From<pb::ExecuteRequest> for TerrainState {
     fn from(value: pb::ExecuteRequest) -> Self {
         let execution_context = value.clone().into();
@@ -245,16 +266,6 @@ impl From<pb::ExecuteRequest> for TerrainState {
             execute_context: execution_context,
         }
     }
-}
-
-pub fn operation_name(operation: i32) -> String {
-    let operation = pb::Operation::try_from(operation).expect("invalid operation");
-    match operation {
-        pb::Operation::Unspecified => "unspecified",
-        pb::Operation::Constructors => CONSTRUCTORS,
-        pb::Operation::Destructors => DESTRUCTORS,
-    }
-    .to_string()
 }
 
 impl From<pb::ExecuteRequest> for ExecutionContext {
@@ -281,12 +292,6 @@ impl From<pb::ExecuteRequest> for ExecutionContext {
                 destructors_state: commands_state,
             }
         }
-    }
-}
-
-impl CommandState {
-    pub fn operation(&self) -> &str {
-        self.operation.as_str()
     }
 }
 
@@ -331,11 +336,11 @@ impl From<CommandState> for pb::status_response::execution_context::CommandState
     fn from(value: CommandState) -> Self {
         let mut exit_code: i32 = i32::MAX;
         let status: i32 = match value.status {
-            CommandStatus::Starting => 0,
-            CommandStatus::Running => 1,
+            CommandStatus::Starting => 1,
+            CommandStatus::Running => 2,
             CommandStatus::Failed(v) => {
-                exit_code = v.unwrap_or_else(|| i32::MAX);
-                2
+                exit_code = v.unwrap_or(i32::MAX);
+                3
             }
             CommandStatus::Succeeded => 4,
         };
@@ -346,6 +351,61 @@ impl From<CommandState> for pb::status_response::execution_context::CommandState
             log_path: value.log_path,
             status,
             exit_code,
+        }
+    }
+}
+
+impl From<pb::StatusResponse> for TerrainState {
+    fn from(value: pb::StatusResponse) -> Self {
+        Self {
+            session_id: value.session_id,
+            terrain_name: value.terrain_name,
+            biome_name: value.biome_name,
+            toml_path: value.toml_path,
+            start_timestamp: value.start_timestamp,
+            end_timestamp: value.end_timestamp,
+            is_activate: value.is_activate,
+            execute_context: value.execute_context.expect("to be present").into(),
+        }
+    }
+}
+
+impl From<pb::status_response::ExecutionContext> for ExecutionContext {
+    fn from(value: pb::status_response::ExecutionContext) -> Self {
+        let constructors_state: Vec<CommandState> = value
+            .clone()
+            .constructors_state
+            .into_iter()
+            .map(|state| state.into())
+            .collect();
+
+        let destructors_state: Vec<CommandState> = value
+            .destructors_state
+            .into_iter()
+            .map(|state| state.into())
+            .collect();
+        Self {
+            constructors_state,
+            destructors_state,
+        }
+    }
+}
+
+impl From<pb::status_response::execution_context::CommandState> for CommandState {
+    fn from(value: pb::status_response::execution_context::CommandState) -> Self {
+        let status = match value.status {
+            1 => CommandStatus::Starting,
+            2 => CommandStatus::Running,
+            3 => CommandStatus::Failed(Some(value.exit_code)),
+            4 => CommandStatus::Succeeded,
+            _ => panic!("Invalid CommandStatus"),
+        };
+
+        Self {
+            operation: value.operation,
+            command: value.command.expect("to be present").into(),
+            log_path: value.log_path,
+            status,
         }
     }
 }
