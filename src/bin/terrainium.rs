@@ -15,7 +15,7 @@ use terrainium::client::handlers::schema;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-    let mut context = Context::generate(None);
+    let context = Context::generate();
 
     match args.command {
         Verbs::Init {
@@ -79,26 +79,22 @@ async fn main() -> Result<()> {
 
         Verbs::Construct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            construct::handle(&mut context, biome).await?
+            construct::handle(context, biome, client).await?
         }
 
         Verbs::Destruct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            destruct::handle(&mut context, biome).await?
+            destruct::handle(context, biome, client).await?
         }
 
         Verbs::Enter { biome, auto_apply } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            enter::handle(&mut context, biome, auto_apply).await?
+            enter::handle(context, biome, auto_apply, client).await?
         }
 
         Verbs::Exit => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            exit::handle(&mut context).await?
+            exit::handle(context, client).await?
         }
 
         #[cfg(feature = "terrain-schema")]

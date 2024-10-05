@@ -1,16 +1,19 @@
 use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::handlers::background;
 use crate::client::shell::Shell;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
-use anyhow::{Context as AnyhowContext, Result};
+use anyhow::{anyhow, Context as AnyhowContext, Result};
 use tokio::fs::read_to_string;
 
 pub async fn handle(
-    context: &mut Context,
+    context: Context,
     biome_arg: Option<BiomeArg>,
     _auto_apply: bool,
+    client: Client,
 ) -> Result<()> {
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?)
@@ -24,30 +27,28 @@ pub async fn handle(
 
     let mut envs = terrain.merged_envs(&biome)?;
     envs.append(&mut context.terrainium_envs().clone());
-    envs.append(
-        &mut context
-            .shell()
-            .generate_envs(context, selected_name.to_string())?
-            .clone(),
+
+    let mut zsh_envs = context
+        .shell()
+        .generate_envs(&context, selected_name.to_string())?;
+    envs.append(&mut zsh_envs);
+
+    let result = tokio::try_join!(
+        background::handle(
+            &context,
+            client,
+            CONSTRUCTORS,
+            biome_arg,
+            Some(envs.clone()),
+        ),
+        context.shell().spawn(envs)
     );
 
-    background::handle(
-        context,
-        CONSTRUCTORS,
-        biome_arg,
-        Terrain::merged_constructors,
-        Some(envs.clone()),
-    )
-    .await
-    .context("failed to send background constructors to daemon")?;
-
-    context
-        .shell()
-        .spawn(envs)
-        .await
-        .context("failed to spawn shell")?;
-
-    Ok(())
+    if let Err(err) = result {
+        Err(anyhow!("failed to enter the terrain: {}", err))
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -56,14 +57,16 @@ mod test {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        FPATH, TERRAINIUM_ENABLED, TERRAINIUM_SESSION_ID, TERRAIN_ACTIVATION_TIMESTAMP,
-        TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
+        FPATH, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID,
+        TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+        TERRAIN_SELECTED_BIOME,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
     use serial_test::serial;
     use std::collections::BTreeMap;
+    use std::env;
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};
@@ -103,6 +106,8 @@ mod test {
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
         );
+        let exe = env::args().next().unwrap();
+        expected_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         expected_envs.insert(
@@ -196,12 +201,7 @@ mod test {
             Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
         });
 
-        let mut context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            shell,
-            Some(mocket),
-        );
+        let context = Context::build(current_dir.path().into(), central_dir.path().into(), shell);
 
         copy(
             "./tests/data/terrain.example.toml",
@@ -210,7 +210,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(&mut context, None, false)
+        super::handle(context, None, false, mocket)
             .await
             .expect("no error to be thrown");
     }

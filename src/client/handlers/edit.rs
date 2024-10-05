@@ -1,11 +1,10 @@
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-#[double]
+#[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
-use mockall_double::double;
 use std::fs;
 use std::path::PathBuf;
 
@@ -110,7 +109,6 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -198,7 +196,6 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
-            None,
         );
 
         let mut terrain_toml: PathBuf = central_dir.path().into();
@@ -252,7 +249,6 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         ))
         .expect_err("expected to get error")
         .to_string();
@@ -306,7 +302,6 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(mock),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();

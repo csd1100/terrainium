@@ -1,9 +1,8 @@
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-#[double]
+#[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use anyhow::Result;
-use mockall_double::double;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::process::{ExitStatus, Output};

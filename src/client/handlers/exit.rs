@@ -1,13 +1,14 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
-use crate::client::types::terrain::Terrain;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 
-pub async fn handle(context: &mut Context) -> Result<()> {
+pub async fn handle(context: Context, client: Client) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
 
@@ -18,10 +19,10 @@ pub async fn handle(context: &mut Context) -> Result<()> {
     }
 
     background::handle(
-        context,
+        &context,
+        client,
         DESTRUCTORS,
         Some(BiomeArg::Some(selected_biome)),
-        Terrain::merged_destructors,
         Some(BTreeMap::<String, String>::new()),
     )
     .await
@@ -35,7 +36,7 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::common::constants::TERRAIN_SELECTED_BIOME;
+    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SELECTED_BIOME};
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
@@ -78,6 +79,9 @@ mod tests {
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
                 envs.insert("TERRAINIUM_SESSION_ID".to_string(), "some".to_string());
 
+                let exe = std::env::args().next().unwrap();
+                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
+
                 let terrain_name = current_dir_path
                     .file_name()
                     .expect("to be present")
@@ -112,14 +116,13 @@ mod tests {
             Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
         });
 
-        let mut context = Context::build(
+        let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            Some(mocket),
         );
 
-        super::handle(&mut context)
+        super::handle(context, mocket)
             .await
             .expect("no error to be thrown");
 
@@ -155,6 +158,9 @@ mod tests {
                 );
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
                 envs.insert("TERRAINIUM_SESSION_ID".to_string(), "some".to_string());
+
+                let exe = std::env::args().next().unwrap();
+                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -193,14 +199,15 @@ mod tests {
             .expect("to be converted to any"))
         });
 
-        let mut context = Context::build(
+        let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            Some(mocket),
         );
 
-        let err = super::handle(&mut context).await.expect_err("to be thrown");
+        let err = super::handle(context, mocket)
+            .await
+            .expect_err("to be thrown");
 
         assert_eq!(err.to_string(), "failed to run destructors");
 

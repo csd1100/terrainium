@@ -1,19 +1,13 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
-use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
 use anyhow::Result;
 
-pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Result<()> {
-    background::handle(
-        context,
-        CONSTRUCTORS,
-        biome_arg,
-        Terrain::merged_constructors,
-        None,
-    )
-    .await
+pub async fn handle(context: Context, biome_arg: Option<BiomeArg>, client: Client) -> Result<()> {
+    background::handle(&context, client, CONSTRUCTORS, biome_arg, None).await
 }
 
 #[cfg(test)]
@@ -21,6 +15,7 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
+    use crate::common::constants::TERRAINIUM_EXECUTABLE;
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -53,6 +48,9 @@ mod tests {
                     current_dir_path.to_str().unwrap().to_string(),
                 );
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+
+                let exe = std::env::args().next().unwrap();
+                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -88,14 +86,13 @@ mod tests {
             Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
         });
 
-        let mut context = Context::build(
+        let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            Some(mocket),
         );
 
-        super::handle(&mut context, None)
+        super::handle(context, None, mocket)
             .await
             .expect("no error to be thrown");
     }
@@ -123,6 +120,9 @@ mod tests {
                     current_dir_path.to_str().unwrap().to_string(),
                 );
                 envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+
+                let exe = std::env::args().next().unwrap();
+                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
                 let terrain_name = current_dir_path
                     .file_name()
@@ -161,14 +161,13 @@ mod tests {
             .expect("to be converted to any"))
         });
 
-        let mut context = Context::build(
+        let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            Some(mocket),
         );
 
-        let err = super::handle(&mut context, None)
+        let err = super::handle(context, None, mocket)
             .await
             .expect_err("to be thrown");
 
