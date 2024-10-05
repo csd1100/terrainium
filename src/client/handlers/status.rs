@@ -9,7 +9,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::env;
 
-pub async fn handle(context: Context, mut client: Client) -> Result<()> {
+pub async fn handle(context: Context, json: bool, mut client: Client) -> Result<()> {
     let is_terrain_enabled = env::var(TERRAINIUM_ENABLED).unwrap_or_else(|_| "false".to_string());
 
     if is_terrain_enabled != "true" {
@@ -38,7 +38,7 @@ pub async fn handle(context: Context, mut client: Client) -> Result<()> {
 
     if let Ok(status) = status_response {
         let status: TerrainState = status.into();
-        status.render().context("status to be rendered")?;
+        status.render(json).context("status to be rendered")?;
     } else {
         let error: Error = response
             .to_msg()

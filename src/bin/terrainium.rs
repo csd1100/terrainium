@@ -88,9 +88,9 @@ async fn main() -> Result<()> {
             enter::handle(context, biome, client).await?
         }
 
-        Verbs::Status => {
+        Verbs::Status { json } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            status::handle(context, client)
+            status::handle(context, json, client)
                 .await
                 .context("failed to get status of current terrain")?
         }

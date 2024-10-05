@@ -49,7 +49,10 @@ pub enum Verbs {
         destructors: bool,
     },
 
-    Status,
+    Status {
+        #[arg(short, long)]
+        json: bool,
+    },
 
     Update {
         #[arg(short, long, groups = ["update_biome" , "update"])]

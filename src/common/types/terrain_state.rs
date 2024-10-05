@@ -148,8 +148,13 @@ impl TerrainState {
             .context("Failed to read TerrainState file")
     }
 
-    pub(crate) fn render(&self) -> Result<()> {
-        println!("TerrainState: {:#?}", self);
+    pub(crate) fn render(&self, json: bool) -> Result<()> {
+        let output: String = if json {
+            self.to_json().expect("Failed to serialize TerrainState")
+        } else {
+            format!("TerrainState: {:#?}", self)
+        };
+        println!("{}", output);
         Ok(())
     }
 }
