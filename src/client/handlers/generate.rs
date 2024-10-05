@@ -26,7 +26,7 @@ mod test {
     use crate::client::utils::test::{
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use std::fs;
     use std::path::PathBuf;

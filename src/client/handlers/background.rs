@@ -69,7 +69,7 @@ pub async fn handle(
     let (selected_biome, _) = terrain.select_biome(&selected_biome)?;
 
     let session_id = if zsh_envs.is_some() {
-        context.session_id().to_string()
+        context.session_id()
     } else {
         "".to_string()
     };
@@ -94,13 +94,17 @@ pub async fn handle(
         .await?;
 
     let response: Any = client.read().await?;
-    let execute_response: Result<ExecuteResponse> =
-        Any::to_msg(&response).context("failed to convert to execute response from Any");
+    let execute_response: Result<ExecuteResponse> = response
+        .to_msg()
+        .context("failed to convert to execute response from Any");
 
     if execute_response.is_ok() {
         println!("Success");
     } else {
-        let error: Error = Any::to_msg(&response).context("failed to convert to error from Any")?;
+        let error: Error = response
+            .to_msg()
+            .context("failed to convert to error from Any")?;
+
         return Err(anyhow!(
             "error response from daemon {}",
             error.error_message

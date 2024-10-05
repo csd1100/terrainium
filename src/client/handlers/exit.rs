@@ -3,16 +3,16 @@ use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
-use crate::common::constants::{DESTRUCTORS, TERRAIN_SELECTED_BIOME};
+use crate::common::constants::{DESTRUCTORS, TERRAINIUM_ENABLED, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 
 pub async fn handle(context: Context, client: Client) -> Result<()> {
-    let session_id = context.session_id();
+    let is_terrain_enabled = env::var(TERRAINIUM_ENABLED).unwrap_or_else(|_| "false".to_string());
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
 
-    if session_id.is_empty() || selected_biome.is_empty() {
+    if is_terrain_enabled != "true" || selected_biome.is_empty() {
         return Err(anyhow!(
             "no active terrain found, use `terrainium enter` command to activate a terrain."
         ));
@@ -36,9 +36,11 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SELECTED_BIOME};
-    use crate::common::execute::test::{restore_env_var, set_env_var};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::constants::{
+        TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAIN_SELECTED_BIOME,
+    };
+    use crate::common::run::test::{restore_env_var, set_env_var};
+    use crate::common::run::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
@@ -55,6 +57,7 @@ mod tests {
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
         );
+        let orig_enabled_biome = set_env_var(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
@@ -127,6 +130,7 @@ mod tests {
             .expect("no error to be thrown");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
+        restore_env_var(TERRAINIUM_ENABLED.to_string(), orig_enabled_biome);
     }
 
     #[serial]
@@ -136,6 +140,8 @@ mod tests {
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
         );
+        let orig_enabled_biome = set_env_var(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+
         let current_dir = tempdir().expect("failed to create tempdir");
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -212,5 +218,6 @@ mod tests {
         assert_eq!(err.to_string(), "failed to run destructors");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
+        restore_env_var(TERRAINIUM_ENABLED.to_string(), orig_enabled_biome);
     }
 }

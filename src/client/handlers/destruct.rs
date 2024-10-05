@@ -16,7 +16,7 @@ mod tests {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::TERRAINIUM_EXECUTABLE;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;

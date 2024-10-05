@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use std::os::unix::prelude::ExitStatusExt;
     use std::path::{Path, PathBuf};
     use std::process::{ExitStatus, Output};

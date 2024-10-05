@@ -8,8 +8,8 @@ use crate::common::constants::{
     ZSH_MAIN_TEMPLATE_NAME,
 };
 #[mockall_double::double]
-use crate::common::execute::CommandToRun;
-use crate::common::execute::Execute;
+use crate::common::run::CommandToRun;
+use crate::common::run::Execute;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::fs;
@@ -229,7 +229,7 @@ impl Zsh {
 mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::terrain::Terrain;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};

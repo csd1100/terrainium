@@ -46,8 +46,8 @@ pub(crate) mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
-    use crate::common::execute::test::{restore_env_var, set_env_var};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::test::{restore_env_var, set_env_var};
+    use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;

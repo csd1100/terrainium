@@ -78,7 +78,7 @@ mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;
     use tempfile::tempdir;

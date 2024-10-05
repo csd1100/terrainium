@@ -56,7 +56,7 @@ mod test {
         TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
         TERRAIN_SELECTED_BIOME,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
     use serial_test::serial;

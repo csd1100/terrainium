@@ -174,7 +174,7 @@ mod test {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs::{copy, read_to_string};

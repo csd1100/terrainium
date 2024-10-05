@@ -45,8 +45,8 @@ impl Context {
         }
     }
 
-    pub fn session_id(&self) -> &str {
-        &self.session_id
+    pub fn session_id(&self) -> String {
+        self.session_id.clone()
     }
 
     pub fn current_dir(&self) -> &PathBuf {
@@ -185,7 +185,7 @@ mod test {
     use crate::common::constants::{
         TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;

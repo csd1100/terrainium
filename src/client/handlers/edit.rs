@@ -2,8 +2,8 @@ use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 #[mockall_double::double]
-use crate::common::execute::CommandToRun;
-use crate::common::execute::Execute;
+use crate::common::run::CommandToRun;
+use crate::common::run::Execute;
 use anyhow::{Context as AnyhowContext, Result};
 use std::fs;
 use std::path::PathBuf;
@@ -54,8 +54,8 @@ pub(crate) mod test {
     use crate::client::utils::test::{
         compile_expectations, script_path, scripts_dir, setup_with_expectations,
     };
-    use crate::common::execute::test::{restore_env_var, set_env_var};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::run::test::{restore_env_var, set_env_var};
+    use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;

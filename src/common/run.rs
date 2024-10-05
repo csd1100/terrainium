@@ -1,3 +1,4 @@
+use crate::common::types::pb;
 use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
@@ -66,6 +67,18 @@ impl From<CommandToRun> for tokio::process::Command {
         let mut command = tokio::process::Command::new(value.exe);
         command.args(value.args).envs(envs);
         command
+    }
+}
+
+impl From<CommandToRun> for pb::Command {
+    fn from(value: CommandToRun) -> Self {
+        Self {
+            exe: value.exe,
+            args: value.args,
+            envs: value
+                .envs
+                .unwrap_or_else(|| BTreeMap::<String, String>::new()),
+        }
     }
 }
 
@@ -154,7 +167,7 @@ mock! {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::common::execute::{CommandToRun, Execute};
+    use crate::common::run::{CommandToRun, Execute};
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::env::VarError;

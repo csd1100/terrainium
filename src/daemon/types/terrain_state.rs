@@ -1,7 +1,6 @@
 use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
-use crate::common::execute::CommandToRun;
+use crate::common::run::CommandToRun;
 use crate::common::types::pb;
-use crate::common::types::pb::Operation;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
@@ -249,11 +248,11 @@ impl From<pb::ExecuteRequest> for TerrainState {
 }
 
 pub fn operation_name(operation: i32) -> String {
-    let operation = Operation::try_from(operation).expect("invalid operation");
+    let operation = pb::Operation::try_from(operation).expect("invalid operation");
     match operation {
-        Operation::Unspecified => "unspecified",
-        Operation::Constructors => CONSTRUCTORS,
-        Operation::Destructors => DESTRUCTORS,
+        pb::Operation::Unspecified => "unspecified",
+        pb::Operation::Constructors => CONSTRUCTORS,
+        pb::Operation::Destructors => DESTRUCTORS,
     }
     .to_string()
 }
@@ -288,5 +287,65 @@ impl From<pb::ExecuteRequest> for ExecutionContext {
 impl CommandState {
     pub fn operation(&self) -> &str {
         self.operation.as_str()
+    }
+}
+
+impl From<TerrainState> for pb::StatusResponse {
+    fn from(value: TerrainState) -> Self {
+        Self {
+            session_id: value.session_id,
+            terrain_name: value.terrain_name,
+            biome_name: value.biome_name,
+            toml_path: value.toml_path,
+            start_timestamp: value.start_timestamp,
+            end_timestamp: value.end_timestamp,
+            is_activate: value.is_activate,
+            execute_context: Some(value.execute_context.into()),
+        }
+    }
+}
+
+impl From<ExecutionContext> for pb::status_response::ExecutionContext {
+    fn from(value: ExecutionContext) -> Self {
+        let constructors_state: Vec<pb::status_response::execution_context::CommandState> = value
+            .clone()
+            .constructors_state
+            .into_iter()
+            .map(|state| state.into())
+            .collect();
+
+        let destructors_state: Vec<pb::status_response::execution_context::CommandState> = value
+            .destructors_state
+            .into_iter()
+            .map(|state| state.into())
+            .collect();
+
+        Self {
+            constructors_state,
+            destructors_state,
+        }
+    }
+}
+
+impl From<CommandState> for pb::status_response::execution_context::CommandState {
+    fn from(value: CommandState) -> Self {
+        let mut exit_code: i32 = i32::MAX;
+        let status: i32 = match value.status {
+            CommandStatus::Starting => 0,
+            CommandStatus::Running => 1,
+            CommandStatus::Failed(v) => {
+                exit_code = v.unwrap_or_else(|| i32::MAX);
+                2
+            }
+            CommandStatus::Succeeded => 4,
+        };
+
+        Self {
+            operation: value.operation,
+            command: Some(value.command.into()),
+            log_path: value.log_path,
+            status,
+            exit_code,
+        }
     }
 }
