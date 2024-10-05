@@ -1,5 +1,6 @@
 use crate::client::args::{option_string_from, BiomeArg};
-use crate::client::types::commands::Commands;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{CONSTRUCTORS, TERRAINIUM_SESSION_ID};
@@ -21,10 +22,10 @@ fn operation_from_string(op: &str) -> pb::Operation {
 }
 
 pub async fn handle(
-    context: &mut Context,
+    context: &Context,
+    mut client: Client,
     operation: &str,
     biome_arg: Option<BiomeArg>,
-    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
     zsh_envs: Option<BTreeMap<String, String>>,
 ) -> Result<()> {
     let terrain = Terrain::from_toml(
@@ -45,8 +46,15 @@ pub async fn handle(
         envs.remove(TERRAINIUM_SESSION_ID);
     }
 
-    let commands = get_commands(&terrain, &selected_biome)
-        .context(format!("failed to merge {}", operation))?;
+    let commands = if operation == CONSTRUCTORS {
+        terrain
+            .merged_constructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    } else {
+        terrain
+            .merged_destructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    };
 
     let commands: Vec<pb::Command> = commands
         .background()
@@ -80,8 +88,6 @@ pub async fn handle(
         operation: i32::from(operation_from_string(operation)),
         commands,
     };
-
-    let client = context.socket();
 
     client
         .write_and_stop(Any::from_msg(&request).unwrap())

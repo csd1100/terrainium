@@ -112,7 +112,6 @@ mod test {
             current_dir.path().into(),
             central_dir_path,
             Zsh::build(mock),
-            None,
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -182,7 +181,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let err = super::handle(
@@ -242,7 +240,6 @@ mod test {
             current_dir.path().into(),
             central_dir_path,
             Zsh::build(mock),
-            None,
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -353,7 +350,6 @@ mod test {
             current_dir.path().into(),
             central_dir_path,
             Zsh::build(mock),
-            None,
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -438,7 +434,6 @@ mod test {
             current_dir.path().into(),
             central_dir_path,
             Zsh::build(mock),
-            None,
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -512,7 +507,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let err = super::handle(
@@ -571,7 +565,6 @@ mod test {
             current_dir.path().into(),
             central_dir_path,
             Zsh::build(mock),
-            None,
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");

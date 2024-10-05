@@ -49,6 +49,8 @@ pub enum Verbs {
         destructors: bool,
     },
 
+    Status,
+
     Update {
         #[arg(short, long, groups = ["update_biome" , "update"])]
         set_default: Option<String>,

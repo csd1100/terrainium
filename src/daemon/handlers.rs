@@ -1,10 +1,9 @@
 use crate::common::types::pb;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::run::ExecuteHandler;
-#[double]
+#[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
-use mockall_double::double;
 use prost_types::Any;
 use tracing::{event, instrument, Level};
 

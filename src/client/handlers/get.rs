@@ -191,7 +191,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -231,7 +230,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -270,7 +268,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -310,7 +307,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -348,7 +344,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -386,7 +381,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -423,7 +417,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -461,7 +454,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -499,7 +491,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -536,7 +527,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -574,7 +564,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -612,7 +601,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -650,7 +638,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -689,7 +676,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -728,7 +714,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -769,7 +754,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -811,7 +795,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();
@@ -850,7 +833,6 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
         let mut terrain_toml: PathBuf = current_dir.path().into();

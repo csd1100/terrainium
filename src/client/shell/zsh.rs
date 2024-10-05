@@ -7,11 +7,10 @@ use crate::common::constants::{
     ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
     ZSH_MAIN_TEMPLATE_NAME,
 };
-#[double]
+#[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
-use mockall_double::double;
 use std::collections::BTreeMap;
 use std::fs;
 use std::os::unix::process::ExitStatusExt;

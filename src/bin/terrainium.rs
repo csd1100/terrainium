@@ -3,7 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
 use terrainium::client::handlers::{
-    construct, destruct, edit, enter, exit, generate, get, init, update,
+    construct, destruct, edit, enter, exit, generate, get, init, status, update,
 };
 use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
@@ -15,7 +15,7 @@ use terrainium::client::handlers::schema;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-    let mut context = Context::generate(None);
+    let context = Context::generate();
 
     match args.command {
         Verbs::Init {
@@ -75,26 +75,29 @@ async fn main() -> Result<()> {
 
         Verbs::Construct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            construct::handle(&mut context, biome).await?
+            construct::handle(context, biome, client).await?
         }
 
         Verbs::Destruct { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            destruct::handle(&mut context, biome).await?
+            destruct::handle(context, biome, client).await?
         }
 
         Verbs::Enter { biome } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            enter::handle(&mut context, biome).await?
+            enter::handle(context, biome, client).await?
+        }
+
+        Verbs::Status => {
+            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+            status::handle(context, client)
+                .await
+                .context("failed to get status of current terrain")?
         }
 
         Verbs::Exit => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            context.set_client(client);
-            exit::handle(&mut context).await?
+            exit::handle(context, client).await?
         }
 
         #[cfg(feature = "terrain-schema")]
