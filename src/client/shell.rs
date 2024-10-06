@@ -5,6 +5,7 @@ use crate::common::execute::CommandToRun;
 use anyhow::Result;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
+use std::path::PathBuf;
 use std::process::{ExitStatus, Output};
 
 pub mod zsh;
@@ -12,8 +13,7 @@ pub mod zsh;
 pub(crate) trait Shell: Debug + PartialEq {
     fn get() -> Self;
     fn runner(&self) -> CommandToRun;
-    #[allow(dead_code)]
-    fn update_rc(data: String) -> Result<()>;
+    fn update_rc(&self, path: Option<PathBuf>) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
     async fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus>;

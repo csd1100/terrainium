@@ -1,6 +1,6 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_SESSION_ID,
+    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -17,12 +17,12 @@ pub struct Context {
     shell: Zsh,
 }
 
-impl Context {}
-
 const TERRAIN_TOML: &str = "terrain.toml";
 const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
+
+const INIT_SCRIPT: &str = include_str!("../../../scripts/terrainium_init");
 
 impl Default for Context {
     fn default() -> Self {
@@ -34,6 +34,21 @@ impl Context {
     pub fn generate() -> Self {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+
+        if !fs::exists(Self::config_dir()).expect("failed to check if config directory exists") {
+            fs::create_dir_all(Self::config_dir())
+                .expect("failed to create config directory exists");
+        }
+
+        if !fs::exists(Self::init_script()).expect("failed to check if init-script exists") {
+            println!("!!!WARNING!!! init-script not found in config directory, copying script to config directory !!!WARNING!!!");
+            fs::write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
+        } else if fs::read_to_string(Self::init_script()).expect("failed to read init-script")
+            != INIT_SCRIPT
+        {
+            fs::remove_file(Self::init_script()).expect("failed to remove init-script");
+            fs::write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
+        }
 
         Context {
             session_id,
@@ -55,6 +70,16 @@ impl Context {
 
     pub fn central_dir(&self) -> &PathBuf {
         &self.central_dir
+    }
+
+    pub fn config_dir() -> PathBuf {
+        let mut central_dir = home_dir().expect("failed to get home directory");
+        central_dir.push(CONFIG_LOCATION);
+        central_dir
+    }
+
+    pub fn init_script() -> PathBuf {
+        Self::config_dir().join(INIT_SCRIPT_NAME)
     }
 
     pub fn name(&self) -> String {
@@ -115,6 +140,11 @@ impl Context {
 
     pub(crate) fn shell(&self) -> &Zsh {
         &self.shell
+    }
+
+    pub fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
+        self.shell.update_rc(path)?;
+        Ok(())
     }
 
     pub(crate) fn terrainium_envs(&self) -> BTreeMap<String, String> {

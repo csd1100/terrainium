@@ -93,14 +93,6 @@ terrainiumd [OPTIONS]
 - For zsh add this to your `.zshrc`
 
 ```sh
-if [ "$TERRAIN_ENABLED" = "true" ];then
-    clear
-    autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
-    "${terrain_init}"
-    builtin unfunction -- "${terrainium_init}"
-    terrainium_enter
-    echo init....
-fi
 ```
 
 ## What does it do?

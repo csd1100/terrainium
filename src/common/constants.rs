@@ -1,3 +1,5 @@
+pub const INIT_SCRIPT_NAME: &str = "terrainium_init";
+
 pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 

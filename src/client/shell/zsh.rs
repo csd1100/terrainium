@@ -11,8 +11,10 @@ use crate::common::constants::{
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
+use home::home_dir;
 use std::collections::BTreeMap;
 use std::fs;
+use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
@@ -22,6 +24,8 @@ const ZSH_ENVS_TEMPLATE: &str = include_str!("../../../templates/zsh_env.hbs");
 const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.hbs");
 const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
 const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
+
+const ZSH_INIT_RC: &str = include_str!("../../../scripts/rc_contents");
 
 impl Shell for Zsh {
     fn get() -> Self {
@@ -35,8 +39,20 @@ impl Shell for Zsh {
         self.runner.clone()
     }
 
-    fn update_rc(_data: String) -> Result<()> {
-        todo!()
+    fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
+        let path = path.unwrap_or_else(|| home_dir().expect("cannot get home dir").join(".zshrc"));
+        let rc = fs::read_to_string(&path).context("failed to read rc")?;
+        if !rc.contains(ZSH_INIT_RC) {
+            let rc_file = fs::OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open(&path)
+                .context("failed to open rc");
+            rc_file?
+                .write_all(ZSH_INIT_RC.as_bytes())
+                .context("failed to write rc")?;
+        }
+        Ok(())
     }
 
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()> {
@@ -227,9 +243,10 @@ impl Zsh {
 
 #[cfg(test)]
 mod test {
-    use crate::client::shell::Zsh;
+    use crate::client::shell::{Shell, Zsh};
     use crate::client::types::terrain::Terrain;
     use crate::common::execute::MockCommandToRun;
+    use std::fs;
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};
@@ -282,6 +299,21 @@ mod test {
         assert_eq!(
             "compiling script failed with exit code 1\n error: some error while compiling",
             err.to_string()
+        );
+    }
+
+    #[test]
+    fn update_rc_path() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        fs::write(temp_dir.path().join(".zshrc"), "").unwrap();
+        Zsh::build(MockCommandToRun::default())
+            .update_rc(Some(temp_dir.path().join(".zshrc")))
+            .unwrap();
+
+        let expected = "\nsource \"$HOME/.config/terrainium/terrainium_init\"";
+        assert_eq!(
+            expected,
+            fs::read_to_string(temp_dir.path().join(".zshrc")).unwrap()
         );
     }
 }

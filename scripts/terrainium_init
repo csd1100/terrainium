@@ -1,0 +1,26 @@
+#!/usr/bin/env zsh
+
+if [ -z "$TERRAINIUM_EXECUTABLE" ]; then
+    TERRAINIUM_EXECUTABLE=terrainium
+fi
+
+if [ "$TERRAIN_ENABLED" = "true" ];then
+    clear
+    autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
+    "${terrain_init}"
+    # builtin unfunction -- "${terrainium_init}"
+    terrainium_enter
+    echo init....
+fi
+
+function terrainium_chpwd_functions() {
+    if [ "$TERRAIN_ENABLED" != "true" ]; then
+        if [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) = "true" ]; then
+            "$TERRAINIUM_EXECUTABLE" enter --auto-apply
+        elif [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) = "replace" ]; then
+            exec "$TERRAINIUM_EXECUTABLE" enter --auto-apply
+        fi
+    fi
+}
+
+chpwd_functions=(terrainium_chpwd_functions $chpwd_functions)

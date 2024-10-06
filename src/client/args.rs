@@ -1,13 +1,26 @@
 use crate::client::types::terrain::AutoApply;
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Parser, Debug)]
-#[command()]
+#[command(args_conflicts_with_subcommands = true)]
 pub struct ClientArgs {
+    #[clap(flatten)]
+    pub options: Options,
+
     #[command(subcommand)]
-    pub command: Verbs,
+    pub command: Option<Verbs>,
+}
+
+#[derive(Parser, Debug)]
+pub struct Options {
+    #[arg(long, group = "update-rc")]
+    pub update_rc: bool,
+
+    #[arg(long, group = "update-rc")]
+    pub update_rc_path: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug)]

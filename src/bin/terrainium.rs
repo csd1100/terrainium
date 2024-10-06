@@ -18,31 +18,28 @@ async fn main() -> Result<()> {
     let context = Context::generate();
 
     match args.command {
-        Verbs::Init {
-            central,
-            example,
-            edit,
-        } => init::handle(context, central, example, edit)
-            .context("failed to initialize new terrain")?,
-
-        Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
-
-        Verbs::Generate => {
-            generate::handle(context).context("failed to generate scripts for the terrain")?
+        None => {
+            if args.options.update_rc || args.options.update_rc_path.is_some() {
+                context
+                    .update_rc(args.options.update_rc_path)
+                    .context("failed to update rc")?;
+            }
         }
+        Some(verbs) => match verbs {
+            Verbs::Init {
+                central,
+                example,
+                edit,
+            } => init::handle(context, central, example, edit)
+                .context("failed to initialize new terrain")?,
 
-        Verbs::Get {
-            biome,
-            aliases,
-            envs,
-            alias,
-            env,
-            constructors,
-            destructors,
-            auto_apply,
-        } => get::handle(
-            context,
-            GetArgs {
+            Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
+
+            Verbs::Generate => {
+                generate::handle(context).context("failed to generate scripts for the terrain")?
+            }
+
+            Verbs::Get {
                 biome,
                 aliases,
                 envs,
@@ -51,54 +48,66 @@ async fn main() -> Result<()> {
                 constructors,
                 destructors,
                 auto_apply,
-            },
-        )
-        .context("failed to get the terrain values")?,
+            } => get::handle(
+                context,
+                GetArgs {
+                    biome,
+                    aliases,
+                    envs,
+                    alias,
+                    env,
+                    constructors,
+                    destructors,
+                    auto_apply,
+                },
+            )
+            .context("failed to get the terrain values")?,
 
-        Verbs::Update {
-            set_default,
-            biome,
-            new,
-            env,
-            alias,
-            auto_apply,
-            backup,
-        } => update::handle(
-            context,
-            UpdateArgs {
+            Verbs::Update {
                 set_default,
                 biome,
-                alias,
-                env,
                 new,
-                backup,
+                env,
+                alias,
                 auto_apply,
-            },
-        )
-        .context("failed to update the terrain values")?,
+                backup,
+            } => update::handle(
+                context,
+                UpdateArgs {
+                    set_default,
+                    biome,
+                    alias,
+                    env,
+                    new,
+                    backup,
+                    auto_apply,
+                },
+            )
+            .context("failed to update the terrain values")?,
 
-        Verbs::Construct { biome } => {
-            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            construct::handle(context, biome, client).await?
-        }
+            Verbs::Construct { biome } => {
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+                construct::handle(context, biome, client).await?
+            }
 
-        Verbs::Destruct { biome } => {
-            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            destruct::handle(context, biome, client).await?
-        }
+            Verbs::Destruct { biome } => {
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+                destruct::handle(context, biome, client).await?
+            }
 
-        Verbs::Enter { biome, auto_apply } => {
-            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            enter::handle(context, biome, auto_apply, client).await?
-        }
+            Verbs::Enter { biome, auto_apply } => {
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+                enter::handle(context, biome, auto_apply, client).await?
+            }
 
-        Verbs::Exit => {
-            let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-            exit::handle(context, client).await?
-        }
+            Verbs::Exit => {
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+                exit::handle(context, client).await?
+            }
 
-        #[cfg(feature = "terrain-schema")]
-        Verbs::Schema => schema::handle().context("failed to generate schema")?,
+            #[cfg(feature = "terrain-schema")]
+            Verbs::Schema => schema::handle().context("failed to generate schema")?,
+        },
     }
 
     Ok(())
