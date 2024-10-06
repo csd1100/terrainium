@@ -1,0 +1,51 @@
+"$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+default_biome = "example_biome"
+
+[auto_apply]
+enabled = true
+background = true
+replace = true
+
+[terrain.envs]
+EDITOR = "vim"
+PAGER = "less"
+
+[terrain.aliases]
+tenter = "terrainium enter"
+texit = "terrainium exit"
+
+[terrain.constructors]
+background = []
+
+[[terrain.constructors.foreground]]
+exe = "/bin/echo"
+args = ["entering terrain"]
+
+[terrain.destructors]
+background = []
+
+[[terrain.destructors.foreground]]
+exe = "/bin/echo"
+args = ["exiting terrain"]
+
+[biomes.example_biome.envs]
+EDITOR = "nvim"
+
+[biomes.example_biome.aliases]
+tenter = "terrainium enter --biome example_biome"
+
+[[biomes.example_biome.constructors.foreground]]
+exe = "/bin/echo"
+args = ["entering biome example_biome"]
+
+[[biomes.example_biome.constructors.background]]
+exe = "/bin/bash"
+args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
+
+[[biomes.example_biome.destructors.foreground]]
+exe = "/bin/echo"
+args = ["exiting biome example_biome"]
+
+[[biomes.example_biome.destructors.background]]
+exe = "/bin/bash"
+args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
