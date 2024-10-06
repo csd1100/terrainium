@@ -7,7 +7,11 @@ use crate::common::constants::CONSTRUCTORS;
 use anyhow::{Context as AnyhowContext, Result};
 use tokio::fs::read_to_string;
 
-pub async fn handle(context: &mut Context, biome_arg: Option<BiomeArg>) -> Result<()> {
+pub async fn handle(
+    context: &mut Context,
+    biome_arg: Option<BiomeArg>,
+    _auto_apply: bool,
+) -> Result<()> {
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?)
             .await
@@ -206,7 +210,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(&mut context, None)
+        super::handle(&mut context, None, false)
             .await
             .expect("no error to be thrown");
     }

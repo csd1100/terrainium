@@ -60,8 +60,10 @@ function terrainium_preexec_functions() {
 
 function terrainium_chpwd_functions() {
     if [ "$TERRAINIUM_ENABLED" != "true" ]; then
-        if [ "$TERRAINIUM_AUTO_APPLY" = 1 ]; then
-            "$TERRAINIUM_EXECUTABLE" enter
+        if [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) == "true" ]; then
+            "$TERRAINIUM_EXECUTABLE" enter --auto-apply
+        elif [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) == "replace" ]; then
+            exec "$TERRAINIUM_EXECUTABLE" enter --auto-apply
         fi
     fi
 }

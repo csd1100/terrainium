@@ -89,10 +89,10 @@ async fn main() -> Result<()> {
             destruct::handle(&mut context, biome).await?
         }
 
-        Verbs::Enter { biome } => {
+        Verbs::Enter { biome, auto_apply } => {
             let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
             context.set_client(client);
-            enter::handle(&mut context, biome).await?
+            enter::handle(&mut context, biome, auto_apply).await?
         }
 
         Verbs::Exit => {

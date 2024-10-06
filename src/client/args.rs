@@ -89,6 +89,9 @@ pub enum Verbs {
     Enter {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
+
+        #[arg(long, hide = true)]
+        auto_apply: bool,
     },
 
     Exit,
