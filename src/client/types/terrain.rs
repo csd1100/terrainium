@@ -14,9 +14,18 @@ pub struct Terrain {
     #[serde(default = "schema_url", rename(serialize = "$schema"))]
     schema: String,
 
+    auto_apply: AutoApply,
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
     default_biome: Option<String>,
+}
+
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AutoApply {
+    enabled: bool,
+    background: bool,
+    replace: bool,
 }
 
 pub fn schema_url() -> String {
@@ -29,9 +38,11 @@ impl Terrain {
         terrain: Biome,
         biomes: BTreeMap<String, Biome>,
         default_biome: Option<String>,
+        auto_apply: AutoApply,
     ) -> Self {
         Terrain {
             schema: schema_url(),
+            auto_apply,
             terrain,
             biomes,
             default_biome,
@@ -182,13 +193,31 @@ impl Terrain {
         let mut biomes: BTreeMap<String, Biome> = BTreeMap::new();
         biomes.insert(String::from("example_biome"), example_biome);
 
-        Terrain::new(terrain, biomes, Some(String::from("example_biome")))
+        Terrain::new(
+            terrain,
+            biomes,
+            Some(String::from("example_biome")),
+            AutoApply {
+                enabled: false,
+                background: false,
+                replace: false,
+            },
+        )
     }
 }
 
 impl Default for Terrain {
     fn default() -> Self {
-        Terrain::new(Biome::default(), BTreeMap::new(), None)
+        Terrain::new(
+            Biome::default(),
+            BTreeMap::new(),
+            None,
+            AutoApply {
+                enabled: false,
+                background: false,
+                replace: false,
+            },
+        )
     }
 }
 
