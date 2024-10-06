@@ -1,3 +1,4 @@
+use crate::client::types::terrain::AutoApply;
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
@@ -47,6 +48,9 @@ pub enum Verbs {
 
         #[arg(short, long)]
         destructors: bool,
+
+        #[arg(long)]
+        auto_apply: bool,
     },
 
     Update {
@@ -64,6 +68,9 @@ pub enum Verbs {
 
         #[arg(short, long, group = "update_biome")]
         new: Option<String>,
+
+        #[arg(long)]
+        auto_apply: Option<AutoApply>,
 
         #[arg(short = 'k', long)]
         backup: bool,
@@ -131,6 +138,7 @@ pub struct GetArgs {
     pub env: Vec<String>,
     pub constructors: bool,
     pub destructors: bool,
+    pub auto_apply: bool,
 }
 
 impl GetArgs {
@@ -141,6 +149,7 @@ impl GetArgs {
             && self.env.is_empty()
             && !self.constructors
             && !self.destructors
+            && !self.auto_apply
     }
 }
 
@@ -169,6 +178,20 @@ impl FromStr for Pair {
     }
 }
 
+impl FromStr for AutoApply {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "enable" => Ok(AutoApply::enabled()),
+            "replace" => Ok(AutoApply::replace()),
+            "background" => Ok(AutoApply::background()),
+            "all" => Ok(AutoApply::all()),
+            _ => Err(anyhow!("failed to parse auto_apply argument from: {}", s)),
+        }
+    }
+}
+
 pub struct UpdateArgs {
     pub set_default: Option<String>,
     pub biome: Option<BiomeArg>,
@@ -176,6 +199,7 @@ pub struct UpdateArgs {
     pub env: Vec<Pair>,
     pub new: Option<String>,
     pub backup: bool,
+    pub auto_apply: Option<AutoApply>,
 }
 
 #[cfg(test)]

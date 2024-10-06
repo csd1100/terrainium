@@ -21,11 +21,61 @@ pub struct Terrain {
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct AutoApply {
     enabled: bool,
     background: bool,
     replace: bool,
+}
+
+impl AutoApply {
+    pub fn enabled() -> Self {
+        Self {
+            enabled: true,
+            background: false,
+            replace: false,
+        }
+    }
+
+    pub fn background() -> Self {
+        Self {
+            enabled: true,
+            background: true,
+            replace: false,
+        }
+    }
+
+    pub fn replace() -> Self {
+        Self {
+            enabled: true,
+            background: false,
+            replace: true,
+        }
+    }
+
+    pub fn all() -> Self {
+        Self {
+            enabled: true,
+            background: true,
+            replace: true,
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled && !self.background && !self.replace
+    }
+
+    pub fn is_background(&self) -> bool {
+        self.enabled && self.background
+    }
+
+    pub fn is_replace(&self) -> bool {
+        self.enabled && self.replace
+    }
+
+    pub fn is_all(&self) -> bool {
+        self.enabled && self.background && self.replace
+    }
 }
 
 pub fn schema_url() -> String {
@@ -59,6 +109,14 @@ impl Terrain {
 
     pub fn biomes(&self) -> &BTreeMap<String, Biome> {
         &self.biomes
+    }
+
+    pub fn auto_apply(&self) -> &AutoApply {
+        &self.auto_apply
+    }
+
+    pub fn set_auto_apply(&mut self, auto_apply: AutoApply) {
+        self.auto_apply = auto_apply;
     }
 
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {

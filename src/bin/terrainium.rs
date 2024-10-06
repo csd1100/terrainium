@@ -39,6 +39,7 @@ async fn main() -> Result<()> {
             env,
             constructors,
             destructors,
+            auto_apply,
         } => get::handle(
             context,
             GetArgs {
@@ -49,6 +50,7 @@ async fn main() -> Result<()> {
                 env,
                 constructors,
                 destructors,
+                auto_apply,
             },
         )
         .context("failed to get the terrain values")?,
@@ -59,6 +61,7 @@ async fn main() -> Result<()> {
             new,
             env,
             alias,
+            auto_apply,
             backup,
         } => update::handle(
             context,
@@ -69,6 +72,7 @@ async fn main() -> Result<()> {
                 env,
                 new,
                 backup,
+                auto_apply,
             },
         )
         .context("failed to update the terrain values")?,
