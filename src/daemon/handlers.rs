@@ -2,7 +2,6 @@ use crate::common::types::pb;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::execute::ExecuteHandler;
 use crate::daemon::handlers::status::StatusHandler;
-use crate::daemon::handlers::status_poll::StatusPollHandler;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
@@ -11,7 +10,6 @@ use tracing::{event, instrument, Level};
 
 pub mod execute;
 pub mod status;
-pub mod status_poll;
 
 pub(crate) trait RequestHandler {
     async fn handle(request: Any) -> Any;
@@ -29,8 +27,6 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket) {
             "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request).await,
 
             "/terrainium.v1.StatusRequest" => StatusHandler::handle(request).await,
-
-            "/terrainium.v1.StatusPoll" => StatusPollHandler::handle(request).await,
 
             _ => {
                 event!(Level::ERROR, "invalid request type: {:?}", request.type_url);

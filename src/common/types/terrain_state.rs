@@ -148,19 +148,14 @@ impl TerrainState {
             .context("Failed to read TerrainState file")
     }
 
-    pub(crate) fn render(&self, json: bool, poll_request: pb::StatusPoll) -> Result<()> {
-        if json {
-            let output = self.to_json().expect("Failed to serialize TerrainState");
-            println!("{}", output);
-            Ok(())
+    pub(crate) fn render(&self, json: bool) -> Result<()> {
+        let output: String = if json {
+            self.to_json().expect("Failed to serialize TerrainState")
         } else {
-            let output = format!(
-                "TerrainState: {:#?}, last_modified: {:?}",
-                self, poll_request
-            );
-            println!("{}", output);
-            Ok(())
-        }
+            format!("TerrainState: {:#?}", self)
+        };
+        println!("{}", output);
+        Ok(())
     }
 }
 
@@ -316,7 +311,6 @@ impl From<TerrainState> for pb::StatusResponse {
             end_timestamp: value.end_timestamp,
             is_activate: value.is_activate,
             execute_context: Some(value.execute_context.into()),
-            last_modified: "".to_string(),
         }
     }
 }

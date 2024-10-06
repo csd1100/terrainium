@@ -2,7 +2,6 @@ use crate::common::constants::TERRAINIUMD_TMP_DIR;
 use crate::common::types::pb;
 use crate::common::types::pb::StatusResponse;
 use crate::common::types::terrain_state::TerrainState;
-use crate::common::utils::time_to_string;
 use crate::daemon::handlers::RequestHandler;
 use anyhow::{Context, Result};
 use prost_types::Any;
@@ -14,7 +13,7 @@ pub(crate) struct StatusHandler;
 impl RequestHandler for StatusHandler {
     #[instrument(skip(request))]
     async fn handle(request: Any) -> Any {
-        event!(Level::INFO, "handling StatusRequest");
+        event!(Level::INFO, "handling ExecuteRequest");
 
         let status_request: Result<pb::StatusRequest> = request
             .to_msg()
@@ -59,15 +58,7 @@ async fn get_status(request: pb::StatusRequest) -> Any {
         state
     );
 
-    let mut response: StatusResponse = state.into();
-
-    let last_modified = fs::metadata(&state_path)
-        .await
-        .expect("failed to read metadata of state file")
-        .modified()
-        .expect("failed to get last modified time");
-
-    response.last_modified = time_to_string(last_modified);
+    let response: StatusResponse = state.into();
 
     Any::from_msg(&response).expect("to be converted to Any")
 }
