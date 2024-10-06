@@ -3,7 +3,7 @@ use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAINIUM_SESSION_ID};
+use crate::common::constants::{CONSTRUCTORS, TERRAIN_SESSION_ID};
 use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
@@ -43,7 +43,7 @@ pub async fn handle(
     if let Some(zsh_envs) = &zsh_envs {
         envs.append(&mut zsh_envs.clone());
     } else {
-        envs.remove(TERRAINIUM_SESSION_ID);
+        envs.remove(TERRAIN_SESSION_ID);
     }
 
     let commands = if operation == CONSTRUCTORS {

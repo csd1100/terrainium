@@ -47,7 +47,7 @@ mod tests {
                     "TERRAIN_DIR".to_string(),
                     current_dir_path.to_str().unwrap().to_string(),
                 );
-                envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+                envs.insert("TERRAIN_ENABLED".to_string(), "true".to_string());
 
                 let exe = std::env::args().next().unwrap();
                 envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
@@ -119,7 +119,7 @@ mod tests {
                     "TERRAIN_DIR".to_string(),
                     current_dir_path.to_str().unwrap().to_string(),
                 );
-                envs.insert("TERRAINIUM_ENABLED".to_string(), "true".to_string());
+                envs.insert("TERRAIN_ENABLED".to_string(), "true".to_string());
 
                 let exe = std::env::args().next().unwrap();
                 envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);

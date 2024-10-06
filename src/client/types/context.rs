@@ -1,6 +1,6 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID, TERRAIN_DIR,
+    TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -33,7 +33,7 @@ impl Default for Context {
 impl Context {
     pub fn generate() -> Self {
         let session_id =
-            env::var(TERRAINIUM_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+            env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
 
         Context {
             session_id,
@@ -124,10 +124,10 @@ impl Context {
             self.current_dir().to_string_lossy().to_string(),
         );
         terrainium_envs.insert(
-            TERRAINIUM_SESSION_ID.to_string(),
+            TERRAIN_SESSION_ID.to_string(),
             self.session_id().to_string(),
         );
-        terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+        terrainium_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
 
         let exe = env::args().nth(0).unwrap();
         if self.name() == "terrainium" && exe.starts_with("target/") {
@@ -182,9 +182,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::{
-        TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID,
-    };
+    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_ENABLED, TERRAIN_SESSION_ID};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -234,20 +232,18 @@ mod test {
                 .display()
                 .to_string(),
         );
-        expected_map.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
+        expected_map.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
         let exe = env::args().next().unwrap();
         expected_map.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
-        assert!(context
-            .terrainium_envs()
-            .contains_key(TERRAINIUM_SESSION_ID));
+        assert!(context.terrainium_envs().contains_key(TERRAIN_SESSION_ID));
 
         context
             .terrainium_envs()
             .iter()
-            .filter(|(key, _)| *key != TERRAINIUM_SESSION_ID)
+            .filter(|(key, _)| *key != TERRAIN_SESSION_ID)
             .for_each(|(key, value)| {
                 assert_eq!(value, expected_map.get(key).expect("to be present"));
             });

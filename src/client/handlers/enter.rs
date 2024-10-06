@@ -5,7 +5,7 @@ use crate::client::shell::Shell;
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAINIUM_AUTO_APPLY};
+use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use tokio::fs::read_to_string;
 
@@ -47,7 +47,7 @@ pub async fn handle(
         }
         .to_string();
 
-        envs.insert(TERRAINIUM_AUTO_APPLY.to_string(), auto_apply_value);
+        envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply_value);
     }
 
     if auto_apply && !terrain.auto_apply().is_background() {
@@ -82,9 +82,9 @@ mod test {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        FPATH, TERRAINIUM_AUTO_APPLY, TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE,
-        TERRAINIUM_SESSION_ID, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_DIR, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
+        FPATH, TERRAINIUM_EXECUTABLE, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_AUTO_APPLY,
+        TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
+        TERRAIN_SESSION_ID,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -125,8 +125,8 @@ mod test {
             TERRAIN_INIT_FN.to_string(),
             "terrain-example_biome.zsh".to_string(),
         );
-        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
+        expected_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAIN_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
@@ -267,15 +267,15 @@ mod test {
             TERRAIN_INIT_FN.to_string(),
             "terrain-example_biome.zsh".to_string(),
         );
-        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
+        expected_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAIN_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
         );
         let exe = env::args().next().unwrap();
         expected_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-        expected_envs.insert(TERRAINIUM_AUTO_APPLY.to_string(), "enabled".to_string());
+        expected_envs.insert(TERRAIN_AUTO_APPLY.to_string(), "enabled".to_string());
 
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         expected_envs.insert(
@@ -366,9 +366,9 @@ mod test {
             TERRAIN_INIT_FN.to_string(),
             "terrain-example_biome.zsh".to_string(),
         );
-        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-        expected_envs.insert(TERRAINIUM_AUTO_APPLY.to_string(), "all".to_string());
-        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
+        expected_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAIN_AUTO_APPLY.to_string(), "all".to_string());
+        expected_envs.insert(TERRAIN_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
@@ -509,9 +509,9 @@ mod test {
             TERRAIN_INIT_FN.to_string(),
             "terrain-example_biome.zsh".to_string(),
         );
-        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-        expected_envs.insert(TERRAINIUM_AUTO_APPLY.to_string(), "background".to_string());
-        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
+        expected_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAIN_AUTO_APPLY.to_string(), "background".to_string());
+        expected_envs.insert(TERRAIN_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
@@ -652,15 +652,15 @@ mod test {
             TERRAIN_INIT_FN.to_string(),
             "terrain-example_biome.zsh".to_string(),
         );
-        expected_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
-        expected_envs.insert(TERRAINIUM_SESSION_ID.to_string(), "some".to_string());
+        expected_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
+        expected_envs.insert(TERRAIN_SESSION_ID.to_string(), "some".to_string());
         expected_envs.insert(
             TERRAIN_SELECTED_BIOME.to_string(),
             "example_biome".to_string(),
         );
         let exe = env::args().next().unwrap();
         expected_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-        expected_envs.insert(TERRAINIUM_AUTO_APPLY.to_string(), "replaced".to_string());
+        expected_envs.insert(TERRAIN_AUTO_APPLY.to_string(), "replaced".to_string());
 
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         expected_envs.insert(

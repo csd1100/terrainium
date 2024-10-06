@@ -13,14 +13,14 @@ function {
 }
 
 function terrainium_shell_constructor() {
-    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
+    if [ "$TERRAIN_ENABLED" = "true" ]; then
         /bin/echo entering terrain
         /bin/echo entering biome example_biome
     fi
 }
 
 function terrainium_shell_destructor() {
-    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
+    if [ "$TERRAIN_ENABLED" = "true" ]; then
         /bin/echo exiting terrain
         /bin/echo exiting biome example_biome
     fi
@@ -31,7 +31,7 @@ function terrainium_enter() {
 }
 
 function terrainium_exit() {
-    if [ "$TERRAINIUM_ENABLED" = "true" ]; then
+    if [ "$TERRAIN_ENABLED" = "true" ]; then
         builtin exit
     fi
 }
@@ -42,7 +42,7 @@ function terrainium_preexec_functions() {
     tconstruct="(\$TERRAINIUM_EXECUTABLE construct*|$TERRAINIUM_EXECUTABLE construct*|*terrainium construct*)"
     tdestruct="(\$TERRAINIUM_EXECUTABLE destruct*|$TERRAINIUM_EXECUTABLE destruct*|*terrainium destruct*)"
 
-    if [ $TERRAINIUM_ENABLED = "true" ]; then
+    if [ $TERRAIN_ENABLED = "true" ]; then
         case "$3" in
         $~texit)
             terrainium_exit
@@ -58,7 +58,7 @@ function terrainium_preexec_functions() {
 }
 
 function terrainium_chpwd_functions() {
-    if [ "$TERRAINIUM_ENABLED" != "true" ]; then
+    if [ "$TERRAIN_ENABLED" != "true" ]; then
         if [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) == "true" ]; then
             "$TERRAINIUM_EXECUTABLE" enter --auto-apply
         elif [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) == "replace" ]; then
