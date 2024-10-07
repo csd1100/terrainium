@@ -78,6 +78,23 @@ impl AutoApply {
     }
 }
 
+impl From<AutoApply> for String {
+    fn from(value: AutoApply) -> Self {
+        if value.is_all() {
+            "all"
+        } else if value.is_enabled() {
+            "enabled"
+        } else if value.is_replace() {
+            "replaced"
+        } else if value.is_background() {
+            "background"
+        } else {
+            "off"
+        }
+        .to_string()
+    }
+}
+
 pub fn schema_url() -> String {
     "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
         .to_string()

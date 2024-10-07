@@ -203,6 +203,7 @@ impl FromStr for AutoApply {
             "replace" => Ok(AutoApply::replace()),
             "background" => Ok(AutoApply::background()),
             "all" => Ok(AutoApply::all()),
+            "off" => Ok(AutoApply::default()),
             _ => Err(anyhow!("failed to parse auto_apply argument from: {}", s)),
         }
     }

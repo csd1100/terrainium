@@ -34,20 +34,10 @@ pub async fn handle(
     envs.append(&mut zsh_envs);
 
     if auto_apply {
-        let auto_apply_value = if terrain.auto_apply().is_all() {
-            "all"
-        } else if terrain.auto_apply().is_enabled() {
-            "enabled"
-        } else if terrain.auto_apply().is_replace() {
-            "replaced"
-        } else if terrain.auto_apply().is_background() {
-            "background"
-        } else {
-            "off"
-        }
-        .to_string();
-
-        envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply_value);
+        envs.insert(
+            TERRAIN_AUTO_APPLY.to_string(),
+            terrain.auto_apply().clone().into(),
+        );
     }
 
     if auto_apply && !terrain.auto_apply().is_background() {
