@@ -1,14 +1,12 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
-#[mockall_double::double]
-use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 
-pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
+pub async fn handle(context: Context) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
@@ -18,10 +16,9 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
         ));
     }
 
-    if should_run_destructor(&client)? {
+    if should_run_destructor() {
         background::handle(
             &context,
-            client.unwrap(),
             DESTRUCTORS,
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
@@ -34,15 +31,14 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
 }
 
 /// `terrainium exit` should run background destructor commands only in following case:
-/// 1. terrainium is connected with terrainiumd (daemon)
-/// 2. Auto-apply is disabled
-/// 3. Auto-apply is enabled but background flag is also turned on
-fn should_run_destructor(client: &Option<Client>) -> Result<bool> {
+/// 1. Auto-apply is disabled
+/// 2. Auto-apply is enabled but background flag is also turned on
+fn should_run_destructor() -> bool {
     let auto_apply = env::var(TERRAIN_AUTO_APPLY);
-    Ok(client.is_some()
-        && (auto_apply.is_err()
-            || (auto_apply.is_ok()
-                && (auto_apply.clone()? == "all" || auto_apply? == "background"))))
+    match auto_apply {
+        Ok(auto_apply) => auto_apply == "all" || auto_apply == "background",
+        Err(_) => true,
+    }
 }
 
 #[cfg(test)]
@@ -51,7 +47,7 @@ mod tests {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME,
+        TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME,
     };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
@@ -137,9 +133,14 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, Some(mocket))
-            .await
-            .expect("no error to be thrown");
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        super::handle(context).await.expect("no error to be thrown");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
     }
@@ -219,9 +220,14 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, Some(mocket))
-            .await
-            .expect_err("to be thrown");
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        let err = super::handle(context).await.expect_err("to be thrown");
 
         assert_eq!(err.to_string(), "failed to run destructors");
 
@@ -253,9 +259,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, Some(MockClient::default()))
-            .await
-            .expect("no error to be thrown");
+        super::handle(context).await.expect("no error to be thrown");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
@@ -335,9 +339,14 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, Some(mocket))
-            .await
-            .expect("no error to be thrown");
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        super::handle(context).await.expect("no error to be thrown");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);

@@ -1,24 +1,15 @@
 use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::handlers::background;
 use crate::client::shell::Shell;
-#[mockall_double::double]
-use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY};
-use anyhow::{anyhow, Context as AnyhowContext, Result};
-use tokio::fs::read_to_string;
+use anyhow::{Context as AnyhowContext, Result};
+use std::fs::read_to_string;
 
-pub async fn handle(
-    context: Context,
-    biome_arg: Option<BiomeArg>,
-    auto_apply: bool,
-    client: Option<Client>,
-) -> Result<()> {
+pub async fn handle(context: Context, biome_arg: Option<BiomeArg>, auto_apply: bool) -> Result<()> {
     let terrain = Terrain::from_toml(
-        read_to_string(context.toml_path()?)
-            .await
-            .context("failed to read terrain.toml")?,
+        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
     )
     .expect("failed to parse terrain from toml");
 
@@ -40,27 +31,30 @@ pub async fn handle(
         );
     }
 
-    if client.is_none() || (client.is_some() && auto_apply && !terrain.auto_apply().is_background())
-    {
+    if auto_apply && !terrain.auto_apply().is_background() {
         context
             .shell()
             .spawn(envs)
             .await
             .context("failed to enter terrain environment")?;
     } else {
-        let result = tokio::try_join!(
-            background::handle(
-                &context,
-                client.unwrap(),
-                CONSTRUCTORS,
-                biome_arg,
-                Some(envs.clone()),
-            ),
-            context.shell().spawn(envs)
+        let result = tokio::join!(
+            context.shell().spawn(envs.clone()),
+            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs)),
         );
 
-        if let Err(err) = result {
-            return Err(anyhow!("failed to enter the terrain: {}", err));
+        if let Err(e) = result.0 {
+            anyhow::bail!(
+                "failed to spawn background processes while entering terrain environment: {}",
+                e
+            );
+        }
+
+        if let Err(e) = result.1 {
+            anyhow::bail!(
+                "failed to spawn shell while entering terrain environment: {}",
+                e
+            );
         }
     }
 
@@ -73,9 +67,9 @@ mod test {
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::constants::{
-        FPATH, TERRAINIUM_EXECUTABLE, TERRAIN_ACTIVATION_TIMESTAMP, TERRAIN_AUTO_APPLY,
-        TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
-        TERRAIN_SESSION_ID,
+        FPATH, TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE, TERRAIN_ACTIVATION_TIMESTAMP,
+        TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+        TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
@@ -216,6 +210,13 @@ mod test {
             Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
         });
 
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
         let context = Context::build(current_dir.path().into(), central_dir.path().into(), shell);
 
         copy(
@@ -225,7 +226,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, false, Some(mocket))
+        super::handle(context, None, false)
             .await
             .expect("no error to be thrown");
     }
@@ -323,7 +324,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, Some(MockClient::default()))
+        super::handle(context, None, true)
             .await
             .expect("no error to be thrown");
     }
@@ -465,7 +466,14 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, Some(mocket))
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        super::handle(context, None, true)
             .await
             .expect("no error to be thrown");
     }
@@ -607,7 +615,14 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, Some(mocket))
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        super::handle(context, None, true)
             .await
             .expect("no error to be thrown");
     }
@@ -705,7 +720,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, Some(MockClient::default()))
+        super::handle(context, None, true)
             .await
             .expect("no error to be thrown");
     }

@@ -1,13 +1,10 @@
 use anyhow::{Context as AnyhowContext, Result};
 use clap::Parser;
-use std::path::PathBuf;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
 use terrainium::client::handlers::{
     construct, destruct, edit, enter, exit, generate, get, init, update,
 };
-use terrainium::client::types::client::Client;
 use terrainium::client::types::context::Context;
-use terrainium::common::constants::TERRAINIUMD_SOCKET;
 
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
@@ -85,61 +82,13 @@ async fn main() -> Result<()> {
             )
             .context("failed to update the terrain values")?,
 
-            Verbs::Construct { biome } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
-                match client {
-                    Ok(client) => construct::handle(context, biome, Some(client)).await?,
-                    Err(err) => {
-                        println!(
-                            "failed to connect to daemon: {}, running in offline mode...",
-                            err
-                        );
-                        construct::handle(context, biome, None).await?
-                    }
-                }
-            }
+            Verbs::Construct { biome } => construct::handle(context, biome).await?,
 
-            Verbs::Destruct { biome } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
-                match client {
-                    Ok(client) => destruct::handle(context, biome, Some(client)).await?,
-                    Err(err) => {
-                        println!(
-                            "failed to connect to daemon: {}, running in offline mode...",
-                            err
-                        );
-                        destruct::handle(context, biome, None).await?
-                    }
-                }
-            }
+            Verbs::Destruct { biome } => destruct::handle(context, biome).await?,
 
-            Verbs::Enter { biome, auto_apply } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
-                match client {
-                    Ok(client) => enter::handle(context, biome, auto_apply, Some(client)).await?,
-                    Err(err) => {
-                        println!(
-                            "failed to connect to daemon: {}, running in offline mode...",
-                            err
-                        );
-                        enter::handle(context, biome, auto_apply, None).await?
-                    }
-                }
-            }
+            Verbs::Enter { biome, auto_apply } => enter::handle(context, biome, auto_apply).await?,
 
-            Verbs::Exit => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
-                match client {
-                    Ok(client) => exit::handle(context, Some(client)).await?,
-                    Err(err) => {
-                        println!(
-                            "failed to connect to daemon: {}, running in offline mode...",
-                            err
-                        );
-                        exit::handle(context, None).await?
-                    }
-                }
-            }
+            Verbs::Exit => exit::handle(context).await?,
 
             #[cfg(feature = "terrain-schema")]
             Verbs::Schema => schema::handle().context("failed to generate schema")?,

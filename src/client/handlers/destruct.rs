@@ -1,20 +1,11 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
-#[mockall_double::double]
-use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::constants::DESTRUCTORS;
 use anyhow::Result;
 
-pub async fn handle(
-    context: Context,
-    biome_arg: Option<BiomeArg>,
-    client: Option<Client>,
-) -> Result<()> {
-    if let Some(client) = client {
-        background::handle(&context, client, DESTRUCTORS, biome_arg, None).await?
-    }
-    Ok(())
+pub async fn handle(context: Context, biome_arg: Option<BiomeArg>) -> Result<()> {
+    background::handle(&context, DESTRUCTORS, biome_arg, None).await
 }
 
 #[cfg(test)]
@@ -22,16 +13,18 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::common::constants::TERRAINIUM_EXECUTABLE;
+    use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE};
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
     use prost_types::Any;
+    use serial_test::serial;
     use std::collections::BTreeMap;
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
+    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
@@ -98,11 +91,19 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, None, Some(mocket))
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
+        super::handle(context, None)
             .await
             .expect("no error to be thrown");
     }
 
+    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
@@ -166,13 +167,20 @@ mod tests {
             .expect("to be converted to any"))
         });
 
+        let new_client = MockClient::new_context();
+        new_client
+            .expect()
+            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
+            .return_once(|_| Ok(mocket))
+            .times(1);
+
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, None, Some(mocket))
+        let err = super::handle(context, None)
             .await
             .expect_err("to be thrown");
 

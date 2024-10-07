@@ -3,7 +3,7 @@ use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAIN_SESSION_ID};
+use crate::common::constants::{CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SESSION_ID};
 use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
@@ -12,6 +12,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
+use std::path::PathBuf;
 
 fn operation_from_string(op: &str) -> pb::Operation {
     if op == CONSTRUCTORS {
@@ -23,11 +24,12 @@ fn operation_from_string(op: &str) -> pb::Operation {
 
 pub async fn handle(
     context: &Context,
-    mut client: Client,
     operation: &str,
     biome_arg: Option<BiomeArg>,
     zsh_envs: Option<BTreeMap<String, String>>,
 ) -> Result<()> {
+    let mut client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
     )

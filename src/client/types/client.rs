@@ -61,7 +61,7 @@ impl Client {
 mock! {
     #[derive(Debug)]
     pub Client {
-        pub async fn new(path: PathBuf) -> Result<Client>;
+        pub async fn new(path: PathBuf) -> Result<Self>;
     }
 
     impl Socket for Client {

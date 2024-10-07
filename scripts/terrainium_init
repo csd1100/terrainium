@@ -5,7 +5,7 @@ if [ -z "$TERRAINIUM_EXECUTABLE" ]; then
 fi
 
 if [ "$TERRAIN_ENABLED" = "true" ];then
-    clear
+    # clear
     autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
     "${terrain_init}"
     # builtin unfunction -- "${terrainium_init}"
