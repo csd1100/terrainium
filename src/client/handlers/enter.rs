@@ -13,7 +13,7 @@ pub async fn handle(
     context: Context,
     biome_arg: Option<BiomeArg>,
     auto_apply: bool,
-    client: Client,
+    client: Option<Client>,
 ) -> Result<()> {
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?)
@@ -40,7 +40,8 @@ pub async fn handle(
         );
     }
 
-    if auto_apply && !terrain.auto_apply().is_background() {
+    if client.is_none() || (client.is_some() && auto_apply && !terrain.auto_apply().is_background())
+    {
         context
             .shell()
             .spawn(envs)
@@ -50,7 +51,7 @@ pub async fn handle(
         let result = tokio::try_join!(
             background::handle(
                 &context,
-                client,
+                client.unwrap(),
                 CONSTRUCTORS,
                 biome_arg,
                 Some(envs.clone()),
@@ -225,7 +226,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, false, mocket)
+        super::handle(context, None, false, Some(mocket))
             .await
             .expect("no error to be thrown");
     }
@@ -324,7 +325,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, MockClient::default())
+        super::handle(context, None, true, Some(MockClient::default()))
             .await
             .expect("no error to be thrown");
     }
@@ -467,7 +468,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, mocket)
+        super::handle(context, None, true, Some(mocket))
             .await
             .expect("no error to be thrown");
     }
@@ -610,7 +611,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, mocket)
+        super::handle(context, None, true, Some(mocket))
             .await
             .expect("no error to be thrown");
     }
@@ -709,7 +710,7 @@ mod test {
         .await
         .expect("to copy test terrain.toml");
 
-        super::handle(context, None, true, MockClient::default())
+        super::handle(context, None, true, Some(MockClient::default()))
             .await
             .expect("no error to be thrown");
     }

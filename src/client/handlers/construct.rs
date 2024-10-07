@@ -6,8 +6,15 @@ use crate::client::types::context::Context;
 use crate::common::constants::CONSTRUCTORS;
 use anyhow::Result;
 
-pub async fn handle(context: Context, biome_arg: Option<BiomeArg>, client: Client) -> Result<()> {
-    background::handle(&context, client, CONSTRUCTORS, biome_arg, None).await
+pub async fn handle(
+    context: Context,
+    biome_arg: Option<BiomeArg>,
+    client: Option<Client>,
+) -> Result<()> {
+    if let Some(client) = client {
+        background::handle(&context, client, CONSTRUCTORS, biome_arg, None).await?
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -92,7 +99,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, None, mocket)
+        super::handle(context, None, Some(mocket))
             .await
             .expect("no error to be thrown");
     }
@@ -167,7 +174,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, None, mocket)
+        let err = super::handle(context, None, Some(mocket))
             .await
             .expect_err("to be thrown");
 

@@ -8,7 +8,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 
-pub async fn handle(context: Context, client: Client) -> Result<()> {
+pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
 
@@ -19,12 +19,14 @@ pub async fn handle(context: Context, client: Client) -> Result<()> {
     }
 
     let auto_apply = env::var(TERRAIN_AUTO_APPLY);
-    if auto_apply.is_err()
-        || (auto_apply.is_ok() && (auto_apply.clone()? == "all" || auto_apply? == "background"))
+    if client.is_some()
+        && (auto_apply.is_err()
+            || (auto_apply.is_ok()
+                && (auto_apply.clone()? == "all" || auto_apply? == "background")))
     {
         background::handle(
             &context,
-            client,
+            client.unwrap(),
             DESTRUCTORS,
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
@@ -129,7 +131,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, mocket)
+        super::handle(context, Some(mocket))
             .await
             .expect("no error to be thrown");
 
@@ -212,7 +214,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, mocket)
+        let err = super::handle(context, Some(mocket))
             .await
             .expect_err("to be thrown");
 
@@ -247,7 +249,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, MockClient::default())
+        super::handle(context, Some(MockClient::default()))
             .await
             .expect("no error to be thrown");
 
@@ -330,7 +332,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, mocket)
+        super::handle(context, Some(mocket))
             .await
             .expect("no error to be thrown");
 

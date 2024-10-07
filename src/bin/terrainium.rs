@@ -86,23 +86,59 @@ async fn main() -> Result<()> {
             .context("failed to update the terrain values")?,
 
             Verbs::Construct { biome } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-                construct::handle(context, biome, client).await?
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
+                match client {
+                    Ok(client) => construct::handle(context, biome, Some(client)).await?,
+                    Err(err) => {
+                        println!(
+                            "failed to connect to daemon: {}, running in offline mode...",
+                            err
+                        );
+                        construct::handle(context, biome, None).await?
+                    }
+                }
             }
 
             Verbs::Destruct { biome } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-                destruct::handle(context, biome, client).await?
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
+                match client {
+                    Ok(client) => destruct::handle(context, biome, Some(client)).await?,
+                    Err(err) => {
+                        println!(
+                            "failed to connect to daemon: {}, running in offline mode...",
+                            err
+                        );
+                        destruct::handle(context, biome, None).await?
+                    }
+                }
             }
 
             Verbs::Enter { biome, auto_apply } => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-                enter::handle(context, biome, auto_apply, client).await?
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
+                match client {
+                    Ok(client) => enter::handle(context, biome, auto_apply, Some(client)).await?,
+                    Err(err) => {
+                        println!(
+                            "failed to connect to daemon: {}, running in offline mode...",
+                            err
+                        );
+                        enter::handle(context, biome, auto_apply, None).await?
+                    }
+                }
             }
 
             Verbs::Exit => {
-                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
-                exit::handle(context, client).await?
+                let client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await;
+                match client {
+                    Ok(client) => exit::handle(context, Some(client)).await?,
+                    Err(err) => {
+                        println!(
+                            "failed to connect to daemon: {}, running in offline mode...",
+                            err
+                        );
+                        exit::handle(context, None).await?
+                    }
+                }
             }
 
             #[cfg(feature = "terrain-schema")]
