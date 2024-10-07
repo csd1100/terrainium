@@ -44,7 +44,6 @@ impl Shell for Zsh {
         let rc = fs::read_to_string(&path).context("failed to read rc")?;
         if !rc.contains(ZSH_INIT_RC) {
             let rc_file = fs::OpenOptions::new()
-                .write(true)
                 .append(true)
                 .open(&path)
                 .context("failed to open rc");
@@ -171,15 +170,11 @@ impl Zsh {
     }
 
     fn compiled_script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        let mut compiled_script_path: PathBuf = scripts_dir.into();
-        compiled_script_path.push(format!("terrain-{}.zwc", biome_name));
-        compiled_script_path
+        scripts_dir.join(format!("terrain-{}.zwc", biome_name))
     }
 
     fn script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        let mut script_path: PathBuf = scripts_dir.into();
-        script_path.push(format!("terrain-{}.zsh", biome_name));
-        script_path
+        scripts_dir.join(format!("terrain-{}.zsh", biome_name))
     }
 
     fn create_script(

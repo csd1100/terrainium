@@ -82,7 +82,9 @@ mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::AutoApply;
-    use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
+    use crate::client::utils::test::{
+        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
+    };
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;
@@ -95,17 +97,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
             "./tests/data/terrain.example.without.default.toml",
@@ -174,8 +175,7 @@ mod test {
     fn set_default_biome_invalid() {
         let current_dir = tempdir().expect("tempdir to be created");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
             "./tests/data/terrain.example.without.default.toml",
@@ -224,21 +224,20 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome2".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -339,17 +338,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -424,17 +422,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -507,8 +504,7 @@ mod test {
     fn update_biome_invalid() {
         let current_dir = tempdir().expect("tempdir to be created");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -557,17 +553,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -606,8 +601,7 @@ mod test {
 
         assert_eq!(actual, expected);
 
-        let mut backup: PathBuf = current_dir.path().into();
-        backup.push("terrain.toml.bkp");
+        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
 
         let actual = read_to_string(&backup).expect("backup terrain to be read");
         let expected =
@@ -651,17 +645,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -694,8 +687,7 @@ mod test {
 
         assert_eq!(actual, expected);
 
-        let mut backup: PathBuf = current_dir.path().into();
-        backup.push("terrain.toml.bkp");
+        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
 
         let actual = read_to_string(&backup).expect("backup terrain to be read");
         let expected =
@@ -739,17 +731,16 @@ mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
             "./tests/data/terrain.example.auto_apply.enabled.toml",
@@ -785,8 +776,7 @@ mod test {
 
         assert_eq!(actual, expected);
 
-        let mut backup: PathBuf = current_dir.path().into();
-        backup.push("terrain.toml.bkp");
+        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
 
         let actual = read_to_string(&backup).expect("backup terrain to be read");
         let expected = read_to_string("./tests/data/terrain.example.auto_apply.enabled.toml")

@@ -95,11 +95,10 @@ mod test {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let mut compiled_script = central_dir.path().join("scripts");
-        compiled_script.push("terrain-example_biome.zwc");
-
-        let mut script = central_dir.path().join("scripts");
-        script.push("terrain-example_biome.zsh");
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
 
         let mut expected_envs = BTreeMap::<String, String>::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -237,11 +236,10 @@ mod test {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let mut compiled_script = central_dir.path().join("scripts");
-        compiled_script.push("terrain-example_biome.zwc");
-
-        let mut script = central_dir.path().join("scripts");
-        script.push("terrain-example_biome.zsh");
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
 
         let mut expected_envs = BTreeMap::<String, String>::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -336,11 +334,10 @@ mod test {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let mut compiled_script = central_dir.path().join("scripts");
-        compiled_script.push("terrain-example_biome.zwc");
-
-        let mut script = central_dir.path().join("scripts");
-        script.push("terrain-example_biome.zsh");
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
 
         let mut expected_envs = BTreeMap::<String, String>::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -479,11 +476,10 @@ mod test {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let mut compiled_script = central_dir.path().join("scripts");
-        compiled_script.push("terrain-example_biome.zwc");
-
-        let mut script = central_dir.path().join("scripts");
-        script.push("terrain-example_biome.zsh");
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
 
         let mut expected_envs = BTreeMap::<String, String>::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -622,11 +618,10 @@ mod test {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let mut compiled_script = central_dir.path().join("scripts");
-        compiled_script.push("terrain-example_biome.zwc");
-
-        let mut script = central_dir.path().join("scripts");
-        script.push("terrain-example_biome.zsh");
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
 
         let mut expected_envs = BTreeMap::<String, String>::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());

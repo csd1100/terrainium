@@ -73,9 +73,9 @@ impl Context {
     }
 
     pub fn config_dir() -> PathBuf {
-        let mut central_dir = home_dir().expect("failed to get home directory");
-        central_dir.push(CONFIG_LOCATION);
-        central_dir
+        home_dir()
+            .expect("failed to get home directory")
+            .join(CONFIG_LOCATION)
     }
 
     pub fn init_script() -> PathBuf {
@@ -121,21 +121,15 @@ impl Context {
     }
 
     pub fn local_toml_path(&self) -> PathBuf {
-        let mut base_dir: PathBuf = self.current_dir.clone();
-        base_dir.push(TERRAIN_TOML);
-        base_dir
+        self.current_dir.join(TERRAIN_TOML)
     }
 
     pub fn central_toml_path(&self) -> PathBuf {
-        let mut base_dir: PathBuf = self.central_dir.clone();
-        base_dir.push(TERRAIN_TOML);
-        base_dir
+        self.central_dir.join(TERRAIN_TOML)
     }
 
     pub fn scripts_dir(&self) -> PathBuf {
-        let mut scripts_dir = self.central_dir.clone();
-        scripts_dir.push(SCRIPTS_DIR_NAME);
-        scripts_dir
+        self.central_dir.join(SCRIPTS_DIR_NAME)
     }
 
     pub(crate) fn shell(&self) -> &Zsh {
@@ -194,18 +188,17 @@ impl Context {
 }
 
 fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
-    let mut central_dir = home_dir().expect("failed to get home directory");
-    central_dir.push(CONFIG_LOCATION);
-    central_dir.push(TERRAINS_DIR_NAME);
-
     let terrain_dir_name = Path::canonicalize(current_dir.as_path())
         .expect("expected current directory to be valid")
         .to_string_lossy()
         .to_string()
         .replace('/', "_");
-    central_dir.push(terrain_dir_name);
 
-    central_dir
+    home_dir()
+        .expect("failed to get home directory")
+        .join(CONFIG_LOCATION)
+        .join(TERRAINS_DIR_NAME)
+        .join(terrain_dir_name)
 }
 
 #[cfg(test)]
@@ -283,9 +276,9 @@ mod test {
 
     #[test]
     fn local_toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let mut expected_terrain_toml =
-            env::current_dir().expect("failed to get current directory");
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml = env::current_dir()
+            .expect("failed to get current directory")
+            .join("terrain.toml");
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
@@ -299,8 +292,7 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = current_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
@@ -330,8 +322,7 @@ mod test {
         let central_dir = tempdir()?;
         let current_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = central_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
         let context = Context::build(
@@ -360,8 +351,7 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = central_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
@@ -424,8 +414,7 @@ mod test {
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let mut scripts_dir = get_central_dir_location();
-        scripts_dir.push("scripts");
+        let scripts_dir = get_central_dir_location().join("scripts");
 
         assert_eq!(scripts_dir, context.scripts_dir());
         Ok(())
@@ -445,10 +434,9 @@ mod test {
             .to_string()
             .replace('/', "_");
 
-        let mut central_dir = home_dir().expect("failed to get home directory");
-        central_dir.push(".config/terrainium/terrains");
-        central_dir.push(terrain_dir_name);
-
-        central_dir
+        home_dir()
+            .expect("failed to get home directory")
+            .join(".config/terrainium/terrains")
+            .join(terrain_dir_name)
     }
 }

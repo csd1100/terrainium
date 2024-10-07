@@ -24,7 +24,7 @@ mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::test::{
-        compile_expectations, script_path, scripts_dir, setup_with_expectations,
+        compile_expectations, script_path, scripts_dir, setup_command_runner_mock_with_expectations,
     };
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -37,16 +37,13 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
-
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -56,8 +53,7 @@ mod test {
             Zsh::build(mock),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         fs::copy("./tests/data/terrain.example.toml", terrain_toml)
             .expect("test file to be copied");
 
@@ -102,16 +98,13 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
-
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -121,8 +114,7 @@ mod test {
             Zsh::build(mock),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         fs::copy("./tests/data/terrain.example.toml", terrain_toml)
             .expect("test file to be copied");
 

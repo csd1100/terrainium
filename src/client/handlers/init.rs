@@ -45,7 +45,9 @@ pub(crate) mod test {
     use crate::client::handlers::edit::test::EDITOR;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::client::utils::test::{compile_expectations, script_path, setup_with_expectations};
+    use crate::client::utils::test::{
+        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
+    };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -63,7 +65,7 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -78,8 +80,7 @@ pub(crate) mod test {
 
         // assertions
         // assert terrain.toml is created
-        let mut terrain_toml_path: PathBuf = current_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
         assert!(
             fs::exists(&terrain_toml_path)?,
             "expected terrain.toml to be created in current directory"
@@ -120,7 +121,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -135,8 +136,7 @@ pub(crate) mod test {
 
         // assertions
         // assert toml is created in central dir
-        let mut terrain_toml_path: PathBuf = central_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
 
         assert!(
             fs::exists(&terrain_toml_path)?,
@@ -181,7 +181,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -194,8 +194,7 @@ pub(crate) mod test {
         super::handle(context, false, false, false)
             .expect("no error to be thrown when directory is not present");
 
-        let mut scripts_dir_path: PathBuf = central_dir.path().into();
-        scripts_dir_path.push("scripts");
+        let scripts_dir_path: PathBuf = central_dir.path().join("scripts");
 
         assert!(
             fs::exists(&scripts_dir_path)?,
@@ -219,7 +218,7 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -234,8 +233,7 @@ pub(crate) mod test {
         super::handle(context, true, false, false)
             .expect("no error to be thrown when directory is not present");
 
-        let mut terrain_toml_path: PathBuf = central_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
 
         assert!(
             fs::exists(&terrain_toml_path)?,
@@ -269,8 +267,7 @@ pub(crate) mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml_path: PathBuf = current_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
 
         fs::write(terrain_toml_path, "")?;
 
@@ -293,11 +290,11 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -309,8 +306,7 @@ pub(crate) mod test {
 
         super::handle(context, true, true, false)?;
 
-        let mut terrain_toml_path: PathBuf = central_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
 
         assert!(
             fs::exists(&terrain_toml_path)?,
@@ -373,8 +369,7 @@ pub(crate) mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml_path: PathBuf = central_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
 
         fs::write(terrain_toml_path, "")?;
 
@@ -400,11 +395,11 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             MockCommandToRun::default(),
             compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
         );
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -417,8 +412,7 @@ pub(crate) mod test {
         super::handle(context, false, true, false)?;
 
         // assert toml is created
-        let mut terrain_toml_path: PathBuf = current_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
 
         assert!(
             fs::exists(&terrain_toml_path)?,
@@ -480,8 +474,7 @@ pub(crate) mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
         //setup edit mock
-        let mut terrain_toml_path: PathBuf = current_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
         let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
@@ -502,7 +495,7 @@ pub(crate) mod test {
         // setup mock to assert scripts are compiled when init
         let central_dir_path: PathBuf = central_dir.path().into();
         let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
+        let mock = setup_command_runner_mock_with_expectations(
             mock,
             compile_expectations(central_dir_path.clone(), "none".to_string()),
         );
@@ -517,8 +510,7 @@ pub(crate) mod test {
 
         // assertions
         // assert terrain.toml is created
-        let mut terrain_toml_path: PathBuf = current_dir.path().into();
-        terrain_toml_path.push("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
         assert!(
             fs::exists(&terrain_toml_path)?,
             "expected terrain.toml to be created in current directory"

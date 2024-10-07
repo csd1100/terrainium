@@ -204,8 +204,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -244,8 +243,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -283,8 +281,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -323,8 +320,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -361,8 +357,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -399,8 +394,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -436,8 +430,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -474,8 +467,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -512,8 +504,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -549,8 +540,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -587,8 +577,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -625,8 +614,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -663,8 +651,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -702,8 +689,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -741,8 +727,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -782,8 +767,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -824,8 +808,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -863,8 +846,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -902,8 +884,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy(
             "./tests/data/terrain.example.auto_apply.enabled.toml",
             &terrain_toml,
@@ -943,8 +924,7 @@ mod test {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy(
             "./tests/data/terrain.example.auto_apply.replace.toml",
             &terrain_toml,

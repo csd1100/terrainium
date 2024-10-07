@@ -10,7 +10,7 @@ use std::env;
 
 pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
-    let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_else(|_| "".to_string());
+    let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
     if session_id.is_empty() || selected_biome.is_empty() {
         return Err(anyhow!(
@@ -18,12 +18,7 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
         ));
     }
 
-    let auto_apply = env::var(TERRAIN_AUTO_APPLY);
-    if client.is_some()
-        && (auto_apply.is_err()
-            || (auto_apply.is_ok()
-                && (auto_apply.clone()? == "all" || auto_apply? == "background")))
-    {
+    if should_run_destructor(&client)? {
         background::handle(
             &context,
             client.unwrap(),
@@ -36,6 +31,18 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// `terrainium exit` should run background destructor commands only in following case:
+/// 1. terrainium is connected with terrainiumd (daemon)
+/// 2. Auto-apply is disabled
+/// 3. Auto-apply is enabled but background flag is also turned on
+fn should_run_destructor(client: &Option<Client>) -> Result<bool> {
+    let auto_apply = env::var(TERRAIN_AUTO_APPLY);
+    Ok(client.is_some()
+        && (auto_apply.is_err()
+            || (auto_apply.is_ok()
+                && (auto_apply.clone()? == "all" || auto_apply? == "background"))))
 }
 
 #[cfg(test)]
@@ -67,8 +74,7 @@ mod tests {
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
@@ -147,8 +153,7 @@ mod tests {
         );
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
@@ -234,8 +239,7 @@ mod tests {
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
             "./tests/data/terrain.example.auto_apply.enabled.toml",
@@ -268,8 +272,7 @@ mod tests {
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");

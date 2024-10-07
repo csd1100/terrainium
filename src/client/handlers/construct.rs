@@ -22,10 +22,11 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
+    use crate::client::utils::test::mock_client_with_successful_constructor_execution_request;
     use crate::common::constants::TERRAINIUM_EXECUTABLE;
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
-    use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
+    use crate::common::types::pb::{Command, ExecuteRequest, Operation};
     use prost_types::Any;
     use std::collections::BTreeMap;
     use std::fs::copy;
@@ -36,62 +37,10 @@ mod tests {
     async fn construct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
-
-        let current_dir_path: PathBuf = current_dir.path().into();
-        let mut mocket = MockClient::default();
-        mocket
-            .expect_write_and_stop()
-            .withf(move |actual: &Any| {
-                let mut envs: BTreeMap<String, String> = BTreeMap::new();
-                envs.insert("EDITOR".to_string(), "nvim".to_string());
-                envs.insert("PAGER".to_string(), "less".to_string());
-                envs.insert(
-                    "TERRAIN_DIR".to_string(),
-                    current_dir_path.to_str().unwrap().to_string(),
-                );
-                envs.insert("TERRAIN_ENABLED".to_string(), "true".to_string());
-
-                let exe = std::env::args().next().unwrap();
-                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-
-                let terrain_name = current_dir_path
-                    .file_name()
-                    .expect("to be present")
-                    .to_str()
-                    .expect("converted to string")
-                    .to_string();
-
-                let commands = vec![Command {
-                    exe: "/bin/bash".to_string(),
-                    args: vec![
-                        "-c".to_string(),
-                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                    ],
-                    envs,
-                }];
-
-                let actual: ExecuteRequest =
-                    Any::to_msg(actual).expect("failed to convert to Activate request");
-
-                actual.terrain_name == terrain_name
-                    && actual.session_id.is_empty()
-                    && actual.biome_name == "example_biome"
-                    && actual.toml_path == terrain_toml.display().to_string()
-                    && !actual.is_activate
-                    && actual.commands == commands
-                    && actual.operation == i32::from(Operation::Constructors)
-            })
-            .times(1)
-            .return_once(move |_| Ok(()));
-
-        mocket.expect_read().with().times(1).return_once(|| {
-            Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
-        });
 
         let context = Context::build(
             current_dir.path().into(),
@@ -99,17 +48,24 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        super::handle(context, None, Some(mocket))
-            .await
-            .expect("no error to be thrown");
+        let current_dir_path: PathBuf = current_dir.path().into();
+        super::handle(
+            context,
+            None,
+            Some(mock_client_with_successful_constructor_execution_request(
+                current_dir_path,
+                terrain_toml,
+            )),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
     async fn construct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");

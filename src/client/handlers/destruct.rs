@@ -36,8 +36,7 @@ mod tests {
     async fn destruct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
@@ -108,8 +107,7 @@ mod tests {
     async fn destruct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
