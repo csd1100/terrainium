@@ -15,9 +15,9 @@ fi
 
 function terrainium_chpwd_functions() {
     if [ "$TERRAIN_ENABLED" != "true" ]; then
-        if [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) = "true" ]; then
+        if [ "$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)" = "true" ]; then
             "$TERRAINIUM_EXECUTABLE" enter --auto-apply
-        elif [ $("$TERRAINIUM_EXECUTABLE" get --auto-apply) = "replace" ]; then
+        elif [ "$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)" = "replace" ]; then
             exec "$TERRAINIUM_EXECUTABLE" enter --auto-apply
         fi
     fi
