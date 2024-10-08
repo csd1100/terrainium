@@ -5,7 +5,7 @@ use crate::common::constants::DESTRUCTORS;
 use anyhow::Result;
 
 pub async fn handle(context: Context, biome_arg: Option<BiomeArg>) -> Result<()> {
-    background::handle(&context, DESTRUCTORS, biome_arg, None).await
+    background::handle(&context, DESTRUCTORS, biome_arg, None, None).await
 }
 
 #[cfg(test)]

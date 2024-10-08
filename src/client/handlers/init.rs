@@ -43,11 +43,11 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 #[cfg(test)]
 pub(crate) mod test {
     use crate::client::handlers::edit::test::EDITOR;
-    use crate::client::shell::Zsh;
-    use crate::client::types::context::Context;
-    use crate::client::utils::test::{
+    use crate::client::old_utils::test::{
         compile_expectations, script_path, setup_command_runner_mock_with_expectations,
     };
+    use crate::client::shell::Zsh;
+    use crate::client::types::context::Context;
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;

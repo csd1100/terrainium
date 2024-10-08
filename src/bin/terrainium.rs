@@ -86,7 +86,9 @@ async fn main() -> Result<()> {
 
             Verbs::Destruct { biome } => destruct::handle(context, biome).await?,
 
-            Verbs::Enter { biome, auto_apply } => enter::handle(context, biome, auto_apply).await?,
+            Verbs::Enter { biome, auto_apply } => {
+                enter::handle(context, biome, auto_apply, None).await?
+            }
 
             Verbs::Exit => exit::handle(context).await?,
 

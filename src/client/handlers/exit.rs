@@ -22,6 +22,7 @@ pub async fn handle(context: Context) -> Result<()> {
             DESTRUCTORS,
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
+            None,
         )
         .await
         .context("failed to run destructors")?;

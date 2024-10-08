@@ -5,15 +5,15 @@ use crate::common::constants::CONSTRUCTORS;
 use anyhow::Result;
 
 pub async fn handle(context: Context, biome_arg: Option<BiomeArg>) -> Result<()> {
-    background::handle(&context, CONSTRUCTORS, biome_arg, None).await
+    background::handle(&context, CONSTRUCTORS, biome_arg, None, None).await
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::client::old_utils::test::mock_client_with_successful_constructor_execution_request;
     use crate::client::shell::Zsh;
     use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::client::utils::test::mock_client_with_successful_constructor_execution_request;
     use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE};
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;

@@ -79,12 +79,12 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 #[cfg(test)]
 mod test {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
+    use crate::client::old_utils::test::{
+        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
+    };
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::AutoApply;
-    use crate::client::utils::test::{
-        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
-    };
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;

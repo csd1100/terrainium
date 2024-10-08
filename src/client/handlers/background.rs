@@ -27,8 +27,13 @@ pub async fn handle(
     operation: &str,
     biome_arg: Option<BiomeArg>,
     zsh_envs: Option<BTreeMap<String, String>>,
+    client: Option<Client>,
 ) -> Result<()> {
-    let mut client = Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?;
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
 
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
