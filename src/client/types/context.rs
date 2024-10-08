@@ -1,6 +1,6 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_SESSION_ID,
+    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -151,7 +151,6 @@ impl Context {
             TERRAIN_SESSION_ID.to_string(),
             self.session_id().to_string(),
         );
-        terrainium_envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
 
         let exe = env::args().nth(0).unwrap();
         if self.name() == "terrainium" && exe.starts_with("target/") {
@@ -205,7 +204,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_ENABLED, TERRAIN_SESSION_ID};
+    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -255,7 +254,6 @@ mod test {
                 .display()
                 .to_string(),
         );
-        expected_map.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
         let exe = env::args().next().unwrap();
         expected_map.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 

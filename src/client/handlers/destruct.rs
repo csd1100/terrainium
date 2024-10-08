@@ -1,30 +1,36 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::constants::DESTRUCTORS;
 use anyhow::Result;
 
-pub async fn handle(context: Context, biome_arg: Option<BiomeArg>) -> Result<()> {
-    background::handle(&context, DESTRUCTORS, biome_arg, None, None).await
+pub async fn handle(
+    context: Context,
+    biome_arg: Option<BiomeArg>,
+    client: Option<Client>,
+) -> Result<()> {
+    background::handle(&context, DESTRUCTORS, biome_arg, None, client).await
 }
 
 #[cfg(test)]
 mod tests {
     use crate::client::shell::Zsh;
-    use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
-    use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE};
+    use crate::client::utils::{AssertExecuteRequest, RunCommand};
+    use crate::common::constants::{
+        DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SELECTED_BIOME,
+    };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
-    use crate::common::types::pb::{Command, ExecuteRequest, ExecuteResponse, Operation};
+    use crate::common::types::pb::ExecuteResponse;
     use prost_types::Any;
-    use serial_test::serial;
-    use std::collections::BTreeMap;
+    use std::env;
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
-    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon() {
         let current_dir = tempdir().expect("failed to create tempdir");
@@ -34,76 +40,39 @@ mod tests {
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
-        let current_dir_path: PathBuf = current_dir.path().into();
-        let mut mocket = MockClient::default();
-        mocket
-            .expect_write_and_stop()
-            .withf(move |actual: &Any| {
-                let mut envs: BTreeMap<String, String> = BTreeMap::new();
-                envs.insert("EDITOR".to_string(), "nvim".to_string());
-                envs.insert("PAGER".to_string(), "less".to_string());
-                envs.insert(
-                    "TERRAIN_DIR".to_string(),
-                    current_dir_path.to_str().unwrap().to_string(),
-                );
-                envs.insert("TERRAIN_ENABLED".to_string(), "true".to_string());
-
-                let exe = std::env::args().next().unwrap();
-                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-
-                let terrain_name = current_dir_path
-                    .file_name()
-                    .expect("to be present")
-                    .to_str()
-                    .expect("converted to string")
-                    .to_string();
-
-                let commands = vec![Command {
-                    exe: "/bin/bash".to_string(),
-                    args: vec![
-                        "-c".to_string(),
-                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                    ],
-                    envs,
-                }];
-
-                let actual: ExecuteRequest =
-                    Any::to_msg(actual).expect("failed to convert to Activate request");
-
-                actual.terrain_name == terrain_name
-                    && actual.session_id.is_empty()
-                    && actual.biome_name == "example_biome"
-                    && actual.toml_path == terrain_toml.display().to_string()
-                    && !actual.is_activate
-                    && actual.commands == commands
-                    && actual.operation == i32::from(Operation::Destructors)
-            })
-            .times(1)
-            .return_once(move |_| Ok(()));
-
-        mocket.expect_read().with().times(1).return_once(|| {
-            Ok(Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"))
-        });
-
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let new_client = MockClient::new_context();
-        new_client
-            .expect()
-            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
-            .return_once(|_| Ok(mocket))
-            .times(1);
+        let exe = env::args().next().unwrap();
+        let expected_request = AssertExecuteRequest::with()
+            .operation(DESTRUCTORS)
+            .is_activated_as(false)
+            .with_expected_reply(
+                Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
+            )
+            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .biome_name("example_biome")
+            .toml_path(terrain_toml.to_str().unwrap())
+            .with_command(
+                RunCommand::with_exe("/bin/bash")
+                    .with_arg("-c")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("PAGER", "less")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+            )
+            .sent();
 
-        super::handle(context, None)
+        super::handle(context, None, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
 
-    #[serial]
     #[tokio::test]
     async fn destruct_send_message_to_daemon_and_error() {
         let current_dir = tempdir().expect("failed to create tempdir");
@@ -113,74 +82,38 @@ mod tests {
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
-        let current_dir_path: PathBuf = current_dir.path().into();
-        let mut mocket = MockClient::default();
-        mocket
-            .expect_write_and_stop()
-            .withf(move |actual: &Any| {
-                let mut envs: BTreeMap<String, String> = BTreeMap::new();
-                envs.insert("EDITOR".to_string(), "nvim".to_string());
-                envs.insert("PAGER".to_string(), "less".to_string());
-                envs.insert(
-                    "TERRAIN_DIR".to_string(),
-                    current_dir_path.to_str().unwrap().to_string(),
-                );
-                envs.insert("TERRAIN_ENABLED".to_string(), "true".to_string());
-
-                let exe = std::env::args().next().unwrap();
-                envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-
-                let terrain_name = current_dir_path
-                    .file_name()
-                    .expect("to be present")
-                    .to_str()
-                    .expect("converted to string")
-                    .to_string();
-
-                let commands = vec![Command {
-                    exe: "/bin/bash".to_string(),
-                    args: vec![
-                        "-c".to_string(),
-                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                    ],
-                    envs,
-                }];
-
-                let actual: ExecuteRequest =
-                    Any::to_msg(actual).expect("failed to convert to Activate request");
-
-                actual.terrain_name == terrain_name
-                    && actual.session_id.is_empty()
-                    && actual.biome_name == "example_biome"
-                    && actual.toml_path == terrain_toml.display().to_string()
-                    && !actual.is_activate
-                    && actual.commands == commands
-                    && actual.operation == i32::from(Operation::Destructors)
-            })
-            .times(1)
-            .return_once(move |_| Ok(()));
-
-        mocket.expect_read().with().times(1).return_once(|| {
-            Ok(Any::from_msg(&pb::Error {
-                error_message: "failed to execute".to_string(),
-            })
-            .expect("to be converted to any"))
-        });
-
-        let new_client = MockClient::new_context();
-        new_client
-            .expect()
-            .withf(|path| path.to_str() == Some(TERRAINIUMD_SOCKET))
-            .return_once(|_| Ok(mocket))
-            .times(1);
-
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, None)
+        let exe = env::args().next().unwrap();
+        let expected_request = AssertExecuteRequest::with()
+            .operation(DESTRUCTORS)
+            .is_activated_as(false)
+            .with_expected_reply(
+                Any::from_msg(&pb::Error {
+                    error_message: "failed to execute".to_string(),
+                })
+                .expect("to be converted to any"),
+            )
+            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .biome_name("example_biome")
+            .toml_path(terrain_toml.to_str().unwrap())
+            .with_command(
+                RunCommand::with_exe("/bin/bash")
+                    .with_arg("-c")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("PAGER", "less")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+            )
+            .sent();
+
+        let err = super::handle(context, None, Some(expected_request))
             .await
             .expect_err("to be thrown");
 

@@ -5,7 +5,7 @@ use crate::client::shell::Shell;
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY};
+use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED};
 use anyhow::{Context as AnyhowContext, Result};
 use std::fs::read_to_string;
 
@@ -24,6 +24,7 @@ pub async fn handle(
     let (selected_name, _) = terrain.select_biome(&biome)?;
 
     let mut envs = terrain.merged_envs(&biome)?;
+    envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
     envs.append(&mut context.terrainium_envs().clone());
 
     let mut zsh_envs = context

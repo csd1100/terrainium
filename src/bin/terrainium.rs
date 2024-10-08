@@ -82,15 +82,15 @@ async fn main() -> Result<()> {
             )
             .context("failed to update the terrain values")?,
 
-            Verbs::Construct { biome } => construct::handle(context, biome).await?,
+            Verbs::Construct { biome } => construct::handle(context, biome, None).await?,
 
-            Verbs::Destruct { biome } => destruct::handle(context, biome).await?,
+            Verbs::Destruct { biome } => destruct::handle(context, biome, None).await?,
 
             Verbs::Enter { biome, auto_apply } => {
                 enter::handle(context, biome, auto_apply, None).await?
             }
 
-            Verbs::Exit => exit::handle(context).await?,
+            Verbs::Exit => exit::handle(context, None).await?,
 
             #[cfg(feature = "terrain-schema")]
             Verbs::Schema => schema::handle().context("failed to generate schema")?,
