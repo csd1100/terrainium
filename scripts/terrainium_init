@@ -15,9 +15,11 @@ fi
 
 function terrainium_chpwd_functions() {
     if [ "$TERRAIN_ENABLED" != "true" ]; then
-        if [ "$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)" = "true" ]; then
+        auto_apply="$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)"
+        if [ $? != 0 ];then auto_apply="off";fi
+        if [ "$auto_apply" = "enabled" ] || [ "$auto_apply" = "background" ]; then
             "$TERRAINIUM_EXECUTABLE" enter --auto-apply
-        elif [ "$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)" = "replace" ]; then
+        elif [ "$auto_apply" = "replaced" ]; then
             exec "$TERRAINIUM_EXECUTABLE" enter --auto-apply
         fi
     fi

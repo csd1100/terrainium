@@ -38,13 +38,7 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     }
 
     if get_args.auto_apply {
-        result += if terrain.auto_apply().is_enabled() {
-            "true"
-        } else if terrain.auto_apply().is_replace() {
-            "replace"
-        } else {
-            "false"
-        };
+        result = terrain.auto_apply().clone().into();
         return Ok(result);
     }
 
@@ -903,7 +897,7 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "true";
+        let expected = "enabled";
 
         assert_eq!(output, expected);
 
@@ -943,7 +937,84 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "replace";
+        let expected = "replaced";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_background() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy(
+            "./tests/data/terrain.example.auto_apply.background.toml",
+            &terrain_toml,
+        )
+        .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "background";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_off() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
+            .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "off";
 
         assert_eq!(output, expected);
 
