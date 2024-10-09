@@ -99,7 +99,7 @@ mod test {
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
 
         let expected_shell_operations = ExpectShell::to()
-            .get_output_of(
+            .execute(
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
@@ -195,7 +195,7 @@ mod test {
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
 
         let expected_shell_operations = ExpectShell::to()
-            .get_output_of(
+            .execute(
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
@@ -267,7 +267,7 @@ mod test {
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
 
         let expected_shell_operations = ExpectShell::to()
-            .get_output_of(
+            .execute(
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
@@ -339,7 +339,7 @@ mod test {
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
 
         let expected_shell_operations = ExpectShell::to()
-            .get_output_of(
+            .execute(
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
@@ -437,7 +437,7 @@ mod test {
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
 
         let expected_shell_operations = ExpectShell::to()
-            .get_output_of(
+            .execute(
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")

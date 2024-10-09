@@ -41,13 +41,12 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub mod test {
     use crate::client::handlers::edit::test::EDITOR;
-    use crate::client::old_utils::test::{
-        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
-    };
+    use crate::client::old_utils::test::script_path;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
+    use crate::client::utils::ExpectShell;
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -63,16 +62,15 @@ pub(crate) mod test {
         // setup
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         // execute
@@ -120,15 +118,14 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         // execute
@@ -180,15 +177,14 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         super::handle(context, false, false, false)
@@ -217,15 +213,14 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         fs::remove_dir(&central_dir).expect("temp directory to be removed");
@@ -289,19 +284,15 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         super::handle(context, true, true, false)?;
@@ -394,19 +385,15 @@ pub(crate) mod test {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         super::handle(context, false, true, false)?;
@@ -473,6 +460,7 @@ pub(crate) mod test {
         // setup
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
+
         //setup edit mock
         let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
         let mut edit_run = MockCommandToRun::default();
@@ -493,16 +481,14 @@ pub(crate) mod test {
             .return_once(|_, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         // execute

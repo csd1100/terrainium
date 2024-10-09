@@ -6,6 +6,7 @@ use prost_types::Any;
 use std::cmp::PartialEq;
 use std::collections::BTreeMap;
 use std::os::unix::prelude::ExitStatusExt;
+use std::path::Path;
 use std::process::{ExitStatus, Output};
 
 #[derive(Clone)]
@@ -101,11 +102,12 @@ impl AssertExecuteRequest {
 #[derive(Clone)]
 pub struct RunCommand {
     exe: &'static str,
-    args: Vec<&'static str>,
+    args: Vec<String>,
     env_vars: BTreeMap<String, String>,
     exit_code: i32,
     error: bool,
     output: &'static str,
+    no_env: bool,
 }
 
 impl RunCommand {
@@ -117,16 +119,22 @@ impl RunCommand {
             exit_code: 0,
             error: false,
             output: "",
+            no_env: false,
         }
     }
 
-    pub fn with_arg(mut self, arg: &'static str) -> Self {
-        self.args.push(arg);
+    pub fn with_arg(mut self, arg: &str) -> Self {
+        self.args.push(arg.to_string());
         self
     }
 
     pub fn with_env(mut self, key: &'static str, val: &str) -> Self {
         self.env_vars.insert(key.to_string(), val.to_string());
+        self
+    }
+
+    pub fn with_no_envs(mut self) -> Self {
+        self.no_env = true;
         self
     }
 
@@ -171,36 +179,67 @@ impl ExpectShell {
         self.runner
     }
 
-    pub fn get_output_of(mut self, command: RunCommand) -> Self {
-        let mut mock_spawn = MockCommandToRun::default();
-        mock_spawn
+    pub fn execute(mut self, command: RunCommand) -> Self {
+        let mut mock_get_output = MockCommandToRun::default();
+        mock_get_output
             .expect_set_args()
             .withf(move |args| *args == command.args.clone())
             .return_const(());
 
-        mock_spawn
-            .expect_set_envs()
-            .withf(move |envs| *envs == Some(command.env_vars.clone()))
-            .return_const(());
+        if command.no_env {
+            mock_get_output
+                .expect_set_envs()
+                .withf(|envs| envs.is_none())
+                .return_const(());
+        } else {
+            mock_get_output
+                .expect_set_envs()
+                .withf(move |envs| *envs == Some(command.env_vars.clone()))
+                .return_const(());
+        }
 
-        mock_spawn.expect_get_output().with().return_once(move || {
-            if command.error {
-                Err(anyhow::Error::msg("error"))
-            } else {
-                Ok(Output {
-                    status: ExitStatus::from_raw(command.exit_code),
-                    stdout: Vec::from(command.output),
-                    stderr: vec![],
-                })
-            }
-        });
+        mock_get_output
+            .expect_get_output()
+            .with()
+            .return_once(move || {
+                if command.error {
+                    Err(anyhow::Error::msg("error"))
+                } else {
+                    Ok(Output {
+                        status: ExitStatus::from_raw(command.exit_code),
+                        stdout: Vec::from(command.output),
+                        stderr: vec![],
+                    })
+                }
+            });
 
         self.runner
             .expect_clone()
             .times(1)
             .with()
-            .return_once(|| mock_spawn);
+            .return_once(|| mock_get_output);
         self
+    }
+
+    pub fn compile_script_for(self, biome_name: &str, central_dir: &Path) -> Self {
+        self.execute(
+            RunCommand::with_exe("/bin/zsh")
+                .with_arg("-c")
+                .with_arg(&format!(
+                    "zcompile -URz {} {}",
+                    central_dir
+                        .join("scripts")
+                        .join(format!("terrain-{}.zwc", &biome_name))
+                        .to_str()
+                        .unwrap(),
+                    central_dir
+                        .join("scripts")
+                        .join(format!("terrain-{}.zsh", &biome_name))
+                        .to_str()
+                        .unwrap(),
+                ))
+                .with_no_envs(),
+        )
     }
 
     pub fn spawn_command(mut self, command: RunCommand) -> Self {

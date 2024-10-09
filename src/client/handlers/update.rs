@@ -79,12 +79,11 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 #[cfg(test)]
 mod test {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
-    use crate::client::old_utils::test::{
-        compile_expectations, script_path, setup_command_runner_mock_with_expectations,
-    };
+    use crate::client::old_utils::test::script_path;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::AutoApply;
+    use crate::client::utils::ExpectShell;
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, exists, read_to_string};
     use std::path::PathBuf;
@@ -95,17 +94,6 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
@@ -114,10 +102,15 @@ mod test {
         )
         .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -222,30 +215,21 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome2".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("example_biome2", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -336,26 +320,20 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -420,26 +398,20 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -551,26 +523,20 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -643,26 +609,20 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -729,17 +689,6 @@ mod test {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = setup_command_runner_mock_with_expectations(
-            MockCommandToRun::default(),
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
-
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy(
@@ -748,10 +697,15 @@ mod test {
         )
         .expect("test terrain to be copied to test dir");
 
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context = Context::build(
             current_dir.path().into(),
-            central_dir_path,
-            Zsh::build(mock),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operation),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");

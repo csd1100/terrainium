@@ -21,12 +21,10 @@ pub fn handle(context: Context) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use crate::client::old_utils::test::{
-        compile_expectations, script_path, scripts_dir, setup_command_runner_mock_with_expectations,
-    };
+    use crate::client::old_utils::test::{script_path, scripts_dir};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::common::execute::MockCommandToRun;
+    use crate::client::utils::ExpectShell;
     use anyhow::Result;
     use std::fs;
     use std::path::PathBuf;
@@ -37,20 +35,15 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -98,20 +91,15 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_command_runner_mock_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
+            Zsh::build(expected_shell_operation),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
