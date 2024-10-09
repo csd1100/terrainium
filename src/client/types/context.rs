@@ -50,7 +50,7 @@ impl Context {
             println!("!!!WARNING!!! init-script was outdated in config directory, copying newer script to config directory !!!WARNING!!!");
 
             let mut backup = Self::init_script().clone();
-            backup.set_extension(".bkp");
+            backup.set_extension("bkp");
 
             copy(Self::init_script(), backup).expect("failed to remove init-script");
             remove_file(Self::init_script()).expect("failed to remove init-script");
