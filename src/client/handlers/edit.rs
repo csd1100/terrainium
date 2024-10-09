@@ -68,7 +68,7 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_current_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -148,7 +148,7 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_central_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -246,7 +246,7 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_default_editor_if_env_not_set_and_generates_scripts() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
         std::env::remove_var(EDITOR);
 
         let current_dir = tempdir()?;

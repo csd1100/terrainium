@@ -73,8 +73,9 @@ mod tests {
     async fn exit_send_message_to_daemon() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            "example_biome".to_string(),
+            Some("example_biome".to_string()),
         );
+        let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), None);
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
@@ -117,6 +118,7 @@ mod tests {
             .expect("no error to be thrown");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
     }
 
     #[serial]
@@ -124,10 +126,11 @@ mod tests {
     async fn exit_send_message_to_daemon_and_error() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            "example_biome".to_string(),
+            Some("example_biome".to_string()),
         );
-        let current_dir = tempdir().expect("failed to create tempdir");
+        let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), None);
 
+        let current_dir = tempdir().expect("failed to create tempdir");
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         copy("./tests/data/terrain.example.toml", &terrain_toml)
@@ -172,6 +175,7 @@ mod tests {
         assert_eq!(err.to_string(), "failed to run destructors");
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
     }
 
     #[serial]
@@ -179,9 +183,10 @@ mod tests {
     async fn exit_does_not_send_message_to_daemon_auto_apply_without_background() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            "example_biome".to_string(),
+            Some("example_biome".to_string()),
         );
-        let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), "enabled".to_string());
+        let orig_auto_apply =
+            set_env_var(TERRAIN_AUTO_APPLY.to_string(), Some("enabled".to_string()));
 
         let current_dir = tempdir().expect("failed to create tempdir");
 
@@ -214,9 +219,9 @@ mod tests {
     async fn exit_does_send_message_to_daemon_auto_apply() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            "example_biome".to_string(),
+            Some("example_biome".to_string()),
         );
-        let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), "all".to_string());
+        let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), Some("all".to_string()));
 
         let current_dir = tempdir().expect("failed to create tempdir");
 

@@ -162,7 +162,7 @@ pub(crate) mod test {
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {
         let test_var = "TEST_VAR".to_string();
-        let orig_env = set_env_var(test_var.clone(), "TEST_VALUE".to_string());
+        let orig_env = set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
 
         let run = CommandToRun::new(
             "/bin/bash".to_string(),
@@ -187,8 +187,8 @@ pub(crate) mod test {
         let test_var1: String = "TEST_VAR1".to_string();
         let test_var2 = "TEST_VAR2".to_string();
 
-        let orig_env1 = set_env_var(test_var1.clone(), "OLD_VALUE1".to_string());
-        let orig_env2 = set_env_var(test_var2.clone(), "OLD_VALUE2".to_string());
+        let orig_env1 = set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
+        let orig_env2 = set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(test_var1.clone(), "NEW_VALUE1".to_string());
@@ -262,11 +262,18 @@ pub(crate) mod test {
         Ok(())
     }
 
-    pub fn set_env_var(key: String, value: String) -> std::result::Result<String, VarError> {
+    pub fn set_env_var(
+        key: String,
+        value: Option<String>,
+    ) -> std::result::Result<String, VarError> {
         // FIX: the tests run in parallel so setting same env var will cause tests to fail
         // as env var is not reset yet
         let orig_env = std::env::var(&key);
-        std::env::set_var(&key, value);
+        if let Some(val) = value {
+            std::env::set_var(&key, val);
+        } else {
+            std::env::remove_var(&key);
+        }
 
         orig_env
     }

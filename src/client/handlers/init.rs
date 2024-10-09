@@ -455,7 +455,7 @@ pub mod test {
     #[serial]
     #[test]
     fn init_creates_and_edits_terrain_toml_in_current_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
 
         // setup
         let current_dir = tempdir()?;
