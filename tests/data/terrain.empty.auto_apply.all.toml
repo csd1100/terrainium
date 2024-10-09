@@ -1,0 +1,20 @@
+"$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+
+[auto_apply]
+enabled = true
+background = true
+replace = true
+
+[terrain.envs]
+
+[terrain.aliases]
+
+[terrain.constructors]
+foreground = []
+background = []
+
+[terrain.destructors]
+foreground = []
+background = []
+
+[biomes]

@@ -122,4 +122,28 @@ mod tests {
             "error response from daemon failed to execute"
         );
     }
+
+    #[tokio::test]
+    async fn destruct_does_not_send_message_to_daemon_no_background() {
+        let current_dir = tempdir().expect("failed to create tempdir");
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+
+        copy(
+            "./tests/data/terrain.example.without.background.auto_apply.background.toml",
+            &terrain_toml,
+        )
+        .expect("copy to terrain to test dir");
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let expected_request = AssertExecuteRequest::not_sent();
+        super::handle(context, None, Some(expected_request))
+            .await
+            .expect("no error to be thrown");
+    }
 }

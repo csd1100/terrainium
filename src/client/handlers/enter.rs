@@ -520,4 +520,141 @@ mod test {
             .await
             .expect("no error to be thrown");
     }
+
+    #[tokio::test]
+    async fn enter_with_no_background_commands_empty() {
+        let current_dir = tempdir().expect("Couldn't create temp dir");
+        let central_dir = tempdir().expect("Couldn't create temp dir");
+
+        let exe = env::args().next().unwrap();
+        let compiled_script = central_dir.path().join("scripts").join("terrain-none.zwc");
+        const EXISTING_FPATH: &str = "/some/path:/some/path2";
+        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+
+        let expected_shell_operations = ExpectShell::to()
+            .execute(
+                RunCommand::with_exe("/bin/zsh")
+                    .with_arg("-c")
+                    .with_arg("/bin/echo -n $FPATH")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
+                    .with_env(TERRAIN_ENABLED, "true")
+                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SELECTED_BIOME, "none")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
+                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
+                    .with_expected_output(EXISTING_FPATH)
+                    .with_expected_error(false)
+                    .with_expected_exit_code(0),
+            )
+            .and()
+            .spawn_command(
+                RunCommand::with_exe("/bin/zsh")
+                    .with_arg("-i")
+                    .with_arg("-s")
+                    .with_env(TERRAIN_AUTO_APPLY, "all")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
+                    .with_env(TERRAIN_ENABLED, "true")
+                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SELECTED_BIOME, "none")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
+                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
+                    .with_env(FPATH, &fpath)
+                    .with_expected_error(false)
+                    .with_expected_exit_code(0),
+            )
+            .successfully();
+
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operations),
+        );
+
+        copy(
+            "./tests/data/terrain.empty.auto_apply.all.toml",
+            context.new_toml_path(false),
+        )
+        .await
+        .expect("to copy test terrain.toml");
+
+        let expected_request = AssertExecuteRequest::not_sent();
+
+        super::handle(context, None, true, Some(expected_request))
+            .await
+            .expect("no error to be thrown");
+    }
+
+    #[tokio::test]
+    async fn enter_with_no_background_commands_example() {
+        let current_dir = tempdir().expect("Couldn't create temp dir");
+        let central_dir = tempdir().expect("Couldn't create temp dir");
+
+        let exe = env::args().next().unwrap();
+        let compiled_script = central_dir
+            .path()
+            .join("scripts")
+            .join("terrain-example_biome.zwc");
+        const EXISTING_FPATH: &str = "/some/path:/some/path2";
+        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+
+        let expected_shell_operations = ExpectShell::to()
+            .execute(
+                RunCommand::with_exe("/bin/zsh")
+                    .with_arg("-c")
+                    .with_arg("/bin/echo -n $FPATH")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("PAGER", "less")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
+                    .with_env(TERRAIN_ENABLED, "true")
+                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
+                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
+                    .with_expected_output(EXISTING_FPATH)
+                    .with_expected_error(false)
+                    .with_expected_exit_code(0),
+            )
+            .and()
+            .spawn_command(
+                RunCommand::with_exe("/bin/zsh")
+                    .with_arg("-i")
+                    .with_arg("-s")
+                    .with_env(TERRAIN_AUTO_APPLY, "background")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("PAGER", "less")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
+                    .with_env(TERRAIN_ENABLED, "true")
+                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
+                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
+                    .with_env(FPATH, &fpath)
+                    .with_expected_error(false)
+                    .with_expected_exit_code(0),
+            )
+            .successfully();
+
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(expected_shell_operations),
+        );
+
+        copy(
+            "./tests/data/terrain.example.without.background.auto_apply.background.toml",
+            context.new_toml_path(false),
+        )
+        .await
+        .expect("to copy test terrain.toml");
+
+        let expected_request = AssertExecuteRequest::not_sent();
+
+        super::handle(context, None, true, Some(expected_request))
+            .await
+            .expect("no error to be thrown");
+    }
 }

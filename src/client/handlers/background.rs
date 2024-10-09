@@ -31,18 +31,33 @@ pub async fn handle(
     activate_envs: Option<BTreeMap<String, String>>,
     client: Option<Client>,
 ) -> Result<()> {
-    let mut client = if let Some(client) = client {
-        client
-    } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
-    };
-
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
     )
     .expect("terrain to be parsed from toml");
 
     let selected_biome = option_string_from(&biome_arg);
+
+    let commands = if operation == CONSTRUCTORS {
+        terrain
+            .merged_constructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    } else {
+        terrain
+            .merged_destructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    };
+
+    if commands.background().is_empty() {
+        return Ok(());
+    }
+
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
     let (biome_name, _) = terrain.select_biome(&selected_biome)?;
 
     let mut envs = terrain
@@ -56,16 +71,6 @@ pub async fn handle(
     } else {
         envs.remove(TERRAIN_SESSION_ID);
     }
-
-    let commands = if operation == CONSTRUCTORS {
-        terrain
-            .merged_constructors(&selected_biome)
-            .context(format!("failed to merge {}", operation))?
-    } else {
-        terrain
-            .merged_destructors(&selected_biome)
-            .context(format!("failed to merge {}", operation))?
-    };
 
     let commands: Vec<pb::Command> = commands
         .background()

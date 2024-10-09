@@ -266,4 +266,42 @@ mod tests {
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
     }
+
+    #[serial]
+    #[tokio::test]
+    async fn exit_does_not_send_message_to_daemon_auto_apply_with_empty_background_commands() {
+        let orig_selected_biome = set_env_var(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            Some("example_biome".to_string()),
+        );
+        let orig_auto_apply = set_env_var(
+            TERRAIN_AUTO_APPLY.to_string(),
+            Some("background".to_string()),
+        );
+
+        let current_dir = tempdir().expect("failed to create tempdir");
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+
+        copy(
+            "./tests/data/terrain.example.without.background.auto_apply.background.toml",
+            &terrain_toml,
+        )
+        .expect("copy to terrain to test dir");
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let expected_request = AssertExecuteRequest::not_sent();
+
+        super::handle(context, Some(expected_request))
+            .await
+            .expect("no error to be thrown");
+
+        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+    }
 }
