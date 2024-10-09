@@ -1,5 +1,5 @@
 use crate::client::types::biome::Biome;
-use crate::client::types::terrain::Terrain;
+use crate::client::types::terrain::{AutoApply, Terrain};
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 pub struct Environment {
     default_biome: Option<String>,
     selected_biome: String,
+    auto_apply: AutoApply,
     merged: Biome,
 }
 
@@ -27,6 +28,7 @@ impl Environment {
         Ok(Environment {
             default_biome: terrain.default_biome().clone(),
             selected_biome: selected,
+            auto_apply: terrain.auto_apply().clone(),
             merged,
         })
     }
@@ -56,6 +58,7 @@ impl Environment {
         Environment {
             default_biome,
             selected_biome,
+            auto_apply: AutoApply::default(),
             merged: merged.clone(),
         }
     }

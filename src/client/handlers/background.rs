@@ -1,8 +1,11 @@
 use crate::client::args::{option_string_from, BiomeArg};
-use crate::client::types::commands::Commands;
+#[mockall_double::double]
+use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAINIUM_SESSION_ID};
+use crate::common::constants::{
+    CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+};
 use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
@@ -11,6 +14,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
+use std::path::PathBuf;
 
 fn operation_from_string(op: &str) -> pb::Operation {
     if op == CONSTRUCTORS {
@@ -21,11 +25,11 @@ fn operation_from_string(op: &str) -> pb::Operation {
 }
 
 pub async fn handle(
-    context: &mut Context,
+    context: &Context,
     operation: &str,
     biome_arg: Option<BiomeArg>,
-    get_commands: fn(&Terrain, &Option<String>) -> Result<Commands>,
-    zsh_envs: Option<BTreeMap<String, String>>,
+    activate_envs: Option<BTreeMap<String, String>>,
+    client: Option<Client>,
 ) -> Result<()> {
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
@@ -34,19 +38,39 @@ pub async fn handle(
 
     let selected_biome = option_string_from(&biome_arg);
 
+    let commands = if operation == CONSTRUCTORS {
+        terrain
+            .merged_constructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    } else {
+        terrain
+            .merged_destructors(&selected_biome)
+            .context(format!("failed to merge {}", operation))?
+    };
+
+    if commands.background().is_empty() {
+        return Ok(());
+    }
+
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
+    let (biome_name, _) = terrain.select_biome(&selected_biome)?;
+
     let mut envs = terrain
         .merged_envs(&selected_biome)
         .context("failed to merge envs")?;
     envs.append(&mut context.terrainium_envs().clone());
+    envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome_name.clone());
 
-    if let Some(zsh_envs) = &zsh_envs {
+    if let Some(zsh_envs) = &activate_envs {
         envs.append(&mut zsh_envs.clone());
     } else {
-        envs.remove(TERRAINIUM_SESSION_ID);
+        envs.remove(TERRAIN_SESSION_ID);
     }
-
-    let commands = get_commands(&terrain, &selected_biome)
-        .context(format!("failed to merge {}", operation))?;
 
     let commands: Vec<pb::Command> = commands
         .background()
@@ -58,9 +82,7 @@ pub async fn handle(
         })
         .collect();
 
-    let (selected_biome, _) = terrain.select_biome(&selected_biome)?;
-
-    let session_id = if zsh_envs.is_some() {
+    let session_id = if activate_envs.is_some() {
         context.session_id().to_string()
     } else {
         "".to_string()
@@ -69,19 +91,17 @@ pub async fn handle(
     let request = ExecuteRequest {
         session_id,
         terrain_name: context.name(),
-        biome_name: selected_biome,
+        biome_name,
         toml_path: context
             .toml_path()
             .expect("to be present")
             .display()
             .to_string(),
-        is_activate: zsh_envs.is_some(),
+        is_activate: activate_envs.is_some(),
         timestamp: timestamp(),
         operation: i32::from(operation_from_string(operation)),
         commands,
     };
-
-    let client = context.socket();
 
     client
         .write_and_stop(Any::from_msg(&request).unwrap())

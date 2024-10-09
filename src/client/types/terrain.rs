@@ -14,9 +14,85 @@ pub struct Terrain {
     #[serde(default = "schema_url", rename(serialize = "$schema"))]
     schema: String,
 
+    auto_apply: AutoApply,
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
     default_biome: Option<String>,
+}
+
+#[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+pub struct AutoApply {
+    enabled: bool,
+    background: bool,
+    replace: bool,
+}
+
+impl AutoApply {
+    pub fn enabled() -> Self {
+        Self {
+            enabled: true,
+            background: false,
+            replace: false,
+        }
+    }
+
+    pub fn background() -> Self {
+        Self {
+            enabled: true,
+            background: true,
+            replace: false,
+        }
+    }
+
+    pub fn replace() -> Self {
+        Self {
+            enabled: true,
+            background: false,
+            replace: true,
+        }
+    }
+
+    pub fn all() -> Self {
+        Self {
+            enabled: true,
+            background: true,
+            replace: true,
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled && !self.background && !self.replace
+    }
+
+    pub fn is_background(&self) -> bool {
+        self.enabled && self.background
+    }
+
+    pub fn is_replace(&self) -> bool {
+        self.enabled && self.replace
+    }
+
+    pub fn is_all(&self) -> bool {
+        self.enabled && self.background && self.replace
+    }
+}
+
+impl From<AutoApply> for String {
+    fn from(value: AutoApply) -> Self {
+        if value.is_all() {
+            "all"
+        } else if value.is_enabled() {
+            "enabled"
+        } else if value.is_replace() {
+            "replaced"
+        } else if value.is_background() {
+            "background"
+        } else {
+            "off"
+        }
+        .to_string()
+    }
 }
 
 pub fn schema_url() -> String {
@@ -29,9 +105,11 @@ impl Terrain {
         terrain: Biome,
         biomes: BTreeMap<String, Biome>,
         default_biome: Option<String>,
+        auto_apply: AutoApply,
     ) -> Self {
         Terrain {
             schema: schema_url(),
+            auto_apply,
             terrain,
             biomes,
             default_biome,
@@ -48,6 +126,14 @@ impl Terrain {
 
     pub fn biomes(&self) -> &BTreeMap<String, Biome> {
         &self.biomes
+    }
+
+    pub fn auto_apply(&self) -> &AutoApply {
+        &self.auto_apply
+    }
+
+    pub fn set_auto_apply(&mut self, auto_apply: AutoApply) {
+        self.auto_apply = auto_apply;
     }
 
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
@@ -182,13 +268,31 @@ impl Terrain {
         let mut biomes: BTreeMap<String, Biome> = BTreeMap::new();
         biomes.insert(String::from("example_biome"), example_biome);
 
-        Terrain::new(terrain, biomes, Some(String::from("example_biome")))
+        Terrain::new(
+            terrain,
+            biomes,
+            Some(String::from("example_biome")),
+            AutoApply {
+                enabled: false,
+                background: false,
+                replace: false,
+            },
+        )
     }
 }
 
 impl Default for Terrain {
     fn default() -> Self {
-        Terrain::new(Biome::default(), BTreeMap::new(), None)
+        Terrain::new(
+            Biome::default(),
+            BTreeMap::new(),
+            None,
+            AutoApply {
+                enabled: false,
+                background: false,
+                replace: false,
+            },
+        )
     }
 }
 

@@ -18,7 +18,7 @@ const GET_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/get_dest
 
 pub fn handle(context: Context, get_args: GetArgs) -> Result<()> {
     let output = get(context, get_args)?;
-    println!("{}", output);
+    print!("{}", output);
     Ok(())
 }
 
@@ -34,6 +34,11 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
 
     if get_args.empty() {
         result += &all(&terrain, &selected_biome)?;
+        return Ok(result);
+    }
+
+    if get_args.auto_apply {
+        result = terrain.auto_apply().clone().into();
         return Ok(result);
     }
 
@@ -191,11 +196,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -207,6 +210,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -231,11 +235,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -246,6 +248,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -270,11 +273,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -286,6 +287,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -310,11 +312,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -326,6 +326,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -348,11 +349,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -364,6 +363,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -386,11 +386,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -401,6 +399,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -423,11 +422,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -439,6 +436,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -461,11 +459,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -477,6 +473,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -499,11 +496,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.empty.toml", &terrain_toml).expect("test terrain to be copied");
 
         let args = GetArgs {
@@ -514,6 +509,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -536,11 +532,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -552,6 +546,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -574,11 +569,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -590,6 +583,7 @@ mod test {
             env: vec!["EDITOR".to_string(), "NON_EXISTENT".to_string()],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -612,11 +606,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -628,6 +620,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -650,11 +643,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -666,6 +657,7 @@ mod test {
             env: vec![],
             constructors: true,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -689,11 +681,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -705,6 +695,7 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: true,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -728,11 +719,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -744,6 +733,7 @@ mod test {
             env: vec![],
             constructors: true,
             destructors: true,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -769,11 +759,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -785,6 +773,7 @@ mod test {
             env: vec!["EDITOR".to_string(), "NON_EXISTENT".to_string()],
             constructors: true,
             destructors: true,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -811,11 +800,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -827,6 +814,7 @@ mod test {
             env: vec!["EDITOR".to_string(), "NON_EXISTENT".to_string()],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
@@ -850,11 +838,9 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("test terrain to be copied");
 
@@ -866,11 +852,169 @@ mod test {
             env: vec![],
             constructors: false,
             destructors: false,
+            auto_apply: false,
         };
 
         let output = super::get(context, args).expect("to not throw an error");
         let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
         expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy(
+            "./tests/data/terrain.example.auto_apply.enabled.toml",
+            &terrain_toml,
+        )
+        .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: true,
+            envs: false,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "enabled";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_replace() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy(
+            "./tests/data/terrain.example.auto_apply.replace.toml",
+            &terrain_toml,
+        )
+        .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "replaced";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_background() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy(
+            "./tests/data/terrain.example.auto_apply.background.toml",
+            &terrain_toml,
+        )
+        .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "background";
+
+        assert_eq!(output, expected);
+
+        current_dir
+            .close()
+            .expect("test directories to be cleaned up");
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_off() -> Result<()> {
+        let current_dir = tempdir()?;
+
+        let context = Context::build(
+            current_dir.path().into(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy("./tests/data/terrain.example.toml", &terrain_toml)
+            .expect("test terrain to be copied");
+
+        let args = GetArgs {
+            biome: None,
+            aliases: false,
+            envs: true,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let output = super::get(context, args).expect("to not throw an error");
+        let expected = "off";
 
         assert_eq!(output, expected);
 

@@ -1,6 +1,10 @@
 "$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+default_biome = "test"
 
-default_biome = "dev"
+[auto_apply]
+enabled = true
+background = false
+replace = false
 
 [terrain.envs]
 TERRAINIUM_DEV = "false"
@@ -19,6 +23,8 @@ background = []
 [biomes.dev.envs]
 TERRAINIUM_DEV = "true"
 
+[biomes.dev.aliases]
+
 [biomes.dev.constructors]
 foreground = []
 background = []
@@ -27,12 +33,14 @@ background = []
 foreground = []
 background = []
 
-[biomes.dev.aliases]
-
 [biomes.test.envs]
 TERRAINIUM_DEV = "true"
 
 [biomes.test.aliases]
+
+[[biomes.test.constructors.foreground]]
+exe = "echo"
+args = ["'entering test biome'"]
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
@@ -42,12 +50,10 @@ args = ["-c", "$TERRAIN_DIR/tests/scripts/print_num_for_10_sec"]
 exe = "/bin/zsh"
 args = ["-c", "$TERRAIN_DIR/tests/scripts/exit_with_1"]
 
-[[biomes.test.constructors.foreground]]
-exe = "echo"
-args = ["'entering test biome'"]
-[[biomes.test.destructors.background]]
-exe = "/bin/zsh"
-args = ["-c", "./tests/scripts/print_num_for_10_sec"]
 [[biomes.test.destructors.foreground]]
 exe = "echo"
 args = ["'exiting test biome'"]
+
+[[biomes.test.destructors.background]]
+exe = "/bin/zsh"
+args = ["-c", "./tests/scripts/print_num_for_10_sec"]

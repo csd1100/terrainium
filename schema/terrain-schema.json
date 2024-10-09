@@ -3,10 +3,18 @@
   "title": "Terrain",
   "type": "object",
   "required": [
+    "auto_apply",
     "biomes",
     "terrain"
   ],
   "properties": {
+    "schema": {
+      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json",
+      "type": "string"
+    },
+    "auto_apply": {
+      "$ref": "#/definitions/AutoApply"
+    },
     "terrain": {
       "$ref": "#/definitions/Biome"
     },
@@ -21,13 +29,28 @@
         "string",
         "null"
       ]
-    },
-    "schema": {
-      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json",
-      "type": "string"
     }
   },
   "definitions": {
+    "AutoApply": {
+      "type": "object",
+      "required": [
+        "background",
+        "enabled",
+        "replace"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "background": {
+          "type": "boolean"
+        },
+        "replace": {
+          "type": "boolean"
+        }
+      }
+    },
     "Biome": {
       "type": "object",
       "required": [

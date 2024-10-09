@@ -1,11 +1,10 @@
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-#[double]
+#[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
-use mockall_double::double;
 use std::fs;
 use std::path::PathBuf;
 
@@ -52,8 +51,10 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
 pub(crate) mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::client::utils::test::{
-        compile_expectations, script_path, scripts_dir, setup_with_expectations,
+    use crate::client::utils::{
+        AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
+        WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
+        WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
     };
     use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
@@ -70,13 +71,12 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_current_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -95,61 +95,32 @@ pub(crate) mod test {
             .times(1)
             .return_once(|_, _, _| edit_run);
 
-        // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        // setup mock to assert scripts are compiled when edit
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
-            None,
+            Zsh::build(expected_shell_operation),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         fs::copy("./tests/data/terrain.example.toml", terrain_toml)
             .expect("test file to be copied");
 
-        let script_dir = scripts_dir(central_dir.path());
+        let central_dir1 = central_dir.path();
+        let script_dir = central_dir1.join("scripts");
         fs::create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            fs::exists(&script)?,
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = fs::read_to_string(&script).expect("expected terrain.toml to be readable");
-        let expected = fs::read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            fs::exists(&script_path)?,
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            fs::read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = fs::read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
+            .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -158,13 +129,12 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_central_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut terrain_toml: PathBuf = central_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -184,60 +154,32 @@ pub(crate) mod test {
             .return_once(|_, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
-            None,
+            Zsh::build(expected_shell_operation),
         );
 
-        let mut terrain_toml: PathBuf = central_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
         fs::copy("./tests/data/terrain.example.toml", terrain_toml)
             .expect("test file to be copied");
 
-        let script_dir = scripts_dir(central_dir.path());
+        let central_dir1 = central_dir.path();
+        let script_dir = central_dir1.join("scripts");
         fs::create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 
         // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            fs::exists(&script)?,
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = fs::read_to_string(&script).expect("expected terrain.toml to be readable");
-        let expected = fs::read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            fs::exists(&script_path)?,
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            fs::read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = fs::read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
+            .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -252,7 +194,6 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
-            None,
         ))
         .expect_err("expected to get error")
         .to_string();
@@ -265,14 +206,13 @@ pub(crate) mod test {
     #[serial]
     #[test]
     fn edit_opens_default_editor_if_env_not_set_and_generates_scripts() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), "vim".to_string());
+        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
         std::env::remove_var(EDITOR);
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -292,60 +232,32 @@ pub(crate) mod test {
             .return_once(|_, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let central_dir_path: PathBuf = central_dir.path().into();
-        let mock = MockCommandToRun::default();
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "example_biome".to_string()),
-        );
-        let mock = setup_with_expectations(
-            mock,
-            compile_expectations(central_dir_path.clone(), "none".to_string()),
-        );
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for("example_biome", central_dir.path())
+            .compile_script_for("none", central_dir.path())
+            .successfully();
+
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            Zsh::build(mock),
-            None,
+            Zsh::build(expected_shell_operation),
         );
 
-        let mut terrain_toml: PathBuf = current_dir.path().into();
-        terrain_toml.push("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         fs::copy("./tests/data/terrain.example.toml", terrain_toml)
             .expect("test file to be copied");
 
-        let script_dir = scripts_dir(central_dir.path());
+        let central_dir1 = central_dir.path();
+        let script_dir = central_dir1.join("scripts");
         fs::create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 
         // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            fs::exists(&script)?,
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = fs::read_to_string(&script).expect("expected terrain.toml to be readable");
-        let expected = fs::read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            fs::exists(&script_path)?,
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            fs::read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = fs::read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
+            .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())

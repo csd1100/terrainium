@@ -1,12 +1,26 @@
+use crate::client::types::terrain::AutoApply;
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Parser, Debug)]
-#[command()]
+#[command(args_conflicts_with_subcommands = true)]
 pub struct ClientArgs {
+    #[clap(flatten)]
+    pub options: Options,
+
     #[command(subcommand)]
-    pub command: Verbs,
+    pub command: Option<Verbs>,
+}
+
+#[derive(Parser, Debug)]
+pub struct Options {
+    #[arg(long, group = "update-rc")]
+    pub update_rc: bool,
+
+    #[arg(long, group = "update-rc")]
+    pub update_rc_path: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -47,6 +61,9 @@ pub enum Verbs {
 
         #[arg(short, long)]
         destructors: bool,
+
+        #[arg(long)]
+        auto_apply: bool,
     },
 
     Update {
@@ -65,6 +82,9 @@ pub enum Verbs {
         #[arg(short, long, group = "update_biome")]
         new: Option<String>,
 
+        #[arg(long)]
+        auto_apply: Option<AutoApply>,
+
         #[arg(short = 'k', long)]
         backup: bool,
     },
@@ -82,6 +102,9 @@ pub enum Verbs {
     Enter {
         #[arg(short, long)]
         biome: Option<BiomeArg>,
+
+        #[arg(long, hide = true)]
+        auto_apply: bool,
     },
 
     Exit,
@@ -131,6 +154,7 @@ pub struct GetArgs {
     pub env: Vec<String>,
     pub constructors: bool,
     pub destructors: bool,
+    pub auto_apply: bool,
 }
 
 impl GetArgs {
@@ -141,6 +165,7 @@ impl GetArgs {
             && self.env.is_empty()
             && !self.constructors
             && !self.destructors
+            && !self.auto_apply
     }
 }
 
@@ -169,6 +194,21 @@ impl FromStr for Pair {
     }
 }
 
+impl FromStr for AutoApply {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "enable" => Ok(AutoApply::enabled()),
+            "replace" => Ok(AutoApply::replace()),
+            "background" => Ok(AutoApply::background()),
+            "all" => Ok(AutoApply::all()),
+            "off" => Ok(AutoApply::default()),
+            _ => Err(anyhow!("failed to parse auto_apply argument from: {}", s)),
+        }
+    }
+}
+
 pub struct UpdateArgs {
     pub set_default: Option<String>,
     pub biome: Option<BiomeArg>,
@@ -176,11 +216,13 @@ pub struct UpdateArgs {
     pub env: Vec<Pair>,
     pub new: Option<String>,
     pub backup: bool,
+    pub auto_apply: Option<AutoApply>,
 }
 
 #[cfg(test)]
 mod test {
     use crate::client::args::Pair;
+    use crate::client::types::terrain::AutoApply;
     use std::str::FromStr;
 
     #[test]
@@ -214,6 +256,35 @@ mod test {
         assert_eq!(
             "pair of key values should be passed in format <KEY>=<VALUE>.",
             err
+        );
+    }
+
+    #[test]
+    fn auto_apply_from_str() {
+        assert_eq!(
+            AutoApply::from_str("enable").expect("to be parsed"),
+            AutoApply::enabled()
+        );
+        assert_eq!(
+            AutoApply::from_str("all").expect("to be parsed"),
+            AutoApply::all()
+        );
+        assert_eq!(
+            AutoApply::from_str("replace").expect("to be parsed"),
+            AutoApply::replace()
+        );
+        assert_eq!(
+            AutoApply::from_str("background").expect("to be parsed"),
+            AutoApply::background()
+        );
+        assert_eq!(
+            AutoApply::from_str("off").expect("to be parsed"),
+            AutoApply::default()
+        );
+
+        assert_eq!(
+            AutoApply::from_str("none").err().unwrap().to_string(),
+            "failed to parse auto_apply argument from: none"
         );
     }
 }
