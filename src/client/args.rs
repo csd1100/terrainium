@@ -222,6 +222,7 @@ pub struct UpdateArgs {
 #[cfg(test)]
 mod test {
     use crate::client::args::Pair;
+    use crate::client::types::terrain::AutoApply;
     use std::str::FromStr;
 
     #[test]
@@ -255,6 +256,35 @@ mod test {
         assert_eq!(
             "pair of key values should be passed in format <KEY>=<VALUE>.",
             err
+        );
+    }
+
+    #[test]
+    fn auto_apply_from_str() {
+        assert_eq!(
+            AutoApply::from_str("enable").expect("to be parsed"),
+            AutoApply::enabled()
+        );
+        assert_eq!(
+            AutoApply::from_str("all").expect("to be parsed"),
+            AutoApply::all()
+        );
+        assert_eq!(
+            AutoApply::from_str("replace").expect("to be parsed"),
+            AutoApply::replace()
+        );
+        assert_eq!(
+            AutoApply::from_str("background").expect("to be parsed"),
+            AutoApply::background()
+        );
+        assert_eq!(
+            AutoApply::from_str("off").expect("to be parsed"),
+            AutoApply::default()
+        );
+
+        assert_eq!(
+            AutoApply::from_str("none").err().unwrap().to_string(),
+            "failed to parse auto_apply argument from: none"
         );
     }
 }
