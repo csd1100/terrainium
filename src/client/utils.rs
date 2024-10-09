@@ -5,9 +5,42 @@ use crate::common::types::pb::ExecuteRequest;
 use prost_types::Any;
 use std::cmp::PartialEq;
 use std::collections::BTreeMap;
+use std::fs::read_to_string;
 use std::os::unix::prelude::ExitStatusExt;
 use std::path::Path;
 use std::process::{ExitStatus, Output};
+
+pub const IN_CURRENT_DIR: bool = false;
+pub const IN_CENTRAL_DIR: bool = true;
+
+pub const WITH_EMPTY_TERRAIN_TOML: &str = "./tests/data/terrain.empty.toml";
+pub const WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT: &str = "./tests/data/terrain-none.empty.zsh";
+
+pub const WITH_EXAMPLE_TERRAIN_TOML: &str = "./tests/data/terrain.example.toml";
+pub const WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT: &str = "./tests/data/terrain-none.example.zsh";
+pub const WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT: &str =
+    "./tests/data/terrain-example_biome.example.zsh";
+
+pub const WITHOUT_DEFAULT_BIOME_TOML: &str = "./tests/data/terrain.example.without.default.toml";
+
+pub const WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML: &str =
+    "./tests/data/terrain.example.new.example_biome2.toml";
+pub const WITH_EXAMPLE_BIOME2_FOR_EXAMPLE_SCRIPT: &str =
+    "./tests/data/terrain-example_biome2.example.zsh";
+
+pub const WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML: &str =
+    "./tests/data/terrain.example.example_biome.updated.toml";
+pub const WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT: &str =
+    "./tests/data/terrain-example_biome.example.example_biome.updated.zsh";
+
+pub const WITH_NONE_UPDATED_EXAMPLE_TOML: &str = "./tests/data/terrain.example.none.updated.toml";
+pub const WITH_NONE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT: &str =
+    "./tests/data/terrain-none.example.none.updated.zsh";
+pub const WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT: &str =
+    "./tests/data/terrain-example_biome.example.none.updated.zsh";
+
+pub const WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML: &str =
+    "./tests/data/terrain.example.auto_apply.enabled.toml";
 
 #[derive(Clone)]
 pub struct AssertExecuteRequest {
@@ -267,6 +300,161 @@ impl ExpectShell {
             .times(1)
             .with()
             .return_once(|| mock_spawn);
+        self
+    }
+}
+
+pub struct AssertTerrain<'a> {
+    current_dir: &'a Path,
+    central_dir: &'a Path,
+    older_toml_path: &'a str,
+    older_toml: String,
+}
+
+impl<'a> AssertTerrain<'a> {
+    pub fn with_dirs(current_dir: &'a Path, central_dir: &'a Path) -> Self {
+        Self {
+            current_dir,
+            central_dir,
+            older_toml_path: "",
+            older_toml: "".to_string(),
+        }
+    }
+
+    pub fn with_dirs_and_existing(
+        current_dir: &'a Path,
+        central_dir: &'a Path,
+        existing_terrain: &'a str,
+    ) -> Self {
+        let older_toml = read_to_string(existing_terrain).expect("to be read");
+        Self {
+            current_dir,
+            central_dir,
+            older_toml_path: existing_terrain,
+            older_toml,
+        }
+    }
+
+    pub fn scripts_dir_was_created(self) -> Self {
+        assert!(
+            self.central_dir.join("scripts").exists(),
+            "failed to find scripts dir"
+        );
+        self
+    }
+
+    pub fn central_dir_is_created(self) -> Self {
+        assert!(self.central_dir.exists(), "failed to find central dir");
+        self
+    }
+
+    pub fn was_initialized(self, in_central: bool, mode: &'static str) -> Self {
+        let toml = if in_central {
+            self.central_dir
+        } else {
+            self.current_dir
+        }
+        .join("terrain.toml");
+
+        assert!(toml.exists(), "failed to find terrain.toml");
+        assert_eq!(
+            read_to_string(&toml).expect("to find terrain.toml"),
+            read_to_string(mode).expect("to find test terrain.toml"),
+            "failed to terrain.toml was created for in_central {} for test terrain: {}",
+            in_central,
+            mode
+        );
+
+        self
+    }
+
+    pub fn script_was_created_for(self, biome_name: &str, mode: &'static str) -> Self {
+        let script = self
+            .central_dir
+            .join("scripts")
+            .join(format!("terrain-{}.zsh", biome_name));
+
+        assert!(
+            script.exists(),
+            "failed to find script for biome {}",
+            biome_name
+        );
+
+        assert_eq!(
+            read_to_string(&script).expect("to find script for biome"),
+            read_to_string(mode).expect("to find test script"),
+            "failed to assert script was created for biome {} for test script: {}",
+            biome_name,
+            mode
+        );
+        self
+    }
+
+    pub fn was_updated(self, in_central: bool, new_toml_path: &'static str) -> Self {
+        let toml = if in_central {
+            self.central_dir
+        } else {
+            self.current_dir
+        }
+        .join("terrain.toml");
+
+        assert!(toml.exists(), "failed to find terrain.toml");
+
+        let new_toml_contents = read_to_string(&toml).expect("to find terrain.toml");
+
+        assert_ne!(self.older_toml_path, new_toml_path);
+        assert_ne!(self.older_toml, new_toml_contents);
+        assert_eq!(
+            new_toml_contents,
+            read_to_string(new_toml_path).expect("to find test terrain.toml"),
+            "failed to terrain.toml was created for in_central {} for test terrain: {}",
+            in_central,
+            new_toml_path
+        );
+
+        self
+    }
+
+    pub fn with_backup(self, in_central: bool) -> Self {
+        let backup = if in_central {
+            self.central_dir
+        } else {
+            self.current_dir
+        }
+        .join("terrain.toml.bkp");
+
+        assert!(backup.exists(), "failed to find terrain.toml");
+        assert_eq!(
+            self.older_toml,
+            read_to_string(backup).expect("to find test terrain.toml"),
+            "failed to check terrain.toml.bkp was created for in_central {} for test terrain: {}",
+            in_central,
+            self.older_toml_path
+        );
+
+        self
+    }
+
+    pub fn was_not_updated(self, in_central: bool) -> Self {
+        let toml = if in_central {
+            self.central_dir
+        } else {
+            self.current_dir
+        }
+        .join("terrain.toml");
+
+        assert!(toml.exists(), "failed to find terrain.toml");
+
+        let new_toml_contents = read_to_string(&toml).expect("to find terrain.toml");
+
+        assert_eq!(
+            new_toml_contents,
+            read_to_string(self.older_toml_path).expect("to find test terrain.toml"),
+            "failed to check terrain.toml was created for in_central {} for test terrain: {}",
+            in_central,
+            self.older_toml_path
+        );
+
         self
     }
 }

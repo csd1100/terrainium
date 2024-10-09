@@ -1,6 +1,5 @@
 pub mod args;
 pub mod handlers;
-pub mod old_utils;
 pub mod shell;
 pub mod types;
 #[cfg(test)]

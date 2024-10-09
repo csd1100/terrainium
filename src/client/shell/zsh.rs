@@ -229,11 +229,6 @@ impl Zsh {
             runner,
         }
     }
-
-    #[cfg(test)]
-    pub fn runner_ref(&self) -> &CommandToRun {
-        &self.runner
-    }
 }
 
 #[cfg(test)]

@@ -79,14 +79,21 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 #[cfg(test)]
 mod test {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
-    use crate::client::old_utils::test::script_path;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::AutoApply;
-    use crate::client::utils::ExpectShell;
+    use crate::client::utils::{
+        AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML,
+        WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME2_FOR_EXAMPLE_SCRIPT,
+        WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
+        WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT,
+        WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML,
+        WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
+        WITH_NONE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT, WITH_NONE_UPDATED_EXAMPLE_TOML,
+    };
     use crate::common::execute::MockCommandToRun;
-    use std::fs::{copy, create_dir_all, exists, read_to_string};
-    use std::path::PathBuf;
+    use std::fs::{copy, create_dir_all};
+    use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
     #[test]
@@ -96,11 +103,8 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(
-            "./tests/data/terrain.example.without.default.toml",
-            &terrain_toml,
-        )
-        .expect("test terrain to be copied to test dir");
+        copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
+            .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
             .compile_script_for("example_biome", central_dir.path())
@@ -129,39 +133,14 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected =
-            read_to_string("./tests/data/terrain.example.toml").expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITHOUT_DEFAULT_BIOME_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
     }
 
     #[test]
@@ -170,11 +149,8 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(
-            "./tests/data/terrain.example.without.default.toml",
-            &terrain_toml,
-        )
-        .expect("test terrain to be copied to test dir");
+        copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
+            .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
             current_dir.path().into(),
@@ -203,11 +179,12 @@ mod test {
         );
 
         // assert terrain not updated in case of error
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.without.default.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            Path::new(""),
+            WITHOUT_DEFAULT_BIOME_TOML,
+        )
+        .was_not_updated(IN_CURRENT_DIR);
     }
 
     #[test]
@@ -217,7 +194,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
@@ -266,53 +243,15 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.new.example_biome2.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome2 script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome2".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome2.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for("example_biome2", WITH_EXAMPLE_BIOME2_FOR_EXAMPLE_SCRIPT);
     }
 
     #[test]
@@ -322,7 +261,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
@@ -358,39 +297,17 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.updated.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for(
+            "example_biome",
+            WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
         );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.updated.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
     }
 
     #[test]
@@ -400,7 +317,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
@@ -436,40 +353,17 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.updated.none.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_NONE_UPDATED_EXAMPLE_TOML)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT)
+        .script_was_created_for(
+            "example_biome",
+            WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT,
         );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected =
-            read_to_string("./tests/data/terrain-example_biome.example.updated.none.zsh")
-                .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.updated.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
     }
 
     #[test]
@@ -478,7 +372,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
@@ -510,12 +404,12 @@ mod test {
 
         assert_eq!("the biome \"non_existent\" does not exists", err);
 
-        // assert terrain not updated in case of error
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected =
-            read_to_string("./tests/data/terrain.example.toml").expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            Path::new(""),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_not_updated(IN_CURRENT_DIR);
     }
 
     #[test]
@@ -525,7 +419,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
@@ -561,47 +455,18 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.updated.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
-
-        let actual = read_to_string(&backup).expect("backup terrain to be read");
-        let expected =
-            read_to_string("./tests/data/terrain.example.toml").expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
+        .with_backup(IN_CURRENT_DIR)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for(
+            "example_biome",
+            WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
         );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.updated.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
     }
 
     #[test]
@@ -611,7 +476,7 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy("./tests/data/terrain.example.toml", &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
@@ -641,47 +506,15 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.auto_apply.enabled.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
-
-        let actual = read_to_string(&backup).expect("backup terrain to be read");
-        let expected =
-            read_to_string("./tests/data/terrain.example.toml").expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_EXAMPLE_TERRAIN_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML)
+        .with_backup(IN_CURRENT_DIR)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
     }
 
     #[test]
@@ -691,11 +524,8 @@ mod test {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(
-            "./tests/data/terrain.example.auto_apply.enabled.toml",
-            &terrain_toml,
-        )
-        .expect("test terrain to be copied to test dir");
+        copy(WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, &terrain_toml)
+            .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
             .compile_script_for("example_biome", central_dir.path())
@@ -724,46 +554,14 @@ mod test {
         )
         .expect("no error to be thrown");
 
-        let actual = read_to_string(&terrain_toml).expect("updated terrain to be read");
-        let expected =
-            read_to_string("./tests/data/terrain.example.toml").expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        let backup: PathBuf = current_dir.path().join("terrain.toml.bkp");
-
-        let actual = read_to_string(&backup).expect("backup terrain to be read");
-        let expected = read_to_string("./tests/data/terrain.example.auto_apply.enabled.toml")
-            .expect("test terrain to be read");
-
-        assert_eq!(actual, expected);
-
-        // assert example_biome script is created
-        let script: PathBuf = script_path(central_dir.path(), &"example_biome".to_string());
-
-        assert!(
-            exists(&script).expect("to check if script exists"),
-            "expected terrain-example_biome.zsh to be created in scripts directory"
-        );
-
-        let actual = read_to_string(&script).expect("expected script to be readable");
-        let expected = read_to_string("./tests/data/terrain-example_biome.example.zsh")
-            .expect("expected test toml to be readable");
-
-        assert_eq!(actual, expected);
-
-        // assert none script is created
-        let script_path: PathBuf = script_path(central_dir.path(), &"none".to_string());
-        assert!(
-            exists(&script_path).expect("to check if script exists"),
-            "expected terrain-none.zsh to be created in current directory"
-        );
-
-        let actual_script =
-            read_to_string(&script_path).expect("expected terrain-none.zsh to be readable");
-        let expected_script = read_to_string("./tests/data/terrain-none.example.zsh")
-            .expect("expected test script to be readable");
-
-        assert_eq!(actual_script, expected_script);
+        AssertTerrain::with_dirs_and_existing(
+            current_dir.path(),
+            central_dir.path(),
+            WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
+        )
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+        .with_backup(IN_CURRENT_DIR)
+        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
+        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
     }
 }
