@@ -11,8 +11,10 @@ A command-line utility written in Rust for env management
 
 ## Command-Line Arguments (Usage)
 
+### terrainium
+
 ```sh
-terrainium <verb> [OPTIONS]
+terrainium <verb|OPTIONS> [OPTIONS]
 ```
 
 - Verbs:
@@ -76,6 +78,12 @@ terrainium <verb> [OPTIONS]
 
     - `-h|--help` - shows help.
 
+- Options:
+    - `--update-rc` - to update `~/.zshrc` to source init script
+    - `--update-rc-path <path>` - to update `<path>` to source init script
+
+### terrainiumd
+
 ```sh
 terrainiumd [OPTIONS]
 ```
@@ -90,10 +98,14 @@ terrainiumd [OPTIONS]
 
 ### zsh
 
-- For zsh add this to your `.zshrc`
+- For zsh add this to your `~/.zshrc`
 
 ```sh
+source "$HOME/.config/terrainium/terrainium_init"
 ```
+
+- You can also do this to using `terrainium --update-rc` command.
+- If you want to update file different from `~/.zshrc` use `terrainium --update-rc-path <path>`
 
 ## What does it do?
 
