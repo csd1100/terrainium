@@ -1,4 +1,8 @@
 Default Biome: example_biome          Selected Biome: example_biome
+Auto Apply:
+    enabled: false
+    replace: false
+    background: false
 Environment Variables:
     EDITOR="nvim"
     PAGER="less"

@@ -11,8 +11,10 @@ A command-line utility written in Rust for env management
 
 ## Command-Line Arguments (Usage)
 
+### terrainium
+
 ```sh
-terrainium <verb> [OPTIONS]
+terrainium <verb|OPTIONS> [OPTIONS]
 ```
 
 - Verbs:
@@ -42,6 +44,8 @@ terrainium <verb> [OPTIONS]
           with value `ALIAS_VALUE`.
         - `-k|--backup` creates a backup terrain.toml in the same directory before
           updating the original.
+        - `--auto-apply <AUTO_APPLY_VALUE>` update auto-apply config. Value can be
+          `all`, `enabled`, `replace`, `background`
 
     - `generate` - generates and compiles required scripts.
 
@@ -58,6 +62,8 @@ terrainium <verb> [OPTIONS]
           will return value of that specific alias.
         - `-c|--constructors` - returns value of constructors defined.
         - `-d|--destructors` - returns value of constructors defined.
+        - `--auto-apply` - returns auto apply config value. `true` if enabled and
+          `replace` if replace is enabled.
 
     - `enter [OPTIONS]` - applies terrain.
 
@@ -71,6 +77,12 @@ terrainium <verb> [OPTIONS]
     - `destruct` - runs commands specified in destructor block.
 
     - `-h|--help` - shows help.
+
+- Options:
+    - `--update-rc` - to update `~/.zshrc` to source init script
+    - `--update-rc-path <path>` - to update `<path>` to source init script
+
+### terrainiumd
 
 ```sh
 terrainiumd [OPTIONS]
@@ -86,18 +98,14 @@ terrainiumd [OPTIONS]
 
 ### zsh
 
-- For zsh add this to your `.zshrc`
+- For zsh add this to your `~/.zshrc`
 
 ```sh
-if [ "$TERRAINIUM_ENABLED" = "true" ];then
-    clear
-    autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
-    "${terrain_init}"
-    builtin unfunction -- "${terrainium_init}"
-    terrainium_enter
-    echo init....
-fi
+source "$HOME/.config/terrainium/terrainium_init"
 ```
+
+- You can also do this to using `terrainium --update-rc` command.
+- If you want to update file different from `~/.zshrc` use `terrainium --update-rc-path <path>`
 
 ## What does it do?
 
@@ -125,6 +133,17 @@ fi
        be done but for specified biome name.
     2. if `biome_name` is `none` will not merge with any biome and start `terrain`
        as is.
+3. If Auto Apply is enabled in config when directory is changed using `cd` command on zsh,
+   terrain with default biome as selected will be automatically entered.
+   i.e. similar to `terrainium enter` but following conditions are followed:
+
+    1. If only `enabled` is true only env vars, aliases and foreground commands will be run. **NOT** background
+       commands.
+    2. If `enabled` and `replace` as above only env vars, aliases and foreground commands
+       will be run. **NOT** background commands. But newly spawned shell will become
+       top process for that terminal session. For more information look into `exec` command in shells.
+    3. If all `enabled`, `background` and `replace` are true entire terrain will be
+       applied automatically.
 
 ### Example
 

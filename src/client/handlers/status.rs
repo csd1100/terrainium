@@ -1,6 +1,6 @@
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
-use crate::common::constants::TERRAINIUM_ENABLED;
+use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_ENABLED};
 use crate::common::types::pb;
 use crate::common::types::pb::Error;
 use crate::common::types::socket::Socket;
@@ -8,9 +8,10 @@ use crate::common::types::terrain_state::TerrainState;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::env;
+use std::path::PathBuf;
 
-pub async fn handle(context: Context, json: bool, mut client: Client) -> Result<()> {
-    let is_terrain_enabled = env::var(TERRAINIUM_ENABLED).unwrap_or_else(|_| "false".to_string());
+pub async fn handle(context: Context, json: bool, client: Option<Client>) -> Result<()> {
+    let is_terrain_enabled = env::var(TERRAIN_ENABLED).unwrap_or_else(|_| "false".to_string());
 
     if is_terrain_enabled != "true" {
         return Err(anyhow!(
@@ -18,7 +19,13 @@ pub async fn handle(context: Context, json: bool, mut client: Client) -> Result<
         ));
     }
 
-    let session_id = context.session_id();
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
+    let session_id = context.session_id().to_string();
     let terrain_name = context.name();
 
     let request = pb::StatusRequest {

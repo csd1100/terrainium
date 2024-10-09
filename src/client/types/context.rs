@@ -1,12 +1,13 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID, TERRAIN_DIR,
+    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
+use std::env;
+use std::fs::{copy, create_dir_all, exists, read_to_string, remove_file, write};
 use std::path::{Path, PathBuf};
-use std::{env, fs};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -17,12 +18,12 @@ pub struct Context {
     shell: Zsh,
 }
 
-impl Context {}
-
 const TERRAIN_TOML: &str = "terrain.toml";
 const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
+
+const INIT_SCRIPT: &str = include_str!("../../../scripts/terrainium_init");
 
 impl Default for Context {
     fn default() -> Self {
@@ -33,7 +34,28 @@ impl Default for Context {
 impl Context {
     pub fn generate() -> Self {
         let session_id =
-            env::var(TERRAINIUM_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+            env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+
+        if !exists(Self::config_dir()).expect("failed to check if config directory exists") {
+            create_dir_all(Self::config_dir()).expect("failed to create config directory exists");
+        }
+
+        if !exists(Self::init_script()).expect("failed to check if init-script exists") {
+            println!("!!!WARNING!!! init-script not found in config directory, copying script to config directory !!!WARNING!!!");
+
+            write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
+        } else if read_to_string(Self::init_script()).expect("failed to read init-script")
+            != INIT_SCRIPT
+        {
+            println!("!!!WARNING!!! init-script was outdated in config directory, copying newer script to config directory !!!WARNING!!!");
+
+            let mut backup = Self::init_script().clone();
+            backup.set_extension(".bkp");
+
+            copy(Self::init_script(), backup).expect("failed to remove init-script");
+            remove_file(Self::init_script()).expect("failed to remove init-script");
+            write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
+        }
 
         Context {
             session_id,
@@ -45,8 +67,8 @@ impl Context {
         }
     }
 
-    pub fn session_id(&self) -> String {
-        self.session_id.clone()
+    pub fn session_id(&self) -> &str {
+        &self.session_id
     }
 
     pub fn current_dir(&self) -> &PathBuf {
@@ -55,6 +77,16 @@ impl Context {
 
     pub fn central_dir(&self) -> &PathBuf {
         &self.central_dir
+    }
+
+    pub fn config_dir() -> PathBuf {
+        home_dir()
+            .expect("failed to get home directory")
+            .join(CONFIG_LOCATION)
+    }
+
+    pub fn init_script() -> PathBuf {
+        Self::config_dir().join(INIT_SCRIPT_NAME)
     }
 
     pub fn name(&self) -> String {
@@ -67,8 +99,8 @@ impl Context {
     }
 
     pub fn toml_exists(&self) -> bool {
-        fs::exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
-            || fs::exists(self.central_toml_path())
+        exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
+            || exists(self.central_toml_path())
                 .expect("failed to check if central terrain.toml exists")
     }
 
@@ -81,10 +113,9 @@ impl Context {
     }
 
     pub fn toml_path(&self) -> Result<PathBuf> {
-        if fs::exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
-        {
+        if exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists") {
             Ok(self.local_toml_path())
-        } else if fs::exists(self.central_toml_path())
+        } else if exists(self.central_toml_path())
             .expect("failed to check if central terrain.toml exists")
         {
             Ok(self.central_toml_path())
@@ -96,25 +127,24 @@ impl Context {
     }
 
     pub fn local_toml_path(&self) -> PathBuf {
-        let mut base_dir: PathBuf = self.current_dir.clone();
-        base_dir.push(TERRAIN_TOML);
-        base_dir
+        self.current_dir.join(TERRAIN_TOML)
     }
 
     pub fn central_toml_path(&self) -> PathBuf {
-        let mut base_dir: PathBuf = self.central_dir.clone();
-        base_dir.push(TERRAIN_TOML);
-        base_dir
+        self.central_dir.join(TERRAIN_TOML)
     }
 
     pub fn scripts_dir(&self) -> PathBuf {
-        let mut scripts_dir = self.central_dir.clone();
-        scripts_dir.push(SCRIPTS_DIR_NAME);
-        scripts_dir
+        self.central_dir.join(SCRIPTS_DIR_NAME)
     }
 
     pub(crate) fn shell(&self) -> &Zsh {
         &self.shell
+    }
+
+    pub fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
+        self.shell.update_rc(path)?;
+        Ok(())
     }
 
     pub(crate) fn terrainium_envs(&self) -> BTreeMap<String, String> {
@@ -124,10 +154,9 @@ impl Context {
             self.current_dir().to_string_lossy().to_string(),
         );
         terrainium_envs.insert(
-            TERRAINIUM_SESSION_ID.to_string(),
+            TERRAIN_SESSION_ID.to_string(),
             self.session_id().to_string(),
         );
-        terrainium_envs.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
 
         let exe = env::args().nth(0).unwrap();
         if self.name() == "terrainium" && exe.starts_with("target/") {
@@ -164,27 +193,24 @@ impl Context {
 }
 
 fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
-    let mut central_dir = home_dir().expect("failed to get home directory");
-    central_dir.push(CONFIG_LOCATION);
-    central_dir.push(TERRAINS_DIR_NAME);
-
     let terrain_dir_name = Path::canonicalize(current_dir.as_path())
         .expect("expected current directory to be valid")
         .to_string_lossy()
         .to_string()
         .replace('/', "_");
-    central_dir.push(terrain_dir_name);
 
-    central_dir
+    home_dir()
+        .expect("failed to get home directory")
+        .join(CONFIG_LOCATION)
+        .join(TERRAINS_DIR_NAME)
+        .join(terrain_dir_name)
 }
 
 #[cfg(test)]
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::{
-        TERRAINIUM_ENABLED, TERRAINIUM_EXECUTABLE, TERRAINIUM_SESSION_ID,
-    };
+    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
     use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -234,20 +260,17 @@ mod test {
                 .display()
                 .to_string(),
         );
-        expected_map.insert(TERRAINIUM_ENABLED.to_string(), "true".to_string());
         let exe = env::args().next().unwrap();
         expected_map.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
-        assert!(context
-            .terrainium_envs()
-            .contains_key(TERRAINIUM_SESSION_ID));
+        assert!(context.terrainium_envs().contains_key(TERRAIN_SESSION_ID));
 
         context
             .terrainium_envs()
             .iter()
-            .filter(|(key, _)| *key != TERRAINIUM_SESSION_ID)
+            .filter(|(key, _)| *key != TERRAIN_SESSION_ID)
             .for_each(|(key, value)| {
                 assert_eq!(value, expected_map.get(key).expect("to be present"));
             });
@@ -257,9 +280,9 @@ mod test {
 
     #[test]
     fn local_toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let mut expected_terrain_toml =
-            env::current_dir().expect("failed to get current directory");
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml = env::current_dir()
+            .expect("failed to get current directory")
+            .join("terrain.toml");
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
@@ -273,8 +296,7 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = current_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
@@ -304,8 +326,7 @@ mod test {
         let central_dir = tempdir()?;
         let current_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = central_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
         let context = Context::build(
@@ -334,8 +355,7 @@ mod test {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let mut expected_terrain_toml: PathBuf = central_dir.path().into();
-        expected_terrain_toml.push("terrain.toml");
+        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
 
         fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
 
@@ -398,8 +418,7 @@ mod test {
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let mut scripts_dir = get_central_dir_location();
-        scripts_dir.push("scripts");
+        let scripts_dir = get_central_dir_location().join("scripts");
 
         assert_eq!(scripts_dir, context.scripts_dir());
         Ok(())
@@ -419,10 +438,9 @@ mod test {
             .to_string()
             .replace('/', "_");
 
-        let mut central_dir = home_dir().expect("failed to get home directory");
-        central_dir.push(".config/terrainium/terrains");
-        central_dir.push(terrain_dir_name);
-
-        central_dir
+        home_dir()
+            .expect("failed to get home directory")
+            .join(".config/terrainium/terrains")
+            .join(terrain_dir_name)
     }
 }

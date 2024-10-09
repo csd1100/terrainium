@@ -1,4 +1,8 @@
 Default Biome: {{#if this.default_biome}}{{ default_biome }}{{else}}none{{/if}}          Selected Biome: {{ this.selected_biome }}
+Auto Apply:
+    enabled: {{this.auto_apply.enabled}}
+    replace: {{this.auto_apply.replace}}
+    background: {{this.auto_apply.background}}
 {{> envs merged.envs }}
 {{> aliases merged.aliases }}
 {{> constructors merged.constructors }}

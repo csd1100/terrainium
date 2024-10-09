@@ -1,6 +1,11 @@
 "$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
 default_biome = "example_biome"
 
+[auto_apply]
+enabled = false
+background = false
+replace = false
+
 [terrain.envs]
 EDITOR = "vim"
 
