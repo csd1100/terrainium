@@ -76,8 +76,8 @@ mod test {
     use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
     use crate::common::constants::{
         CONSTRUCTORS, FPATH, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
-        TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
-        TERRAIN_SESSION_ID,
+        TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_NAME,
+        TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
     use crate::common::types::pb::ExecuteResponse;
     use prost_types::Any;
@@ -124,6 +124,10 @@ mod test {
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
@@ -165,6 +169,10 @@ mod test {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -201,6 +209,10 @@ mod test {
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -220,6 +232,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "enabled")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -273,6 +289,10 @@ mod test {
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -292,6 +312,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "replaced")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -345,6 +369,10 @@ mod test {
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -364,6 +392,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -407,6 +439,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -443,6 +479,10 @@ mod test {
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -462,6 +502,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -505,6 +549,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -536,6 +584,10 @@ mod test {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -554,6 +606,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
@@ -606,6 +662,10 @@ mod test {
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -625,6 +685,10 @@ mod test {
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")

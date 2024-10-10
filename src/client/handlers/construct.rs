@@ -20,7 +20,7 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::utils::{AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
-        CONSTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SELECTED_BIOME,
+        CONSTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME,
     };
     use crate::common::run::MockCommandToRun;
     use crate::common::types::pb;
@@ -62,6 +62,10 @@ mod tests {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
@@ -101,6 +105,10 @@ mod tests {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),

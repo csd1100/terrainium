@@ -50,7 +50,7 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::utils::{AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
-        DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
+        DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME,
         TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
     use crate::common::run::test::{restore_env_var, set_env_var};
@@ -106,6 +106,10 @@ mod tests {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
@@ -161,6 +165,10 @@ mod tests {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
@@ -252,6 +260,10 @@ mod tests {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("PAGER", "less")
+                    .with_env(
+                        TERRAIN_NAME,
+                        current_dir.path().file_name().unwrap().to_str().unwrap(),
+                    )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")

@@ -1,6 +1,6 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SESSION_ID,
+    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -149,6 +149,7 @@ impl Context {
 
     pub(crate) fn terrainium_envs(&self) -> BTreeMap<String, String> {
         let mut terrainium_envs = BTreeMap::<String, String>::new();
+        terrainium_envs.insert(TERRAIN_NAME.to_string(), self.name());
         terrainium_envs.insert(
             TERRAIN_DIR.to_string(),
             self.current_dir().to_string_lossy().to_string(),
@@ -210,7 +211,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
+    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_NAME, TERRAIN_SESSION_ID};
     use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -262,6 +263,7 @@ mod test {
         );
         let exe = env::args().next().unwrap();
         expected_map.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
+        expected_map.insert(TERRAIN_NAME.to_string(), "terrainium".to_string());
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
