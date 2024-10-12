@@ -5,6 +5,7 @@ use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse};
 use crate::common::types::terrain_state::{operation_name, CommandStatus, TerrainState};
 use crate::daemon::handlers::RequestHandler;
+use crate::daemon::types::history;
 use anyhow::{Context, Result};
 use prost_types::Any;
 use std::sync::Arc;
@@ -38,6 +39,19 @@ impl RequestHandler for ExecuteHandler {
                     "spawning task to execute request {:?}",
                     request
                 );
+
+                if request.is_activate {
+                    let res = history::add(&request.terrain_name, &request.session_id);
+                    if let Err(err) = res {
+                        event!(
+                            Level::ERROR,
+                            "failed to add the history, for terrain: {} session: {}, error: {:?}",
+                            &request.terrain_name,
+                            &request.session_id,
+                            err
+                        );
+                    }
+                }
 
                 tokio::spawn(execute(request));
 
