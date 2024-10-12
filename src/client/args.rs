@@ -69,6 +69,9 @@ pub enum Verbs {
     Status {
         #[arg(short, long)]
         json: bool,
+
+        #[arg(short = 'r', long, default_value = "recent")]
+        history: History,
     },
 
     Update {
@@ -151,29 +154,6 @@ pub fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String>
     option_biome_arg.clone().map(|selected| selected.into())
 }
 
-pub struct GetArgs {
-    pub biome: Option<BiomeArg>,
-    pub aliases: bool,
-    pub envs: bool,
-    pub alias: Vec<String>,
-    pub env: Vec<String>,
-    pub constructors: bool,
-    pub destructors: bool,
-    pub auto_apply: bool,
-}
-
-impl GetArgs {
-    pub fn empty(&self) -> bool {
-        !self.aliases
-            && !self.envs
-            && self.alias.is_empty()
-            && self.env.is_empty()
-            && !self.constructors
-            && !self.destructors
-            && !self.auto_apply
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pair {
     pub key: String,
@@ -211,6 +191,49 @@ impl FromStr for AutoApply {
             "off" => Ok(AutoApply::default()),
             _ => Err(anyhow!("failed to parse auto_apply argument from: {}", s)),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum History {
+    Recent,
+    Recent1,
+    Recent2,
+}
+
+impl FromStr for History {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "recent" => Ok(History::Recent),
+            "recent~1" => Ok(History::Recent1),
+            "recent~2" => Ok(History::Recent2),
+            _ => Err(anyhow!("failed to parse history from: {}", s)),
+        }
+    }
+}
+
+pub struct GetArgs {
+    pub biome: Option<BiomeArg>,
+    pub aliases: bool,
+    pub envs: bool,
+    pub alias: Vec<String>,
+    pub env: Vec<String>,
+    pub constructors: bool,
+    pub destructors: bool,
+    pub auto_apply: bool,
+}
+
+impl GetArgs {
+    pub fn empty(&self) -> bool {
+        !self.aliases
+            && !self.envs
+            && self.alias.is_empty()
+            && self.env.is_empty()
+            && !self.constructors
+            && !self.destructors
+            && !self.auto_apply
     }
 }
 

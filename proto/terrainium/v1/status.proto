@@ -5,8 +5,14 @@ package terrainium.v1;
 import "terrainium/v1/common.proto";
 
 message StatusRequest {
-  string session_id = 1;
-  string terrain_name = 2;
+  string terrain_name = 1;
+  History history = 2;
+
+  enum History {
+    RECENT = 0;
+    RECENT_1 = 1;
+    RECENT_2 = 2;
+  }
 }
 
 message StatusResponse {

@@ -91,8 +91,8 @@ async fn main() -> Result<()> {
                 enter::handle(context, biome, auto_apply, None).await?
             }
 
-            Verbs::Status { json } => {
-                status::handle(context, json, None).await?;
+            Verbs::Status { json, history } => {
+                status::handle(context, json, None, history).await?;
             }
 
             Verbs::Exit => exit::handle(context, None).await?,
