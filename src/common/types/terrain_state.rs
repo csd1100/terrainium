@@ -1,35 +1,34 @@
 use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 use crate::common::run::CommandToRun;
 use crate::common::types::pb;
-use crate::common::types::styled::StyledTerrainState;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TerrainState {
-    pub(in crate::common::types) session_id: String,
-    pub(in crate::common::types) terrain_name: String,
-    pub(in crate::common::types) biome_name: String,
-    pub(in crate::common::types) toml_path: String,
-    pub(in crate::common::types) start_timestamp: String,
-    pub(in crate::common::types) end_timestamp: String,
-    pub(in crate::common::types) is_activate: bool,
-    pub(in crate::common::types) execute_context: ExecutionContext,
+    session_id: String,
+    terrain_name: String,
+    biome_name: String,
+    toml_path: String,
+    start_timestamp: String,
+    end_timestamp: String,
+    is_activate: bool,
+    execute_context: ExecutionContext,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ExecutionContext {
-    pub(in crate::common::types) constructors_state: Vec<CommandState>,
-    pub(in crate::common::types) destructors_state: Vec<CommandState>,
+    constructors_state: Vec<CommandState>,
+    destructors_state: Vec<CommandState>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommandState {
-    pub(in crate::common::types) operation: String,
-    pub(in crate::common::types) command: CommandToRun,
-    pub(in crate::common::types) log_path: String,
-    pub(in crate::common::types) status: CommandStatus,
+    operation: String,
+    command: CommandToRun,
+    log_path: String,
+    status: CommandStatus,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -149,12 +148,11 @@ impl TerrainState {
             .context("Failed to read TerrainState file")
     }
 
-    pub(crate) fn render(self, json: bool) -> Result<()> {
+    pub(crate) fn render(&self, json: bool) -> Result<()> {
         let output: String = if json {
             self.to_json().expect("Failed to serialize TerrainState")
         } else {
-            let styled: StyledTerrainState = self.into();
-            styled.render()
+            format!("TerrainState: {:#?}", self)
         };
         println!("{}", output);
         Ok(())
@@ -239,19 +237,6 @@ impl ExecutionContext {
 impl CommandState {
     pub fn operation(&self) -> &str {
         self.operation.as_str()
-    }
-}
-
-impl Into<String> for CommandStatus {
-    fn into(self) -> String {
-        match self {
-            CommandStatus::Starting => "Starting".to_string(),
-            CommandStatus::Running => "Running".to_string(),
-            CommandStatus::Failed(e) => {
-                format!("Failed({:?})", e)
-            }
-            CommandStatus::Succeeded => "Succeeded".to_string(),
-        }
     }
 }
 

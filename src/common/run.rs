@@ -38,14 +38,6 @@ impl CommandToRun {
     pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
         self.envs = envs;
     }
-
-    pub fn exe(&self) -> &str {
-        self.exe.as_str()
-    }
-
-    pub fn args(&self) -> &[String] {
-        self.args.as_slice()
-    }
 }
 
 impl From<CommandToRun> for Command {
