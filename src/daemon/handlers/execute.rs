@@ -40,7 +40,7 @@ impl RequestHandler for ExecuteHandler {
                     request
                 );
 
-                if request.is_activate {
+                if request.is_activate && !request.session_id.is_empty() {
                     let res = history::add(&request.terrain_name, &request.session_id);
                     if let Err(err) = res {
                         event!(

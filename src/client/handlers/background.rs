@@ -3,9 +3,7 @@ use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{
-    CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
-};
+use crate::common::constants::{CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SELECTED_BIOME};
 use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
@@ -68,8 +66,6 @@ pub async fn handle(
 
     if let Some(zsh_envs) = &activate_envs {
         envs.append(&mut zsh_envs.clone());
-    } else {
-        envs.remove(TERRAIN_SESSION_ID);
     }
 
     let commands: Vec<pb::Command> = commands
@@ -82,14 +78,8 @@ pub async fn handle(
         })
         .collect();
 
-    let session_id = if activate_envs.is_some() {
-        context.session_id().to_string()
-    } else {
-        "".to_string()
-    };
-
     let request = ExecuteRequest {
-        session_id,
+        session_id: context.session_id().to_owned(),
         terrain_name: context.name(),
         biome_name,
         toml_path: context

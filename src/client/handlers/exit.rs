@@ -5,7 +5,6 @@ use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
-use std::collections::BTreeMap;
 use std::env;
 
 pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
@@ -23,7 +22,7 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
             &context,
             DESTRUCTORS,
             Some(BiomeArg::Some(selected_biome)),
-            Some(BTreeMap::<String, String>::new()),
+            None,
             client,
         )
         .await
@@ -71,6 +70,10 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn exit_send_message_to_daemon() {
+        let orig_session_id = set_env_var(
+            TERRAIN_SESSION_ID.to_string(),
+            Some("some_session_id".to_string()),
+        );
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some("example_biome".to_string()),
@@ -84,15 +87,16 @@ mod tests {
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            "some_session_id".into(),
         );
 
         let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
-            .is_activated_as(true)
+            .is_activated_as(false)
             .operation(DESTRUCTORS)
             .with_expected_reply(
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
@@ -111,7 +115,7 @@ mod tests {
                         current_dir.path().file_name().unwrap().to_str().unwrap(),
                     )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
             )
@@ -123,11 +127,16 @@ mod tests {
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+        restore_env_var(TERRAIN_SESSION_ID.to_string(), orig_session_id);
     }
 
     #[serial]
     #[tokio::test]
     async fn exit_send_message_to_daemon_and_error() {
+        let orig_session_id = set_env_var(
+            TERRAIN_SESSION_ID.to_string(),
+            Some("some_session_id".to_string()),
+        );
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some("example_biome".to_string()),
@@ -140,15 +149,16 @@ mod tests {
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            "some_session_id".into(),
         );
 
         let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
-            .is_activated_as(true)
+            .is_activated_as(false)
             .operation(DESTRUCTORS)
             .with_expected_reply(
                 Any::from_msg(&pb::Error {
@@ -170,7 +180,7 @@ mod tests {
                         current_dir.path().file_name().unwrap().to_str().unwrap(),
                     )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
             )
@@ -184,11 +194,16 @@ mod tests {
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+        restore_env_var(TERRAIN_SESSION_ID.to_string(), orig_session_id);
     }
 
     #[serial]
     #[tokio::test]
     async fn exit_does_not_send_message_to_daemon_auto_apply_without_background() {
+        let orig_session_id = set_env_var(
+            TERRAIN_SESSION_ID.to_string(),
+            Some("some_session_id".to_string()),
+        );
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some("example_biome".to_string()),
@@ -206,10 +221,11 @@ mod tests {
         )
         .expect("copy to terrain to test dir");
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            "some_session_id".into(),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
@@ -220,11 +236,16 @@ mod tests {
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+        restore_env_var(TERRAIN_SESSION_ID.to_string(), orig_session_id);
     }
 
     #[serial]
     #[tokio::test]
     async fn exit_does_send_message_to_daemon_auto_apply() {
+        let orig_session_id = set_env_var(
+            TERRAIN_SESSION_ID.to_string(),
+            Some("some_session_id".to_string()),
+        );
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some("example_biome".to_string()),
@@ -238,15 +259,16 @@ mod tests {
         copy("./tests/data/terrain.example.toml", &terrain_toml)
             .expect("copy to terrain to test dir");
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            "some_session_id".into(),
         );
 
         let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
-            .is_activated_as(true)
+            .is_activated_as(false)
             .operation(DESTRUCTORS)
             .with_expected_reply(
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
@@ -265,7 +287,7 @@ mod tests {
                         current_dir.path().file_name().unwrap().to_str().unwrap(),
                     )
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
             )
@@ -277,11 +299,16 @@ mod tests {
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+        restore_env_var(TERRAIN_SESSION_ID.to_string(), orig_session_id);
     }
 
     #[serial]
     #[tokio::test]
     async fn exit_does_not_send_message_to_daemon_auto_apply_with_empty_background_commands() {
+        let orig_session_id = set_env_var(
+            TERRAIN_SESSION_ID.to_string(),
+            Some("some_session_id".to_string()),
+        );
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some("example_biome".to_string()),
@@ -301,10 +328,11 @@ mod tests {
         )
         .expect("copy to terrain to test dir");
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            "some_session_id".into(),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
@@ -315,5 +343,6 @@ mod tests {
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), orig_selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), orig_auto_apply);
+        restore_env_var(TERRAIN_SESSION_ID.to_string(), orig_session_id);
     }
 }

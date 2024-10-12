@@ -33,8 +33,7 @@ impl Default for Context {
 
 impl Context {
     pub fn generate() -> Self {
-        let session_id =
-            env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+        let session_id = env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| "".to_string());
 
         if !exists(Self::config_dir()).expect("failed to check if config directory exists") {
             create_dir_all(Self::config_dir()).expect("failed to create config directory exists");
@@ -64,6 +63,12 @@ impl Context {
                 env::current_dir().expect("failed to get current directory"),
             ),
             shell: Zsh::get(),
+        }
+    }
+
+    pub fn generate_session_id(&mut self) {
+        if self.session_id.is_empty() {
+            self.session_id = Uuid::new_v4().to_string();
         }
     }
 
@@ -171,9 +176,24 @@ impl Context {
     }
 
     #[cfg(test)]
+    pub(crate) fn build_with_session_id(
+        current_dir: PathBuf,
+        central_dir: PathBuf,
+        shell: Zsh,
+        session_id: String,
+    ) -> Self {
+        Context {
+            session_id,
+            current_dir,
+            central_dir,
+            shell,
+        }
+    }
+
+    #[cfg(test)]
     pub(crate) fn build(current_dir: PathBuf, central_dir: PathBuf, shell: Zsh) -> Self {
         Context {
-            session_id: "some".to_string(),
+            session_id: "".to_string(),
             current_dir,
             central_dir,
             shell,
@@ -183,7 +203,7 @@ impl Context {
     #[cfg(test)]
     pub(crate) fn build_without_paths(shell: Zsh) -> Self {
         Context {
-            session_id: "some".to_string(),
+            session_id: "".to_string(),
             current_dir: env::current_dir().expect("failed to get current directory"),
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),

@@ -24,14 +24,13 @@ pub async fn handle(
     let (selected_name, _) = terrain.select_biome(&biome)?;
 
     let mut envs = terrain.merged_envs(&biome)?;
-    envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
-    envs.append(&mut context.terrainium_envs().clone());
-
     let mut zsh_envs = context
         .shell()
         .generate_envs(&context, selected_name.to_string())?;
-    envs.append(&mut zsh_envs);
 
+    envs.append(&mut context.terrainium_envs().clone());
+    envs.append(&mut zsh_envs);
+    envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
     if auto_apply {
         envs.insert(
             TERRAIN_AUTO_APPLY.to_string(),
@@ -108,7 +107,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -130,7 +129,7 @@ mod test {
                     )
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -140,10 +139,11 @@ mod test {
             )
             .successfully();
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -176,7 +176,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -216,7 +216,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -239,7 +239,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -249,10 +249,11 @@ mod test {
             )
             .successfully();
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -296,7 +297,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -319,7 +320,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -329,10 +330,11 @@ mod test {
             )
             .successfully();
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -376,7 +378,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -399,7 +401,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -408,10 +410,11 @@ mod test {
                     .with_expected_exit_code(0),
             )
             .successfully();
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -446,7 +449,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -486,7 +489,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -509,7 +512,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -518,10 +521,11 @@ mod test {
                     .with_expected_exit_code(0),
             )
             .successfully();
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -556,7 +560,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -591,7 +595,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "none")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -612,7 +616,7 @@ mod test {
                     )
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "none")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -622,10 +626,11 @@ mod test {
             )
             .successfully();
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(
@@ -669,7 +674,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -692,7 +697,7 @@ mod test {
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
+                    .with_env(TERRAIN_SESSION_ID, "some_session_id")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
@@ -702,10 +707,11 @@ mod test {
             )
             .successfully();
 
-        let context = Context::build(
+        let context = Context::build_with_session_id(
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
+            "some_session_id".into(),
         );
 
         copy(

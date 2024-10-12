@@ -12,7 +12,7 @@ use terrainium::client::handlers::schema;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-    let context = Context::generate();
+    let mut context = Context::generate();
 
     match args.command {
         None => {
@@ -87,6 +87,7 @@ async fn main() -> Result<()> {
             Verbs::Destruct { biome } => destruct::handle(context, biome, None).await?,
 
             Verbs::Enter { biome, auto_apply } => {
+                context.generate_session_id();
                 enter::handle(context, biome, auto_apply, None).await?
             }
 
