@@ -2,7 +2,10 @@ use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 use crate::common::run::CommandToRun;
 use crate::common::types::pb;
 use anyhow::{anyhow, Context, Result};
+use owo_colors::{OwoColorize, Style};
 use serde::{Deserialize, Serialize};
+use std::fmt::Write;
+use std::fmt::{Display, Formatter};
 use tokio::fs;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -152,7 +155,7 @@ impl TerrainState {
         let output: String = if json {
             self.to_json().expect("Failed to serialize TerrainState")
         } else {
-            format!("TerrainState: {:#?}", self)
+            format!("\n{}", self)
         };
         println!("{}", output);
         Ok(())
@@ -412,5 +415,114 @@ impl From<pb::status_response::execution_context::CommandState> for CommandState
             log_path: value.log_path,
             status,
         }
+    }
+}
+
+impl Display for TerrainState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = String::new();
+        let terrain = format!(
+            "{}: {} ({})\n",
+            "Terrain".style(Style::new().bright_green()),
+            self.terrain_name.style(Style::new().bright_white().bold()),
+            self.biome_name.style(Style::new().italic())
+        );
+        let session_id = format!(
+            "{}: {}\n",
+            "SessionId".style(Style::new().bright_green()),
+            self.session_id.style(Style::new().bright_white())
+        );
+        let toml_path = format!(
+            "{}: {}\n",
+            "TOML".style(Style::new().bright_yellow()),
+            self.toml_path.style(Style::new().bright_white())
+        );
+        let start_timestamp = format!(
+            "{}: {}\n",
+            "Started".style(Style::new().bright_cyan()),
+            self.start_timestamp.style(Style::new().bright_white())
+        );
+        let end_timestamp = format!(
+            "{}: {}\n",
+            "Ended".style(Style::new().bright_blue()),
+            self.end_timestamp.style(Style::new().bright_white())
+        );
+        let execution_context = format!("{}", self.execute_context);
+
+        result.push_str(&terrain);
+        result.push_str(&session_id);
+        result.push_str(&toml_path);
+        result.push_str(&start_timestamp);
+        result.push_str(&end_timestamp);
+        result.push_str(&execution_context);
+        write!(f, "{}", result)
+    }
+}
+
+impl Display for ExecutionContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = String::new();
+
+        let constructor_header_style = Style::new().bright_cyan().bold();
+        let constructor_header = "Constructors:\n"
+            .style(constructor_header_style)
+            .to_string();
+        let constructors = self
+            .constructors_state
+            .iter()
+            .fold(String::new(), |mut acc, cd| {
+                let _ = write!(&mut acc, "{}", cd);
+                acc
+            });
+
+        let destructor_header_style = Style::new().bright_blue().bold();
+        let destructor_header = "Destructors:\n".style(destructor_header_style).to_string();
+        let destructors = self
+            .destructors_state
+            .iter()
+            .fold(String::new(), |mut acc, cd| {
+                let _ = write!(&mut acc, "{}", cd);
+                acc
+            });
+
+        result.push_str(&constructor_header);
+        result.push_str(&constructors);
+        result.push_str(&destructor_header);
+        result.push_str(&destructors);
+
+        write!(f, "{}", result)
+    }
+}
+
+impl Display for CommandState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = String::new();
+        let command = format!(" {} {}\n", self.status, self.command);
+        let logs = format!("  󰘍 {}", self.log_path.style(Style::new().yellow()));
+
+        result.push_str(&command);
+        result.push_str(&logs);
+        writeln!(f, "{}", result)
+    }
+}
+
+impl Display for CommandStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            CommandStatus::Starting => "Starting".style(Style::new().bold().white()).to_string(),
+            CommandStatus::Running => "Running"
+                .style(Style::new().bold().bright_yellow())
+                .to_string(),
+            CommandStatus::Failed(e) => {
+                let err_code = e.unwrap_or_else(|| i32::MAX);
+                format!("Failed (exit code: {})", err_code)
+                    .style(Style::new().bold().bright_red())
+                    .to_string()
+            }
+            CommandStatus::Succeeded => "Succeeded"
+                .style(Style::new().bold().bright_green())
+                .to_string(),
+        };
+        write!(f, "{}", str)
     }
 }

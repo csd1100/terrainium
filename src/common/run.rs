@@ -2,8 +2,10 @@ use crate::common::types::pb;
 use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
+use owo_colors::{OwoColorize, Style};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::process::{Command, ExitStatus, Output};
 use tokio::fs;
 use tracing::{event, instrument, Level};
@@ -144,6 +146,20 @@ impl Execute for CommandToRun {
         let mut command: tokio::process::Command = self.into();
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
+    }
+}
+
+impl Display for CommandToRun {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let exe_style = Style::new().bright_white();
+        let args_style = Style::new().white().italic();
+        let args = self.args.join(" ");
+        write!(
+            f,
+            "{} {}",
+            self.exe.style(exe_style),
+            args.style(args_style)
+        )
     }
 }
 
