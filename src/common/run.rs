@@ -151,8 +151,8 @@ impl Execute for CommandToRun {
 
 impl Display for CommandToRun {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let exe_style = Style::new().bright_white();
-        let args_style = Style::new().white().italic();
+        let exe_style = Style::new().bright_white().bold();
+        let args_style = Style::new().bright_white().italic();
         let args = self.args.join(" ");
         write!(
             f,

@@ -206,9 +206,9 @@ impl FromStr for History {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "recent" => Ok(History::Recent),
-            "recent~1" => Ok(History::Recent1),
-            "recent~2" => Ok(History::Recent2),
+            "recent" | "RECENT" => Ok(History::Recent),
+            "recent~1" | "RECENT~1" => Ok(History::Recent1),
+            "recent~2" | "RECENT~2" => Ok(History::Recent2),
             _ => Err(anyhow!("failed to parse history from: {}", s)),
         }
     }

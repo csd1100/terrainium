@@ -423,28 +423,29 @@ impl Display for TerrainState {
         let mut result = String::new();
         let terrain = format!(
             "{}: {} ({})\n",
-            "Terrain".style(Style::new().bright_green()),
-            self.terrain_name.style(Style::new().bright_white().bold()),
-            self.biome_name.style(Style::new().italic())
+            "Terrain".style(Style::new().bright_white()),
+            self.terrain_name
+                .style(Style::new().bright_magenta().bold()),
+            self.biome_name.style(Style::new().magenta().italic())
         );
         let session_id = format!(
             "{}: {}\n",
-            "SessionId".style(Style::new().bright_green()),
-            self.session_id.style(Style::new().bright_white())
+            "SessionId".style(Style::new().bright_white()),
+            self.session_id.style(Style::new().bright_blue())
         );
         let toml_path = format!(
             "{}: {}\n",
-            "TOML".style(Style::new().bright_yellow()),
-            self.toml_path.style(Style::new().bright_white())
+            "TOML".style(Style::new().bright_white()),
+            self.toml_path.style(Style::new().bright_green())
         );
         let start_timestamp = format!(
             "{}: {}\n",
-            "Started".style(Style::new().bright_cyan()),
+            "Started".style(Style::new().bright_white()),
             self.start_timestamp.style(Style::new().bright_white())
         );
         let end_timestamp = format!(
             "{}: {}\n",
-            "Ended".style(Style::new().bright_blue()),
+            "Ended".style(Style::new().bright_white()),
             self.end_timestamp.style(Style::new().bright_white())
         );
         let execution_context = format!("{}", self.execute_context);
@@ -463,7 +464,7 @@ impl Display for ExecutionContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
 
-        let constructor_header_style = Style::new().bright_cyan().bold();
+        let constructor_header_style = Style::new().bright_white();
         let constructor_header = "Constructors:\n"
             .style(constructor_header_style)
             .to_string();
@@ -475,7 +476,7 @@ impl Display for ExecutionContext {
                 acc
             });
 
-        let destructor_header_style = Style::new().bright_blue().bold();
+        let destructor_header_style = Style::new().bright_white();
         let destructor_header = "Destructors:\n".style(destructor_header_style).to_string();
         let destructors = self
             .destructors_state
@@ -498,7 +499,7 @@ impl Display for CommandState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         let command = format!(" {} {}\n", self.status, self.command);
-        let logs = format!("  󰘍 {}", self.log_path.style(Style::new().yellow()));
+        let logs = format!("  󰘍 {}", self.log_path.style(Style::new().bright_yellow()));
 
         result.push_str(&command);
         result.push_str(&logs);
