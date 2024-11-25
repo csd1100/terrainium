@@ -20,7 +20,7 @@ pub fn handle(context: Context) -> Result<()> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{
@@ -46,6 +46,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -80,6 +81,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");

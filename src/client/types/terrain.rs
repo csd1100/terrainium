@@ -297,7 +297,7 @@ impl Default for Terrain {
 }
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;

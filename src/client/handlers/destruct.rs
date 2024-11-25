@@ -45,6 +45,7 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let exe = env::args().next().unwrap();
@@ -92,6 +93,7 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let exe = env::args().next().unwrap();
@@ -150,6 +152,7 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();

@@ -48,7 +48,7 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub(crate) mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{
@@ -56,7 +56,7 @@ pub(crate) mod test {
         WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
         WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
     };
-    use crate::common::run::test::{restore_env_var, set_env_var};
+    use crate::common::run::tests::{restore_env_var, set_env_var};
     use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
@@ -105,6 +105,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -163,6 +164,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
@@ -194,6 +196,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         ))
         .expect_err("expected to get error")
         .to_string();
@@ -241,6 +244,7 @@ pub(crate) mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");

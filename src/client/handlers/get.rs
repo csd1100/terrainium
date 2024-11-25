@@ -175,7 +175,7 @@ fn templates() -> BTreeMap<String, String> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
@@ -196,6 +196,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -235,6 +236,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -273,6 +275,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -312,6 +315,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -349,6 +353,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -386,6 +391,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -422,6 +428,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -459,6 +466,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -496,6 +504,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -532,6 +541,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -569,6 +579,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -606,6 +617,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -643,6 +655,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -681,6 +694,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -719,6 +733,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -759,6 +774,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -800,6 +816,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -838,6 +855,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -876,6 +894,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -916,6 +935,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -956,6 +976,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
@@ -996,6 +1017,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");

@@ -77,7 +77,7 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
@@ -115,6 +115,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -156,6 +157,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let err = super::handle(
@@ -207,6 +209,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -273,6 +276,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -329,6 +333,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -379,6 +384,7 @@ mod test {
             current_dir.path().into(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         let err = super::handle(
@@ -431,6 +437,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -488,6 +495,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
@@ -536,6 +544,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(expected_shell_operation),
+            PathBuf::new(),
         );
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");

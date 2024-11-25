@@ -1,14 +1,12 @@
 use crate::client::args::History;
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
-use crate::common::constants::TERRAINIUMD_SOCKET;
 use crate::common::types::pb;
 use crate::common::types::pb::Error;
 use crate::common::types::socket::Socket;
 use crate::common::types::terrain_state::TerrainState;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
-use std::path::PathBuf;
 
 impl From<History> for i32 {
     fn from(value: History) -> Self {
@@ -29,7 +27,9 @@ pub async fn handle(
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(context.socket_path())
+            .await
+            .context("failed to connect to daemon. check if `terrainiumd` is running")?
     };
 
     let terrain_name = context.name();
@@ -63,4 +63,30 @@ pub async fn handle(
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::client::args::History;
+    use crate::client::shell::Zsh;
+    use crate::client::types::context::Context;
+    use crate::common::run::MockCommandToRun;
+    use std::path::PathBuf;
+
+    #[tokio::test]
+    async fn throws_error_if_terrainiumd_is_not_running() {
+        let terrainiumd_dir = tempfile::tempdir().unwrap();
+
+        let context = Context::build(
+            PathBuf::new(),
+            PathBuf::new(),
+            Zsh::build(MockCommandToRun::default()),
+            terrainiumd_dir.path().join("socket"),
+        );
+
+        let err = super::handle(context, false, None, History::Recent)
+            .await.expect_err("Expected an error");
+
+        assert_eq!(err.to_string(), "failed to connect to daemon. check if `terrainiumd` is running");
+    }
 }

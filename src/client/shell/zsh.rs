@@ -232,7 +232,7 @@ impl Zsh {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::shell::{Shell, Zsh};
     use crate::client::types::terrain::Terrain;
     use crate::common::run::MockCommandToRun;

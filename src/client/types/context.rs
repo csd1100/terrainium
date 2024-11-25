@@ -1,6 +1,7 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SESSION_ID,
+    INIT_SCRIPT_NAME, TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_NAME,
+    TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
@@ -16,6 +17,7 @@ pub struct Context {
     current_dir: PathBuf,
     central_dir: PathBuf,
     shell: Zsh,
+    socket_path: PathBuf,
 }
 
 const TERRAIN_TOML: &str = "terrain.toml";
@@ -63,6 +65,7 @@ impl Context {
                 env::current_dir().expect("failed to get current directory"),
             ),
             shell: Zsh::get(),
+            socket_path: PathBuf::from(TERRAINIUMD_SOCKET),
         }
     }
 
@@ -175,28 +178,40 @@ impl Context {
         terrainium_envs
     }
 
+    pub(crate) fn socket_path(&self) -> PathBuf {
+        self.socket_path.clone()
+    }
+
     #[cfg(test)]
     pub(crate) fn build_with_session_id(
         current_dir: PathBuf,
         central_dir: PathBuf,
         shell: Zsh,
         session_id: String,
+        socket_path: PathBuf,
     ) -> Self {
         Context {
             session_id,
             current_dir,
             central_dir,
             shell,
+            socket_path,
         }
     }
 
     #[cfg(test)]
-    pub(crate) fn build(current_dir: PathBuf, central_dir: PathBuf, shell: Zsh) -> Self {
+    pub(crate) fn build(
+        current_dir: PathBuf,
+        central_dir: PathBuf,
+        shell: Zsh,
+        socket_path: PathBuf,
+    ) -> Self {
         Context {
             session_id: "".to_string(),
             current_dir,
             central_dir,
             shell,
+            socket_path,
         }
     }
 
@@ -209,6 +224,7 @@ impl Context {
                 env::current_dir().expect("failed to get current directory"),
             ),
             shell,
+            socket_path: PathBuf::from(TERRAINIUMD_SOCKET),
         }
     }
 }
@@ -228,10 +244,12 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_NAME, TERRAIN_SESSION_ID};
+    use crate::common::constants::{
+        TERRAINIUMD_SOCKET, TERRAINIUM_EXECUTABLE, TERRAIN_NAME, TERRAIN_SESSION_ID,
+    };
     use crate::common::run::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -326,6 +344,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         assert_eq!(
@@ -355,6 +374,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         assert_eq!(
@@ -385,6 +405,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         );
 
         assert_eq!(context.central_toml_path(), expected_terrain_toml);
@@ -408,6 +429,7 @@ mod test {
             current_dir.path().into(),
             central_dir.path().into(),
             Zsh::build(MockCommandToRun::default()),
+            PathBuf::new(),
         )
         .toml_path()
         .expect_err("to error to be thrown")
@@ -450,6 +472,12 @@ mod test {
     fn name_return_current_dir_name() {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
         assert_eq!(context.name(), "terrainium");
+    }
+
+    #[test]
+    fn socket_path_returns_socket_path() {
+        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
+        assert_eq!(context.socket_path(), PathBuf::from(TERRAINIUMD_SOCKET));
     }
 
     fn get_central_dir_location() -> PathBuf {

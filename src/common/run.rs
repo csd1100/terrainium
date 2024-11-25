@@ -190,7 +190,7 @@ mock! {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub(crate) mod tests {
     use crate::common::run::{CommandToRun, Execute};
     use anyhow::Result;
     use std::collections::BTreeMap;

@@ -69,7 +69,7 @@ pub async fn handle(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
@@ -81,6 +81,7 @@ mod test {
     use crate::common::types::pb::ExecuteResponse;
     use prost_types::Any;
     use std::env;
+    use std::path::PathBuf;
     use tempfile::tempdir;
     use tokio::fs::copy;
 
@@ -144,6 +145,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -254,6 +256,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -335,6 +338,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -415,6 +419,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -526,6 +531,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -631,6 +637,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(
@@ -712,6 +719,7 @@ mod test {
             central_dir.path().into(),
             Zsh::build(expected_shell_operations),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         copy(

@@ -52,7 +52,7 @@ mod tests {
         DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME,
         TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
-    use crate::common::run::test::{restore_env_var, set_env_var};
+    use crate::common::run::tests::{restore_env_var, set_env_var};
     use crate::common::run::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::ExecuteResponse;
@@ -92,6 +92,7 @@ mod tests {
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         let exe = env::args().next().unwrap();
@@ -154,6 +155,7 @@ mod tests {
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         let exe = env::args().next().unwrap();
@@ -226,6 +228,7 @@ mod tests {
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
@@ -264,6 +267,7 @@ mod tests {
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         let exe = env::args().next().unwrap();
@@ -333,6 +337,7 @@ mod tests {
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
             "some_session_id".into(),
+            PathBuf::new(),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
