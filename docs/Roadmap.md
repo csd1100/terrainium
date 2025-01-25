@@ -12,8 +12,9 @@
 - Look into github actions
 - Create 0.1.0
 
+
 - Add support to look for terrain in parent directories till home
 - Add support for creating user scripts in central dir
 - Add support for fish shell
 - Update docs
-- Create 0.2.0
+- Create 0.1.1

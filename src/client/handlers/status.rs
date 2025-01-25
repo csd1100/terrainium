@@ -1,4 +1,5 @@
 use crate::client::args::History;
+#[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::types::pb;
@@ -23,7 +24,13 @@ pub async fn handle(
     json: bool,
     client: Option<Client>,
     history: History,
-) -> Result<()> {
+) -> Result<String> {
+    if context.session_id().is_empty() && !context.toml_exists() {
+        return Err(anyhow!(
+            "terrain.toml does not exists, run `terrainium init` to initialize terrain."
+        ));
+    }
+
     let mut client = if let Some(client) = client {
         client
     } else {
@@ -51,42 +58,82 @@ pub async fn handle(
 
     if let Ok(status) = status_response {
         let status: TerrainState = status.into();
-        status.render(json).context("status to be rendered")?;
+        Ok(status.rendered(json))
     } else {
         let error: Error = response
             .to_msg()
             .context("failed to convert to error from Any")?;
 
-        return Err(anyhow!(
+        Err(anyhow!(
             "error response from daemon {}",
             error.error_message
-        ));
+        ))
     }
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use crate::client::args::History;
     use crate::client::shell::Zsh;
+    use crate::client::types::client::MockClient;
     use crate::client::types::context::Context;
     use crate::common::run::MockCommandToRun;
+    use anyhow::anyhow;
     use std::path::PathBuf;
 
     #[tokio::test]
-    async fn throws_error_if_terrainiumd_is_not_running() {
+    async fn throws_error_if_no_terrainiumd_socket() {
         let terrainiumd_dir = tempfile::tempdir().unwrap();
-
+        let socket_path = terrainiumd_dir.path().join("socket");
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
+            socket_path.clone(),
+        );
+
+        let mock_client = MockClient::new_context();
+        mock_client
+            .expect()
+            .withf(|_| true)
+            .times(1)
+            .return_once(move |_| {
+                Err(anyhow!(
+                    "Daemon Socket does not exist: {}",
+                    socket_path.display()
+                ))
+            });
+
+        let err = super::handle(context, false, None, History::Recent)
+            .await
+            .expect_err("Expected an error");
+
+        assert_eq!(
+            err.to_string(),
+            "failed to connect to daemon. check if `terrainiumd` is running"
+        );
+    }
+
+    #[tokio::test]
+    async fn throws_error_if_no_active_terrain_outside_terrain_dir() {
+        let terrainiumd_dir = tempfile::tempdir().unwrap();
+        let current_dir = tempfile::tempdir().unwrap();
+        let central_dir = tempfile::tempdir().unwrap();
+
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            Zsh::build(MockCommandToRun::default()),
             terrainiumd_dir.path().join("socket"),
         );
 
-        let err = super::handle(context, false, None, History::Recent)
-            .await.expect_err("Expected an error");
+        let err = super::handle(context, false, Some(MockClient::default()), History::Recent)
+            .await
+            .expect_err("Expected an error");
 
-        assert_eq!(err.to_string(), "failed to connect to daemon. check if `terrainiumd` is running");
+        assert_eq!(
+            err.to_string(),
+            "terrain.toml does not exists, run `terrainium init` to initialize terrain."
+        );
     }
 }

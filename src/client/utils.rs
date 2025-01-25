@@ -458,3 +458,5 @@ impl<'a> AssertTerrain<'a> {
         self
     }
 }
+
+struct AssertStatusRequest {}

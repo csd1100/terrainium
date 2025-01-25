@@ -92,7 +92,8 @@ async fn main() -> Result<()> {
             }
 
             Verbs::Status { json, history } => {
-                status::handle(context, json, None, history).await?;
+                let output = status::handle(context, json, None, history).await?;
+                println!("{}", output);
             }
 
             Verbs::Exit => exit::handle(context, None).await?,
