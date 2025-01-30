@@ -5,11 +5,15 @@
   "required": [
     "auto_apply",
     "biomes",
+    "name",
     "terrain"
   ],
   "properties": {
     "schema": {
       "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json",
+      "type": "string"
+    },
+    "name": {
       "type": "string"
     },
     "auto_apply": {

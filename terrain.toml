@@ -1,10 +1,11 @@
 "$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+name = "terrainium"
 default_biome = "test"
 
 [auto_apply]
 enabled = true
 background = false
-replace = false
+replace = true
 
 [terrain.envs]
 TERRAINIUM_DEV = "false"

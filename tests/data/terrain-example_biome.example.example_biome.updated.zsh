@@ -35,6 +35,12 @@ function terrainium_enter() {
     terrainium_shell_constructor
 }
 
+function terrain_prompt() {
+    if [ "$TERRAIN_ENABLED" = "true" ]; then
+        echo "terrainium(example_biome)"
+    fi
+}
+
 function terrainium_exit() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         builtin exit
