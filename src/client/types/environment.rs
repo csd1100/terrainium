@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
+    name: String,
     default_biome: Option<String>,
     selected_biome: String,
     auto_apply: AutoApply,
@@ -26,6 +27,7 @@ impl Environment {
         });
 
         Ok(Environment {
+            name: terrain.name().clone(),
             default_biome: terrain.default_biome().clone(),
             selected_biome: selected,
             auto_apply: terrain.auto_apply().clone(),
@@ -56,6 +58,7 @@ impl Environment {
     #[cfg(test)]
     pub fn build(default_biome: Option<String>, selected_biome: String, merged: &Biome) -> Self {
         Environment {
+            name: "terrainium".to_string(),
             default_biome,
             selected_biome,
             auto_apply: AutoApply::default(),

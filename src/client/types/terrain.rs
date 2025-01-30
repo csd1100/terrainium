@@ -14,6 +14,7 @@ pub struct Terrain {
     #[serde(default = "schema_url", rename(serialize = "$schema"))]
     schema: String,
 
+    name: String,
     auto_apply: AutoApply,
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
@@ -107,7 +108,16 @@ impl Terrain {
         default_biome: Option<String>,
         auto_apply: AutoApply,
     ) -> Self {
+        let name = std::env::current_dir()
+            .expect("failed to get current directory")
+            .file_name()
+            .expect("failed to get current directory name")
+            .to_str()
+            .expect("failed to convert directory name to string")
+            .to_string();
+
         Terrain {
+            name,
             schema: schema_url(),
             auto_apply,
             terrain,
@@ -118,6 +128,10 @@ impl Terrain {
 
     pub fn default_biome(&self) -> &Option<String> {
         &self.default_biome
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
     pub fn terrain(&self) -> &Biome {
