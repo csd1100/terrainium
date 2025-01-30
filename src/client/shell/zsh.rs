@@ -25,7 +25,7 @@ const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.
 const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
 const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
 
-const ZSH_INIT_RC: &str = include_str!("../../../scripts/rc_contents");
+const ZSH_INIT_RC: &str = "source \"$HOME/.config/terrainium/terrainium_init.zsh\"";
 
 impl Shell for Zsh {
     fn get() -> Self {
@@ -300,7 +300,7 @@ mod test {
             .update_rc(Some(temp_dir.path().join(".zshrc")))
             .unwrap();
 
-        let expected = "\nsource \"$HOME/.config/terrainium/terrainium_init\"";
+        let expected = "source \"$HOME/.config/terrainium/terrainium_init.zsh\"";
         assert_eq!(
             expected,
             fs::read_to_string(temp_dir.path().join(".zshrc")).unwrap()

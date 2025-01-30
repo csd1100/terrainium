@@ -23,7 +23,7 @@ const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
-const INIT_SCRIPT: &str = include_str!("../../../scripts/terrainium_init");
+const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
 
 impl Default for Context {
     fn default() -> Self {
@@ -50,7 +50,7 @@ impl Context {
             println!("!!!WARNING!!! init-script was outdated in config directory, copying newer script to config directory !!!WARNING!!!");
 
             let mut backup = Self::init_script().clone();
-            backup.set_extension(".bkp");
+            backup.set_extension("bkp");
 
             copy(Self::init_script(), backup).expect("failed to remove init-script");
             remove_file(Self::init_script()).expect("failed to remove init-script");
