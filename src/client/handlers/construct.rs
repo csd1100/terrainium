@@ -61,7 +61,10 @@ mod tests {
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
@@ -100,7 +103,10 @@ mod tests {
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
                     .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),

@@ -29,11 +29,13 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     let terrain =
         Terrain::from_toml(read_to_string(&toml_path).context("failed to read terrain.toml")?)
             .expect("terrain to be parsed from toml");
+    let environment =
+        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
 
     let mut result = String::new();
 
     if get_args.empty() {
-        result += &all(&terrain, &selected_biome)?;
+        result += &all(&environment)?;
         return Ok(result);
     }
 
@@ -43,40 +45,40 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     }
 
     if get_args.aliases {
-        result += &all_aliases(&terrain, &selected_biome)?;
+        result += &all_aliases(&environment)?;
     } else if !get_args.alias.is_empty() {
-        result += &alias(&get_args, &terrain, &selected_biome)?;
+        result += &alias(&get_args, &environment)?;
     }
 
     if get_args.envs {
-        result += &all_envs(&terrain, &selected_biome)?;
+        result += &all_envs(&environment)?;
     } else if !get_args.env.is_empty() {
-        result += &env(&get_args, &terrain, &selected_biome)?;
+        result += &env(&get_args, &environment)?;
     }
 
     if get_args.constructors {
-        result += &constructors(&terrain, &selected_biome)?;
+        result += &constructors(&environment)?;
     }
 
     if get_args.destructors {
-        result += &destructors(terrain, &selected_biome)?;
+        result += &destructors(&environment)?;
     }
 
     Ok(result)
 }
 
-fn destructors(terrain: Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let constructors = terrain.merged_destructors(selected_biome)?;
+fn destructors(environment: &Environment) -> Result<String> {
+    let destructors = environment.destructors();
     Ok(render(
         GET_DESTRUCTORS_TEMPLATE_NAME.to_string(),
         templates(),
-        constructors,
+        destructors,
     )
     .expect("failed to render envs in get template"))
 }
 
-fn constructors(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let constructors = terrain.merged_constructors(selected_biome)?;
+fn constructors(environment: &Environment) -> Result<String> {
+    let constructors = environment.constructors();
     Ok(render(
         GET_CONSTRUCTORS_TEMPLATE_NAME.to_string(),
         templates(),
@@ -85,8 +87,8 @@ fn constructors(terrain: &Terrain, selected_biome: &Option<String>) -> Result<St
     .expect("failed to render envs in get template"))
 }
 
-fn env(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let envs = terrain.merged_envs(selected_biome)?;
+fn env(get_args: &GetArgs, environment: &Environment) -> Result<String> {
+    let envs = environment.envs();
     let mut requested = BTreeMap::<String, String>::new();
 
     get_args.env.clone().iter().for_each(|env| {
@@ -103,8 +105,8 @@ fn env(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>) -
     )
 }
 
-fn alias(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let aliases = terrain.merged_aliases(selected_biome)?;
+fn alias(get_args: &GetArgs, environment: &Environment) -> Result<String> {
+    let aliases = environment.aliases();
     let mut requested = BTreeMap::<String, String>::new();
 
     get_args.alias.clone().iter().for_each(|alias| {
@@ -123,26 +125,23 @@ fn alias(get_args: &GetArgs, terrain: &Terrain, selected_biome: &Option<String>)
     .expect("failed to render aliases in get template"))
 }
 
-fn all_envs(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let envs = terrain.merged_envs(selected_biome)?;
+fn all_envs(environment: &Environment) -> Result<String> {
+    let envs = environment.envs();
     Ok(
         render(GET_ENVS_TEMPLATE_NAME.to_string(), templates(), envs)
             .expect("failed to render envs in get template"),
     )
 }
 
-fn all_aliases(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let aliases = terrain.merged_aliases(selected_biome)?;
+fn all_aliases(environment: &Environment) -> Result<String> {
+    let aliases = environment.aliases();
     Ok(
         render(GET_ALIASES_TEMPLATE_NAME.to_string(), templates(), aliases)
             .expect("failed to render aliases in get template"),
     )
 }
 
-fn all(terrain: &Terrain, selected_biome: &Option<String>) -> Result<String> {
-    let environment = Environment::from(terrain, selected_biome.clone())
-        .context("failed to generate environment from terrain")?;
-
+fn all(environment: &Environment) -> Result<String> {
     let res = environment
         .to_rendered(GET_MAIN_TEMPLATE_NAME.to_string(), templates())
         .expect("get output to be rendered");
@@ -175,7 +174,7 @@ fn templates() -> BTreeMap<String, String> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
@@ -330,7 +329,10 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n";
+        let expected = r#"Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+"#;
 
         assert_eq!(output, expected);
 
@@ -367,7 +369,10 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n";
+        let expected = r#"Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+"#;
 
         assert_eq!(output, expected);
 
@@ -440,7 +445,13 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
+        let expected = r#"Environment Variables:
+    EDITOR="nvim"
+    NULL_POINTER="$NULL"
+    PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
+"#;
 
         assert_eq!(output, expected);
 
@@ -477,7 +488,13 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
+        let expected = r#"Environment Variables:
+    EDITOR="nvim"
+    NULL_POINTER="$NULL"
+    PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
+"#;
 
         assert_eq!(output, expected);
 
@@ -550,7 +567,16 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\nEnvironment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
+        let expected = r#"Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+Environment Variables:
+    EDITOR="nvim"
+    NULL_POINTER="$NULL"
+    PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
+"#;
 
         assert_eq!(output, expected);
 
@@ -587,7 +613,10 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
+        let expected = r#"Environment Variables:
+    EDITOR="nvim"
+    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+"#;
 
         assert_eq!(output, expected);
 
@@ -624,7 +653,10 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n";
+        let expected = r#"Aliases:
+    non_existent="!!!DOES NOT EXIST!!!"
+    tenter="terrainium enter --biome example_biome"
+"#;
 
         assert_eq!(output, expected);
 
@@ -662,7 +694,13 @@ mod test {
 
         let output = super::get(context, args).expect("to not throw an error");
 
-        let expected = "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
+        let expected = r#"Constructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo entering terrain 
+        /bin/echo entering biome example_biome 
+"#;
 
         assert_eq!(output, expected);
 
@@ -700,7 +738,13 @@ mod test {
 
         let output = super::get(context, args).expect("to not throw an error");
 
-        let expected = "Destructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
+        let expected = r#"Destructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo exiting terrain 
+        /bin/echo exiting biome example_biome 
+"#;
 
         assert_eq!(output, expected);
 
@@ -738,9 +782,28 @@ mod test {
 
         let output = super::get(context, args).expect("to not throw an error");
 
-        let mut expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\nEnvironment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n".to_string();
-        expected += "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
-        expected += "Destructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
+        let expected = r#"Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+Environment Variables:
+    EDITOR="nvim"
+    NULL_POINTER="$NULL"
+    PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
+Constructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo entering terrain 
+        /bin/echo entering biome example_biome 
+Destructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo exiting terrain 
+        /bin/echo exiting biome example_biome 
+"#;
 
         assert_eq!(output, expected);
 
@@ -778,10 +841,25 @@ mod test {
 
         let output = super::get(context, args).expect("to not throw an error");
 
-        let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
-        expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
-        expected += "Constructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo entering terrain \n        /bin/echo entering biome example_biome \n";
-        expected += "Destructors:\n    background:\n        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec \n    foreground:\n        /bin/echo exiting terrain \n        /bin/echo exiting biome example_biome \n";
+        let expected = r#"Aliases:
+    non_existent="!!!DOES NOT EXIST!!!"
+    tenter="terrainium enter --biome example_biome"
+Environment Variables:
+    EDITOR="nvim"
+    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+Constructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo entering terrain 
+        /bin/echo entering biome example_biome 
+Destructors:
+    background:
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+    foreground:
+        /bin/echo exiting terrain 
+        /bin/echo exiting biome example_biome 
+"#;
 
         assert_eq!(output, expected);
 
@@ -818,8 +896,13 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let mut expected = "Aliases:\n    tenter=\"terrainium enter --biome example_biome\"\n    texit=\"terrainium exit\"\n".to_string();
-        expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    NON_EXISTENT=\"!!!DOES NOT EXIST!!!\"\n";
+        let expected = r#"Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
+Environment Variables:
+    EDITOR="nvim"
+    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+"#;
 
         assert_eq!(output, expected);
 
@@ -856,8 +939,16 @@ mod test {
         };
 
         let output = super::get(context, args).expect("to not throw an error");
-        let mut expected = "Aliases:\n    non_existent=\"!!!DOES NOT EXIST!!!\"\n    tenter=\"terrainium enter --biome example_biome\"\n".to_string();
-        expected += "Environment Variables:\n    EDITOR=\"nvim\"\n    PAGER=\"less\"\n";
+        let expected = r#"Aliases:
+    non_existent="!!!DOES NOT EXIST!!!"
+    tenter="terrainium enter --biome example_biome"
+Environment Variables:
+    EDITOR="nvim"
+    NULL_POINTER="$NULL"
+    PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
+"#;
 
         assert_eq!(output, expected);
 

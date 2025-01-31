@@ -12,7 +12,10 @@ function {
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
     export EDITOR="vim"
+    export NULL_POINTER="$NULL"
     export PAGER="less"
+    export POINTER="real_value"
+    export REAL="real_value"
     # USER DEFINED ENVS: END
 }
 

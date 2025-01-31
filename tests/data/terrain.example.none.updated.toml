@@ -9,7 +9,10 @@ replace = false
 
 [terrain.envs]
 EDITOR = "nano"
+NULL_POINTER = "$NULL"
 PAGER = "less"
+POINTER = "$REAL"
+REAL = "real_value"
 
 [terrain.aliases]
 greet = "echo hello"
@@ -32,6 +35,7 @@ args = ["exiting terrain"]
 
 [biomes.example_biome.envs]
 EDITOR = "nvim"
+REAL = "biome_value"
 
 [biomes.example_biome.aliases]
 tenter = "terrainium enter --biome example_biome"

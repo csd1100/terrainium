@@ -48,7 +48,7 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub(crate) mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{

@@ -1,4 +1,5 @@
 use crate::client::types::biome::Biome;
+use crate::client::types::commands::Commands;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
@@ -47,6 +48,22 @@ impl Environment {
         &self.merged
     }
 
+    pub fn envs(&self) -> BTreeMap<String, String> {
+        self.merged.envs().clone()
+    }
+
+    pub fn aliases(&self) -> BTreeMap<String, String> {
+        self.merged.aliases().clone()
+    }
+
+    pub fn constructors(&self) -> Commands {
+        self.merged.constructors().clone()
+    }
+
+    pub fn destructors(&self) -> Commands {
+        self.merged.destructors().clone()
+    }
+
     pub(crate) fn to_rendered(
         &self,
         main_template: String,
@@ -85,12 +102,12 @@ pub fn render<T: Serialize>(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
-    use crate::client::types::terrain::test::{
+    use crate::client::types::terrain::tests::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
     use crate::client::types::terrain::Terrain;
@@ -113,7 +130,7 @@ mod test {
     fn environment_from_example_but_no_default_or_selected() -> Result<()> {
         let mut terrain = Terrain::example();
         force_set_invalid_default_biome(&mut terrain, None);
-        let expected = Environment::build(None, "none".to_string(), terrain.terrain());
+        let expected = Environment::build(None, "none".to_string(), &terrain.terrain().get());
 
         assert_eq!(Environment::from(&terrain, None)?, expected);
 
@@ -124,7 +141,10 @@ mod test {
     fn environment_from_example_terrain_selected_biome() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
+        expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
+        expected_envs.insert("REAL".to_string(), "biome_value".to_string());
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),
@@ -194,7 +214,10 @@ mod test {
     fn environment_from_example_terrain_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
+        expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
+        expected_envs.insert("REAL".to_string(), "biome_value".to_string());
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),
@@ -264,7 +287,7 @@ mod test {
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
             "none".to_string(),
-            Terrain::example().terrain(),
+            &Terrain::example().terrain().get(),
         );
 
         let actual = Environment::from(&Terrain::example(), Some("none".to_string()))
@@ -289,7 +312,10 @@ mod test {
     fn environment_from_example_terrain_selected_biome_different_from_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nano".to_string());
+        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
+        expected_envs.insert("POINTER".to_string(), "real_value".to_string());
+        expected_envs.insert("REAL".to_string(), "real_value".to_string());
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),

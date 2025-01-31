@@ -20,7 +20,7 @@ pub fn handle(context: Context) -> Result<()> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{

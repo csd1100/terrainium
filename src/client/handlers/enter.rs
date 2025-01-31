@@ -4,6 +4,7 @@ use crate::client::shell::Shell;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED};
 use anyhow::{Context as AnyhowContext, Result};
@@ -22,8 +23,10 @@ pub async fn handle(
 
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;
+    let environment =
+        Environment::from(&terrain, biome).context("failed to generate environment")?;
 
-    let mut envs = terrain.merged_envs(&biome)?;
+    let mut envs = environment.envs();
     envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
     envs.append(&mut context.terrainium_envs().clone());
 
@@ -70,7 +73,7 @@ pub async fn handle(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
@@ -104,7 +107,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -122,7 +128,10 @@ mod test {
                     .with_arg("-i")
                     .with_arg("-s")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -164,7 +173,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -200,7 +212,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -219,7 +234,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "enabled")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -272,7 +290,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -291,7 +312,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "replaced")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -344,7 +368,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -363,7 +390,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -406,7 +436,10 @@ mod test {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -442,7 +475,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -461,7 +497,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -504,7 +543,10 @@ mod test {
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -605,7 +647,10 @@ mod test {
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
@@ -624,7 +669,10 @@ mod test {
                     .with_arg("-s")
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "$NULL")
                     .with_env("PAGER", "less")
+                    .with_env("POINTER", "biome_value")
+                    .with_env("REAL", "biome_value")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
                     .with_env(TERRAIN_ENABLED, "true")

@@ -5,7 +5,10 @@ Auto Apply:
     background: false
 Environment Variables:
     EDITOR="nvim"
+    NULL_POINTER="$NULL"
     PAGER="less"
+    POINTER="biome_value"
+    REAL="biome_value"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"

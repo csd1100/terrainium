@@ -41,8 +41,8 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 }
 
 #[cfg(test)]
-pub mod test {
-    use crate::client::handlers::edit::test::EDITOR;
+pub mod tests {
+    use crate::client::handlers::edit::tests::EDITOR;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{

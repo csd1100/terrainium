@@ -13,7 +13,10 @@ function {
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
     export EDITOR="nano"
+    export NULL_POINTER="$NULL"
     export PAGER="less"
+    export POINTER="biome_value"
+    export REAL="biome_value"
     # USER DEFINED ENVS: END
 }
 

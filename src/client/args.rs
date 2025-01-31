@@ -220,7 +220,7 @@ pub struct UpdateArgs {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
     use std::str::FromStr;
