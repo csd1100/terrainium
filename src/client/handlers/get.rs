@@ -446,6 +446,8 @@ mod tests {
 
         let output = super::get(context, args).expect("to not throw an error");
         let expected = r#"Environment Variables:
+    BIOME_POINTER="biome_real"
+    BIOME_REAL="biome_real"
     EDITOR="nvim"
     NULL_POINTER="$NULL"
     PAGER="less"
@@ -489,6 +491,8 @@ mod tests {
 
         let output = super::get(context, args).expect("to not throw an error");
         let expected = r#"Environment Variables:
+    BIOME_POINTER="biome_real"
+    BIOME_REAL="biome_real"
     EDITOR="nvim"
     NULL_POINTER="$NULL"
     PAGER="less"
@@ -571,6 +575,8 @@ mod tests {
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Environment Variables:
+    BIOME_POINTER="biome_real"
+    BIOME_REAL="biome_real"
     EDITOR="nvim"
     NULL_POINTER="$NULL"
     PAGER="less"
@@ -786,6 +792,8 @@ Environment Variables:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Environment Variables:
+    BIOME_POINTER="biome_real"
+    BIOME_REAL="biome_real"
     EDITOR="nvim"
     NULL_POINTER="$NULL"
     PAGER="less"
@@ -943,6 +951,8 @@ Environment Variables:
     non_existent="!!!DOES NOT EXIST!!!"
     tenter="terrainium enter --biome example_biome"
 Environment Variables:
+    BIOME_POINTER="biome_real"
+    BIOME_REAL="biome_real"
     EDITOR="nvim"
     NULL_POINTER="$NULL"
     PAGER="less"

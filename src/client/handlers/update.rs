@@ -310,8 +310,6 @@ mod tests {
         );
     }
 
-    // FIXME: update should not use substituted envs
-    #[ignore]
     #[test]
     fn update_main() {
         let current_dir = tempdir().expect("tempdir to be created");

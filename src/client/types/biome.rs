@@ -46,15 +46,6 @@ impl Biome {
         &self.destructors
     }
 
-    pub fn get(&self) -> Self {
-        Biome::new(
-            substitute_env(self.envs.clone()),
-            self.aliases.clone(),
-            self.constructors.clone(),
-            self.destructors.clone(),
-        )
-    }
-
     pub fn merge(&self, another: &Biome) -> Biome {
         Biome::new(
             self.append_envs(another),
@@ -93,7 +84,7 @@ impl Biome {
         let mut another_envs = another.envs.clone();
 
         envs.append(&mut another_envs);
-        substitute_env(envs)
+        envs
     }
 
     pub(crate) fn set_envs(&mut self, envs: BTreeMap<String, String>) {
@@ -102,6 +93,30 @@ impl Biome {
 
     pub(crate) fn set_aliases(&mut self, aliases: BTreeMap<String, String>) {
         self.aliases = aliases;
+    }
+
+    pub(crate) fn substitute_envs(&mut self) {
+        let substituted_envs: Vec<(String, String)> = self
+            .envs
+            .iter()
+            .map(|(key, value)| {
+                if value.starts_with("$") {
+                    let env = value.strip_prefix("$").unwrap();
+                    // get value from provided env map or process env variable
+                    let substituted_value = if let Some(val) = self.envs.get(env) {
+                        val.to_string()
+                    } else if let Ok(val) = std::env::var(env) {
+                        val
+                    } else {
+                        value.to_string()
+                    };
+                    return (key.clone(), substituted_value);
+                }
+                (key.clone(), value.clone())
+            })
+            .collect();
+
+        self.set_envs(BTreeMap::from_iter(substituted_envs));
     }
 
     pub fn example() -> Self {
@@ -133,27 +148,4 @@ impl Biome {
         );
         Biome::new(envs, aliases, constructors, destructors)
     }
-}
-
-pub(crate) fn substitute_env(envs: BTreeMap<String, String>) -> BTreeMap<String, String> {
-    let substituted_envs: Vec<(String, String)> = envs
-        .iter()
-        .map(|(key, value)| {
-            if value.starts_with("$") {
-                let env = value.strip_prefix("$").unwrap();
-                // get value from provided env map or process env variable
-                let substituted_value = if let Some(val) = envs.get(env) {
-                    val.to_string()
-                } else if let Ok(val) = std::env::var(env) {
-                    val
-                } else {
-                    value.to_string()
-                };
-                return (key.clone(), substituted_value);
-            }
-            (key.clone(), value.clone())
-        })
-        .collect();
-
-    BTreeMap::from_iter(substituted_envs)
 }

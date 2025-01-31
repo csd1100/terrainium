@@ -17,8 +17,8 @@ pub struct Environment {
 
 impl Environment {
     pub fn from(terrain: &Terrain, selected_biome: Option<String>) -> Result<Self> {
-        let merged: Biome = terrain.merged(&selected_biome)?;
-
+        let mut merged: Biome = terrain.merged(&selected_biome)?;
+        merged.substitute_envs();
         let selected = selected_biome.unwrap_or_else(|| {
             if terrain.default_biome().is_none() {
                 "none".to_string()
@@ -130,7 +130,9 @@ mod tests {
     fn environment_from_example_but_no_default_or_selected() -> Result<()> {
         let mut terrain = Terrain::example();
         force_set_invalid_default_biome(&mut terrain, None);
-        let expected = Environment::build(None, "none".to_string(), &terrain.terrain().get());
+        terrain.terrain_mut().substitute_envs();
+
+        let expected = Environment::build(None, "none".to_string(), &terrain.terrain());
 
         assert_eq!(Environment::from(&terrain, None)?, expected);
 
@@ -140,6 +142,8 @@ mod tests {
     #[test]
     fn environment_from_example_terrain_selected_biome() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
+        expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
@@ -213,6 +217,8 @@ mod tests {
     #[test]
     fn environment_from_example_terrain_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
+        expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
@@ -284,10 +290,13 @@ mod tests {
 
     #[test]
     fn environment_from_example_terrain_none_selected() -> Result<()> {
+        let mut terrain = Terrain::example();
+        terrain.terrain_mut().substitute_envs();
+
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
             "none".to_string(),
-            &Terrain::example().terrain().get(),
+            terrain.terrain(),
         );
 
         let actual = Environment::from(&Terrain::example(), Some("none".to_string()))

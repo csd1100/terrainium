@@ -12,7 +12,7 @@ function {
     alias texit="terrainium exit"
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
-    export EDITOR="vim"
+    export EDITOR="nano"
     export NULL_POINTER="$NULL"
     export PAGER="less"
     export POINTER="real_value"
