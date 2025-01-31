@@ -5,6 +5,7 @@ use crate::common::types::pb::ExecuteRequest;
 use prost_types::Any;
 use std::cmp::PartialEq;
 use std::collections::BTreeMap;
+use std::env::VarError;
 use std::fs::read_to_string;
 use std::os::unix::prelude::ExitStatusExt;
 use std::path::Path;
@@ -254,24 +255,27 @@ impl ExpectShell {
         self
     }
 
-    pub fn compile_script_for(self, biome_name: &str, central_dir: &Path) -> Self {
+    pub fn compile_script_for(self, script_path: &Path, compiled_path: &Path) -> Self {
         self.execute(
             RunCommand::with_exe("/bin/zsh")
                 .with_arg("-c")
                 .with_arg(&format!(
                     "zcompile -URz {} {}",
-                    central_dir
-                        .join("scripts")
-                        .join(format!("terrain-{}.zwc", &biome_name))
-                        .to_str()
-                        .unwrap(),
-                    central_dir
-                        .join("scripts")
-                        .join(format!("terrain-{}.zsh", &biome_name))
-                        .to_str()
-                        .unwrap(),
+                    compiled_path.display(),
+                    script_path.display(),
                 ))
                 .with_no_envs(),
+        )
+    }
+
+    pub fn compile_terrain_script_for(self, biome_name: &str, central_dir: &Path) -> Self {
+        self.compile_script_for(
+            &central_dir
+                .join("scripts")
+                .join(format!("terrain-{}.zsh", &biome_name)),
+            &central_dir
+                .join("scripts")
+                .join(format!("terrain-{}.zwc", &biome_name)),
         )
     }
 
@@ -456,5 +460,30 @@ impl<'a> AssertTerrain<'a> {
         );
 
         self
+    }
+}
+
+pub fn set_env_var(key: String, value: Option<String>) -> std::result::Result<String, VarError> {
+    // FIX: the tests run in parallel so setting same env var will cause tests to fail
+    // as env var is not reset yet
+    let orig_env = std::env::var(&key);
+    if let Some(val) = value {
+        std::env::set_var(&key, val);
+    } else {
+        std::env::remove_var(&key);
+    }
+
+    orig_env
+}
+
+pub fn restore_env_var(key: String, orig_env: anyhow::Result<String, VarError>) {
+    // FIX: the tests run in parallel so restoring env vars won't help if vars have same key
+    if let Ok(orig_var) = orig_env {
+        std::env::set_var(&key, &orig_var);
+        assert!(std::env::var(&key).is_ok());
+        assert_eq!(orig_var, std::env::var(&key).expect("var to be present"));
+    } else {
+        std::env::remove_var(&key);
+        assert!(std::env::var(&key).is_err());
     }
 }

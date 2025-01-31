@@ -52,11 +52,10 @@ pub(crate) mod test {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{
-        AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
+        restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
         WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
         WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
     };
-    use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
@@ -97,8 +96,8 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when edit
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -155,8 +154,8 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -233,8 +232,8 @@ pub(crate) mod test {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context: Context = Context::build(

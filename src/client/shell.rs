@@ -13,6 +13,8 @@ pub mod zsh;
 pub(crate) trait Shell: Debug + PartialEq {
     fn get() -> Self;
     fn runner(&self) -> CommandToRun;
+    fn get_init_rc_contents() -> String;
+    fn setup_integration(&self) -> Result<()>;
     fn update_rc(&self, path: Option<PathBuf>) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;

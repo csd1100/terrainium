@@ -154,15 +154,15 @@ mock! {
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::client::utils;
     use crate::common::execute::{CommandToRun, Execute};
     use anyhow::Result;
     use std::collections::BTreeMap;
-    use std::env::VarError;
 
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {
         let test_var = "TEST_VAR".to_string();
-        let orig_env = set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
+        let orig_env = utils::set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
 
         let run = CommandToRun::new(
             "/bin/bash".to_string(),
@@ -177,7 +177,7 @@ pub(crate) mod test {
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        restore_env_var(test_var.clone(), orig_env);
+        utils::restore_env_var(test_var.clone(), orig_env);
 
         Ok(())
     }
@@ -187,8 +187,8 @@ pub(crate) mod test {
         let test_var1: String = "TEST_VAR1".to_string();
         let test_var2 = "TEST_VAR2".to_string();
 
-        let orig_env1 = set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
-        let orig_env2 = set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
+        let orig_env1 = utils::set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
+        let orig_env2 = utils::set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(test_var1.clone(), "NEW_VALUE1".to_string());
@@ -209,8 +209,8 @@ pub(crate) mod test {
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        restore_env_var(test_var1, orig_env1);
-        restore_env_var(test_var2, orig_env2);
+        utils::restore_env_var(test_var1, orig_env1);
+        utils::restore_env_var(test_var2, orig_env2);
 
         Ok(())
     }
@@ -260,33 +260,5 @@ pub(crate) mod test {
         assert_eq!(0, output.code().expect("to be present"));
 
         Ok(())
-    }
-
-    pub fn set_env_var(
-        key: String,
-        value: Option<String>,
-    ) -> std::result::Result<String, VarError> {
-        // FIX: the tests run in parallel so setting same env var will cause tests to fail
-        // as env var is not reset yet
-        let orig_env = std::env::var(&key);
-        if let Some(val) = value {
-            std::env::set_var(&key, val);
-        } else {
-            std::env::remove_var(&key);
-        }
-
-        orig_env
-    }
-
-    pub fn restore_env_var(key: String, orig_env: Result<String, VarError>) {
-        // FIX: the tests run in parallel so restoring env vars won't help if vars have same key
-        if let Ok(orig_var) = orig_env {
-            std::env::set_var(&key, &orig_var);
-            assert!(std::env::var(&key).is_ok());
-            assert_eq!(orig_var, std::env::var(&key).expect("var to be present"));
-        } else {
-            std::env::remove_var(&key);
-            assert!(std::env::var(&key).is_err());
-        }
     }
 }

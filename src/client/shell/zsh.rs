@@ -3,9 +3,9 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, ZSH_ALIASES_TEMPLATE_NAME,
-    ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
-    ZSH_MAIN_TEMPLATE_NAME,
+    FPATH, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+    TERRAIN_SELECTED_BIOME, ZSH_ALIASES_TEMPLATE_NAME, ZSH_CONSTRUCTORS_TEMPLATE_NAME,
+    ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME, ZSH_MAIN_TEMPLATE_NAME,
 };
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
@@ -14,6 +14,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::fs;
+use std::fs::{copy, exists, read_to_string, remove_file, write};
 use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
@@ -25,7 +26,8 @@ const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.
 const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
 const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
 
-const ZSH_INIT_RC: &str = "source \"$HOME/.config/terrainium/terrainium_init.zsh\"";
+pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
+const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
 
 impl Shell for Zsh {
     fn get() -> Self {
@@ -39,16 +41,51 @@ impl Shell for Zsh {
         self.runner.clone()
     }
 
+    fn get_init_rc_contents() -> String {
+        format!(
+            r#"
+source "$HOME/.config/terrainium/shell_integration/{}"
+"#,
+            ZSH_INIT_SCRIPT_NAME
+        )
+    }
+
+    fn setup_integration(&self) -> Result<()> {
+        let init_script_location = Context::config_dir()
+            .join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR)
+            .join(ZSH_INIT_SCRIPT_NAME);
+
+        if !exists(&init_script_location).expect("failed to check if init-script exists") {
+            println!("WARNING - init-script not found in config directory, copying script to config directory");
+            write(&init_script_location, INIT_SCRIPT).expect("failed to create init-script file");
+        } else if read_to_string(&init_script_location).expect("failed to read init-script")
+            != INIT_SCRIPT
+        {
+            let mut backup = init_script_location.clone();
+            backup.set_extension("bkp");
+
+            copy(&init_script_location, backup).expect("failed to remove init-script");
+            remove_file(&init_script_location).expect("failed to remove init-script");
+            println!("WARNING - init-script was outdated in config directory, copying newer script to config directory");
+            write(&init_script_location, INIT_SCRIPT).expect("failed to create init-script file");
+        }
+
+        let mut compiled_path = init_script_location.clone();
+        compiled_path.set_extension("zsh.zwc");
+
+        self.compile_script(&init_script_location, &compiled_path)
+    }
+
     fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
         let path = path.unwrap_or_else(|| home_dir().expect("cannot get home dir").join(".zshrc"));
-        let rc = fs::read_to_string(&path).context("failed to read rc")?;
-        if !rc.contains(ZSH_INIT_RC) {
+        let rc = read_to_string(&path).context("failed to read rc")?;
+        if !rc.contains(&Self::get_init_rc_contents()) {
             let rc_file = fs::OpenOptions::new()
                 .append(true)
                 .open(&path)
                 .context("failed to open rc");
             rc_file?
-                .write_all(ZSH_INIT_RC.as_bytes())
+                .write_all(Self::get_init_rc_contents().as_bytes())
                 .context("failed to write rc")?;
         }
         Ok(())
@@ -194,7 +231,7 @@ impl Zsh {
             .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
             .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
 
-        fs::write(script_path, script)
+        write(script_path, script)
             .context(format!("failed to write script to path {:?}", script_path))?;
 
         Ok(())
@@ -300,7 +337,8 @@ mod test {
             .update_rc(Some(temp_dir.path().join(".zshrc")))
             .unwrap();
 
-        let expected = "source \"$HOME/.config/terrainium/terrainium_init.zsh\"";
+        let expected =
+            "\nsource \"$HOME/.config/terrainium/shell_integration/terrainium_init.zsh\"\n";
         assert_eq!(
             expected,
             fs::read_to_string(temp_dir.path().join(".zshrc")).unwrap()
