@@ -24,29 +24,23 @@ const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
-impl Default for Context {
-    fn default() -> Self {
-        Self::generate()
-    }
-}
-
 impl Context {
-    pub fn generate() -> Self {
+    pub fn generate(home_dir: &Path) -> Self {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
         let shell = Zsh::get();
 
         let shell_integration_scripts_dir =
-            Self::config_dir().join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR);
+            Self::config_dir(home_dir).join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR);
         if !exists(&shell_integration_scripts_dir)
             .expect("failed to check if config and shell integration scripts directory exists")
         {
-            create_dir_all(shell_integration_scripts_dir)
+            create_dir_all(&shell_integration_scripts_dir)
                 .expect("failed to create config directory");
         }
 
         shell
-            .setup_integration()
+            .setup_integration(&shell_integration_scripts_dir)
             .expect("failed to setup shell integration");
 
         Context {
@@ -71,10 +65,8 @@ impl Context {
         &self.central_dir
     }
 
-    pub fn config_dir() -> PathBuf {
-        home_dir()
-            .expect("failed to get home directory")
-            .join(CONFIG_LOCATION)
+    pub fn config_dir(home_dir: &Path) -> PathBuf {
+        home_dir.join(CONFIG_LOCATION)
     }
 
     pub fn name(&self) -> String {
@@ -198,7 +190,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::client::utils::{restore_env_var, set_env_var, ExpectShell};
+    use crate::client::utils::ExpectShell;
     use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -214,10 +206,6 @@ mod test {
     #[test]
     fn new_creates_context() -> Result<()> {
         let home_dir = tempfile::tempdir()?;
-        let orig_home = set_env_var(
-            "HOME".to_string(),
-            Some(home_dir.path().display().to_string()),
-        );
 
         let current_dir = env::current_dir().expect("failed to get current directory");
         let central_dir = get_central_dir_location();
@@ -239,14 +227,13 @@ mod test {
             .withf(|exe, args, envs| exe == "/bin/zsh" && args.is_empty() && envs.is_none())
             .return_once(move |_, _, _| expected_shell_operation);
 
-        let actual = Context::generate();
+        let actual = Context::generate(home_dir.path());
         assert_eq!(current_dir, actual.current_dir);
         assert_eq!(central_dir, actual.central_dir);
 
         assert!(exists(&zsh_integration_script)
             .expect("failed to check if shell integration script created"));
 
-        restore_env_var("HOME".to_string(), orig_home);
         Ok(())
     }
 
