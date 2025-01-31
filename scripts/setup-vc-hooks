@@ -2,12 +2,6 @@
 
 REPO_DIR=$(git rev-parse --show-toplevel)
 
-if [ ! -e "$REPO_DIR/.git/hooks/pre-commit" ]; then
-    echo "setting up git pre-commit hook"
-    ln -s "$REPO_DIR/scripts/hooks/pre-commit" "$REPO_DIR/.git/hooks/pre-commit"
-    chmod +x "$REPO_DIR/.git/hooks/pre-commit"
-fi
-
 if [ ! -e "$REPO_DIR/.git/hooks/pre-push" ]; then
     echo "setting up git pre-push hook"
     ln -s "$REPO_DIR/scripts/hooks/pre-push" "$REPO_DIR/.git/hooks/pre-push"

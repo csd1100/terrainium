@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-
-cargo fmt
-cargo clippy --allow-staged --fix
-cargo check
