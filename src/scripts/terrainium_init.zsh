@@ -11,7 +11,7 @@ if [ "$TERRAIN_ENABLED" = "true" ]; then
     terrainium_enter
 fi
 
-function terrainium_chpwd_functions() {
+function __terrainium_auto_apply() {
     if [ "$TERRAIN_ENABLED" != "true" ]; then
         auto_apply="$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)"
         if [ $? != 0 ]; then
@@ -25,4 +25,9 @@ function terrainium_chpwd_functions() {
     fi
 }
 
-chpwd_functions=(terrainium_chpwd_functions $chpwd_functions)
+function __terrainium_chpwd_functions() {
+    __terrainium_auto_apply
+}
+
+chpwd_functions=(__terrainium_chpwd_functions $chpwd_functions)
+__terrainium_auto_apply

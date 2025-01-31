@@ -62,7 +62,7 @@ source "$HOME/.config/terrainium/shell_integration/{}"
             != INIT_SCRIPT
         {
             let mut backup = init_script_location.clone();
-            backup.set_extension("bkp");
+            backup.set_extension("zsh.bkp");
 
             copy(&init_script_location, backup).expect("failed to remove init-script");
             remove_file(&init_script_location).expect("failed to remove init-script");
