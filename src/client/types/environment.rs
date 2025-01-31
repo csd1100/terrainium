@@ -111,6 +111,7 @@ mod tests {
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
     use crate::client::types::terrain::Terrain;
+    use crate::client::utils::{restore_env_var, set_env_var};
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
@@ -149,6 +150,10 @@ mod tests {
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
         expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
+        expected_envs.insert(
+            "PROCESS_ENV_REF_VAR".to_string(),
+            "PROCESS_ENV_VALUE".to_string(),
+        );
         expected_envs.insert("REAL".to_string(), "biome_value".to_string());
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
@@ -207,11 +212,22 @@ mod tests {
                 expected_destructor,
             ),
         );
+        let mut terrain = Terrain::example();
+        terrain.terrain_mut().add_env((
+            "PROCESS_ENV_REF_VAR".to_string(),
+            "$PROCESS_ENV_VAR".to_string(),
+        ));
 
-        let actual = Environment::from(&Terrain::example(), Some("example_biome".to_string()))
+        let old_env = set_env_var(
+            "PROCESS_ENV_VAR".to_string(),
+            Some("PROCESS_ENV_VALUE".to_string()),
+        );
+
+        let actual = Environment::from(&terrain, Some("example_biome".to_string()))
             .expect("no error to be thrown");
-
         assert_eq!(actual, expected);
+
+        restore_env_var("PROCESS_ENV_VAR".to_string(), old_env);
         Ok(())
     }
 

@@ -152,4 +152,9 @@ impl Biome {
         );
         Biome::new(envs, aliases, constructors, destructors)
     }
+
+    #[cfg(test)]
+    pub(crate) fn add_env(&mut self, env: (String, String)) {
+        self.envs.insert(env.0, env.1);
+    }
 }
