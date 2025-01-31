@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use std::fs::{copy, read_to_string, write};
 
 pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
+    // TODO: get validated toml from from_toml
     let mut terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
     )
@@ -57,6 +58,7 @@ pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
         copy(context.toml_path()?, backup).context("failed to backup terrain.toml")?;
     }
 
+    // TODO: validate toml in to_toml
     write(
         context.toml_path()?,
         terrain.to_toml().expect("to generate toml from terrain"),

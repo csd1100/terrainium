@@ -261,10 +261,9 @@ mod tests {
         );
 
         let mut terrain = Terrain::example();
-        terrain.terrain_mut().add_env((
-            "PROCESS_ENV_REF_VAR".to_string(),
-            "${PROCESS_ENV_VAR}".to_string(),
-        ));
+        terrain
+            .terrain_mut()
+            .add_env("PROCESS_ENV_REF_VAR", "${PROCESS_ENV_VAR}");
         terrain.terrain_mut().add_bkg_constructor(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],

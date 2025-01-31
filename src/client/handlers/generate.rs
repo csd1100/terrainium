@@ -9,6 +9,7 @@ pub fn handle(context: Context) -> Result<()> {
         create_dir_all(context.scripts_dir()).context("failed to create scripts dir")?;
     }
 
+    // TODO: validation inside from_toml
     let terrain = Terrain::from_toml(read_to_string(context.toml_path()?).context(format!(
         "failed to read terrain.toml from path {:?}",
         context.toml_path()

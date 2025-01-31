@@ -15,8 +15,10 @@ pub fn handle(context: Context) -> Result<()> {
         .toml_path()
         .context("failed to edit terrain because it does not exist.")?;
 
+    // TODO: validation should be done in run_editor and should return valid terrain
     run_editor(&toml_path, context.terrain_dir())?;
 
+    // TODO: remove in favor of run_editor
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
     )
@@ -27,6 +29,7 @@ pub fn handle(context: Context) -> Result<()> {
     Ok(())
 }
 
+// TODO: return updated terrain after editor has run
 pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
     let editor = std::env::var(EDITOR).unwrap_or_else(|_| {
         println!("the environment variable EDITOR not set. using 'vi' as text editor");
@@ -45,6 +48,8 @@ pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
 
     edit.wait()
         .context(format!("failed to edit file {:?}", toml_path))?;
+
+    // TODO: read toml using from_toml and validate inside from_toml
     Ok(())
 }
 

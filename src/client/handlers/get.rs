@@ -26,6 +26,7 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     let toml_path = context.toml_path()?;
     let selected_biome = option_string_from(&get_args.biome);
 
+    // TODO: get validated toml from from_toml
     let terrain =
         Terrain::from_toml(read_to_string(&toml_path).context("failed to read terrain.toml")?)
             .expect("terrain to be parsed from toml");

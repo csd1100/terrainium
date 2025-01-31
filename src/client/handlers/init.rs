@@ -32,9 +32,11 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         .context("failed to write terrain in toml file")?;
 
     if edit {
+        // TODO: get validated toml from run_editor
         edit::run_editor(&toml_path, context.terrain_dir())?;
     }
 
+    // FIXME: if edited run generate_scripts with updated terrain
     context.shell().generate_scripts(&context, terrain)?;
 
     Ok(())

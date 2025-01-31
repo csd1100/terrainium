@@ -200,8 +200,8 @@ impl Biome {
     }
 
     #[cfg(test)]
-    pub(crate) fn add_env(&mut self, env: (String, String)) {
-        self.envs.insert(env.0, env.1);
+    pub(crate) fn add_env(&mut self, env: &str, val: &str) {
+        self.envs.insert(env.to_string(), val.to_string());
     }
 
     #[cfg(test)]
