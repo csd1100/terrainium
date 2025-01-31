@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+REPO_DIR=$(git rev-parse --show-toplevel)
+
+if [ ! -e "$REPO_DIR/.git/hooks/pre-push" ]; then
+    echo "setting up git pre-push hook"
+    ln -s "$REPO_DIR/scripts/hooks/pre-push" "$REPO_DIR/.git/hooks/pre-push"
+    chmod +x "$REPO_DIR/.git/hooks/pre-push"
+fi
