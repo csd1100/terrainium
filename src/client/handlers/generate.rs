@@ -38,8 +38,8 @@ mod test {
         let central_dir = tempdir()?;
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -72,8 +72,8 @@ mod test {
         let central_dir = tempdir()?;
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context: Context = Context::build(

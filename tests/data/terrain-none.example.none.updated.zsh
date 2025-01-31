@@ -17,35 +17,35 @@ function {
     # USER DEFINED ENVS: END
 }
 
-function terrainium_shell_constructor() {
+function __terrainium_shell_constructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         /bin/echo entering terrain
     fi
 }
 
-function terrainium_shell_destructor() {
+function __terrainium_shell_destructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         /bin/echo exiting terrain
     fi
 }
 
-function terrainium_enter() {
-    terrainium_shell_constructor
+function __terrainium_enter() {
+    __terrainium_shell_constructor
 }
 
-function terrain_prompt() {
+function __terrain_prompt() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         echo "terrainium(none)"
     fi
 }
 
-function terrainium_exit() {
+function __terrainium_exit() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         builtin exit
     fi
 }
 
-function terrainium_preexec_functions() {
+function __terrainium_preexec_functions() {
     tenter="(\$TERRAINIUM_EXECUTABLE enter*|$TERRAINIUM_EXECUTABLE enter*|*terrainium enter*)"
     texit="(\$TERRAINIUM_EXECUTABLE exit*|$TERRAINIUM_EXECUTABLE exit*|*terrainium exit*)"
     tconstruct="(\$TERRAINIUM_EXECUTABLE construct*|$TERRAINIUM_EXECUTABLE construct*|*terrainium construct*)"
@@ -53,23 +53,23 @@ function terrainium_preexec_functions() {
 
     if [ $TERRAIN_ENABLED = "true" ]; then
         case "$3" in
-        $~texit)
-            terrainium_exit
-        ;;
-        $~tconstruct)
-            terrainium_shell_constructor
-        ;;
-        $~tdestruct)
-            terrainium_shell_destructor
-        ;;
+            $~texit)
+                __terrainium_exit
+                ;;
+            $~tconstruct)
+                __terrainium_shell_constructor
+                ;;
+            $~tdestruct)
+                __terrainium_shell_destructor
+                ;;
         esac
     fi
 }
 
-function terrainium_zshexit_functions() {
-    terrainium_shell_destructor
+function __terrainium_zshexit_functions() {
+    __terrainium_shell_destructor
     "$TERRAINIUM_EXECUTABLE" exit
 }
 
-preexec_functions=(terrainium_preexec_functions $preexec_functions)
-zshexit_functions=(terrainium_zshexit_functions $zshexit_functions)
+preexec_functions=(__terrainium_preexec_functions $preexec_functions)
+zshexit_functions=(__terrainium_zshexit_functions $zshexit_functions)

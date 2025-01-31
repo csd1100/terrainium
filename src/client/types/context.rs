@@ -1,12 +1,13 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    INIT_SCRIPT_NAME, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SESSION_ID,
+    TERRAINIUM_EXECUTABLE, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR,
+    TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::{copy, create_dir_all, exists, read_to_string, remove_file, write};
+use std::fs::{create_dir_all, exists};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -23,39 +24,24 @@ const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
-const INIT_SCRIPT: &str = include_str!("../../../scripts/terrainium_init");
-
-impl Default for Context {
-    fn default() -> Self {
-        Self::generate()
-    }
-}
-
 impl Context {
-    pub fn generate() -> Self {
+    pub fn generate(home_dir: &Path) -> Self {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+        let shell = Zsh::get();
 
-        if !exists(Self::config_dir()).expect("failed to check if config directory exists") {
-            create_dir_all(Self::config_dir()).expect("failed to create config directory exists");
-        }
-
-        if !exists(Self::init_script()).expect("failed to check if init-script exists") {
-            println!("!!!WARNING!!! init-script not found in config directory, copying script to config directory !!!WARNING!!!");
-
-            write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
-        } else if read_to_string(Self::init_script()).expect("failed to read init-script")
-            != INIT_SCRIPT
+        let shell_integration_scripts_dir =
+            Self::config_dir(home_dir).join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR);
+        if !exists(&shell_integration_scripts_dir)
+            .expect("failed to check if config and shell integration scripts directory exists")
         {
-            println!("!!!WARNING!!! init-script was outdated in config directory, copying newer script to config directory !!!WARNING!!!");
-
-            let mut backup = Self::init_script().clone();
-            backup.set_extension(".bkp");
-
-            copy(Self::init_script(), backup).expect("failed to remove init-script");
-            remove_file(Self::init_script()).expect("failed to remove init-script");
-            write(Self::init_script(), INIT_SCRIPT).expect("failed to create init-script file");
+            create_dir_all(&shell_integration_scripts_dir)
+                .expect("failed to create config directory");
         }
+
+        shell
+            .setup_integration(&shell_integration_scripts_dir)
+            .expect("failed to setup shell integration");
 
         Context {
             session_id,
@@ -63,7 +49,7 @@ impl Context {
             central_dir: get_central_dir_location(
                 env::current_dir().expect("failed to get current directory"),
             ),
-            shell: Zsh::get(),
+            shell,
         }
     }
 
@@ -79,14 +65,8 @@ impl Context {
         &self.central_dir
     }
 
-    pub fn config_dir() -> PathBuf {
-        home_dir()
-            .expect("failed to get home directory")
-            .join(CONFIG_LOCATION)
-    }
-
-    pub fn init_script() -> PathBuf {
-        Self::config_dir().join(INIT_SCRIPT_NAME)
+    pub fn config_dir(home_dir: &Path) -> PathBuf {
+        home_dir.join(CONFIG_LOCATION)
     }
 
     pub fn name(&self) -> String {
@@ -210,12 +190,14 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 mod test {
     use super::Context;
     use crate::client::shell::Zsh;
+    use crate::client::utils::ExpectShell;
     use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
     use std::collections::BTreeMap;
+    use std::fs::exists;
     use std::path::{Path, PathBuf};
     use std::{env, fs};
     use tempfile::tempdir;
@@ -223,19 +205,34 @@ mod test {
     #[serial]
     #[test]
     fn new_creates_context() -> Result<()> {
+        let home_dir = tempfile::tempdir()?;
+
         let current_dir = env::current_dir().expect("failed to get current directory");
         let central_dir = get_central_dir_location();
 
-        let new_mock = MockCommandToRun::new_context();
-        new_mock
-            .expect()
-            .withf(|_, _, _| true)
-            .times(1)
-            .returning(|_, _, _| MockCommandToRun::default());
+        let mut zsh_integration_script =
+            home_dir.path().join(".config/terrainium/shell_integration");
+        zsh_integration_script.push("terrainium_init.zsh");
 
-        let actual = Context::generate();
+        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
+        compiled_zsh_integration_script.set_extension("zsh.zwc");
+
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
+            .successfully();
+
+        let mock_zsh = MockCommandToRun::new_context();
+        mock_zsh
+            .expect()
+            .withf(|exe, args, envs| exe == "/bin/zsh" && args.is_empty() && envs.is_none())
+            .return_once(move |_, _, _| expected_shell_operation);
+
+        let actual = Context::generate(home_dir.path());
         assert_eq!(current_dir, actual.current_dir);
         assert_eq!(central_dir, actual.central_dir);
+
+        assert!(exists(&zsh_integration_script)
+            .expect("failed to check if shell integration script created"));
 
         Ok(())
     }

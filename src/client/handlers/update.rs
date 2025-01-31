@@ -107,8 +107,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -198,9 +198,9 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("example_biome2", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("example_biome2", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -265,8 +265,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -321,8 +321,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -423,8 +423,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -480,8 +480,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -528,8 +528,8 @@ mod test {
             .expect("test terrain to be copied to test dir");
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_script_for("example_biome", central_dir.path())
-            .compile_script_for("none", central_dir.path())
+            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for("none", central_dir.path())
             .successfully();
 
         let context = Context::build(

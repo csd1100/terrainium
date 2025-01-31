@@ -14,6 +14,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::fs;
+use std::fs::{copy, exists, read_to_string, remove_file, write};
 use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
@@ -25,7 +26,8 @@ const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.
 const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
 const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
 
-const ZSH_INIT_RC: &str = include_str!("../../../scripts/rc_contents");
+pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
+const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
 
 impl Shell for Zsh {
     fn get() -> Self {
@@ -39,16 +41,49 @@ impl Shell for Zsh {
         self.runner.clone()
     }
 
+    fn get_init_rc_contents() -> String {
+        format!(
+            r#"
+source "$HOME/.config/terrainium/shell_integration/{}"
+"#,
+            ZSH_INIT_SCRIPT_NAME
+        )
+    }
+
+    fn setup_integration(&self, init_script_dir: &Path) -> Result<()> {
+        let init_script_location = init_script_dir.join(ZSH_INIT_SCRIPT_NAME);
+
+        if !exists(&init_script_location).expect("failed to check if init-script exists") {
+            println!("WARNING - init-script not found in config directory, copying script to config directory");
+            write(&init_script_location, INIT_SCRIPT).expect("failed to create init-script file");
+        } else if read_to_string(&init_script_location).expect("failed to read init-script")
+            != INIT_SCRIPT
+        {
+            let mut backup = init_script_location.clone();
+            backup.set_extension("zsh.bkp");
+
+            copy(&init_script_location, backup).expect("failed to remove init-script");
+            remove_file(&init_script_location).expect("failed to remove init-script");
+            println!("WARNING - init-script was outdated in config directory, copying newer script to config directory");
+            write(&init_script_location, INIT_SCRIPT).expect("failed to create init-script file");
+        }
+
+        let mut compiled_path = init_script_location.clone();
+        compiled_path.set_extension("zsh.zwc");
+
+        self.compile_script(&init_script_location, &compiled_path)
+    }
+
     fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
         let path = path.unwrap_or_else(|| home_dir().expect("cannot get home dir").join(".zshrc"));
-        let rc = fs::read_to_string(&path).context("failed to read rc")?;
-        if !rc.contains(ZSH_INIT_RC) {
+        let rc = read_to_string(&path).context("failed to read rc")?;
+        if !rc.contains(&Self::get_init_rc_contents()) {
             let rc_file = fs::OpenOptions::new()
                 .append(true)
                 .open(&path)
                 .context("failed to open rc");
             rc_file?
-                .write_all(ZSH_INIT_RC.as_bytes())
+                .write_all(Self::get_init_rc_contents().as_bytes())
                 .context("failed to write rc")?;
         }
         Ok(())
@@ -194,7 +229,7 @@ impl Zsh {
             .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
             .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
 
-        fs::write(script_path, script)
+        write(script_path, script)
             .context(format!("failed to write script to path {:?}", script_path))?;
 
         Ok(())
@@ -235,8 +270,11 @@ impl Zsh {
 mod test {
     use crate::client::shell::{Shell, Zsh};
     use crate::client::types::terrain::Terrain;
+    use crate::client::utils::ExpectShell;
     use crate::common::execute::MockCommandToRun;
+    use serial_test::serial;
     use std::fs;
+    use std::fs::{create_dir_all, exists, write};
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::process::{ExitStatus, Output};
@@ -300,10 +338,83 @@ mod test {
             .update_rc(Some(temp_dir.path().join(".zshrc")))
             .unwrap();
 
-        let expected = "\nsource \"$HOME/.config/terrainium/terrainium_init\"";
+        let expected =
+            "\nsource \"$HOME/.config/terrainium/shell_integration/terrainium_init.zsh\"\n";
         assert_eq!(
             expected,
             fs::read_to_string(temp_dir.path().join(".zshrc")).unwrap()
         );
+    }
+
+    #[serial]
+    #[test]
+    fn shell_integration() -> anyhow::Result<()> {
+        let home_dir = tempfile::tempdir()?;
+
+        let zsh_integration_script_location =
+            home_dir.path().join(".config/terrainium/shell_integration");
+        create_dir_all(&zsh_integration_script_location)?;
+
+        let mut zsh_integration_script = zsh_integration_script_location.clone();
+        zsh_integration_script.push("terrainium_init.zsh");
+
+        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
+        compiled_zsh_integration_script.set_extension("zsh.zwc");
+
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
+            .successfully();
+
+        Zsh::build(expected_shell_operation)
+            .setup_integration(&zsh_integration_script_location)
+            .expect("to succeed");
+
+        assert!(exists(zsh_integration_script)
+            .expect("failed to check if shell integration script created"));
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn shell_integration_replace() -> anyhow::Result<()> {
+        let home_dir = tempfile::tempdir()?;
+
+        let zsh_integration_script_location =
+            home_dir.path().join(".config/terrainium/shell_integration");
+        create_dir_all(&zsh_integration_script_location)?;
+
+        let mut zsh_integration_script = zsh_integration_script_location.clone();
+        zsh_integration_script.push("terrainium_init.zsh");
+
+        let mut zsh_integration_script_backup = zsh_integration_script.clone();
+        zsh_integration_script_backup.set_extension("zsh.bkp");
+
+        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
+        compiled_zsh_integration_script.set_extension("zsh.zwc");
+
+        write(
+            home_dir
+                .path()
+                .join(".config/terrainium/shell_integration/terrainium_init.zsh"),
+            "",
+        )
+        .expect("test shell integration to be written");
+
+        let expected_shell_operation = ExpectShell::to()
+            .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
+            .successfully();
+
+        Zsh::build(expected_shell_operation)
+            .setup_integration(&zsh_integration_script_location)
+            .expect("to succeed");
+
+        assert!(exists(zsh_integration_script)
+            .expect("failed to check if shell integration script created"));
+
+        assert!(exists(zsh_integration_script_backup)
+            .expect("failed to check if shell integration script created"));
+
+        Ok(())
     }
 }

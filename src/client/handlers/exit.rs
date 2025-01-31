@@ -48,12 +48,11 @@ fn should_run_destructor() -> bool {
 mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::client::utils::{AssertExecuteRequest, RunCommand};
+    use crate::client::utils::{restore_env_var, set_env_var, AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
         DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
         TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
-    use crate::common::execute::test::{restore_env_var, set_env_var};
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::ExecuteResponse;

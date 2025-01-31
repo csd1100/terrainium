@@ -1,5 +1,3 @@
-pub const INIT_SCRIPT_NAME: &str = "terrainium_init";
-
 pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 
@@ -32,3 +30,4 @@ pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
 
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub const TERRAINIUM_EXECUTABLE: &str = "TERRAINIUM_EXECUTABLE";
+pub const TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";
