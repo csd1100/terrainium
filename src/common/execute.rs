@@ -153,7 +153,7 @@ mock! {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub(crate) mod tests {
     use crate::client::utils;
     use crate::common::execute::{CommandToRun, Execute};
     use anyhow::Result;

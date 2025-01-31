@@ -2,6 +2,7 @@ use crate::client::args::{option_string_from, BiomeArg};
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
     CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
@@ -37,15 +38,14 @@ pub async fn handle(
     .expect("terrain to be parsed from toml");
 
     let selected_biome = option_string_from(&biome_arg);
+    let (biome_name, _) = terrain.select_biome(&selected_biome)?;
+    let environment =
+        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
 
     let commands = if operation == CONSTRUCTORS {
-        terrain
-            .merged_constructors(&selected_biome)
-            .context(format!("failed to merge {}", operation))?
+        environment.constructors()
     } else {
-        terrain
-            .merged_destructors(&selected_biome)
-            .context(format!("failed to merge {}", operation))?
+        environment.destructors()
     };
 
     if commands.background().is_empty() {
@@ -58,11 +58,7 @@ pub async fn handle(
         Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
     };
 
-    let (biome_name, _) = terrain.select_biome(&selected_biome)?;
-
-    let mut envs = terrain
-        .merged_envs(&selected_biome)
-        .context("failed to merge envs")?;
+    let mut envs = environment.envs();
     envs.append(&mut context.terrainium_envs().clone());
     envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome_name.clone());
 

@@ -138,6 +138,10 @@ impl Terrain {
         &self.terrain
     }
 
+    pub fn terrain_mut(&mut self) -> &mut Biome {
+        &mut self.terrain
+    }
+
     pub fn biomes(&self) -> &BTreeMap<String, Biome> {
         &self.biomes
     }
@@ -153,48 +157,11 @@ impl Terrain {
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
         let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
-            Ok(selected.clone())
+            let mut terrain_with_substituted_envs = selected.clone();
+            terrain_with_substituted_envs.substitute_envs();
+            Ok(terrain_with_substituted_envs)
         } else {
             Ok(self.terrain.merge(selected))
-        }
-    }
-
-    pub fn merged_aliases(
-        &self,
-        selected_biome: &Option<String>,
-    ) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome)?.1;
-        if selected == &self.terrain {
-            Ok(selected.aliases().clone())
-        } else {
-            Ok(self.terrain.append_aliases(selected))
-        }
-    }
-
-    pub fn merged_envs(&self, selected_biome: &Option<String>) -> Result<BTreeMap<String, String>> {
-        let selected = self.select_biome(selected_biome)?.1;
-        if selected == &self.terrain {
-            Ok(selected.envs().clone())
-        } else {
-            Ok(self.terrain.append_envs(selected))
-        }
-    }
-
-    pub fn merged_constructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome)?.1;
-        if selected == &self.terrain {
-            Ok(selected.constructors().clone())
-        } else {
-            Ok(self.terrain.append_constructors(selected))
-        }
-    }
-
-    pub fn merged_destructors(&self, selected_biome: &Option<String>) -> Result<Commands> {
-        let selected = self.select_biome(selected_biome)?.1;
-        if selected == &self.terrain {
-            Ok(selected.destructors().clone())
-        } else {
-            Ok(self.terrain.append_destructors(selected))
         }
     }
 
@@ -240,16 +207,19 @@ impl Terrain {
     pub fn example() -> Self {
         let terrain = Biome::example();
 
-        let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert("EDITOR".to_string(), "nvim".to_string());
+        let mut biome_envs: BTreeMap<String, String> = BTreeMap::new();
+        biome_envs.insert("BIOME_POINTER".to_string(), "$BIOME_REAL".to_string());
+        biome_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
+        biome_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        biome_envs.insert("REAL".to_string(), "biome_value".to_string());
 
-        let mut aliases: BTreeMap<String, String> = BTreeMap::new();
-        aliases.insert(
+        let mut biome_aliases: BTreeMap<String, String> = BTreeMap::new();
+        biome_aliases.insert(
             "tenter".to_string(),
             "terrainium enter --biome example_biome".to_string(),
         );
 
-        let constructors: Commands = Commands::new(
+        let biome_constructors: Commands = Commands::new(
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
@@ -263,7 +233,7 @@ impl Terrain {
             )],
         );
 
-        let destructors: Commands = Commands::new(
+        let biome_destructors: Commands = Commands::new(
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
@@ -277,7 +247,12 @@ impl Terrain {
             )],
         );
 
-        let example_biome = Biome::new(envs, aliases, constructors, destructors);
+        let example_biome = Biome::new(
+            biome_envs,
+            biome_aliases,
+            biome_constructors,
+            biome_destructors,
+        );
 
         let mut biomes: BTreeMap<String, Biome> = BTreeMap::new();
         biomes.insert(String::from("example_biome"), example_biome);
@@ -311,7 +286,7 @@ impl Default for Terrain {
 }
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;

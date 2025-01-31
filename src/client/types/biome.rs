@@ -95,10 +95,41 @@ impl Biome {
         self.aliases = aliases;
     }
 
+    fn recursive_substitute_envs(&self, env_to_substitute: String) -> String {
+        if env_to_substitute.starts_with("$") {
+            let env = env_to_substitute.strip_prefix("$").unwrap();
+            if self.envs.contains_key(env) || std::env::var(env).is_ok() {
+                let recurse = if let Some(val) = self.envs.get(env) {
+                    val.to_string()
+                } else if let Ok(val) = std::env::var(env) {
+                    val
+                } else {
+                    env_to_substitute
+                };
+                return self.recursive_substitute_envs(recurse);
+            }
+        }
+        env_to_substitute
+    }
+
+    pub(crate) fn substitute_envs(&mut self) {
+        let biome_envs = self.envs();
+        let substituted_envs: Vec<(String, String)> = biome_envs
+            .iter()
+            .map(|(key, value)| (key.clone(), self.recursive_substitute_envs(value.clone())))
+            .collect();
+
+        self.set_envs(BTreeMap::from_iter(substituted_envs));
+    }
+
     pub fn example() -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());
+        envs.insert("NESTED_POINTER".to_string(), "$POINTER".to_string());
+        envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         envs.insert("PAGER".to_string(), "less".to_string());
+        envs.insert("POINTER".to_string(), "$REAL".to_string());
+        envs.insert("REAL".to_string(), "real_value".to_string());
 
         let mut aliases: BTreeMap<String, String> = BTreeMap::new();
         aliases.insert("tenter".to_string(), "terrainium enter".to_string());
@@ -120,5 +151,10 @@ impl Biome {
             vec![],
         );
         Biome::new(envs, aliases, constructors, destructors)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_env(&mut self, env: (String, String)) {
+        self.envs.insert(env.0, env.1);
     }
 }

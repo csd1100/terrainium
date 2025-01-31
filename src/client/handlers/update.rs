@@ -77,7 +77,7 @@ fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;

@@ -187,7 +187,7 @@ fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
     use crate::client::utils::ExpectShell;
