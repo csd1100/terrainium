@@ -7,6 +7,7 @@ Environment Variables:
     BIOME_POINTER="biome_real"
     BIOME_REAL="biome_real"
     EDITOR="nvim"
+    NESTED_POINTER="biome_value"
     NULL_POINTER="$NULL"
     PAGER="less"
     POINTER="biome_value"

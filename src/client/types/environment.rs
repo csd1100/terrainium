@@ -145,6 +145,7 @@ mod tests {
         expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
         expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        expected_envs.insert("NESTED_POINTER".to_string(), "biome_value".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
         expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
@@ -220,6 +221,7 @@ mod tests {
         expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
         expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
+        expected_envs.insert("NESTED_POINTER".to_string(), "biome_value".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
         expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
@@ -321,6 +323,7 @@ mod tests {
     fn environment_from_example_terrain_selected_biome_different_from_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nano".to_string());
+        expected_envs.insert("NESTED_POINTER".to_string(), "real_value".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
         expected_envs.insert("POINTER".to_string(), "real_value".to_string());

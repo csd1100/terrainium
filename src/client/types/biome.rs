@@ -95,25 +95,28 @@ impl Biome {
         self.aliases = aliases;
     }
 
+    fn recursive_substitute_envs(&self, env_to_substitute: String) -> String {
+        if env_to_substitute.starts_with("$") {
+            let env = env_to_substitute.strip_prefix("$").unwrap();
+            if self.envs.contains_key(env) || std::env::var(env).is_ok() {
+                let recurse = if let Some(val) = self.envs.get(env) {
+                    val.to_string()
+                } else if let Ok(val) = std::env::var(env) {
+                    val
+                } else {
+                    env_to_substitute
+                };
+                return self.recursive_substitute_envs(recurse);
+            }
+        }
+        env_to_substitute
+    }
+
     pub(crate) fn substitute_envs(&mut self) {
-        let substituted_envs: Vec<(String, String)> = self
-            .envs
+        let biome_envs = self.envs();
+        let substituted_envs: Vec<(String, String)> = biome_envs
             .iter()
-            .map(|(key, value)| {
-                if value.starts_with("$") {
-                    let env = value.strip_prefix("$").unwrap();
-                    // get value from provided env map or process env variable
-                    let substituted_value = if let Some(val) = self.envs.get(env) {
-                        val.to_string()
-                    } else if let Ok(val) = std::env::var(env) {
-                        val
-                    } else {
-                        value.to_string()
-                    };
-                    return (key.clone(), substituted_value);
-                }
-                (key.clone(), value.clone())
-            })
+            .map(|(key, value)| (key.clone(), self.recursive_substitute_envs(value.clone())))
             .collect();
 
         self.set_envs(BTreeMap::from_iter(substituted_envs));
@@ -122,6 +125,7 @@ impl Biome {
     pub fn example() -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());
+        envs.insert("NESTED_POINTER".to_string(), "$POINTER".to_string());
         envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
         envs.insert("PAGER".to_string(), "less".to_string());
         envs.insert("POINTER".to_string(), "$REAL".to_string());

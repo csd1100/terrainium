@@ -13,6 +13,7 @@ function {
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
     export EDITOR="nano"
+    export NESTED_POINTER="real_value"
     export NEW="VALUE"
     export NULL_POINTER="$NULL"
     export PAGER="less"

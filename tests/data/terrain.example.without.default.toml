@@ -8,6 +8,7 @@ replace = false
 
 [terrain.envs]
 EDITOR = "vim"
+NESTED_POINTER = "$POINTER"
 NULL_POINTER = "$NULL"
 PAGER = "less"
 POINTER = "$REAL"

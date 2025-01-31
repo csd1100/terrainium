@@ -9,6 +9,7 @@ replace = false
 
 [terrain.envs]
 EDITOR = "nano"
+NESTED_POINTER = "$POINTER"
 NULL_POINTER = "$NULL"
 PAGER = "less"
 POINTER = "$REAL"

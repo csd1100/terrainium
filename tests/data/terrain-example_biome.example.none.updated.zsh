@@ -15,6 +15,7 @@ function {
     export BIOME_POINTER="biome_real"
     export BIOME_REAL="biome_real"
     export EDITOR="nvim"
+    export NESTED_POINTER="biome_value"
     export NULL_POINTER="$NULL"
     export PAGER="less"
     export POINTER="biome_value"
