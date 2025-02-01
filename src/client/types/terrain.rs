@@ -89,7 +89,7 @@ pub fn schema_url() -> String {
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-enum ValidationMessageLevel {
+pub(crate) enum ValidationMessageLevel {
     Debug,
     Info,
     Warn,
@@ -116,14 +116,15 @@ impl std::fmt::Display for ValidationMessageLevel {
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-struct ValidationMessage {
-    level: ValidationMessageLevel,
-    message: String,
+pub(crate) struct ValidationMessage {
+    pub(crate) level: ValidationMessageLevel,
+    pub(crate) message: String,
+    pub(crate) target: String,
 }
 
 #[derive(Debug, Clone)]
-struct ValidationError {
-    messages: Vec<ValidationMessage>,
+pub(crate) struct ValidationError {
+    pub(crate) messages: Vec<ValidationMessage>,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -229,22 +230,43 @@ impl Terrain {
     }
 
     fn validate(&self) -> Result<Vec<ValidationMessage>, ValidationError> {
-        todo!()
+        // validate terrain
+        let mut messages = self.terrain.validate("terrain");
+
+        // all biomes
+        self.biomes
+            .iter()
+            .for_each(|(biome_name, biome)| messages.append(&mut biome.validate(biome_name)));
+
+        if messages
+            .iter()
+            .any(|val| val.level == ValidationMessageLevel::Error)
+        {
+            return Err(ValidationError { messages });
+        }
+
+        Ok(messages)
     }
 
     fn print_validation_message(&self, messages: &[ValidationMessage]) {
-        messages.iter().for_each(|message| match message.level {
-            ValidationMessageLevel::Debug => {
-                debug!(target: "terrain_validation","{:?}", message.message);
-            }
-            ValidationMessageLevel::Info => {
-                info!(target: "terrain_validation","{:?}", message.message);
-            }
-            ValidationMessageLevel::Warn => {
-                warn!(target: "terrain_validation","{:?}", message.message);
-            }
-            ValidationMessageLevel::Error => {
-                error!(target: "terrain_validation","{:?}", message.message);
+        let mut messages = messages.to_vec();
+        messages.sort_by_key(|val| val.level.clone());
+
+        messages.iter().for_each(|message| {
+            let target = format!("terrain_validation({})", message.target);
+            match message.level {
+                ValidationMessageLevel::Debug => {
+                    debug!(target: &target,"{:?}", message.message);
+                }
+                ValidationMessageLevel::Info => {
+                    info!(target: &target,"{:?}", message.message);
+                }
+                ValidationMessageLevel::Warn => {
+                    warn!(target: &target,"{:?}", message.message);
+                }
+                ValidationMessageLevel::Error => {
+                    error!(target: &target,"{:?}", message.message);
+                }
             }
         })
     }
@@ -404,10 +426,11 @@ pub mod tests {
         )
     }
 
-    #[ignore]
     #[test]
     fn validate_env_with_spaces() {
         let mut terrain = Terrain::default();
+        let mut biome = Biome::default();
+
         let mut envs = BTreeMap::<String, String>::new();
         envs.insert(
             "TEST_ENV_WITHOUT_SPACES".to_string(),
@@ -429,14 +452,54 @@ pub mod tests {
             "ENV_WITH_TRAILING_SPACES ".to_string(),
             "VALUE_WITHOUT_SPACES".to_string(),
         );
+
+        terrain.terrain_mut().set_envs(envs.clone());
+        biome.set_envs(envs);
+        terrain.update("test_biome".to_string(), biome);
+
         let validation_result = terrain.validate().expect_err("expected validation error");
 
         let messages: HashSet<ValidationMessage> =
             validation_result.messages.iter().cloned().collect();
 
         assert!(messages.contains(&ValidationMessage {
-            level: ValidationMessageLevel::Debug,
-            message: "".to_string(),
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable name `TEST ENV WITH SPACES` is invalid as it contains spaces"
+                    .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable name ` ENV_WITH_LEADING_SPACES`"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable name `ENV_WITH_TRAILING_SPACES `"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable name `TEST ENV WITH SPACES` is invalid as it contains spaces"
+                    .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable name ` ENV_WITH_LEADING_SPACES`"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable name `ENV_WITH_TRAILING_SPACES `"
+                .to_string(),
+            target: "test_biome".to_string(),
         }));
     }
 }

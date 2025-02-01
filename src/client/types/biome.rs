@@ -1,5 +1,6 @@
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use crate::client::types::terrain::{ValidationError, ValidationMessage, ValidationMessageLevel};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
@@ -30,6 +31,34 @@ impl Biome {
             constructors,
             destructors,
         }
+    }
+
+    fn validate_envs(&self, biome_name: &str) -> Vec<ValidationMessage> {
+        let mut messages = vec![];
+        self.envs.iter().for_each(|(k, _v)| {
+            if k.starts_with(" ") || k.ends_with(" ") {
+                messages.push(ValidationMessage {
+                    level: ValidationMessageLevel::Info,
+                    message: format!("trimming spaces from environment variable name `{}`", k),
+                    target: biome_name.to_string(),
+                })
+            }
+            if k.trim().contains(" ") {
+                messages.push(ValidationMessage {
+                    level: ValidationMessageLevel::Error,
+                    message: format!(
+                        "environment variable name `{}` is invalid as it contains spaces",
+                        k
+                    ),
+                    target: biome_name.to_string(),
+                })
+            }
+        });
+        messages
+    }
+
+    pub(crate) fn validate(&self, biome_name: &str) -> Vec<ValidationMessage> {
+        self.validate_envs(biome_name)
     }
 
     pub fn aliases(&self) -> &BTreeMap<String, String> {
