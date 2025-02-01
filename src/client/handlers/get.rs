@@ -29,8 +29,8 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     let terrain =
         Terrain::from_toml(read_to_string(&toml_path).context("failed to read terrain.toml")?)
             .expect("terrain to be parsed from toml");
-    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
-        .context("failed to generate environment")?;
+    let environment =
+        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
 
     let mut result = String::new();
 
@@ -699,8 +699,7 @@ Environment Variables:
 
         let expected = r#"Constructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
@@ -744,7 +743,7 @@ Environment Variables:
 
         let expected = r#"Destructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -798,14 +797,13 @@ Environment Variables:
     POINTER_ENV_VAR="overridden_env_val"
 Constructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -855,14 +853,13 @@ Environment Variables:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Constructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 

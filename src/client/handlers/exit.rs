@@ -102,8 +102,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -165,8 +164,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -264,8 +262,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")

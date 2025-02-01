@@ -15,14 +15,13 @@ Aliases:
     texit="terrainium exit"
 Constructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c ./print_num_for_10_sec 
+        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 

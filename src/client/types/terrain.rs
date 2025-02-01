@@ -2,11 +2,11 @@ use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
 use anyhow::{anyhow, Context, Result};
-#[cfg(feature = "terrain-schema")]
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Clone)]
@@ -219,32 +219,27 @@ impl Terrain {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
-                None,
             )],
-            vec![
-                Command::new(
-                    "/bin/bash".to_string(),
-                    vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                    Some(PathBuf::from("../tests/scripts")),
-                ),
-                Command::new(
-                    "/bin/bash".to_string(),
-                    vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                    Some(PathBuf::from("/home/user/work/scripts")),
-                ),
-            ],
+            vec![Command::new(
+                "/bin/bash".to_string(),
+                vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
+            )],
         );
 
         let biome_destructors: Commands = Commands::new(
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
-                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
-                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                Some(PathBuf::from("./tests/scripts")),
+                vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
             )],
         );
 
@@ -314,13 +309,11 @@ pub mod tests {
         let biome_constructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["entering biome ".to_string() + &name],
-            None,
         )];
         let biome_constructor_background: Vec<Command> = vec![];
         let biome_destructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome ".to_string() + &name],
-            None,
         )];
         let biome_destructor_background: Vec<Command> = vec![];
 

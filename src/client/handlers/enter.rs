@@ -23,8 +23,8 @@ pub async fn handle(
 
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;
-    let environment = Environment::from(&terrain, biome, context.terrain_dir())
-        .context("failed to generate environment")?;
+    let environment =
+        Environment::from(&terrain, biome).context("failed to generate environment")?;
 
     let mut envs = environment.envs();
     envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
@@ -51,7 +51,7 @@ pub async fn handle(
     } else {
         let result = tokio::join!(
             context.shell().spawn(envs.clone()),
-            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs), client,),
+            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs), client),
         );
 
         if let Err(e) = result.0 {
@@ -179,31 +179,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("/home/user/work/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -493,32 +469,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
-                    .with_env(TERRAIN_AUTO_APPLY, "background")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("/home/user/work/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -637,32 +588,7 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("./tests/scripts")
-                    .with_env(TERRAIN_AUTO_APPLY, "all")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("./print_num_for_10_sec")
-                    .with_cwd("/home/user/work/scripts")
+                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
