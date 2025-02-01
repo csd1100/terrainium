@@ -1,6 +1,7 @@
 use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use crate::client::validation::{ValidationError, ValidationMessage, ValidationMessageLevel};
 use anyhow::{anyhow, Context, Result};
 use log::{debug, error, info, warn};
 #[cfg(feature = "terrain-schema")]
@@ -86,53 +87,6 @@ impl From<AutoApply> for String {
 pub fn schema_url() -> String {
     "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
         .to_string()
-}
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-pub(crate) enum ValidationMessageLevel {
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
-
-impl std::fmt::Display for ValidationMessageLevel {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            ValidationMessageLevel::Debug => {
-                write!(f, "debug")
-            }
-            ValidationMessageLevel::Info => {
-                write!(f, "info")
-            }
-            ValidationMessageLevel::Warn => {
-                write!(f, "warn")
-            }
-            ValidationMessageLevel::Error => {
-                write!(f, "error")
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-pub(crate) struct ValidationMessage {
-    pub(crate) level: ValidationMessageLevel,
-    pub(crate) message: String,
-    pub(crate) target: String,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct ValidationError {
-    pub(crate) messages: Vec<ValidationMessage>,
-}
-
-impl std::fmt::Display for ValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.messages
-            .iter()
-            .try_for_each(|message| writeln!(f, "{} - {}", message.level, message.message))
-    }
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -381,7 +335,8 @@ pub mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
-    use crate::client::types::terrain::{Terrain, ValidationMessage, ValidationMessageLevel};
+    use crate::client::types::terrain::Terrain;
+    use crate::client::validation::{ValidationMessage, ValidationMessageLevel};
     use std::collections::{BTreeMap, HashSet};
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
@@ -427,7 +382,7 @@ pub mod tests {
     }
 
     #[test]
-    fn validate_env_with_spaces() {
+    fn validate_envs() {
         let mut terrain = Terrain::default();
         let mut biome = Biome::default();
 
@@ -618,6 +573,186 @@ pub mod tests {
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `1INVALID-#. (` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "test_biome".to_string(),
+        }));
+    }
+
+    #[test]
+    fn validate_aliases() {
+        let mut terrain = Terrain::default();
+        let mut biome = Biome::default();
+
+        let mut aliases = BTreeMap::<String, String>::new();
+        aliases.insert("".to_string(), "value_without_spaces".to_string());
+        aliases.insert(
+            "TEST_ALIAS_WITHOUT_SPACES".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            "TEST_VALUE_WITH_SPACES".to_string(),
+            "VALUE WITH SPACES".to_string(),
+        );
+        aliases.insert(
+            "TEST ALIAS WITH SPACES".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            " ALIAS_WITH_LEADING_SPACES".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            "ALIAS_WITH_TRAILING_SPACES ".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            "1ALIAS_STARTING_WITH_NUM".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            "ALPHA_NUMERIC_123".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            "alpha_numeric_123".to_string(),
+            "value_without_spaces".to_string(),
+        );
+        aliases.insert(
+            "ALIAS-WITH-INVALID-#.(".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        aliases.insert(
+            " 1INVALID-#. ( ".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+
+        terrain.terrain_mut().set_aliases(aliases.clone());
+        biome.set_aliases(aliases);
+        terrain.update("test_biome".to_string(), biome);
+
+        let validation_result = terrain.validate().expect_err("expected validation error");
+
+        let messages: HashSet<ValidationMessage> =
+            validation_result.messages.iter().cloned().collect();
+
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "empty alias identifier is not allowed".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `TEST ALIAS WITH SPACES` is invalid as it contains spaces"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` ALIAS_WITH_LEADING_SPACES`"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: `ALIAS_WITH_TRAILING_SPACES `"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1ALIAS_STARTING_WITH_NUM` cannot start with number"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `ALIAS-WITH-INVALID-#.(` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` is invalid as it contains spaces"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` cannot start with number".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "terrain".to_string(),
+        }));
+
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "empty alias identifier is not allowed".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `TEST ALIAS WITH SPACES` is invalid as it contains spaces"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` ALIAS_WITH_LEADING_SPACES`"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: `ALIAS_WITH_TRAILING_SPACES `"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1ALIAS_STARTING_WITH_NUM` cannot start with number"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `ALIAS-WITH-INVALID-#.(` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` is invalid as it contains spaces"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` cannot start with number".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "alias identifier `1INVALID-#. (` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),
         }));
     }
