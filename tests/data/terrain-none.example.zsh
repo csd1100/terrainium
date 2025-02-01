@@ -12,11 +12,11 @@ function {
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
     export EDITOR="vim"
-    export NESTED_POINTER="real_value"
-    export NULL_POINTER="$NULL"
+    export ENV_VAR="env_val"
+    export NESTED_POINTER="env_val-env_val-${NULL}"
+    export NULL_POINTER="${NULL}"
     export PAGER="less"
-    export POINTER="real_value"
-    export REAL="real_value"
+    export POINTER_ENV_VAR="env_val"
     # USER DEFINED ENVS: END
 }
 

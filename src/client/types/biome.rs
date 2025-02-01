@@ -1,5 +1,6 @@
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -95,28 +96,58 @@ impl Biome {
         self.aliases = aliases;
     }
 
-    fn recursive_substitute_envs(&self, env_to_substitute: String) -> String {
-        if env_to_substitute.starts_with("$") {
-            let env = env_to_substitute.strip_prefix("$").unwrap();
-            if self.envs.contains_key(env) || std::env::var(env).is_ok() {
-                let recurse = if let Some(val) = self.envs.get(env) {
-                    val.to_string()
-                } else if let Ok(val) = std::env::var(env) {
-                    val
-                } else {
-                    env_to_substitute
-                };
-                return self.recursive_substitute_envs(recurse);
-            }
+    fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
+        let mut result = vec![];
+        let re = Regex::new(r"\$\{(.*?)}").expect("Regex parse failed");
+        for (_, [val]) in re.captures_iter(str_to_parse).map(|c| c.extract()) {
+            result.push(val.to_string());
         }
-        env_to_substitute
+        result
+    }
+
+    fn recursive_substitute_envs(
+        &self,
+        result_string: String,
+        envs_to_substitute: Vec<String>,
+    ) -> String {
+        let mut envs_to_substitute = envs_to_substitute;
+        let mut result_string = result_string;
+
+        // recurse till envs_to_substitute is not empty
+        if !envs_to_substitute.is_empty() {
+            let env = envs_to_substitute.pop().unwrap();
+
+            if self.envs.contains_key(&env) || std::env::var(&env).is_ok() {
+                let env_val = if let Some(env_val) = self.envs.get(&env) {
+                    env_val.to_string()
+                } else {
+                    std::env::var(&env).unwrap()
+                };
+
+                // if value present in terrain envs or system envs replace the value
+                let value_to_replace = format!("${{{}}}", &env);
+                result_string = result_string.replace(&value_to_replace, &env_val);
+
+                // if the new value is also env ref add that to substitute list
+                let new_env_to_substitute = Self::get_envs_to_substitute(&env_val);
+                envs_to_substitute.extend(new_env_to_substitute);
+            }
+            return self.recursive_substitute_envs(result_string, envs_to_substitute);
+        }
+        result_string
     }
 
     pub(crate) fn substitute_envs(&mut self) {
         let biome_envs = self.envs();
         let substituted_envs: Vec<(String, String)> = biome_envs
             .iter()
-            .map(|(key, value)| (key.clone(), self.recursive_substitute_envs(value.clone())))
+            .map(|(key, value)| {
+                let envs_to_substitute = Self::get_envs_to_substitute(value);
+                (
+                    key.clone(),
+                    self.recursive_substitute_envs(value.clone(), envs_to_substitute),
+                )
+            })
             .collect();
 
         self.set_envs(BTreeMap::from_iter(substituted_envs));
@@ -125,11 +156,14 @@ impl Biome {
     pub fn example() -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());
-        envs.insert("NESTED_POINTER".to_string(), "$POINTER".to_string());
-        envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
+        envs.insert("ENV_VAR".to_string(), "env_val".to_string());
+        envs.insert(
+            "NESTED_POINTER".to_string(),
+            "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}".to_string(),
+        );
+        envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
         envs.insert("PAGER".to_string(), "less".to_string());
-        envs.insert("POINTER".to_string(), "$REAL".to_string());
-        envs.insert("REAL".to_string(), "real_value".to_string());
+        envs.insert("POINTER_ENV_VAR".to_string(), "${ENV_VAR}".to_string());
 
         let mut aliases: BTreeMap<String, String> = BTreeMap::new();
         aliases.insert("tenter".to_string(), "terrainium enter".to_string());

@@ -4,14 +4,12 @@ Auto Apply:
     replace: false
     background: false
 Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
