@@ -12,14 +12,12 @@ function {
     alias texit="terrainium exit"
     # USER DEFINED ALIASES: END
     # USER DEFINED ENVS: START
-    export BIOME_POINTER="biome_real"
-    export BIOME_REAL="biome_real"
     export EDITOR="nvim"
-    export NESTED_POINTER="biome_value"
-    export NULL_POINTER="$NULL"
+    export ENV_VAR="overridden_env_val"
+    export NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    export NULL_POINTER="${NULL}"
     export PAGER="less"
-    export POINTER="biome_value"
-    export REAL="biome_value"
+    export POINTER_ENV_VAR="overridden_env_val"
     # USER DEFINED ENVS: END
 }
 

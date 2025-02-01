@@ -446,14 +446,12 @@ mod tests {
 
         let output = super::get(context, args).expect("to not throw an error");
         let expected = r#"Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 "#;
 
         assert_eq!(output, expected);
@@ -492,14 +490,12 @@ mod tests {
 
         let output = super::get(context, args).expect("to not throw an error");
         let expected = r#"Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 "#;
 
         assert_eq!(output, expected);
@@ -577,14 +573,12 @@ mod tests {
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 "#;
 
         assert_eq!(output, expected);
@@ -795,14 +789,12 @@ Environment Variables:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 Constructors:
     background:
         /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
@@ -955,14 +947,12 @@ Environment Variables:
     non_existent="!!!DOES NOT EXIST!!!"
     tenter="terrainium enter --biome example_biome"
 Environment Variables:
-    BIOME_POINTER="biome_real"
-    BIOME_REAL="biome_real"
     EDITOR="nvim"
-    NESTED_POINTER="biome_value"
-    NULL_POINTER="$NULL"
+    ENV_VAR="overridden_env_val"
+    NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+    NULL_POINTER="${NULL}"
     PAGER="less"
-    POINTER="biome_value"
-    REAL="biome_value"
+    POINTER_ENV_VAR="overridden_env_val"
 "#;
 
         assert_eq!(output, expected);

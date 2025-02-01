@@ -143,18 +143,23 @@ mod tests {
     #[test]
     fn environment_from_example_terrain_selected_biome() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
-        expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
-        expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
-        expected_envs.insert("NESTED_POINTER".to_string(), "biome_value".to_string());
-        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
+        expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
-        expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
+        expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
+        expected_envs.insert(
+            "NESTED_POINTER".to_string(),
+            "overridden_env_val-overridden_env_val-${NULL}".to_string(),
+        );
+        expected_envs.insert(
+            "POINTER_ENV_VAR".to_string(),
+            "overridden_env_val".to_string(),
+        );
         expected_envs.insert(
             "PROCESS_ENV_REF_VAR".to_string(),
             "PROCESS_ENV_VALUE".to_string(),
         );
-        expected_envs.insert("REAL".to_string(), "biome_value".to_string());
+
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),
@@ -215,7 +220,7 @@ mod tests {
         let mut terrain = Terrain::example();
         terrain.terrain_mut().add_env((
             "PROCESS_ENV_REF_VAR".to_string(),
-            "$PROCESS_ENV_VAR".to_string(),
+            "${PROCESS_ENV_VAR}".to_string(),
         ));
 
         let old_env = set_env_var(
@@ -234,14 +239,19 @@ mod tests {
     #[test]
     fn environment_from_example_terrain_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
-        expected_envs.insert("BIOME_POINTER".to_string(), "biome_real".to_string());
-        expected_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
-        expected_envs.insert("NESTED_POINTER".to_string(), "biome_value".to_string());
-        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
+        expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
+        expected_envs.insert(
+            "NESTED_POINTER".to_string(),
+            "overridden_env_val-overridden_env_val-${NULL}".to_string(),
+        );
+        expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
-        expected_envs.insert("POINTER".to_string(), "biome_value".to_string());
-        expected_envs.insert("REAL".to_string(), "biome_value".to_string());
+        expected_envs.insert(
+            "POINTER_ENV_VAR".to_string(),
+            "overridden_env_val".to_string(),
+        );
+
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),
@@ -339,11 +349,15 @@ mod tests {
     fn environment_from_example_terrain_selected_biome_different_from_default() -> Result<()> {
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
         expected_envs.insert("EDITOR".to_string(), "nano".to_string());
-        expected_envs.insert("NESTED_POINTER".to_string(), "real_value".to_string());
-        expected_envs.insert("NULL_POINTER".to_string(), "$NULL".to_string());
+        expected_envs.insert("ENV_VAR".to_string(), "env_val".to_string());
+        expected_envs.insert(
+            "NESTED_POINTER".to_string(),
+            "env_val-env_val-${NULL}".to_string(),
+        );
+        expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
-        expected_envs.insert("POINTER".to_string(), "real_value".to_string());
-        expected_envs.insert("REAL".to_string(), "real_value".to_string());
+        expected_envs.insert("POINTER_ENV_VAR".to_string(), "env_val".to_string());
+
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),

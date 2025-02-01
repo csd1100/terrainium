@@ -157,9 +157,7 @@ impl Terrain {
     pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
         let selected = self.select_biome(selected_biome)?.1;
         if selected == &self.terrain {
-            let mut terrain_with_substituted_envs = selected.clone();
-            terrain_with_substituted_envs.substitute_envs();
-            Ok(terrain_with_substituted_envs)
+            Ok(self.terrain.clone())
         } else {
             Ok(self.terrain.merge(selected))
         }
@@ -208,10 +206,8 @@ impl Terrain {
         let terrain = Biome::example();
 
         let mut biome_envs: BTreeMap<String, String> = BTreeMap::new();
-        biome_envs.insert("BIOME_POINTER".to_string(), "$BIOME_REAL".to_string());
-        biome_envs.insert("BIOME_REAL".to_string(), "biome_real".to_string());
         biome_envs.insert("EDITOR".to_string(), "nvim".to_string());
-        biome_envs.insert("REAL".to_string(), "biome_value".to_string());
+        biome_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
 
         let mut biome_aliases: BTreeMap<String, String> = BTreeMap::new();
         biome_aliases.insert(

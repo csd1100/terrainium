@@ -26,6 +26,7 @@ tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
 tracing-appender = { version = "0.2.3" }
 tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "process", "fs"] }
 tokio-stream = { version = "0.1.16", features = ["net"] }
+regex = "1.11.1"
 
 [dependencies.schemars]
 version = "0.8.21"

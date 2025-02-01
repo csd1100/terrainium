@@ -9,11 +9,11 @@ replace = true
 
 [terrain.envs]
 EDITOR = "vim"
-NESTED_POINTER = "$POINTER"
-NULL_POINTER = "$NULL"
+ENV_VAR = "env_val"
+NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}"
+NULL_POINTER = "${NULL}"
 PAGER = "less"
-POINTER = "$REAL"
-REAL = "real_value"
+POINTER_ENV_VAR = "${ENV_VAR}"
 
 [terrain.aliases]
 tenter = "terrainium enter"
@@ -34,10 +34,8 @@ exe = "/bin/echo"
 args = ["exiting terrain"]
 
 [biomes.example_biome.envs]
-BIOME_POINTER = "$BIOME_REAL"
-BIOME_REAL = "biome_real"
 EDITOR = "nvim"
-REAL = "biome_value"
+ENV_VAR = "overridden_env_val"
 
 [biomes.example_biome.aliases]
 tenter = "terrainium enter --biome example_biome"
