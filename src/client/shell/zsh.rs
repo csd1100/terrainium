@@ -96,13 +96,23 @@ source "$HOME/.config/terrainium/shell_integration/{}"
             .biomes()
             .keys()
             .map(|biome_name| -> Result<()> {
-                self.create_and_compile(&terrain, &scripts_dir, biome_name.to_string())?;
+                self.create_and_compile(
+                    &terrain,
+                    &scripts_dir,
+                    biome_name.to_string(),
+                    context.terrain_dir(),
+                )?;
                 Ok(())
             })
             .collect();
         result?;
 
-        self.create_and_compile(&terrain, &scripts_dir, "none".to_string())?;
+        self.create_and_compile(
+            &terrain,
+            &scripts_dir,
+            "none".to_string(),
+            context.terrain_dir(),
+        )?;
 
         Ok(())
     }
@@ -194,9 +204,15 @@ impl Zsh {
         terrain: &Terrain,
         scripts_dir: &Path,
         biome_name: String,
+        terrain_dir: &Path,
     ) -> Result<()> {
         let script_path = Self::script_path(scripts_dir, &biome_name);
-        self.create_script(terrain, Some(biome_name.to_string()), &script_path)?;
+        self.create_script(
+            terrain,
+            Some(biome_name.to_string()),
+            &script_path,
+            terrain_dir,
+        )?;
 
         let compiled_script_path = Self::compiled_script_path(scripts_dir, &biome_name);
         self.compile_script(&script_path, &compiled_script_path)?;
@@ -217,13 +233,15 @@ impl Zsh {
         terrain: &Terrain,
         biome_name: Option<String>,
         script_path: &PathBuf,
+        terrain_dir: &Path,
     ) -> Result<()> {
-        let environment = Environment::from(terrain, biome_name.clone()).unwrap_or_else(|_| {
-            panic!(
-                "expected to generate environment from terrain for biome {:?}",
-                biome_name
-            )
-        });
+        let environment = Environment::from(terrain, biome_name.clone(), terrain_dir)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "expected to generate environment from terrain for biome {:?}",
+                    biome_name
+                )
+            });
 
         let script = environment
             .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
@@ -291,6 +309,7 @@ mod tests {
         zsh.create_script(
             &terrain,
             Some("invalid_biome_name".to_string()),
+            &PathBuf::new(),
             &PathBuf::new(),
         )
         .expect("error not to be thrown");

@@ -39,8 +39,8 @@ pub async fn handle(
 
     let selected_biome = option_string_from(&biome_arg);
     let (biome_name, _) = terrain.select_biome(&selected_biome)?;
-    let environment =
-        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
+    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
+        .context("failed to generate environment")?;
 
     let commands = if operation == CONSTRUCTORS {
         environment.constructors()

@@ -1,5 +1,7 @@
 use crate::client::types::command::Command;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -23,6 +25,28 @@ impl Commands {
     pub(crate) fn append(&mut self, another: &mut Commands) {
         self.foreground.append(&mut another.foreground);
         self.background.append(&mut another.background);
+    }
+
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+        self.foreground
+            .iter_mut()
+            .try_for_each(|command| command.substitute_cwd(terrain_dir))
+            .context("failed to substitute cwd for foreground commands")?;
+
+        self.background
+            .iter_mut()
+            .try_for_each(|command| command.substitute_cwd(terrain_dir))
+            .context("failed to substitute cwd for background commands")
+    }
+
+    #[cfg(test)]
+    pub fn foreground_mut(&mut self) -> &mut Vec<Command> {
+        self.foreground.as_mut()
+    }
+
+    #[cfg(test)]
+    pub fn background_mut(&mut self) -> &mut Vec<Command> {
+        self.background.as_mut()
     }
 }
 

@@ -1,11 +1,12 @@
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use anyhow::{Context, Result};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::path::Path;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -153,6 +154,15 @@ impl Biome {
         self.set_envs(BTreeMap::from_iter(substituted_envs));
     }
 
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+        self.constructors
+            .substitute_cwd(terrain_dir)
+            .context("failed to substitute cwd for constructors")?;
+        self.destructors
+            .substitute_cwd(terrain_dir)
+            .context("failed to substitute cwd for destructors")
+    }
+
     pub fn example() -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());
@@ -192,5 +202,10 @@ impl Biome {
     #[cfg(test)]
     pub(crate) fn add_env(&mut self, env: (String, String)) {
         self.envs.insert(env.0, env.1);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_bkg_constructor(&mut self, command: Command) {
+        self.constructors.background_mut().push(command);
     }
 }

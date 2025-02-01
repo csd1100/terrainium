@@ -29,8 +29,8 @@ fn get(context: Context, get_args: GetArgs) -> Result<String> {
     let terrain =
         Terrain::from_toml(read_to_string(&toml_path).context("failed to read terrain.toml")?)
             .expect("terrain to be parsed from toml");
-    let environment =
-        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
+    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
+        .context("failed to generate environment")?;
 
     let mut result = String::new();
 
