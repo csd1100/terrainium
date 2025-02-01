@@ -1,4 +1,5 @@
-use crate::client::types::command::Command;
+use crate::client::types::command::{Command, CommandsType, OperationType};
+use crate::client::validation::ValidationResults;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -47,6 +48,32 @@ impl Commands {
     #[cfg(test)]
     pub fn background_mut(&mut self) -> &mut Vec<Command> {
         self.background.as_mut()
+    }
+
+    pub(crate) fn validate_commands(
+        &self,
+        biome_name: &str,
+        operation_type: OperationType,
+    ) -> ValidationResults {
+        let mut result = ValidationResults::new(vec![]);
+
+        self.foreground.iter().for_each(|c| {
+            result.append(&mut c.validate_command(
+                biome_name,
+                &operation_type,
+                CommandsType::Foreground,
+            ))
+        });
+
+        self.background.iter().for_each(|c| {
+            result.append(&mut c.validate_command(
+                biome_name,
+                &operation_type,
+                CommandsType::Background,
+            ))
+        });
+
+        result
     }
 }
 

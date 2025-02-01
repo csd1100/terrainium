@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn update_rc_path() {
         let temp_dir = tempfile::tempdir().unwrap();
-        fs::write(temp_dir.path().join(".zshrc"), "").unwrap();
+        write(temp_dir.path().join(".zshrc"), "").unwrap();
         Zsh::build(MockCommandToRun::default())
             .update_rc(Some(temp_dir.path().join(".zshrc")))
             .unwrap();

@@ -2,7 +2,6 @@ use log::{debug, error, info, warn};
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::fmt::Formatter;
-use std::path::Iter;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub(crate) enum ValidationMessageLevel {
@@ -13,7 +12,7 @@ pub(crate) enum ValidationMessageLevel {
 }
 
 impl std::fmt::Display for ValidationMessageLevel {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             ValidationMessageLevel::Debug => {
                 write!(f, "debug")
@@ -90,7 +89,7 @@ pub(crate) struct ValidationError {
 }
 
 impl std::fmt::Display for ValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         self.messages
             .iter()
             .try_for_each(|message| writeln!(f, "{} - {}", message.level, message.message))
@@ -106,7 +105,7 @@ impl std::fmt::Display for IdentifierType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             IdentifierType::Env => {
-                write!(f, "environment variable")
+                write!(f, "env")
             }
             IdentifierType::Alias => {
                 write!(f, "alias")
@@ -132,18 +131,18 @@ pub(crate) fn validate_identifiers(
             messages.push(ValidationResult {
                 level: ValidationMessageLevel::Error,
                 message:
-                format!("empty {} identifier is not allowed", data_type),
-                target: target.to_string(),
+                "empty identifier is not allowed".to_string(),
+                target: format!("{target}({data_type})"),
             })
         } else {
             if k.starts_with(" ") || k.ends_with(" ") {
                 messages.push(ValidationResult {
                     level: ValidationMessageLevel::Info,
                     message: format!(
-                        "trimming spaces from {} identifier: `{}`",
-                        data_type, k
+                        "trimming spaces from identifier: `{}`",
+                         k
                     ),
-                    target: target.to_string(),
+                    target: format!("{target}({data_type})"),
                 })
             }
 
@@ -154,10 +153,10 @@ pub(crate) fn validate_identifiers(
                 messages.push(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "{} identifier `{}` is invalid as it contains spaces",
-                        data_type, k
+                        "identifier `{}` is invalid as it contains spaces",
+                        k
                     ),
-                    target: target.to_string(),
+                    target: format!("{target}({data_type})"),
                 })
             }
 
@@ -165,18 +164,19 @@ pub(crate) fn validate_identifiers(
                 messages.push(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "{} identifier `{}` cannot start with number",
-                        data_type, k
+                        "identifier `{}` cannot start with number",
+                        k
                     ),
-                    target: target.to_string(),
+                    target: format!("{target}({data_type})"),
                 })
             }
 
             if invalid_identifier.is_match(k) {
                 messages.push(ValidationResult {
                     level: ValidationMessageLevel::Error,
-                    message: format!("{} identifier `{}` contains invalid characters. {} name can only include [a-zA-Z0-9_] characters.", data_type, k, data_type),
-                    target: target.to_string(),
+                    message: format!("identifier `{}` contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.",
+                                    k),
+                    target: format!("{target}({data_type})"),
                 })
             }
         }

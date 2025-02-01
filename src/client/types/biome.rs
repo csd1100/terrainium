@@ -1,9 +1,6 @@
-use crate::client::types::command::Command;
+use crate::client::types::command::{Command, OperationType};
 use crate::client::types::commands::Commands;
-use crate::client::validation::{
-    validate_identifiers, IdentifierType, ValidationError, ValidationMessageLevel,
-    ValidationResult, ValidationResults,
-};
+use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
@@ -44,10 +41,22 @@ impl Biome {
         validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
     }
 
+    fn validate_constructors(&self, biome_name: &str) -> ValidationResults {
+        self.constructors
+            .validate_commands(biome_name, OperationType::Constructor)
+    }
+
+    fn validate_destructors(&self, biome_name: &str) -> ValidationResults {
+        self.destructors
+            .validate_commands(biome_name, OperationType::Destructor)
+    }
+
     pub(crate) fn validate(&self, biome_name: &str) -> ValidationResults {
         let mut result = ValidationResults::new(vec![]);
         result.append(&mut self.validate_envs(biome_name));
         result.append(&mut self.validate_aliases(biome_name));
+        result.append(&mut self.validate_constructors(biome_name));
+        result.append(&mut self.validate_destructors(biome_name));
         result
     }
 
@@ -227,5 +236,15 @@ impl Biome {
     #[cfg(test)]
     pub(crate) fn add_bkg_constructor(&mut self, command: Command) {
         self.constructors.background_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_constructors(&mut self, constructors: Commands) {
+        self.constructors = constructors;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_destructors(&mut self, destructors: Commands) {
+        self.destructors = destructors;
     }
 }

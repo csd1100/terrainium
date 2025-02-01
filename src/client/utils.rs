@@ -456,7 +456,7 @@ impl<'a> AssertTerrain<'a> {
     }
 }
 
-pub fn set_env_var(key: String, value: Option<String>) -> std::result::Result<String, VarError> {
+pub fn set_env_var(key: String, value: Option<String>) -> Result<String, VarError> {
     // FIX: the tests run in parallel so setting same env var will cause tests to fail
     // as env var is not reset yet
     let orig_env = std::env::var(&key);

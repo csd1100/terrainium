@@ -104,7 +104,7 @@ impl Environment {
         ValidationResults::new(result)
     }
 
-    pub fn validate(&self) -> std::result::Result<ValidationResults, ValidationError> {
+    pub(crate) fn validate(&self) -> std::result::Result<ValidationResults, ValidationError> {
         let results = self.validate_envs();
         if results
             .results_ref()
@@ -614,7 +614,8 @@ mod tests {
 
     #[test]
     fn validate_envs() {
-        let mut environment = Environment::from(&Terrain::default(), None).expect("not to fail");
+        let mut environment =
+            Environment::from(&Terrain::default(), None, &PathBuf::new()).expect("not to fail");
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "nano".to_string());

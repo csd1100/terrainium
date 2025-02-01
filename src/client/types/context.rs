@@ -204,7 +204,7 @@ mod tests {
     #[serial]
     #[test]
     fn new_creates_context() -> Result<()> {
-        let home_dir = tempfile::tempdir()?;
+        let home_dir = tempdir()?;
 
         let current_dir = env::current_dir().expect("failed to get current directory");
         let central_dir = get_central_dir_location();
