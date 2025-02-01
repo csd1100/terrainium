@@ -1,4 +1,5 @@
 use crate::client::types::command::Command;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -35,13 +36,13 @@ impl Commands {
         }
     }
 
-    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) {
-        self.foreground.iter_mut().for_each(|command| {
-            command.substitute_cwd(terrain_dir);
-        });
-        self.background.iter_mut().for_each(|command| {
-            command.substitute_cwd(terrain_dir);
-        });
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+        self.foreground
+            .iter_mut()
+            .try_for_each(|command| command.substitute_cwd(terrain_dir))?;
+        self.background
+            .iter_mut()
+            .try_for_each(|command| command.substitute_cwd(terrain_dir))
     }
 
     pub fn example() -> Self {

@@ -1,5 +1,6 @@
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -153,9 +154,13 @@ impl Biome {
         self.set_envs(BTreeMap::from_iter(substituted_envs));
     }
 
-    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) {
-        self.constructors.substitute_cwd(terrain_dir);
-        self.destructors.substitute_cwd(terrain_dir);
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+        self.constructors
+            .substitute_cwd(terrain_dir)
+            .context("failed to substitute cwd for constructors")?;
+        self.destructors
+            .substitute_cwd(terrain_dir)
+            .context("failed to substitute cwd for destructors")
     }
 
     pub fn example() -> Self {

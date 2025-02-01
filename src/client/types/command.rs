@@ -1,4 +1,5 @@
 use crate::common::types::pb;
+use anyhow::{Context, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -17,8 +18,18 @@ impl Command {
         Command { exe, args, cwd }
     }
 
-    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) {
-        // todo!()
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+        if let Some(cwd) = &self.cwd {
+            if !cwd.is_absolute() {
+                self.cwd = Some(terrain_dir.join(cwd).canonicalize().context(format!(
+                    "failed to normalize path for terrain_dir: {:?} and cwd: {:?}",
+                    terrain_dir, cwd
+                ))?);
+            }
+        } else {
+            self.cwd = Some(terrain_dir.to_path_buf());
+        }
+        Ok(())
     }
 
     pub fn example() -> Self {

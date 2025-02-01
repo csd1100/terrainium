@@ -225,7 +225,7 @@ impl Terrain {
                 Command::new(
                     "/bin/bash".to_string(),
                     vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                    Some(PathBuf::from("./tests/scripts")),
+                    Some(PathBuf::from("../tests/scripts")),
                 ),
                 Command::new(
                     "/bin/bash".to_string(),
