@@ -137,6 +137,7 @@ impl AssertExecuteRequest {
 pub struct RunCommand {
     exe: &'static str,
     args: Vec<String>,
+    cwd: String,
     env_vars: BTreeMap<String, String>,
     exit_code: i32,
     error: bool,
@@ -149,6 +150,7 @@ impl RunCommand {
         Self {
             exe,
             args: vec![],
+            cwd: "".to_string(),
             env_vars: Default::default(),
             exit_code: 0,
             error: false,
@@ -159,6 +161,11 @@ impl RunCommand {
 
     pub fn with_arg(mut self, arg: &str) -> Self {
         self.args.push(arg.to_string());
+        self
+    }
+
+    pub fn with_cwd(mut self, arg: &str) -> Self {
+        self.cwd = arg.to_string();
         self
     }
 

@@ -1,17 +1,27 @@
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
-#[mockall_double::double]
-use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::common::constants::CONSTRUCTORS;
-use anyhow::Result;
+use anyhow::{Context as AnyhowContext, Result};
+
+#[mockall_double::double]
+use crate::client::types::client::Client;
 
 pub async fn handle(
     context: Context,
     biome_arg: Option<BiomeArg>,
     client: Option<Client>,
 ) -> Result<()> {
-    background::handle(&context, CONSTRUCTORS, biome_arg, None, client).await
+    let terrain_dir = std::env::current_dir().context("failed to get current directory")?;
+    background::handle(
+        &context,
+        CONSTRUCTORS,
+        biome_arg,
+        None,
+        client,
+        &terrain_dir,
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -59,7 +69,26 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_arg("./print_num_for_10_sec")
+                    .with_cwd("./tests/scripts")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "${NULL}")
+                    .with_env("PAGER", "less")
+                    .with_env("ENV_VAR", "overridden_env_val")
+                    .with_env(
+                        "NESTED_POINTER",
+                        "overridden_env_val-overridden_env_val-${NULL}",
+                    )
+                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+            )
+            .with_command(
+                RunCommand::with_exe("/bin/bash")
+                    .with_arg("-c")
+                    .with_arg("./print_num_for_10_sec")
+                    .with_cwd("/home/user/work/scripts")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -105,7 +134,26 @@ mod tests {
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
-                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_arg("./print_num_for_10_sec")
+                    .with_cwd("./tests/scripts")
+                    .with_env("EDITOR", "nvim")
+                    .with_env("NULL_POINTER", "${NULL}")
+                    .with_env("PAGER", "less")
+                    .with_env("ENV_VAR", "overridden_env_val")
+                    .with_env(
+                        "NESTED_POINTER",
+                        "overridden_env_val-overridden_env_val-${NULL}",
+                    )
+                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
+                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
+                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+            )
+            .with_command(
+                RunCommand::with_exe("/bin/bash")
+                    .with_arg("-c")
+                    .with_arg("./print_num_for_10_sec")
+                    .with_cwd("/home/user/work/scripts")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")

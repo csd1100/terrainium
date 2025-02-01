@@ -1,5 +1,6 @@
 use crate::client::types::command::Command;
 use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -32,6 +33,15 @@ impl Commands {
             foreground,
             background,
         }
+    }
+
+    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) {
+        self.foreground.iter_mut().for_each(|command| {
+            command.substitute_cwd(terrain_dir);
+        });
+        self.background.iter_mut().for_each(|command| {
+            command.substitute_cwd(terrain_dir);
+        });
     }
 
     pub fn example() -> Self {

@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::path::Path;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
@@ -16,9 +17,14 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn from(terrain: &Terrain, selected_biome: Option<String>) -> Result<Self> {
+    pub fn from(
+        terrain: &Terrain,
+        selected_biome: Option<String>,
+        terrain_dir: &Path,
+    ) -> Result<Self> {
         let mut merged: Biome = terrain.merged(&selected_biome)?;
         merged.substitute_envs();
+        merged.substitute_cwd(terrain_dir);
         let selected = selected_biome.unwrap_or_else(|| {
             if terrain.default_biome().is_none() {
                 "none".to_string()
@@ -115,13 +121,15 @@ mod tests {
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
+    use std::path::PathBuf;
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
         let expected: Environment =
             Environment::build(None, "none".to_string(), Terrain::default().terrain());
 
-        let actual = Environment::from(&Terrain::default(), None).expect("no error to be thrown");
+        let actual = Environment::from(&Terrain::default(), None, &PathBuf::default())
+            .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -135,7 +143,10 @@ mod tests {
 
         let expected = Environment::build(None, "none".to_string(), &terrain.terrain());
 
-        assert_eq!(Environment::from(&terrain, None)?, expected);
+        assert_eq!(
+            Environment::from(&terrain, None, &PathBuf::default())?,
+            expected
+        );
 
         Ok(())
     }
@@ -170,33 +181,43 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
             ),
         ];
-        let expected_constructor_background: Vec<Command> = vec![Command::new(
-            "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-        )];
+        let expected_constructor_background: Vec<Command> = vec![
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                Some(PathBuf::from("./tests/scripts")),
+            ),
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                Some(PathBuf::from("/home/user/work/scripts")),
+            ),
+        ];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
             ),
         ];
 
         let expected_destructor_background: Vec<Command> = vec![Command::new(
             "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
+            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            Some(PathBuf::from("./tests/scripts")),
         )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
@@ -228,8 +249,12 @@ mod tests {
             Some("PROCESS_ENV_VALUE".to_string()),
         );
 
-        let actual = Environment::from(&terrain, Some("example_biome".to_string()))
-            .expect("no error to be thrown");
+        let actual = Environment::from(
+            &terrain,
+            Some("example_biome".to_string()),
+            &PathBuf::default(),
+        )
+        .expect("no error to be thrown");
         assert_eq!(actual, expected);
 
         restore_env_var("PROCESS_ENV_VAR".to_string(), old_env);
@@ -262,33 +287,43 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
             ),
         ];
-        let expected_constructor_background: Vec<Command> = vec![Command::new(
-            "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-        )];
+        let expected_constructor_background: Vec<Command> = vec![
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                Some(PathBuf::from("./tests/scripts")),
+            ),
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                Some(PathBuf::from("/home/user/work/scripts")),
+            ),
+        ];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
             ),
         ];
 
         let expected_destructor_background: Vec<Command> = vec![Command::new(
             "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
+            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            Some(PathBuf::from("./tests/scripts")),
         )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
@@ -310,7 +345,8 @@ mod tests {
             ),
         );
 
-        let actual = Environment::from(&Terrain::example(), None).expect("no error to be thrown");
+        let actual = Environment::from(&Terrain::example(), None, &PathBuf::default())
+            .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -327,8 +363,12 @@ mod tests {
             terrain.terrain(),
         );
 
-        let actual = Environment::from(&Terrain::example(), Some("none".to_string()))
-            .expect("no error to be thrown");
+        let actual = Environment::from(
+            &Terrain::example(),
+            Some("none".to_string()),
+            &PathBuf::default(),
+        )
+        .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -336,9 +376,13 @@ mod tests {
 
     #[test]
     fn environment_from_terrain_throws_error_if_selected_biome_does_not_exists() -> Result<()> {
-        let error = Environment::from(&Terrain::default(), Some("non_existent_biome".to_string()))
-            .expect_err("expected an error when selected_biome does not exists")
-            .to_string();
+        let error = Environment::from(
+            &Terrain::default(),
+            Some("non_existent_biome".to_string()),
+            &PathBuf::default(),
+        )
+        .expect_err("expected an error when selected_biome does not exists")
+        .to_string();
 
         assert_eq!("the biome \"non_existent_biome\" does not exists", error);
 
@@ -368,18 +412,25 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome2".to_string()],
+                None,
             ),
         ];
         let expected_constructor_background: Vec<Command> = vec![];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome2".to_string()],
+                None,
             ),
         ];
         let expected_destructor_background: Vec<Command> = vec![];
@@ -411,8 +462,12 @@ mod tests {
             get_test_biome("example_biome2".to_string(), "nano".to_string()),
         );
 
-        let actual = Environment::from(&terrain, Some("example_biome2".to_string()))
-            .expect("no error to be thrown");
+        let actual = Environment::from(
+            &terrain,
+            Some("example_biome2".to_string()),
+            &PathBuf::default(),
+        )
+        .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -420,8 +475,12 @@ mod tests {
 
     #[test]
     fn environment_to_get_template() {
-        let environment = Environment::from(&Terrain::example(), Some("example_biome".to_string()))
-            .expect("not to fail");
+        let environment = Environment::from(
+            &Terrain::example(),
+            Some("example_biome".to_string()),
+            &PathBuf::default(),
+        )
+        .expect("not to fail");
 
         let base_template = fs::read_to_string("./templates/get.hbs").expect("to be read");
         let envs_template = fs::read_to_string("./templates/get_env.hbs").expect("to be read");
@@ -469,8 +528,12 @@ mod tests {
         templates.insert("constructors".to_string(), constructors_template);
         templates.insert("destructors".to_string(), destructors_template);
 
-        let environment = Environment::from(&Terrain::example(), Some("example_biome".to_string()))
-            .expect("not to fail");
+        let environment = Environment::from(
+            &Terrain::example(),
+            Some("example_biome".to_string()),
+            &PathBuf::default(),
+        )
+        .expect("not to fail");
 
         let rendered = environment
             .to_rendered("zsh".to_string(), templates)

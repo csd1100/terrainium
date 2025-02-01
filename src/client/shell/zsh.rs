@@ -218,12 +218,15 @@ impl Zsh {
         biome_name: Option<String>,
         script_path: &PathBuf,
     ) -> Result<()> {
-        let environment = Environment::from(terrain, biome_name.clone()).unwrap_or_else(|_| {
-            panic!(
-                "expected to generate environment from terrain for biome {:?}",
-                biome_name
-            )
-        });
+        let terrain_dir = std::env::current_dir().context("failed to get current directory")?;
+
+        let environment = Environment::from(terrain, biome_name.clone(), &terrain_dir)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "expected to generate environment from terrain for biome {:?}",
+                    biome_name
+                )
+            });
 
         let script = environment
             .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
