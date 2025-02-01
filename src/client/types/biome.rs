@@ -35,23 +35,64 @@ impl Biome {
 
     fn validate_envs(&self, biome_name: &str) -> Vec<ValidationMessage> {
         let mut messages = vec![];
+
+        let starting_with_num = Regex::new(r"^[0-9]").unwrap();
+        let invalid_identifier = Regex::new(r"[^a-zA-Z0-9_]").unwrap();
+
         self.envs.iter().for_each(|(k, _v)| {
-            if k.starts_with(" ") || k.ends_with(" ") {
-                messages.push(ValidationMessage {
-                    level: ValidationMessageLevel::Info,
-                    message: format!("trimming spaces from environment variable name `{}`", k),
-                    target: biome_name.to_string(),
-                })
-            }
-            if k.trim().contains(" ") {
+            let mut k = k.as_str();
+
+            if k.is_empty() {
                 messages.push(ValidationMessage {
                     level: ValidationMessageLevel::Error,
-                    message: format!(
-                        "environment variable name `{}` is invalid as it contains spaces",
-                        k
-                    ),
+                    message:
+                        "empty environment variable identifier is not allowed".to_string(),
                     target: biome_name.to_string(),
                 })
+            } else {
+                if k.starts_with(" ") || k.ends_with(" ") {
+                    messages.push(ValidationMessage {
+                        level: ValidationMessageLevel::Info,
+                        message: format!(
+                            "trimming spaces from environment variable identifier: `{}`",
+                            k
+                        ),
+                        target: biome_name.to_string(),
+                    })
+                }
+
+                // trim leading and trailing spaces for further validation
+                k = k.trim();
+
+                if k.contains(" ") {
+                    messages.push(ValidationMessage {
+                        level: ValidationMessageLevel::Error,
+                        message: format!(
+                            "environment variable identifier `{}` is invalid as it contains spaces",
+                            k
+                        ),
+                        target: biome_name.to_string(),
+                    })
+                }
+
+                if starting_with_num.is_match(k) {
+                    messages.push(ValidationMessage {
+                        level: ValidationMessageLevel::Error,
+                        message: format!(
+                            "environment variable identifier `{}` cannot start with number",
+                            k
+                        ),
+                        target: biome_name.to_string(),
+                    })
+                }
+
+                if invalid_identifier.is_match(k) {
+                    messages.push(ValidationMessage {
+                        level: ValidationMessageLevel::Error,
+                        message: format!("environment variable identifier `{}` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.", k),
+                        target: biome_name.to_string(),
+                    })
+                }
             }
         });
         messages

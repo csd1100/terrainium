@@ -432,6 +432,7 @@ pub mod tests {
         let mut biome = Biome::default();
 
         let mut envs = BTreeMap::<String, String>::new();
+        envs.insert("".to_string(), "VALUE_WITHOUT_SPACES".to_string());
         envs.insert(
             "TEST_ENV_WITHOUT_SPACES".to_string(),
             "VALUE_WITHOUT_SPACES".to_string(),
@@ -452,6 +453,26 @@ pub mod tests {
             "ENV_WITH_TRAILING_SPACES ".to_string(),
             "VALUE_WITHOUT_SPACES".to_string(),
         );
+        envs.insert(
+            "1ENV_STARTING_WITH_NUM".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        envs.insert(
+            "ALPHA_NUMERIC_123".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        envs.insert(
+            "alpha_numeric_123".to_string(),
+            "value_without_spaces".to_string(),
+        );
+        envs.insert(
+            "ENV-WITH-INVALID-#.(".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        envs.insert(
+            " 1INVALID-#. ( ".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
 
         terrain.terrain_mut().set_envs(envs.clone());
         biome.set_envs(envs);
@@ -464,41 +485,139 @@ pub mod tests {
 
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Error,
+            message: "empty environment variable identifier is not allowed".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
             message:
-                "environment variable name `TEST ENV WITH SPACES` is invalid as it contains spaces"
+                "environment variable identifier `TEST ENV WITH SPACES` is invalid as it contains spaces"
                     .to_string(),
             target: "terrain".to_string(),
         }));
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Info,
-            message: "trimming spaces from environment variable name ` ENV_WITH_LEADING_SPACES`"
+            message:
+                "trimming spaces from environment variable identifier: ` ENV_WITH_LEADING_SPACES`"
+                    .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message:
+                "trimming spaces from environment variable identifier: `ENV_WITH_TRAILING_SPACES `"
+                    .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable identifier `1ENV_STARTING_WITH_NUM` cannot start with number"
+                    .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `ENV-WITH-INVALID-#.(` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable identifier `1INVALID-#. (` is invalid as it contains spaces"
+                    .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
             target: "terrain".to_string(),
         }));
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Info,
-            message: "trimming spaces from environment variable name `ENV_WITH_TRAILING_SPACES `"
+            message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `1INVALID-#. (` cannot start with number"
+                .to_string(),
+            target: "terrain".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `1INVALID-#. (` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "terrain".to_string(),
         }));
 
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Error,
+            message: "empty environment variable identifier is not allowed".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
             message:
-                "environment variable name `TEST ENV WITH SPACES` is invalid as it contains spaces"
+                "environment variable identifier `TEST ENV WITH SPACES` is invalid as it contains spaces"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Info,
-            message: "trimming spaces from environment variable name ` ENV_WITH_LEADING_SPACES`"
+            message:
+                "trimming spaces from environment variable identifier: ` ENV_WITH_LEADING_SPACES`"
+                    .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message:
+                "trimming spaces from environment variable identifier: `ENV_WITH_TRAILING_SPACES `"
+                    .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable identifier `1ENV_STARTING_WITH_NUM` cannot start with number"
+                    .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `ENV-WITH-INVALID-#.(` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message:
+                "environment variable identifier `1INVALID-#. (` is invalid as it contains spaces"
+                    .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Info,
+            message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
         assert!(messages.contains(&ValidationMessage {
             level: ValidationMessageLevel::Info,
-            message: "trimming spaces from environment variable name `ENV_WITH_TRAILING_SPACES `"
+            message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `1INVALID-#. (` cannot start with number"
+                .to_string(),
+            target: "test_biome".to_string(),
+        }));
+        assert!(messages.contains(&ValidationMessage {
+            level: ValidationMessageLevel::Error,
+            message: "environment variable identifier `1INVALID-#. (` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),
         }));
     }
