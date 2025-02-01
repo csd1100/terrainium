@@ -1,8 +1,8 @@
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
 use crate::client::validation::{
-    validate_identifiers, IdentifierType, ValidationError, ValidationMessage,
-    ValidationMessageLevel,
+    validate_identifiers, IdentifierType, ValidationError, ValidationMessageLevel,
+    ValidationResult, ValidationResults,
 };
 use anyhow::{Context, Result};
 use regex::Regex;
@@ -36,16 +36,16 @@ impl Biome {
         }
     }
 
-    fn validate_envs(&self, biome_name: &str) -> Vec<ValidationMessage> {
+    fn validate_envs(&self, biome_name: &str) -> ValidationResults {
         validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
     }
 
-    fn validate_aliases(&self, biome_name: &str) -> Vec<ValidationMessage> {
+    fn validate_aliases(&self, biome_name: &str) -> ValidationResults {
         validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
     }
 
-    pub(crate) fn validate(&self, biome_name: &str) -> Vec<ValidationMessage> {
-        let mut result = vec![];
+    pub(crate) fn validate(&self, biome_name: &str) -> ValidationResults {
+        let mut result = ValidationResults::new(vec![]);
         result.append(&mut self.validate_envs(biome_name));
         result.append(&mut self.validate_aliases(biome_name));
         result
@@ -116,9 +116,10 @@ impl Biome {
         self.aliases = aliases;
     }
 
-    fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
+    pub(crate) fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
         let mut result = vec![];
-        let re = Regex::new(r"\$\{(.*?)}").expect("Regex parse failed");
+        let re =
+            Regex::new(r"\$\{(.*?)}").expect("environment variable reference regex to be parsed");
         for (_, [val]) in re.captures_iter(str_to_parse).map(|c| c.extract()) {
             result.push(val.to_string());
         }

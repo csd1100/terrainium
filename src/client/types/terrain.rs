@@ -1,7 +1,9 @@
 use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
-use crate::client::validation::{ValidationError, ValidationMessage, ValidationMessageLevel};
+use crate::client::validation::{
+    ValidationError, ValidationMessageLevel, ValidationResult, ValidationResults,
+};
 use anyhow::{anyhow, Context, Result};
 use log::{debug, error, info, warn};
 #[cfg(feature = "terrain-schema")]
@@ -183,46 +185,26 @@ impl Terrain {
         }
     }
 
-    fn validate(&self) -> Result<Vec<ValidationMessage>, ValidationError> {
+    fn validate(&self) -> Result<ValidationResults, ValidationError> {
         // validate terrain
-        let mut messages = self.terrain.validate("terrain");
+        let mut results = self.terrain.validate("none");
 
         // all biomes
         self.biomes
             .iter()
-            .for_each(|(biome_name, biome)| messages.append(&mut biome.validate(biome_name)));
+            .for_each(|(biome_name, biome)| results.append(&mut biome.validate(biome_name)));
 
-        if messages
+        if results
+            .results_ref()
             .iter()
             .any(|val| val.level == ValidationMessageLevel::Error)
         {
-            return Err(ValidationError { messages });
+            return Err(ValidationError {
+                messages: results.results(),
+            });
         }
 
-        Ok(messages)
-    }
-
-    fn print_validation_message(&self, messages: &[ValidationMessage]) {
-        let mut messages = messages.to_vec();
-        messages.sort_by_key(|val| val.level.clone());
-
-        messages.iter().for_each(|message| {
-            let target = format!("terrain_validation({})", message.target);
-            match message.level {
-                ValidationMessageLevel::Debug => {
-                    debug!(target: &target,"{:?}", message.message);
-                }
-                ValidationMessageLevel::Info => {
-                    info!(target: &target,"{:?}", message.message);
-                }
-                ValidationMessageLevel::Warn => {
-                    warn!(target: &target,"{:?}", message.message);
-                }
-                ValidationMessageLevel::Error => {
-                    error!(target: &target,"{:?}", message.message);
-                }
-            }
-        })
+        Ok(results)
     }
 
     pub fn from_toml(toml_str: String) -> Result<Self> {
@@ -336,7 +318,7 @@ pub mod tests {
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
     use crate::client::types::terrain::Terrain;
-    use crate::client::validation::{ValidationMessage, ValidationMessageLevel};
+    use crate::client::validation::{ValidationMessageLevel, ValidationResult};
     use std::collections::{BTreeMap, HashSet};
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
@@ -435,142 +417,143 @@ pub mod tests {
 
         let validation_result = terrain.validate().expect_err("expected validation error");
 
-        let messages: HashSet<ValidationMessage> =
+        let messages: HashSet<ValidationResult> =
             validation_result.messages.iter().cloned().collect();
 
-        assert!(messages.contains(&ValidationMessage {
+        assert_eq!(messages.len(), 22);
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "empty environment variable identifier is not allowed".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `TEST ENV WITH SPACES` is invalid as it contains spaces"
                     .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message:
                 "trimming spaces from environment variable identifier: ` ENV_WITH_LEADING_SPACES`"
                     .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message:
                 "trimming spaces from environment variable identifier: `ENV_WITH_TRAILING_SPACES `"
                     .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `1ENV_STARTING_WITH_NUM` cannot start with number"
                     .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `ENV-WITH-INVALID-#.(` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `1INVALID-#. (` is invalid as it contains spaces"
                     .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `1INVALID-#. (` cannot start with number"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `1INVALID-#. (` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
 
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "empty environment variable identifier is not allowed".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `TEST ENV WITH SPACES` is invalid as it contains spaces"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message:
                 "trimming spaces from environment variable identifier: ` ENV_WITH_LEADING_SPACES`"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message:
                 "trimming spaces from environment variable identifier: `ENV_WITH_TRAILING_SPACES `"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `1ENV_STARTING_WITH_NUM` cannot start with number"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `ENV-WITH-INVALID-#.(` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message:
                 "environment variable identifier `1INVALID-#. (` is invalid as it contains spaces"
                     .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from environment variable identifier: ` 1INVALID-#. ( `"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `1INVALID-#. (` cannot start with number"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "environment variable identifier `1INVALID-#. (` contains invalid characters. environment variable name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),
@@ -631,126 +614,127 @@ pub mod tests {
 
         let validation_result = terrain.validate().expect_err("expected validation error");
 
-        let messages: HashSet<ValidationMessage> =
+        let messages: HashSet<ValidationResult> =
             validation_result.messages.iter().cloned().collect();
 
-        assert!(messages.contains(&ValidationMessage {
+        assert_eq!(messages.len(), 22);
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "empty alias identifier is not allowed".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `TEST ALIAS WITH SPACES` is invalid as it contains spaces"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` ALIAS_WITH_LEADING_SPACES`"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: `ALIAS_WITH_TRAILING_SPACES `"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1ALIAS_STARTING_WITH_NUM` cannot start with number"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `ALIAS-WITH-INVALID-#.(` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` is invalid as it contains spaces"
                 .to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` cannot start with number".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
-            target: "terrain".to_string(),
+            target: "none".to_string(),
         }));
 
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "empty alias identifier is not allowed".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `TEST ALIAS WITH SPACES` is invalid as it contains spaces"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` ALIAS_WITH_LEADING_SPACES`"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: `ALIAS_WITH_TRAILING_SPACES `"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1ALIAS_STARTING_WITH_NUM` cannot start with number"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `ALIAS-WITH-INVALID-#.(` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` is invalid as it contains spaces"
                 .to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Info,
             message: "trimming spaces from alias identifier: ` 1INVALID-#. ( `".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` cannot start with number".to_string(),
             target: "test_biome".to_string(),
         }));
-        assert!(messages.contains(&ValidationMessage {
+        assert!(messages.contains(&ValidationResult {
             level: ValidationMessageLevel::Error,
             message: "alias identifier `1INVALID-#. (` contains invalid characters. alias name can only include [a-zA-Z0-9_] characters.".to_string(),
             target: "test_biome".to_string(),

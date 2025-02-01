@@ -1,6 +1,9 @@
 use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
 use crate::client::types::terrain::{AutoApply, Terrain};
+use crate::client::validation::{
+    ValidationError, ValidationMessageLevel, ValidationResult, ValidationResults,
+};
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -80,6 +83,42 @@ impl Environment {
         render(main_template, templates, self)
     }
 
+    fn validate_envs(&self) -> ValidationResults {
+        let mut result = vec![];
+        self.merged.envs().iter().for_each(|(k, v)| {
+            // validate if all env references are resolved
+            let env_refs = Biome::get_envs_to_substitute(v);
+            if !env_refs.is_empty() {
+                let refs = env_refs.join("`, `");
+                result.push(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!(
+                        "environment variable `{k}` contains reference to variables \
+                     (`{refs}`) that are not defined in terrain.toml and system environment variables. \
+                      ensure that variables (`{refs}`) are set before using `{k}` environment variable."
+                    ),
+                    target: self.selected_biome().clone(),
+                })
+            }
+        });
+        ValidationResults::new(result)
+    }
+
+    pub fn validate(&self) -> std::result::Result<ValidationResults, ValidationError> {
+        let results = self.validate_envs();
+        if results
+            .results_ref()
+            .iter()
+            .any(|val| val.level == ValidationMessageLevel::Error)
+        {
+            return Err(ValidationError {
+                messages: results.results(),
+            });
+        }
+
+        Ok(results)
+    }
+
     #[cfg(test)]
     pub fn build(default_biome: Option<String>, selected_biome: String, merged: &Biome) -> Self {
         Environment {
@@ -89,6 +128,11 @@ impl Environment {
             auto_apply: AutoApply::default(),
             merged: merged.clone(),
         }
+    }
+
+    #[cfg(test)]
+    pub fn merged_mut(&mut self) -> &mut Biome {
+        &mut self.merged
     }
 }
 
@@ -121,8 +165,9 @@ mod tests {
     };
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var};
+    use crate::client::validation::{ValidationMessageLevel, ValidationResult};
     use anyhow::Result;
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, HashSet};
     use std::fs;
     use std::fs::{canonicalize, create_dir_all};
     use std::path::PathBuf;
@@ -565,5 +610,31 @@ mod tests {
                 .expect("test data file to be read"),
             rendered
         )
+    }
+
+    #[test]
+    fn validate_envs() {
+        let mut environment = Environment::from(&Terrain::default(), None).expect("not to fail");
+
+        let mut envs: BTreeMap<String, String> = BTreeMap::new();
+        envs.insert("EDITOR".to_string(), "nano".to_string());
+        envs.insert(
+            "NESTED_POINTER".to_string(),
+            "env_val-${NULL_1}-${NULL_2}".to_string(),
+        );
+
+        environment.merged_mut().set_envs(envs);
+
+        let results = environment.validate().expect("should not fail");
+        let messages: HashSet<ValidationResult> = results.results_ref().iter().cloned().collect();
+
+        assert_eq!(messages.len(), 1);
+        assert!(messages.contains(&ValidationResult {
+            level: ValidationMessageLevel::Warn,
+            message: "environment variable `NESTED_POINTER` contains reference to variables \
+                 (`NULL_1`, `NULL_2`) that are not defined in terrain.toml and system environment variables. \
+                 ensure that variables (`NULL_1`, `NULL_2`) are set before using `NESTED_POINTER` environment variable.".to_string(),
+            target: "none".to_string(),
+        }));
     }
 }
