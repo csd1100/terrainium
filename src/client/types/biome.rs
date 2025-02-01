@@ -173,6 +173,7 @@ impl Biome {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             )],
             vec![],
         );
@@ -181,6 +182,7 @@ impl Biome {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
+                None,
             )],
             vec![],
         );

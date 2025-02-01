@@ -170,10 +170,12 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
             ),
         ];
         let expected_constructor_background: Vec<Command> = vec![Command::new(
@@ -182,12 +184,18 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
         )];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
             ),
         ];
 
@@ -197,6 +205,7 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
         )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
@@ -262,10 +271,12 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
             ),
         ];
         let expected_constructor_background: Vec<Command> = vec![Command::new(
@@ -274,12 +285,18 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
         )];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
             ),
         ];
 
@@ -289,6 +306,7 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
         )];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
@@ -368,18 +386,25 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome2".to_string()],
+                None,
             ),
         ];
         let expected_constructor_background: Vec<Command> = vec![];
         let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new("/bin/echo".to_string(), vec!["exiting terrain".to_string()]),
+            Command::new(
+                "/bin/echo".to_string(),
+                vec!["exiting terrain".to_string()],
+                None,
+            ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome2".to_string()],
+                None,
             ),
         ];
         let expected_destructor_background: Vec<Command> = vec![];

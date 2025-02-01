@@ -219,6 +219,7 @@ impl Terrain {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -226,6 +227,7 @@ impl Terrain {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
             )],
         );
 
@@ -233,6 +235,7 @@ impl Terrain {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -240,6 +243,7 @@ impl Terrain {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
             )],
         );
 
@@ -309,11 +313,13 @@ pub mod tests {
         let biome_constructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["entering biome ".to_string() + &name],
+            None,
         )];
         let biome_constructor_background: Vec<Command> = vec![];
         let biome_destructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome ".to_string() + &name],
+            None,
         )];
         let biome_destructor_background: Vec<Command> = vec![];
 
