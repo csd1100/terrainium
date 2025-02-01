@@ -141,7 +141,7 @@ mod tests {
         force_set_invalid_default_biome(&mut terrain, None);
         terrain.terrain_mut().substitute_envs();
 
-        let expected = Environment::build(None, "none".to_string(), &terrain.terrain());
+        let expected = Environment::build(None, "none".to_string(), terrain.terrain());
 
         assert_eq!(
             Environment::from(&terrain, None, &PathBuf::default())?,

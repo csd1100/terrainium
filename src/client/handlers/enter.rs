@@ -16,8 +16,6 @@ pub async fn handle(
     auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
-    let terrain_dir = std::env::current_dir().context("failed to get current directory")?;
-
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
     )
@@ -25,7 +23,7 @@ pub async fn handle(
 
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;
-    let environment = Environment::from(&terrain, biome, &terrain_dir)
+    let environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
     let mut envs = environment.envs();
@@ -53,14 +51,7 @@ pub async fn handle(
     } else {
         let result = tokio::join!(
             context.shell().spawn(envs.clone()),
-            background::handle(
-                &context,
-                CONSTRUCTORS,
-                biome_arg,
-                Some(envs),
-                client,
-                &terrain_dir
-            ),
+            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs), client,),
         );
 
         if let Err(e) = result.0 {

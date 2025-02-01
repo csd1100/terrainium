@@ -2,7 +2,7 @@ use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 use crate::client::types::context::Context;
 use crate::common::constants::CONSTRUCTORS;
-use anyhow::{Context as AnyhowContext, Result};
+use anyhow::Result;
 
 #[mockall_double::double]
 use crate::client::types::client::Client;
@@ -12,16 +12,7 @@ pub async fn handle(
     biome_arg: Option<BiomeArg>,
     client: Option<Client>,
 ) -> Result<()> {
-    let terrain_dir = std::env::current_dir().context("failed to get current directory")?;
-    background::handle(
-        &context,
-        CONSTRUCTORS,
-        biome_arg,
-        None,
-        client,
-        &terrain_dir,
-    )
-    .await
+    background::handle(&context, CONSTRUCTORS, biome_arg, None, client).await
 }
 
 #[cfg(test)]

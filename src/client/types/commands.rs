@@ -1,6 +1,6 @@
 use crate::client::types::command::Command;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;

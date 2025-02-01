@@ -11,7 +11,6 @@ use std::env;
 pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
-    let terrain_dir = std::env::current_dir().context("failed to get current directory")?;
 
     if session_id.is_empty() || selected_biome.is_empty() {
         return Err(anyhow!(
@@ -26,7 +25,6 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
             client,
-            &terrain_dir,
         )
         .await
         .context("failed to run destructors")?;
