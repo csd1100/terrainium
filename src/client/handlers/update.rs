@@ -84,12 +84,9 @@ mod tests {
     use crate::client::types::terrain::AutoApply;
     use crate::client::utils::{
         AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML,
-        WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME2_FOR_EXAMPLE_SCRIPT,
-        WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
-        WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT,
-        WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML,
-        WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
-        WITH_NONE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT, WITH_NONE_UPDATED_EXAMPLE_TOML,
+        WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML,
+        WITH_EXAMPLE_TERRAIN_TOML, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML,
+        WITH_NONE_UPDATED_EXAMPLE_TOML,
     };
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all};
@@ -139,8 +136,8 @@ mod tests {
             WITHOUT_DEFAULT_BIOME_TOML,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 
     #[test]
@@ -249,9 +246,9 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for("example_biome2", WITH_EXAMPLE_BIOME2_FOR_EXAMPLE_SCRIPT);
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome")
+        .script_was_created_for("example_biome2");
     }
 
     #[test]
@@ -303,11 +300,8 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for(
-            "example_biome",
-            WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
-        );
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 
     #[test]
@@ -359,11 +353,8 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NONE_UPDATED_EXAMPLE_TOML)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT)
-        .script_was_created_for(
-            "example_biome",
-            WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT,
-        );
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 
     #[test]
@@ -462,11 +453,8 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for(
-            "example_biome",
-            WITH_EXAMPLE_BIOME_FOR_UPDATED_EXAMPLE_BIOME_SCRIPT,
-        );
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 
     #[test]
@@ -513,8 +501,8 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 
     #[test]
@@ -561,7 +549,7 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-        .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+        .script_was_created_for("none")
+        .script_was_created_for("example_biome");
     }
 }

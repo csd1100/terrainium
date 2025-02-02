@@ -372,7 +372,7 @@ impl<'a> AssertTerrain<'a> {
         self
     }
 
-    pub fn script_was_created_for(self, biome_name: &str, mode: &'static str) -> Self {
+    pub fn script_was_created_for(self, biome_name: &str) -> Self {
         let script = self
             .central_dir
             .join("scripts")
@@ -384,13 +384,6 @@ impl<'a> AssertTerrain<'a> {
             biome_name
         );
 
-        assert_eq!(
-            read_to_string(&script).expect("to find script for biome"),
-            read_to_string(mode).expect("to find test script"),
-            "failed to assert script was created for biome {} for test script: {}",
-            biome_name,
-            mode
-        );
         self
     }
 

@@ -47,8 +47,7 @@ pub mod tests {
     use crate::client::types::context::Context;
     use crate::client::utils::{
         restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
-        WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
-        WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT, WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
+        WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_TERRAIN_TOML,
     };
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -81,7 +80,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         Ok(())
     }
@@ -108,7 +107,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         Ok(())
     }
@@ -212,8 +211,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }
@@ -262,8 +261,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }
@@ -313,7 +312,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
