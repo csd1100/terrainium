@@ -234,8 +234,23 @@ impl Biome {
     }
 
     #[cfg(test)]
-    pub(crate) fn add_bkg_constructor(&mut self, command: Command) {
+    pub(crate) fn add_bg_constructors(&mut self, command: Command) {
         self.constructors.background_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_bg_destructors(&mut self, command: Command) {
+        self.destructors.background_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_fg_constructors(&mut self, command: Command) {
+        self.constructors.foreground_mut().push(command.clone());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_fg_destructors(&mut self, command: Command) {
+        self.destructors.foreground_mut().push(command);
     }
 
     #[cfg(test)]

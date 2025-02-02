@@ -309,12 +309,12 @@ mod tests {
         terrain
             .terrain_mut()
             .add_env("PROCESS_ENV_REF_VAR", "${PROCESS_ENV_VAR}");
-        terrain.terrain_mut().add_bkg_constructor(Command::new(
+        terrain.terrain_mut().add_bg_constructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
             Some(PathBuf::from("tests/scripts")),
         ));
-        terrain.terrain_mut().add_bkg_constructor(Command::new(
+        terrain.terrain_mut().add_bg_constructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
             Some(PathBuf::from("/tmp")),

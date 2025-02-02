@@ -5,6 +5,7 @@ use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::cmp::PartialEq;
 use std::collections::BTreeMap;
 use std::env;
 use std::fmt::Display;
@@ -12,7 +13,7 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CommandsType {
     Foreground,
     Background,
@@ -153,6 +154,22 @@ impl Command {
                 message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
                 target: format!("{}({}:{})", biome_name, operation_type, commands_type),
             });
+            }
+        }
+
+        if trimmed.contains("sudo") {
+            if commands_type == CommandsType::Background {
+                result.push(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).",trimmed, self.args.join(" ")),
+                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                });
+            } else {
+                result.push(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.",trimmed, self.args.join(" ")),
+                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                });
             }
         }
 

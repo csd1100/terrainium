@@ -313,7 +313,7 @@ impl Default for Terrain {
 #[cfg(test)]
 pub mod tests {
     use crate::client::types::biome::Biome;
-    use crate::client::types::command::Command;
+    use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var};
@@ -541,6 +541,7 @@ pub mod tests {
         write(&not_executable, "").unwrap();
 
         [
+            "sudo",
             "with_leading_spaces",
             "with_trailing_spaces",
             "valid_command",
@@ -631,10 +632,32 @@ pub mod tests {
         ];
         let commands = Commands::new(command_vec.clone(), command_vec.clone());
 
+        let sudo_command = Command::new(
+            "sudo".to_string(),
+            vec!["whoami".to_string()],
+            Some(test_dir.path().to_path_buf()),
+        );
+
         terrain.terrain_mut().set_constructors(commands.clone());
-        biome.set_constructors(commands.clone());
         terrain.terrain_mut().set_destructors(commands.clone());
+        terrain
+            .terrain_mut()
+            .add_fg_constructors(sudo_command.clone());
+        terrain
+            .terrain_mut()
+            .add_bg_constructors(sudo_command.clone());
+        terrain
+            .terrain_mut()
+            .add_fg_destructors(sudo_command.clone());
+        terrain
+            .terrain_mut()
+            .add_bg_destructors(sudo_command.clone());
+        biome.set_constructors(commands.clone());
         biome.set_destructors(commands.clone());
+        biome.add_fg_constructors(sudo_command.clone());
+        biome.add_bg_constructors(sudo_command.clone());
+        biome.add_fg_destructors(sudo_command.clone());
+        biome.add_bg_destructors(sudo_command);
 
         terrain.update("test_biome".to_string(), biome);
 
@@ -654,7 +677,7 @@ pub mod tests {
 
         let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
 
-        assert_eq!(messages.len(), 96);
+        assert_eq!(messages.len(), 104);
         ["none", "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
@@ -704,6 +727,19 @@ pub mod tests {
                                 target: format!("{}({}:{})", biome_name, operation_type, commands_type),
                             }), "failed to validate exe absolute path not being present for {}({}:{})", biome_name, operation_type, commands_type);
 
+                            if commands_type == &CommandsType::Background.to_string() {
+                                assert!(messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: "command exe: `sudo` args: `whoami` uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).".to_string(),
+                                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                }), "failed to validate exe containing sudo for {}({}:{})", biome_name, operation_type, commands_type);
+                            } else {
+                                assert!(messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: "command exe: `sudo` args: `whoami` uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.".to_string(),
+                                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                }), "failed to validate exe containing sudo for {}({}:{})", biome_name, operation_type, commands_type);
+                            }
                         })
                 })
         });
