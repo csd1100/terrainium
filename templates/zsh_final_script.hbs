@@ -16,13 +16,13 @@ function {
 
 function __terrainium_shell_constructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> constructors this.merged.constructors }}
+{{> commands this.merged.constructors }}
     fi
 }
 
 function __terrainium_shell_destructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> destructors this.merged.destructors }}
+{{> commands this.merged.destructors }}
     fi
 }
 

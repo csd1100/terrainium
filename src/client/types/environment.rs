@@ -111,6 +111,7 @@ pub fn render<T: Serialize>(
 
 #[cfg(test)]
 mod tests {
+    use crate::client::shell::{Shell, Zsh};
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
@@ -549,23 +550,6 @@ mod tests {
 
     #[test]
     fn environment_to_zsh() {
-        let base_template =
-            fs::read_to_string("./templates/zsh_final_script.hbs").expect("to be read");
-        let envs_template = fs::read_to_string("./templates/zsh_env.hbs").expect("to be read");
-        let aliases_template =
-            fs::read_to_string("./templates/zsh_aliases.hbs").expect("to be read");
-        let constructors_template =
-            fs::read_to_string("./templates/zsh_constructors.hbs").expect("to be read");
-        let destructors_template =
-            fs::read_to_string("./templates/zsh_destructors.hbs").expect("to be read");
-
-        let mut templates: BTreeMap<String, String> = BTreeMap::new();
-        templates.insert("zsh".to_string(), base_template);
-        templates.insert("envs".to_string(), envs_template);
-        templates.insert("aliases".to_string(), aliases_template);
-        templates.insert("constructors".to_string(), constructors_template);
-        templates.insert("destructors".to_string(), destructors_template);
-
         let environment = Environment::from(
             &Terrain::example(),
             Some("example_biome".to_string()),
@@ -574,7 +558,7 @@ mod tests {
         .expect("not to fail");
 
         let rendered = environment
-            .to_rendered("zsh".to_string(), templates)
+            .to_rendered("zsh".to_string(), Zsh::templates())
             .expect("no error to be thrown");
 
         assert_eq!(

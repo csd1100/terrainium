@@ -3,9 +3,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, ZSH_ALIASES_TEMPLATE_NAME,
-    ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
-    ZSH_MAIN_TEMPLATE_NAME,
+    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
 };
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
@@ -20,14 +18,10 @@ use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 
-const ZSH_MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
-const ZSH_ENVS_TEMPLATE: &str = include_str!("../../../templates/zsh_env.hbs");
-const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.hbs");
-const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
-const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
-
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
+
 const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
+const MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
 
 impl Shell for Zsh {
     fn get() -> Self {
@@ -162,26 +156,44 @@ source "$HOME/.config/terrainium/shell_integration/{}"
     }
 
     fn templates() -> BTreeMap<String, String> {
+        let main_template_name: &str = "zsh";
+        let envs_template_name: &str = "envs";
+        let aliases_template_name: &str = "aliases";
+        let commands_template_name: &str = "commands";
+
         let mut templates: BTreeMap<String, String> = BTreeMap::new();
+        templates.insert(main_template_name.to_string(), MAIN_TEMPLATE.to_string());
         templates.insert(
-            ZSH_MAIN_TEMPLATE_NAME.to_string(),
-            ZSH_MAIN_TEMPLATE.to_string(),
+            envs_template_name.to_string(),
+            r#"{{#if this}}
+{{#each this}}
+    export {{@key}}="{{{this}}}"
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
         templates.insert(
-            ZSH_ENVS_TEMPLATE_NAME.to_string(),
-            ZSH_ENVS_TEMPLATE.to_string(),
+            aliases_template_name.to_string(),
+            r#"{{#if this}}
+{{#each this}}
+    alias {{@key}}="{{{this}}}"
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
+
         templates.insert(
-            ZSH_ALIASES_TEMPLATE_NAME.to_string(),
-            ZSH_ALIASES_TEMPLATE.to_string(),
-        );
-        templates.insert(
-            ZSH_CONSTRUCTORS_TEMPLATE_NAME.to_string(),
-            ZSH_CONSTRUCTORS_TEMPLATE.to_string(),
-        );
-        templates.insert(
-            ZSH_DESTRUCTORS_TEMPLATE_NAME.to_string(),
-            ZSH_DESTRUCTORS_TEMPLATE.to_string(),
+            commands_template_name.to_string(),
+            r#"{{#if this}}
+{{#if this.foreground}}
+{{#each this.foreground}}
+    {{#if this}}
+        {{this.exe}} {{#each this.args}}{{{this}}}{{/each}}
+    {{/if}}
+{{/each}}
+{{/if}}
+{{/if}}"#
+                .to_string(),
         );
         templates
     }
@@ -244,7 +256,7 @@ impl Zsh {
             });
 
         let script = environment
-            .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
+            .to_rendered("zsh".to_string(), Zsh::templates())
             .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
 
         write(script_path, script)
