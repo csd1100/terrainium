@@ -53,7 +53,14 @@ pub async fn handle(
     } else {
         let result = tokio::join!(
             context.shell().spawn(envs.clone()),
-            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs), client),
+            background::handle(
+                &context,
+                CONSTRUCTORS,
+                terrain,
+                biome_arg,
+                Some(envs),
+                client
+            ),
         );
 
         if let Err(e) = result.0 {

@@ -15,9 +15,15 @@ use terrainium::client::handlers::schema;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-
+    // need to keep _out_guard in scope till program exits for logger to work
     let (subscriber, _out_guard) = init_logging(LevelFilter::from(args.options.log_level));
-    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+
+    if let Some(Verbs::Get { .. }) = &args.command {
+        // do not print any logs for get command as output will be used by scripts
+    } else {
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("unable to set global subscriber");
+    }
 
     let context = Context::generate(&home_dir().expect("to detect home directory"));
 

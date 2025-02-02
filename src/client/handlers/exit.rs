@@ -3,10 +3,12 @@ use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
+use std::fs::read_to_string;
 
 pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
@@ -19,9 +21,16 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     }
 
     if should_run_destructor() {
+        let terrain = Terrain::from_toml(
+            read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
+            context.terrain_dir(),
+        )
+        .expect("terrain to be parsed from toml");
+
         background::handle(
             &context,
             DESTRUCTORS,
+            terrain,
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
             client,

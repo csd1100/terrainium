@@ -3,15 +3,23 @@ use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::constants::DESTRUCTORS;
-use anyhow::Result;
+use anyhow::{Context as AnyhowContext, Result};
+use std::fs::read_to_string;
 
 pub async fn handle(
     context: Context,
     biome_arg: Option<BiomeArg>,
     client: Option<Client>,
 ) -> Result<()> {
-    background::handle(&context, DESTRUCTORS, biome_arg, None, client).await
+    let terrain = Terrain::from_toml(
+        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
+        context.terrain_dir(),
+    )
+    .expect("terrain to be parsed from toml");
+
+    background::handle(&context, DESTRUCTORS, terrain, biome_arg, None, client).await
 }
 
 #[cfg(test)]

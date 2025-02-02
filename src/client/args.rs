@@ -23,7 +23,7 @@ pub struct Options {
     #[arg(long, group = "update-rc")]
     pub update_rc_path: Option<PathBuf>,
 
-    #[arg(short, long, default_value = "info")]
+    #[arg(short, long, default_value = "warn", global = true)]
     pub log_level: Level,
 }
 
