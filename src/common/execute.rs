@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use mockall::mock;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
 use tokio::fs;
@@ -27,6 +28,12 @@ pub struct CommandToRun {
     cwd: PathBuf,
 }
 
+impl Display for CommandToRun {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.exe, self.args.join(" "))
+    }
+}
+
 impl CommandToRun {
     pub fn new(
         exe: String,
@@ -41,6 +48,10 @@ impl CommandToRun {
             envs,
             cwd,
         }
+    }
+
+    pub fn get_exe(&self) -> &str {
+        &self.exe
     }
 
     pub fn set_args(&mut self, args: Vec<String>) {
@@ -96,7 +107,8 @@ impl Execute for CommandToRun {
 
     #[instrument]
     async fn async_get_output(self) -> Result<Output> {
-        event!(Level::INFO, "running async get_output for {:?}", self);
+        event!(Level::INFO, "running async get_output for '{}'", self);
+        event!(Level::TRACE, "running async process {:?}", self);
         let mut command: tokio::process::Command = self.into();
         command.output().await.context("failed to get output")
     }
@@ -104,10 +116,11 @@ impl Execute for CommandToRun {
     async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
         event!(
             Level::INFO,
-            "running async process with wait for {:?}, with logs in file: {:?}",
+            "running async process with wait for '{}', with logs in file: {:?}",
             &self,
             log_path,
         );
+        event!(Level::TRACE, "running async process with wait {:?}", &self,);
 
         let log_file = fs::File::options()
             .create(true)

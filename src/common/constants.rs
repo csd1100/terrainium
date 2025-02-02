@@ -8,8 +8,11 @@ pub(crate) const GET_CONSTRUCTORS_TEMPLATE_NAME: &str = "constructors";
 pub(crate) const GET_DESTRUCTORS_TEMPLATE_NAME: &str = "destructors";
 pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
 
+pub const CONFIG_LOCATION: &str = ".config/terrainium";
+
 pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
 pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
+pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
 
 pub const FPATH: &str = "FPATH";
 
