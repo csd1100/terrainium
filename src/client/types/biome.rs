@@ -41,22 +41,22 @@ impl Biome {
         validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
     }
 
-    fn validate_constructors(&self, biome_name: &str) -> ValidationResults {
+    fn validate_constructors(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
         self.constructors
-            .validate_commands(biome_name, OperationType::Constructor)
+            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
     }
 
-    fn validate_destructors(&self, biome_name: &str) -> ValidationResults {
+    fn validate_destructors(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
         self.destructors
-            .validate_commands(biome_name, OperationType::Destructor)
+            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
     }
 
-    pub(crate) fn validate(&self, biome_name: &str) -> ValidationResults {
+    pub(crate) fn validate(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
         let mut result = ValidationResults::new(vec![]);
         result.append(&mut self.validate_envs(biome_name));
         result.append(&mut self.validate_aliases(biome_name));
-        result.append(&mut self.validate_constructors(biome_name));
-        result.append(&mut self.validate_destructors(biome_name));
+        result.append(&mut self.validate_constructors(biome_name, terrain_dir));
+        result.append(&mut self.validate_destructors(biome_name, terrain_dir));
         result
     }
 

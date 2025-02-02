@@ -2,11 +2,12 @@ use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
 use crate::client::validation::{ValidationError, ValidationMessageLevel, ValidationResults};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::Path;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
@@ -182,14 +183,14 @@ impl Terrain {
         }
     }
 
-    fn validate(&self) -> Result<ValidationResults, ValidationError> {
+    fn validate(&self, terrain_dir: &Path) -> Result<ValidationResults, ValidationError> {
         // validate terrain
-        let mut results = self.terrain.validate("none");
+        let mut results = self.terrain.validate("none", terrain_dir);
 
         // all biomes
-        self.biomes
-            .iter()
-            .for_each(|(biome_name, biome)| results.append(&mut biome.validate(biome_name)));
+        self.biomes.iter().for_each(|(biome_name, biome)| {
+            results.append(&mut biome.validate(biome_name, terrain_dir))
+        });
 
         if results
             .results_ref()
@@ -319,7 +320,9 @@ pub mod tests {
     use crate::client::validation::{ValidationMessageLevel, ValidationResult};
     use serial_test::serial;
     use std::collections::{BTreeMap, HashSet};
-    use std::fs::{create_dir_all, write};
+    use std::fs::{create_dir_all, metadata, set_permissions, write};
+    use std::os::unix::fs::PermissionsExt;
+    use std::path::PathBuf;
     use tempfile::tempdir;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
@@ -418,7 +421,9 @@ pub mod tests {
         biome.set_aliases(map);
         terrain.update("test_biome".to_string(), biome);
 
-        let validation_result = terrain.validate().expect_err("expected validation error");
+        let validation_result = terrain
+            .validate(&PathBuf::new())
+            .expect_err("expected validation error");
 
         let messages: HashSet<ValidationResult> =
             validation_result.messages.iter().cloned().collect();
@@ -512,27 +517,116 @@ pub mod tests {
     #[serial]
     #[test]
     fn validate_constructors_and_destructors() {
+        let test_dir = tempdir().unwrap();
+
+        let paths_root = tempdir().unwrap();
+        let paths_bin = paths_root.path().join("bin");
+        let paths_usr_bin = paths_root.path().join("usr").join("bin");
+
+        create_dir_all(&paths_bin).unwrap();
+        create_dir_all(&paths_usr_bin).unwrap();
+
+        let relative_file = test_dir.path().join("relative_path_with_cwd");
+        create_file_with_all_executable_permission(&relative_file);
+
+        let absolute_path = test_dir.path().join("absolute_path");
+        create_file_with_all_executable_permission(&absolute_path);
+
+        let absolute_path_not_present = test_dir.path().join("absolute_path_not_present");
+
+        let absolute_path_not_executable = test_dir.path().join("absolute_path_not_executable");
+        write(&absolute_path_not_executable, "").unwrap();
+
+        let not_executable = test_dir.path().join("not_executable");
+        write(&not_executable, "").unwrap();
+
+        [
+            "with_leading_spaces",
+            "with_trailing_spaces",
+            "valid_command",
+        ]
+        .iter()
+        .for_each(|command| {
+            let mut path = paths_bin.clone();
+            path.push(command);
+            create_file_with_all_executable_permission(&path);
+        });
+        ["with_relative_path_in_arg", "with_relative_not_present"]
+            .iter()
+            .for_each(|command| {
+                let mut path = paths_usr_bin.clone();
+                path.push(command);
+                create_file_with_all_executable_permission(&path);
+            });
+
         let mut terrain = Terrain::default();
         let mut biome = Biome::default();
+
         let command_vec = vec![
-            Command::new("not_in_path".to_string(), vec![], None),
-            Command::new("with spaces".to_string(), vec![], None),
-            Command::new(" with_leading_spaces".to_string(), vec![], None),
-            Command::new("with_trailing_spaces ".to_string(), vec![], None),
+            Command::new(
+                "not_in_path".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "with spaces".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                " with_leading_spaces".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "with_trailing_spaces ".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "./relative_path_with_cwd".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "./not_executable".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "./relative_not_present".to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                absolute_path.to_string_lossy().to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                absolute_path_not_present.to_string_lossy().to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                absolute_path_not_executable.to_string_lossy().to_string(),
+                vec![],
+                Some(test_dir.path().to_path_buf()),
+            ),
             Command::new(
                 "with_relative_path_in_arg".to_string(),
                 vec!["./present/file".to_string()],
-                None,
+                Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
-                "with_relative_not_present".to_string(),
+                "with_relative_arg_not_present".to_string(),
                 vec!["./not_present".to_string()],
-                None,
+                Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
+                Some(test_dir.path().to_path_buf()),
             ),
         ];
         let commands = Commands::new(command_vec.clone(), command_vec.clone());
@@ -544,32 +638,6 @@ pub mod tests {
 
         terrain.update("test_biome".to_string(), biome);
 
-        let paths_root = tempdir().unwrap();
-        let paths_bin = paths_root.path().join("bin");
-        let paths_usr_bin = paths_root.path().join("usr").join("bin");
-
-        create_dir_all(&paths_bin).unwrap();
-        create_dir_all(&paths_usr_bin).unwrap();
-
-        [
-            "with_leading_spaces",
-            "with_trailing_spaces",
-            "valid_command",
-        ]
-        .iter()
-        .for_each(|command| {
-            let mut path = paths_bin.clone();
-            path.push(command);
-            write(path, "").unwrap();
-        });
-        ["with_relative_path_in_arg", "with_relative_not_present"]
-            .iter()
-            .for_each(|command| {
-                let mut path = paths_usr_bin.clone();
-                path.push(command);
-                write(path, "").unwrap();
-            });
-
         let real_path = set_env_var(
             "PATH".to_string(),
             Some(format!(
@@ -578,45 +646,75 @@ pub mod tests {
                 paths_usr_bin.display()
             )),
         );
-        let validation_result = terrain.validate().expect_err("to fail").messages;
+
+        let validation_result = terrain
+            .validate(test_dir.path())
+            .expect_err("to fail")
+            .messages;
 
         let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
 
-        assert_eq!(messages.len(), 56);
-        ["none", "test_biome"].iter().for_each(|target| {
+        assert_eq!(messages.len(), 96);
+        ["none", "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
                 .for_each(|operation_type| {
                     ["foreground", "background"]
                         .iter()
-                        .for_each(|command_type| {
+                        .for_each(|commands_type| {
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Error,
                                 message: "exe `with spaces` contains whitespaces.".to_string(),
-                                target: format!("{}({}:{})", target, operation_type, command_type),
-                            }), "failed to validate whitespace not being present in exe for {}({}:{})", target, operation_type, command_type);
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate whitespace not being present in exe for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
-                                message: format!("exe `not_in_path` is not present in PATH variable. make sure it is present before {} {} is to be run.", command_type, operation_type),
-                                target: format!("{}({}:{})", target, operation_type, command_type),
-                            }), "failed to validate exe being not in path for {}({}:{})", target, operation_type, command_type);
+                                message: format!("exe `not_in_path` is not present in PATH variable. make sure it is present before {} {} is to be run.", commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe being not in path for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
-                                message: format!("exe ` with_leading_spaces` has leading / trailing spaces. make sure it is removed {} {} is to be run.", command_type, operation_type),
-                                target: format!("{}({}:{})", target, operation_type, command_type),
-                            }), "failed to validate exe leading spaces for {}({}:{})", target, operation_type, command_type);
+                                message: format!("exe ` with_leading_spaces` has leading / trailing spaces. make sure it is removed {} {} is to be run.", commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe leading spaces for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
-                                message: format!("exe `with_trailing_spaces ` has leading / trailing spaces. make sure it is removed {} {} is to be run.", command_type, operation_type),
-                                target: format!("{}({}:{})", target, operation_type, command_type),
-                            }), "failed to validate exe trailing for {}({}:{})", target, operation_type, command_type);
+                                message: format!("exe `with_trailing_spaces ` has leading / trailing spaces. make sure it is removed {} {} is to be run.", commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe trailing for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe `./not_executable` does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe not having execute permission for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe `./relative_not_present` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", test_dir.path(), commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe being not in present in relative path for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe `{:?}` does not exists. make sure it is present before {} {} is to be run.", absolute_path_not_present, commands_type, operation_type),
+                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                            }), "failed to validate exe absolute path not being present for {}({}:{})", biome_name, operation_type, commands_type);
+
                         })
                 })
         });
 
         restore_env_var("PATH".to_string(), real_path);
+    }
+
+    fn create_file_with_all_executable_permission(file_path: &PathBuf) {
+        write(file_path, "").unwrap();
+        let mut perms = metadata(file_path).unwrap().permissions();
+        perms.set_mode(perms.mode() | 0o111); // Add executable permission for user, group, and others
+        set_permissions(file_path, perms).unwrap();
     }
 }

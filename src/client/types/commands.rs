@@ -54,6 +54,7 @@ impl Commands {
         &self,
         biome_name: &str,
         operation_type: OperationType,
+        terrain_dir: &Path,
     ) -> ValidationResults {
         let mut result = ValidationResults::new(vec![]);
 
@@ -62,6 +63,7 @@ impl Commands {
                 biome_name,
                 &operation_type,
                 CommandsType::Foreground,
+                terrain_dir,
             ))
         });
 
@@ -70,6 +72,7 @@ impl Commands {
                 biome_name,
                 &operation_type,
                 CommandsType::Background,
+                terrain_dir,
             ))
         });
 

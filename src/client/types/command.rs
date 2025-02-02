@@ -6,10 +6,11 @@ use home::home_dir;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::env;
 use std::fmt::Display;
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::{env, result};
 
 #[derive(Clone, Debug)]
 pub enum CommandsType {
@@ -89,17 +90,19 @@ impl Command {
         biome_name: &str,
         operation_type: &OperationType,
         commands_type: CommandsType,
+        terrain_dir: &Path,
     ) -> ValidationResults {
         let mut result = vec![];
+        let exe = self.exe.as_str();
 
-        if self.exe.starts_with(" ") || self.exe.ends_with(" ") {
+        if exe.starts_with(" ") || exe.ends_with(" ") {
             result.push(ValidationResult {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe `{}` has leading / trailing spaces. make sure it is removed {} {} is to be run.", &self.exe, commands_type, operation_type),
                 target: format!("{}({}:{})", biome_name, operation_type, commands_type),
             });
         }
-        let trimmed = self.exe.trim();
+        let trimmed = exe.trim();
 
         if trimmed.contains(" ") {
             result.push(ValidationResult {
@@ -109,28 +112,75 @@ impl Command {
             });
         }
 
-        if !is_exe_in_path(&self.exe) {
-            result.push(ValidationResult {
+        let exe_path = PathBuf::from(trimmed);
+        let executable_validation_message = ValidationResult {
+            level: ValidationMessageLevel::Warn,
+            message: format!("exe `{}` does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", exe, commands_type, operation_type),
+            target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+        };
+
+        if exe_path.is_absolute() {
+            if !exe_path.exists() {
+                result.push(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!("exe `{:?}` does not exists. make sure it is present before {} {} is to be run.", trimmed, commands_type, operation_type),
+                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                });
+            } else if !is_executable(&exe_path) {
+                result.push(executable_validation_message);
+            }
+        } else if trimmed.starts_with("./") || trimmed.starts_with("../") {
+            let wd = self.cwd.clone().unwrap_or(terrain_dir.to_path_buf());
+            let exe_path = wd.join(trimmed);
+            if !exe_path.exists() {
+                result.push(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!("exe `{}` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", trimmed, wd, commands_type, operation_type),
+                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                });
+            } else if !is_executable(&exe_path) {
+                result.push(executable_validation_message);
+            }
+        } else {
+            let res = is_exe_in_path(&self.exe);
+            if let Some(exe_path) = res {
+                if !is_executable(&exe_path) {
+                    result.push(executable_validation_message);
+                }
+            } else {
+                result.push(ValidationResult {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
                 target: format!("{}({}:{})", biome_name, operation_type, commands_type),
             });
+            }
         }
 
         ValidationResults::new(result)
     }
 }
 
-fn is_exe_in_path(exe: &str) -> bool {
+fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {
             let p_str = format!("{}/{}", p, exe);
-            if fs::metadata(p_str).is_ok() {
-                return true;
+            if fs::metadata(&p_str).is_ok() {
+                return Some(PathBuf::from(p_str));
             }
         }
     }
-    false
+    None
+}
+
+fn is_executable(path: &Path) -> bool {
+    let md = fs::metadata(path);
+    if let Err(err) = md {
+        return false;
+    }
+    let permissions = md.unwrap().permissions();
+    let mode = permissions.mode();
+
+    mode & 0o111 != 0
 }
 
 impl TryFrom<Command> for pb::Command {
