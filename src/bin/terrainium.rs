@@ -5,16 +5,20 @@ use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
 use terrainium::client::handlers::{
     construct, destruct, edit, enter, exit, generate, get, init, update,
 };
-use terrainium::client::logging::setup_logger;
+use terrainium::client::logging::init_logging;
 use terrainium::client::types::context::Context;
+use tracing::metadata::LevelFilter;
 
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    setup_logger().context("failed to setup logger")?;
     let args = ClientArgs::parse();
+
+    let (subscriber, _out_guard) = init_logging(LevelFilter::from(args.options.log_level));
+    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+
     let context = Context::generate(&home_dir().expect("to detect home directory"));
 
     match args.command {

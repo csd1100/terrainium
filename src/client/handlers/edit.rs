@@ -21,6 +21,7 @@ pub fn handle(context: Context) -> Result<()> {
     // TODO: remove in favor of run_editor
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
+        context.terrain_dir(),
     )
     .expect("terrain to be parsed from toml");
 

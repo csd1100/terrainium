@@ -3,6 +3,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::str::FromStr;
+use tracing::Level;
 
 #[derive(Parser, Debug)]
 #[command(args_conflicts_with_subcommands = true)]
@@ -21,6 +22,9 @@ pub struct Options {
 
     #[arg(long, group = "update-rc")]
     pub update_rc_path: Option<PathBuf>,
+
+    #[arg(short, long, default_value = "info")]
+    pub log_level: Level,
 }
 
 #[derive(Subcommand, Debug)]

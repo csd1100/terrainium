@@ -191,7 +191,7 @@ fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
 
 fn is_executable(path: &Path) -> bool {
     let md = fs::metadata(path);
-    if let Err(err) = md {
+    if let Err(_) = md {
         return false;
     }
     let permissions = md.unwrap().permissions();

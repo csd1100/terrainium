@@ -26,7 +26,9 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         Terrain::default()
     };
 
-    let toml_str = terrain.to_toml().expect("terrain to be parsed to toml");
+    let toml_str = terrain
+        .to_toml(context.terrain_dir())
+        .expect("terrain to be parsed to toml");
 
     file.write(toml_str.as_ref())
         .context("failed to write terrain in toml file")?;

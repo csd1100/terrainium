@@ -11,10 +11,8 @@ terrain-schema = ["schemars"]
 [dependencies]
 anyhow = "1.0.89"
 clap = { version = "4.5.17", features = ["derive"] }
-fern = { version = "0.7.1", features = ["colored"] }
 handlebars = "6.1.0"
 home = "0.5.9"
-log = "0.4.25"
 mockall_double = "0.3.1"
 prost = "0.13.2"
 prost-types = "0.13.2"

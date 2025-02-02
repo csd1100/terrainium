@@ -10,10 +10,13 @@ pub fn handle(context: Context) -> Result<()> {
     }
 
     // TODO: validation inside from_toml
-    let terrain = Terrain::from_toml(read_to_string(context.toml_path()?).context(format!(
-        "failed to read terrain.toml from path {:?}",
-        context.toml_path()
-    ))?)
+    let terrain = Terrain::from_toml(
+        read_to_string(context.toml_path()?).context(format!(
+            "failed to read terrain.toml from path {:?}",
+            context.toml_path()
+        ))?,
+        context.terrain_dir(),
+    )
     .expect("expected terrain to created from toml");
 
     context.shell().generate_scripts(&context, terrain)?;

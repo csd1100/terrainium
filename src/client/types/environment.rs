@@ -4,7 +4,7 @@ use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::client::validation::{
     ValidationError, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -38,13 +38,21 @@ impl Environment {
             }
         });
 
-        Ok(Environment {
+        let environment = Environment {
             name: terrain.name().clone(),
             default_biome: terrain.default_biome().clone(),
             selected_biome: selected,
             auto_apply: terrain.auto_apply().clone(),
             merged,
-        })
+        };
+        let result = environment.validate();
+        if let Err(e) = &result {
+            e.results.print_validation_message();
+            return Err(anyhow!("failed to validate environment"));
+        }
+        result.unwrap().print_validation_message();
+
+        Ok(environment)
     }
 
     pub fn default_biome(&self) -> &Option<String> {
@@ -111,9 +119,7 @@ impl Environment {
             .iter()
             .any(|val| val.level == ValidationMessageLevel::Error)
         {
-            return Err(ValidationError {
-                messages: results.results(),
-            });
+            return Err(ValidationError { results });
         }
 
         Ok(results)

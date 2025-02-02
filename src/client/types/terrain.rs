@@ -197,21 +197,30 @@ impl Terrain {
             .iter()
             .any(|val| val.level == ValidationMessageLevel::Error)
         {
-            return Err(ValidationError {
-                messages: results.results(),
-            });
+            return Err(ValidationError { results });
         }
 
         Ok(results)
     }
 
-    pub fn from_toml(toml_str: String) -> Result<Self> {
-        toml::from_str(&toml_str).context("failed to parse terrain from toml")
-        // TODO: add validation here
+    pub fn from_toml(toml_str: String, terrain_dir: &Path) -> Result<Self> {
+        let terrain: Terrain =
+            toml::from_str(&toml_str).context("failed to parse terrain from toml")?;
+        let result = terrain.validate(terrain_dir);
+        if let Err(e) = &result {
+            e.results.print_validation_message();
+            return Err(anyhow!("failed to validate terrain from toml"));
+        }
+        result.unwrap().print_validation_message();
+        Ok(terrain)
     }
 
-    pub fn to_toml(&self) -> Result<String> {
-        // TODO: add validation here
+    pub fn to_toml(&self, terrain_dir: &Path) -> Result<String> {
+        let result = self.validate(terrain_dir);
+        if let Err(e) = &result {
+            e.results.print_validation_message();
+            return Err(anyhow!("failed to validate terrain before writing"));
+        }
         toml::to_string(&self).context("failed to convert terrain to toml")
     }
 
@@ -423,10 +432,11 @@ pub mod tests {
 
         let validation_result = terrain
             .validate(&PathBuf::new())
-            .expect_err("expected validation error");
+            .expect_err("expected validation error")
+            .results
+            .results();
 
-        let messages: HashSet<ValidationResult> =
-            validation_result.messages.iter().cloned().collect();
+        let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
 
         assert_eq!(messages.len(), 44);
 
@@ -673,7 +683,8 @@ pub mod tests {
         let validation_result = terrain
             .validate(test_dir.path())
             .expect_err("to fail")
-            .messages;
+            .results
+            .results();
 
         let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
 

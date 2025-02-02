@@ -1,8 +1,9 @@
-use log::{debug, error, info, warn};
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::fmt::Formatter;
+use tracing::{event, Level};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub(crate) enum ValidationMessageLevel {
     Error,
@@ -51,6 +52,7 @@ impl ValidationResults {
         &self.results
     }
 
+    #[cfg(test)]
     pub(crate) fn results(self) -> Vec<ValidationResult> {
         self.results
     }
@@ -67,16 +69,16 @@ impl ValidationResults {
             let target = format!("terrain_validation({})", message.target);
             match message.level {
                 ValidationMessageLevel::Debug => {
-                    debug!(target: &target,"{:?}", message.message);
+                    event!(Level::DEBUG, r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Info => {
-                    info!(target: &target,"{:?}", message.message);
+                    event!(Level::INFO, r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Warn => {
-                    warn!(target: &target,"{:?}", message.message);
+                    event!(Level::WARN, r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Error => {
-                    error!(target: &target,"{:?}", message.message);
+                    event!(Level::ERROR, r#for = target, "{:?}", message.message);
                 }
             }
         })
@@ -85,12 +87,13 @@ impl ValidationResults {
 
 #[derive(Debug, Clone)]
 pub(crate) struct ValidationError {
-    pub(crate) messages: Vec<ValidationResult>,
+    pub(crate) results: ValidationResults,
 }
 
 impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        self.messages
+        self.results
+            .results_ref()
             .iter()
             .try_for_each(|message| writeln!(f, "{} - {}", message.level, message.message))
     }
