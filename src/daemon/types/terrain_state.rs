@@ -4,6 +4,7 @@ use crate::common::types::pb;
 use crate::common::types::pb::Operation;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use tokio::fs;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -265,7 +266,12 @@ impl From<pb::ExecuteRequest> for ExecutionContext {
             .into_iter()
             .map(|command| CommandState {
                 operation: operation_name(value.operation),
-                command: CommandToRun::new(command.exe, command.args, Some(command.envs)),
+                command: CommandToRun::new(
+                    command.exe,
+                    command.args,
+                    Some(command.envs),
+                    &PathBuf::from(command.cwd),
+                ),
                 log_path: "".to_string(),
                 status: CommandStatus::Starting,
             })

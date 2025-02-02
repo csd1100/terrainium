@@ -1,5 +1,5 @@
 use crate::common::types::pb;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -42,12 +42,22 @@ impl Command {
     }
 }
 
-impl From<Command> for pb::Command {
-    fn from(val: Command) -> Self {
-        pb::Command {
-            exe: val.exe,
-            args: val.args,
-            envs: BTreeMap::default(),
+impl TryFrom<Command> for pb::Command {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Command) -> Result<Self> {
+        if value.cwd.is_none() {
+            return Err(anyhow!(
+                "`cwd` is required for command exe:`{}`, args: `{}`",
+                value.exe,
+                value.args.join(" ")
+            ));
         }
+        Ok(pb::Command {
+            exe: value.exe,
+            args: value.args,
+            envs: BTreeMap::default(),
+            cwd: value.cwd.unwrap().to_string_lossy().to_string(),
+        })
     }
 }

@@ -32,7 +32,7 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         .context("failed to write terrain in toml file")?;
 
     if edit {
-        edit::run_editor(&toml_path)?;
+        edit::run_editor(&toml_path, context.terrain_dir())?;
     }
 
     context.shell().generate_scripts(&context, terrain)?;
@@ -278,6 +278,8 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_dir = current_dir.path().to_path_buf();
+
         let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
@@ -287,13 +289,14 @@ pub mod tests {
         let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
-            .withf(move |exe, args, envs| {
+            .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml_path.to_string_lossy()]
                     && envs.is_some()
+                    && *cwd == terrain_dir
             })
             .times(1)
-            .return_once(|_, _, _| edit_run);
+            .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()

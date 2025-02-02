@@ -24,10 +24,10 @@ const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
 const MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
 
 impl Shell for Zsh {
-    fn get() -> Self {
+    fn get(cwd: &Path) -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
-            runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None),
+            runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None, cwd),
         }
     }
 

@@ -28,7 +28,9 @@ impl Context {
     pub fn generate(home_dir: &Path) -> Self {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
-        let shell = Zsh::get();
+        let terrain_dir = env::current_dir().expect("failed to get current directory");
+
+        let shell = Zsh::get(&terrain_dir);
 
         let shell_integration_scripts_dir =
             Self::config_dir(home_dir).join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR);
@@ -45,10 +47,8 @@ impl Context {
 
         Context {
             session_id,
-            terrain_dir: env::current_dir().expect("failed to get current directory"),
-            central_dir: get_central_dir_location(
-                env::current_dir().expect("failed to get current directory"),
-            ),
+            central_dir: get_central_dir_location(&terrain_dir),
+            terrain_dir,
             shell,
         }
     }
@@ -57,11 +57,11 @@ impl Context {
         &self.session_id
     }
 
-    pub fn terrain_dir(&self) -> &PathBuf {
+    pub fn terrain_dir(&self) -> &Path {
         &self.terrain_dir
     }
 
-    pub fn central_dir(&self) -> &PathBuf {
+    pub fn central_dir(&self) -> &Path {
         &self.central_dir
     }
 
@@ -161,19 +161,18 @@ impl Context {
 
     #[cfg(test)]
     pub(crate) fn build_without_paths(shell: Zsh) -> Self {
+        let terrain_dir = env::current_dir().expect("failed to get current directory");
         Context {
             session_id: "some".to_string(),
-            terrain_dir: env::current_dir().expect("failed to get current directory"),
-            central_dir: get_central_dir_location(
-                env::current_dir().expect("failed to get current directory"),
-            ),
+            central_dir: get_central_dir_location(&terrain_dir),
+            terrain_dir,
             shell,
         }
     }
 }
 
-fn get_central_dir_location(current_dir: PathBuf) -> PathBuf {
-    let terrain_dir_name = Path::canonicalize(current_dir.as_path())
+fn get_central_dir_location(terrain_dir: &Path) -> PathBuf {
+    let terrain_dir_name = Path::canonicalize(terrain_dir)
         .expect("expected current directory to be valid")
         .to_string_lossy()
         .to_string()
@@ -221,11 +220,14 @@ mod tests {
             .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
             .successfully();
 
+        let terrain_path = current_dir.clone();
         let mock_zsh = MockCommandToRun::new_context();
         mock_zsh
             .expect()
-            .withf(|exe, args, envs| exe == "/bin/zsh" && args.is_empty() && envs.is_none())
-            .return_once(move |_, _, _| expected_shell_operation);
+            .withf(move |exe, args, envs, cwd| {
+                exe == "/bin/zsh" && args.is_empty() && envs.is_none() && *cwd == terrain_path
+            })
+            .return_once(move |_, _, _, _| expected_shell_operation);
 
         let actual = Context::generate(home_dir.path());
         assert_eq!(current_dir, actual.terrain_dir);
