@@ -39,8 +39,8 @@ pub async fn handle(
 
     let selected_biome = option_string_from(&biome_arg);
     let (biome_name, _) = terrain.select_biome(&selected_biome)?;
-    let environment =
-        Environment::from(&terrain, selected_biome).context("failed to generate environment")?;
+    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
+        .context("failed to generate environment")?;
 
     let commands = if operation == CONSTRUCTORS {
         environment.constructors()
@@ -68,15 +68,17 @@ pub async fn handle(
         envs.remove(TERRAIN_SESSION_ID);
     }
 
-    let commands: Vec<pb::Command> = commands
+    let commands: Result<Vec<pb::Command>> = commands
         .background()
         .iter()
         .map(|command| {
-            let mut command: pb::Command = command.clone().into();
+            let mut command: pb::Command = command.clone().try_into()?;
             command.envs = envs.clone();
-            command
+            Ok(command)
         })
         .collect();
+
+    let commands = commands.context("failed to convert background commands to protobuf message")?;
 
     let session_id = if activate_envs.is_some() {
         context.session_id().to_string()

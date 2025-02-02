@@ -3,9 +3,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, ZSH_ALIASES_TEMPLATE_NAME,
-    ZSH_CONSTRUCTORS_TEMPLATE_NAME, ZSH_DESTRUCTORS_TEMPLATE_NAME, ZSH_ENVS_TEMPLATE_NAME,
-    ZSH_MAIN_TEMPLATE_NAME,
+    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
 };
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
@@ -20,20 +18,16 @@ use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 
-const ZSH_MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
-const ZSH_ENVS_TEMPLATE: &str = include_str!("../../../templates/zsh_env.hbs");
-const ZSH_ALIASES_TEMPLATE: &str = include_str!("../../../templates/zsh_aliases.hbs");
-const ZSH_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_constructors.hbs");
-const ZSH_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/zsh_destructors.hbs");
-
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
+
 const INIT_SCRIPT: &str = include_str!("../../scripts/terrainium_init.zsh");
+const MAIN_TEMPLATE: &str = include_str!("../../../templates/zsh_final_script.hbs");
 
 impl Shell for Zsh {
-    fn get() -> Self {
+    fn get(cwd: &Path) -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
-            runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None),
+            runner: CommandToRun::new("/bin/zsh".to_string(), vec![], None, cwd),
         }
     }
 
@@ -96,13 +90,23 @@ source "$HOME/.config/terrainium/shell_integration/{}"
             .biomes()
             .keys()
             .map(|biome_name| -> Result<()> {
-                self.create_and_compile(&terrain, &scripts_dir, biome_name.to_string())?;
+                self.create_and_compile(
+                    &terrain,
+                    &scripts_dir,
+                    biome_name.to_string(),
+                    context.terrain_dir(),
+                )?;
                 Ok(())
             })
             .collect();
         result?;
 
-        self.create_and_compile(&terrain, &scripts_dir, "none".to_string())?;
+        self.create_and_compile(
+            &terrain,
+            &scripts_dir,
+            "none".to_string(),
+            context.terrain_dir(),
+        )?;
 
         Ok(())
     }
@@ -153,25 +157,64 @@ source "$HOME/.config/terrainium/shell_integration/{}"
 
     fn templates() -> BTreeMap<String, String> {
         let mut templates: BTreeMap<String, String> = BTreeMap::new();
+        templates.insert("zsh".to_string(), MAIN_TEMPLATE.to_string());
         templates.insert(
-            ZSH_MAIN_TEMPLATE_NAME.to_string(),
-            ZSH_MAIN_TEMPLATE.to_string(),
+            "envs".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+export {{@key}}="{{{this}}}"
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
         templates.insert(
-            ZSH_ENVS_TEMPLATE_NAME.to_string(),
-            ZSH_ENVS_TEMPLATE.to_string(),
+            "unenvs".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+    unset {{@key}}
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
         templates.insert(
-            ZSH_ALIASES_TEMPLATE_NAME.to_string(),
-            ZSH_ALIASES_TEMPLATE.to_string(),
+            "aliases".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+alias {{@key}}="{{{this}}}"
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
         templates.insert(
-            ZSH_CONSTRUCTORS_TEMPLATE_NAME.to_string(),
-            ZSH_CONSTRUCTORS_TEMPLATE.to_string(),
+            "unaliases".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+    unalias {{@key}}
+{{/each}}
+{{/if}}"#
+                .to_string(),
         );
+
         templates.insert(
-            ZSH_DESTRUCTORS_TEMPLATE_NAME.to_string(),
-            ZSH_DESTRUCTORS_TEMPLATE.to_string(),
+            "commands".to_string(),
+            r#"{{#if this}}
+{{#if this.foreground}}
+{{#each this.foreground}}
+    {{#if this}}
+        {{#if this.cwd}}
+        if pushd {{this.cwd}} &> /dev/null; then
+        {{/if}}
+            {{this.exe}} {{#each this.args}}{{{this}}}{{/each}}
+        {{#if this.cwd}}
+            popd &> /dev/null
+        fi
+        {{/if}}
+
+    {{/if}}
+{{/each}}
+{{/if}}
+{{/if}}"#
+                .to_string(),
         );
         templates
     }
@@ -194,9 +237,15 @@ impl Zsh {
         terrain: &Terrain,
         scripts_dir: &Path,
         biome_name: String,
+        terrain_dir: &Path,
     ) -> Result<()> {
         let script_path = Self::script_path(scripts_dir, &biome_name);
-        self.create_script(terrain, Some(biome_name.to_string()), &script_path)?;
+        self.create_script(
+            terrain,
+            Some(biome_name.to_string()),
+            &script_path,
+            terrain_dir,
+        )?;
 
         let compiled_script_path = Self::compiled_script_path(scripts_dir, &biome_name);
         self.compile_script(&script_path, &compiled_script_path)?;
@@ -217,16 +266,18 @@ impl Zsh {
         terrain: &Terrain,
         biome_name: Option<String>,
         script_path: &PathBuf,
+        terrain_dir: &Path,
     ) -> Result<()> {
-        let environment = Environment::from(terrain, biome_name.clone()).unwrap_or_else(|_| {
-            panic!(
-                "expected to generate environment from terrain for biome {:?}",
-                biome_name
-            )
-        });
+        let environment = Environment::from(terrain, biome_name.clone(), terrain_dir)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "expected to generate environment from terrain for biome {:?}",
+                    biome_name
+                )
+            });
 
         let script = environment
-            .to_rendered(ZSH_MAIN_TEMPLATE_NAME.to_string(), Zsh::templates())
+            .to_rendered("zsh".to_string(), Zsh::templates())
             .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
 
         write(script_path, script)
@@ -291,6 +342,7 @@ mod tests {
         zsh.create_script(
             &terrain,
             Some("invalid_biome_name".to_string()),
+            &PathBuf::new(),
             &PathBuf::new(),
         )
         .expect("error not to be thrown");

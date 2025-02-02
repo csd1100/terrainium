@@ -32,7 +32,7 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         .context("failed to write terrain in toml file")?;
 
     if edit {
-        edit::run_editor(&toml_path)?;
+        edit::run_editor(&toml_path, context.terrain_dir())?;
     }
 
     context.shell().generate_scripts(&context, terrain)?;
@@ -47,8 +47,7 @@ pub mod tests {
     use crate::client::types::context::Context;
     use crate::client::utils::{
         restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
-        WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
-        WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT, WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
+        WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_TERRAIN_TOML,
     };
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -81,7 +80,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         Ok(())
     }
@@ -108,7 +107,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         Ok(())
     }
@@ -212,8 +211,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }
@@ -262,8 +261,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }
@@ -279,6 +278,8 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_dir = current_dir.path().to_path_buf();
+
         let mut edit_run = MockCommandToRun::default();
         edit_run
             .expect_wait()
@@ -288,13 +289,14 @@ pub mod tests {
         let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
-            .withf(move |exe, args, envs| {
+            .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml_path.to_string_lossy()]
                     && envs.is_some()
+                    && *cwd == terrain_dir
             })
             .times(1)
-            .return_once(|_, _, _| edit_run);
+            .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
@@ -313,7 +315,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT);
+            .script_was_created_for("none");
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())

@@ -23,8 +23,8 @@ pub async fn handle(
 
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;
-    let environment =
-        Environment::from(&terrain, biome).context("failed to generate environment")?;
+    let environment = Environment::from(&terrain, biome, context.terrain_dir())
+        .context("failed to generate environment")?;
 
     let mut envs = environment.envs();
     envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());

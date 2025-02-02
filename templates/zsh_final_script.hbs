@@ -5,24 +5,30 @@ if [ -z "$TERRAINIUM_EXECUTABLE" ]; then
     TERRAINIUM_EXECUTABLE=terrainium
 fi
 
-function {
-    # USER DEFINED ALIASES: START
+# USER DEFINED ALIASES: START
 {{> aliases this.merged.aliases }}
-    # USER DEFINED ALIASES: END
-    # USER DEFINED ENVS: START
+# USER DEFINED ALIASES: END
+# USER DEFINED ENVS: START
 {{> envs this.merged.envs }}
-    # USER DEFINED ENVS: END
+# USER DEFINED ENVS: END
+
+function __terrainium_unset_envs() {
+{{> unenvs this.merged.envs }}
+}
+
+function __terrainium_unalias() {
+{{> unaliases this.merged.aliases }}
 }
 
 function __terrainium_shell_constructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> constructors this.merged.constructors }}
+{{> commands this.merged.constructors }}
     fi
 }
 
 function __terrainium_shell_destructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> destructors this.merged.destructors }}
+{{> commands this.merged.destructors }}
     fi
 }
 
@@ -65,6 +71,8 @@ function __terrainium_preexec_functions() {
 
 function __terrainium_zshexit_functions() {
     __terrainium_shell_destructor
+    __terrainium_unalias
+    __terrainium_unset_envs
     "$TERRAINIUM_EXECUTABLE" exit
 }
 

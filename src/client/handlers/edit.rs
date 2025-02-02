@@ -6,7 +6,7 @@ use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 const EDITOR: &str = "EDITOR";
 
@@ -15,7 +15,7 @@ pub fn handle(context: Context) -> Result<()> {
         .toml_path()
         .context("failed to edit terrain because it does not exist.")?;
 
-    run_editor(&toml_path)?;
+    run_editor(&toml_path, context.terrain_dir())?;
 
     let terrain = Terrain::from_toml(
         fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
@@ -27,7 +27,7 @@ pub fn handle(context: Context) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
+pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
     let editor = std::env::var(EDITOR).unwrap_or_else(|_| {
         println!("the environment variable EDITOR not set. using 'vi' as text editor");
         "vi".to_string()
@@ -40,6 +40,7 @@ pub(crate) fn run_editor(toml_path: &PathBuf) -> Result<()> {
             .parse()
             .context(format!("failed to convert path {:?} to string", toml_path))?],
         Some(std::env::vars().collect()),
+        terrain_dir,
     );
 
     edit.wait()
@@ -53,8 +54,7 @@ pub(crate) mod tests {
     use crate::client::types::context::Context;
     use crate::client::utils::{
         restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
-        WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, WITH_EXAMPLE_TERRAIN_TOML,
-        WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
+        WITH_EXAMPLE_TERRAIN_TOML,
     };
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -76,6 +76,7 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_dir = current_dir.path().to_path_buf();
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -86,13 +87,14 @@ pub(crate) mod tests {
         let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
-            .withf(move |exe, args, envs| {
+            .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
+                    && *cwd == terrain_dir
             })
             .times(1)
-            .return_once(|_, _, _| edit_run);
+            .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when edit
         let expected_shell_operation = ExpectShell::to()
@@ -118,8 +120,8 @@ pub(crate) mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -134,6 +136,7 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_dir = current_dir.path().to_path_buf();
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -144,13 +147,14 @@ pub(crate) mod tests {
         let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
-            .withf(move |exe, args, envs| {
+            .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
+                    && *cwd == terrain_dir
             })
             .times(1)
-            .return_once(|_, _, _| edit_run);
+            .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
@@ -177,8 +181,8 @@ pub(crate) mod tests {
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -212,6 +216,7 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_dir = current_dir.path().to_path_buf();
 
         let mut edit_run = MockCommandToRun::default();
         edit_run
@@ -222,13 +227,14 @@ pub(crate) mod tests {
         let edit_mock = MockCommandToRun::new_context();
         edit_mock
             .expect()
-            .withf(move |exe, args, envs| {
+            .withf(move |exe, args, envs, cwd| {
                 exe == &"vi".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
+                    && *cwd == terrain_dir
             })
             .times(1)
-            .return_once(|_, _, _| edit_run);
+            .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
@@ -255,8 +261,8 @@ pub(crate) mod tests {
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())

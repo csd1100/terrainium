@@ -5,32 +5,60 @@ if [ -z "$TERRAINIUM_EXECUTABLE" ]; then
     TERRAINIUM_EXECUTABLE=terrainium
 fi
 
-function {
-    # USER DEFINED ALIASES: START
-    alias tenter="terrainium enter --biome example_biome"
-    alias texit="terrainium exit"
-    # USER DEFINED ALIASES: END
-    # USER DEFINED ENVS: START
-    export EDITOR="nvim"
-    export ENV_VAR="overridden_env_val"
-    export NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
-    export NULL_POINTER="${NULL}"
-    export PAGER="less"
-    export POINTER_ENV_VAR="overridden_env_val"
-    # USER DEFINED ENVS: END
+# USER DEFINED ALIASES: START
+alias tenter="terrainium enter --biome example_biome"
+alias texit="terrainium exit"
+# USER DEFINED ALIASES: END
+# USER DEFINED ENVS: START
+export EDITOR="nvim"
+export ENV_VAR="overridden_env_val"
+export NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
+export NULL_POINTER="${NULL}"
+export PAGER="less"
+export POINTER_ENV_VAR="overridden_env_val"
+# USER DEFINED ENVS: END
+
+function __terrainium_unset_envs() {
+    unset EDITOR
+    unset ENV_VAR
+    unset NESTED_POINTER
+    unset NULL_POINTER
+    unset PAGER
+    unset POINTER_ENV_VAR
+}
+
+function __terrainium_unalias() {
+    unalias tenter
+    unalias texit
 }
 
 function __terrainium_shell_constructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-        /bin/echo entering terrain
-        /bin/echo entering biome example_biome
+        if pushd /home/user/work/terrainium &> /dev/null; then
+            /bin/echo entering terrain
+            popd &> /dev/null
+        fi
+
+        if pushd /home/user/work/terrainium &> /dev/null; then
+            /bin/echo entering biome example_biome
+            popd &> /dev/null
+        fi
+
     fi
 }
 
 function __terrainium_shell_destructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-        /bin/echo exiting terrain
-        /bin/echo exiting biome example_biome
+        if pushd /home/user/work/terrainium &> /dev/null; then
+            /bin/echo exiting terrain
+            popd &> /dev/null
+        fi
+
+        if pushd /home/user/work/terrainium &> /dev/null; then
+            /bin/echo exiting biome example_biome
+            popd &> /dev/null
+        fi
+
     fi
 }
 
@@ -73,6 +101,8 @@ function __terrainium_preexec_functions() {
 
 function __terrainium_zshexit_functions() {
     __terrainium_shell_destructor
+    __terrainium_unalias
+    __terrainium_unset_envs
     "$TERRAINIUM_EXECUTABLE" exit
 }
 

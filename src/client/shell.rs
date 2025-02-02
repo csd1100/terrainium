@@ -11,7 +11,7 @@ use std::process::{ExitStatus, Output};
 pub mod zsh;
 
 pub(crate) trait Shell: Debug + PartialEq {
-    fn get() -> Self;
+    fn get(cwd: &Path) -> Self;
     fn runner(&self) -> CommandToRun;
     fn get_init_rc_contents() -> String;
     fn setup_integration(&self, init_script_dir: &Path) -> Result<()>;

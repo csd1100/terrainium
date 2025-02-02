@@ -24,8 +24,7 @@ mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::utils::{
-        AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT,
-        WITH_EXAMPLE_TERRAIN_TOML, WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT,
+        AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML,
     };
     use anyhow::Result;
     use std::fs;
@@ -60,8 +59,8 @@ mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }
@@ -91,8 +90,8 @@ mod tests {
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none", WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT)
-            .script_was_created_for("example_biome", WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT);
+            .script_was_created_for("none")
+            .script_was_created_for("example_biome");
 
         Ok(())
     }

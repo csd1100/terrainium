@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use mockall::mock;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
 use tokio::fs;
 use tracing::{event, instrument, Level};
@@ -23,11 +24,23 @@ pub struct CommandToRun {
     exe: String,
     args: Vec<String>,
     envs: Option<BTreeMap<String, String>>,
+    cwd: PathBuf,
 }
 
 impl CommandToRun {
-    pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Self {
-        CommandToRun { exe, args, envs }
+    pub fn new(
+        exe: String,
+        args: Vec<String>,
+        envs: Option<BTreeMap<String, String>>,
+        cwd: &Path,
+    ) -> Self {
+        let cwd = cwd.to_path_buf();
+        CommandToRun {
+            exe,
+            args,
+            envs,
+            cwd,
+        }
     }
 
     pub fn set_args(&mut self, args: Vec<String>) {
@@ -49,7 +62,7 @@ impl From<CommandToRun> for Command {
             vars
         };
         let mut command = Command::new(value.exe);
-        command.args(value.args).envs(envs);
+        command.args(value.args).envs(envs).current_dir(value.cwd);
         command
     }
 }
@@ -64,7 +77,7 @@ impl From<CommandToRun> for tokio::process::Command {
             vars
         };
         let mut command = tokio::process::Command::new(value.exe);
-        command.args(value.args).envs(envs);
+        command.args(value.args).envs(envs).current_dir(value.cwd);
         command
     }
 }
@@ -130,7 +143,7 @@ impl Execute for CommandToRun {
 mock! {
     #[derive(Debug)]
     pub CommandToRun {
-        pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Self;
+        pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>, cwd: &Path) -> Self;
         pub fn set_args(&mut self, args: Vec<String>);
         pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
     }
@@ -168,6 +181,7 @@ pub(crate) mod tests {
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "echo $TEST_VAR".to_string()],
             None,
+            &std::env::current_dir()?,
         );
 
         let output = run.get_output().expect("not to fail");
@@ -200,6 +214,7 @@ pub(crate) mod tests {
                 "echo \"$TEST_VAR1\n$TEST_VAR2\"".to_string(),
             ],
             Some(envs),
+            &std::env::current_dir()?,
         );
 
         let output = run.get_output().expect("not to fail");
@@ -224,7 +239,12 @@ pub(crate) mod tests {
 
         let args: Vec<String> = vec!["-c".to_string(), "echo \"$TEST_VAR\"".to_string()];
 
-        let mut run = CommandToRun::new("/bin/bash".to_string(), vec![], None);
+        let mut run = CommandToRun::new(
+            "/bin/bash".to_string(),
+            vec![],
+            None,
+            &std::env::current_dir()?,
+        );
         run.set_envs(Some(envs));
         run.set_args(args);
 
@@ -253,6 +273,7 @@ pub(crate) mod tests {
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "$TEST_SCRIPT".to_string()],
             Some(envs),
+            &std::env::current_dir()?,
         );
 
         let output = run.wait().expect("not to fail");
