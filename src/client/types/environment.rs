@@ -553,7 +553,7 @@ mod tests {
         let environment = Environment::from(
             &Terrain::example(),
             Some("example_biome".to_string()),
-            &PathBuf::new(),
+            &PathBuf::from("/home/user/work/terrainium"),
         )
         .expect("not to fail");
 

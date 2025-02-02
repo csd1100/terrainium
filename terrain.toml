@@ -45,7 +45,8 @@ args = ["'entering test biome'"]
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "$TERRAIN_DIR/tests/scripts/print_num_for_10_sec"]
+args = ["-c", "print_num_for_10_sec"]
+cwd = "./tests/scripts"
 
 [[biomes.test.constructors.background]]
 exe = "/bin/zsh"
@@ -57,4 +58,5 @@ args = ["'exiting test biome'"]
 
 [[biomes.test.destructors.background]]
 exe = "/bin/zsh"
-args = ["-c", "./tests/scripts/print_num_for_10_sec"]
+args = ["-c", "print_num_for_10_sec"]
+cwd = "./tests/scripts"

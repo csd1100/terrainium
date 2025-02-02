@@ -156,39 +156,60 @@ source "$HOME/.config/terrainium/shell_integration/{}"
     }
 
     fn templates() -> BTreeMap<String, String> {
-        let main_template_name: &str = "zsh";
-        let envs_template_name: &str = "envs";
-        let aliases_template_name: &str = "aliases";
-        let commands_template_name: &str = "commands";
-
         let mut templates: BTreeMap<String, String> = BTreeMap::new();
-        templates.insert(main_template_name.to_string(), MAIN_TEMPLATE.to_string());
+        templates.insert("zsh".to_string(), MAIN_TEMPLATE.to_string());
         templates.insert(
-            envs_template_name.to_string(),
+            "envs".to_string(),
             r#"{{#if this}}
 {{#each this}}
-    export {{@key}}="{{{this}}}"
+export {{@key}}="{{{this}}}"
 {{/each}}
 {{/if}}"#
                 .to_string(),
         );
         templates.insert(
-            aliases_template_name.to_string(),
+            "unenvs".to_string(),
             r#"{{#if this}}
 {{#each this}}
-    alias {{@key}}="{{{this}}}"
+    unset {{@key}}
+{{/each}}
+{{/if}}"#
+                .to_string(),
+        );
+        templates.insert(
+            "aliases".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+alias {{@key}}="{{{this}}}"
+{{/each}}
+{{/if}}"#
+                .to_string(),
+        );
+        templates.insert(
+            "unaliases".to_string(),
+            r#"{{#if this}}
+{{#each this}}
+    unalias {{@key}}
 {{/each}}
 {{/if}}"#
                 .to_string(),
         );
 
         templates.insert(
-            commands_template_name.to_string(),
+            "commands".to_string(),
             r#"{{#if this}}
 {{#if this.foreground}}
 {{#each this.foreground}}
     {{#if this}}
-        {{this.exe}} {{#each this.args}}{{{this}}}{{/each}}
+        {{#if this.cwd}}
+        if pushd {{this.cwd}} &> /dev/null; then
+        {{/if}}
+            {{this.exe}} {{#each this.args}}{{{this}}}{{/each}}
+        {{#if this.cwd}}
+            popd &> /dev/null
+        fi
+        {{/if}}
+
     {{/if}}
 {{/each}}
 {{/if}}
