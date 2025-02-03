@@ -3,7 +3,7 @@ use clap::Parser;
 use home::home_dir;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
 use terrainium::client::handlers::{
-    construct, destruct, edit, enter, exit, generate, get, init, update, validate,
+    construct, destruct, edit, enter, exit, generate, get, init, update,
 };
 use terrainium::client::logging::init_logging;
 use terrainium::client::types::context::Context;
@@ -11,21 +11,26 @@ use tracing::metadata::LevelFilter;
 
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
+use terrainium::client::types::terrain::Terrain;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
     // need to keep _out_guard in scope till program exits for logger to work
     let (subscriber, _out_guard) = init_logging(LevelFilter::from(args.options.log_level));
-
-    if let Some(Verbs::Get { .. }) = &args.command {
+    if !matches!(args.command, Some(Verbs::Get { .. })) {
         // do not print any logs for get command as output will be used by scripts
-    } else {
         tracing::subscriber::set_global_default(subscriber)
             .expect("unable to set global subscriber");
     }
 
     let context = Context::generate(&home_dir().expect("to detect home directory"));
+    let mut terrain: Option<Terrain> = None;
+    if !matches!(args.command, Some(Verbs::Init { .. }))
+        || !matches!(args.command, Some(Verbs::Edit { .. }))
+    {
+        terrain = Some(Terrain::get_validated_and_fixed_terrain(&context)?);
+    }
 
     match args.command {
         None => {
@@ -45,9 +50,8 @@ async fn main() -> Result<()> {
 
             Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
 
-            Verbs::Generate => {
-                generate::handle(context).context("failed to generate scripts for the terrain")?
-            }
+            Verbs::Generate => generate::handle(context, terrain.unwrap())
+                .context("failed to generate scripts for the terrain")?,
 
             Verbs::Get {
                 biome,
@@ -60,6 +64,7 @@ async fn main() -> Result<()> {
                 auto_apply,
             } => get::handle(
                 context,
+                terrain.unwrap(),
                 GetArgs {
                     biome,
                     aliases,
@@ -94,10 +99,6 @@ async fn main() -> Result<()> {
                 },
             )
             .context("failed to update the terrain values")?,
-
-            Verbs::Validate { fix } => {
-                validate::handle(context, fix)?;
-            }
 
             Verbs::Construct { biome } => construct::handle(context, biome, None).await?,
 

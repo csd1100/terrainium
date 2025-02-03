@@ -11,7 +11,6 @@ pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
     // TODO: get validated toml from from_toml
     let mut terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-        context.terrain_dir(),
     )
     .expect("failed to parse terrain from toml");
 

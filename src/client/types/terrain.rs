@@ -1,14 +1,16 @@
 use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
+use crate::client::types::context::Context;
 use crate::client::validation::{
-    Target, ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResults,
+    Target, ValidationFixAction, ValidationMessageLevel, ValidationResults,
 };
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fs::{read_to_string, write};
 use std::path::Path;
 use tracing::{event, Level};
 
@@ -106,6 +108,21 @@ pub struct Terrain {
 }
 
 impl Terrain {
+    pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<Self> {
+        let toml_path = context.toml_path()?;
+        let terrain_toml = read_to_string(&toml_path).context("failed to read terrain.toml")?;
+        let unvalidated_terrain = Self::from_toml(terrain_toml)?;
+        let validation_results = unvalidated_terrain.validate(context.terrain_dir());
+        validation_results.print_validation_message();
+        let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
+        write(
+            toml_path,
+            toml::to_string(&fixed).context("failed to create terrain.toml contents")?,
+        )
+        .context("failed to write fixed terrain.toml")?;
+        Ok(fixed)
+    }
+
     pub fn new(
         terrain: Biome,
         biomes: BTreeMap<String, Biome>,
@@ -186,10 +203,7 @@ impl Terrain {
         }
     }
 
-    fn validate<'a>(
-        &'a self,
-        terrain_dir: &'a Path,
-    ) -> Result<ValidationResults<'a>, ValidationError<'a>> {
+    pub fn validate<'a>(&'a self, terrain_dir: &'a Path) -> ValidationResults<'a> {
         // validate terrain
         let mut results = self.terrain.validate("none", terrain_dir);
 
@@ -198,18 +212,10 @@ impl Terrain {
             results.append(biome.validate(biome_name, terrain_dir))
         });
 
-        if results
-            .results_ref()
-            .iter()
-            .any(|val| val.level == ValidationMessageLevel::Error)
-        {
-            return Err(ValidationError { results });
-        }
-
-        Ok(results)
+        results
     }
 
-    pub(crate) fn fix_invalid_values(self, validation_results: ValidationResults) -> Self {
+    pub fn fix_invalid_values(&self, validation_results: ValidationResults) -> Self {
         let mut fixed = self.clone();
         validation_results
             .results()
@@ -313,25 +319,20 @@ impl Terrain {
         fixed
     }
 
-    pub fn from_toml(toml_str: String, terrain_dir: &Path) -> Result<Self> {
-        let terrain: Terrain =
-            toml::from_str(&toml_str).context("failed to parse terrain from toml")?;
-
-        let result = terrain.validate(terrain_dir);
-        if let Err(e) = &result {
-            e.results.print_validation_message();
-            return Err(anyhow!("failed to validate terrain from toml"));
-        }
-        result.unwrap().print_validation_message();
-        Ok(terrain)
+    pub fn from_toml(toml_str: String) -> Result<Self> {
+        toml::from_str(&toml_str).context("failed to parse terrain from toml")
     }
 
     pub fn to_toml(&self, terrain_dir: &Path) -> Result<String> {
         let result = self.validate(terrain_dir);
-        if let Err(e) = &result {
-            e.results.print_validation_message();
+        if result
+            .results()
+            .iter()
+            .any(|r| r.level == ValidationMessageLevel::Error)
+        {
             return Err(anyhow!("failed to validate terrain before writing"));
         }
+
         toml::to_string(&self).context("failed to convert terrain to toml")
     }
 
@@ -435,7 +436,7 @@ pub mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
-    use crate::client::types::terrain::Terrain;
+    use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::client::utils::{restore_env_var, set_env_var};
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
@@ -445,6 +446,7 @@ pub mod tests {
     use std::fs::{create_dir_all, metadata, set_permissions, write};
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+    use std::str::FromStr;
     use tempfile::tempdir;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
@@ -487,6 +489,10 @@ pub mod tests {
             biome_constructor,
             biome_destructor,
         )
+    }
+
+    pub(crate) fn set_auto_apply(terrain: &mut Terrain, auto_apply: &str) {
+        terrain.auto_apply = AutoApply::from_str(auto_apply).unwrap();
     }
 
     #[test]
@@ -542,12 +548,9 @@ pub mod tests {
         biome.set_envs(map.clone());
         biome.set_aliases(map);
         terrain.update("test_biome".to_string(), biome);
+
         let path = PathBuf::new();
-        let messages = terrain
-            .validate(&path)
-            .expect_err("expected validation error")
-            .results
-            .results();
+        let messages = terrain.validate(&path).results();
 
         assert_eq!(messages.len(), 44);
 
@@ -819,11 +822,7 @@ pub mod tests {
             )),
         );
 
-        let messages = terrain
-            .validate(test_dir.path())
-            .expect_err("to fail")
-            .results
-            .results();
+        let messages = terrain.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 104);
         ["none", "test_biome"].iter().for_each(|biome_name| {
@@ -974,7 +973,7 @@ pub mod tests {
                 paths_bin.display(),
             )),
         );
-        let messages = before.validate(test_dir.path()).unwrap().results();
+        let messages = before.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 40);
         ["none", "test_biome"].iter().for_each(|biome_name| {
@@ -1033,11 +1032,10 @@ pub mod tests {
                 })
         });
 
-        let fixed = terrain.fix_invalid_values(before.validate(test_dir.path()).unwrap());
-
+        let fixed = terrain.fix_invalid_values(before.validate(test_dir.path()));
         let fixed_result = fixed.validate(test_dir.path());
-        assert!(fixed_result.is_ok());
-        assert!(fixed_result.unwrap().results().is_empty());
+
+        assert!(fixed_result.results().is_empty());
 
         restore_env_var("PATH".to_string(), real_path);
     }

@@ -19,7 +19,6 @@ pub async fn handle(
     // TODO: get validated toml from from_toml
     let terrain = Terrain::from_toml(
         read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-        context.terrain_dir(),
     )
     .expect("failed to parse terrain from toml");
     // TODO: fix validations here

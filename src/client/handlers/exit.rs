@@ -23,7 +23,6 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     if should_run_destructor() {
         let terrain = Terrain::from_toml(
             read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-            context.terrain_dir(),
         )
         .expect("terrain to be parsed from toml");
 
