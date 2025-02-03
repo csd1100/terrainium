@@ -27,6 +27,7 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
         )
         .expect("terrain to be parsed from toml");
 
+        // TODO: fix validations here
         background::handle(
             &context,
             DESTRUCTORS,

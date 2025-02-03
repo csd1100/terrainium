@@ -41,12 +41,10 @@ impl Commands {
             .context("failed to substitute cwd for background commands")
     }
 
-    #[cfg(test)]
     pub fn foreground_mut(&mut self) -> &mut Vec<Command> {
         self.foreground.as_mut()
     }
 
-    #[cfg(test)]
     pub fn background_mut(&mut self) -> &mut Vec<Command> {
         self.background.as_mut()
     }

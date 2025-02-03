@@ -137,6 +137,86 @@ impl Biome {
         self.aliases = aliases;
     }
 
+    pub(crate) fn set_env(&mut self, key: String, value: String) -> Option<String> {
+        self.envs.insert(key, value)
+    }
+
+    pub(crate) fn rm_env(&mut self, key: &str) -> Option<String> {
+        self.envs.remove(key)
+    }
+
+    pub(crate) fn set_alias(&mut self, key: String, value: String) -> Option<String> {
+        self.aliases.insert(key, value)
+    }
+
+    pub(crate) fn rm_alias(&mut self, key: &str) -> Option<String> {
+        self.aliases.remove(key)
+    }
+
+    pub(crate) fn insert_foreground_constructor(&mut self, idx: usize, command: Command) {
+        self.constructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_foreground_constructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .constructors
+            .foreground()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.constructors.foreground_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_background_constructor(&mut self, idx: usize, command: Command) {
+        self.constructors.background_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_background_constructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .constructors
+            .background()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.constructors.background_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_foreground_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_foreground_destructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .destructors
+            .foreground()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.destructors.foreground_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_background_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.background_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_background_destructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .destructors
+            .background()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.destructors.background_mut().remove(idx);
+        }
+        idx
+    }
+
     pub(crate) fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
         let mut result = vec![];
         let re =

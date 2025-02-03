@@ -99,7 +99,7 @@ impl ValidationResult<'_> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ValidationResults<'a> {
     results: HashSet<ValidationResult<'a>>,
 }
@@ -139,7 +139,6 @@ impl<'a> ValidationResults<'a> {
         })
     }
 
-    #[cfg(test)]
     pub fn results(self) -> HashSet<ValidationResult<'a>> {
         self.results
     }

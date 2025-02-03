@@ -19,6 +19,7 @@ pub fn handle(context: Context) -> Result<()> {
     )
     .expect("expected terrain to created from toml");
 
+    // TODO: fix validations here
     context.shell().generate_scripts(&context, terrain)?;
     Ok(())
 }

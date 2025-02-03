@@ -38,6 +38,7 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         edit::run_editor(&toml_path, context.terrain_dir())?;
     }
 
+    // TODO: fix validations here
     // FIXME: if edited run generate_scripts with updated terrain
     context.shell().generate_scripts(&context, terrain)?;
 

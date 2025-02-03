@@ -66,6 +66,18 @@ impl Command {
         Command { exe, args, cwd }
     }
 
+    pub(crate) fn exe(&self) -> &str {
+        &self.exe
+    }
+
+    pub(crate) fn args(&self) -> &[String] {
+        &self.args
+    }
+
+    pub(crate) fn cwd(&self) -> Option<PathBuf> {
+        self.cwd.clone()
+    }
+
     pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
         if let Some(cwd) = &self.cwd {
             if !cwd.is_absolute() {
@@ -97,6 +109,8 @@ impl Command {
     ) -> ValidationResults<'a> {
         let mut result = HashSet::new();
         let exe = self.exe.as_str();
+
+        // TODO: add empty validation
 
         if exe.starts_with(" ") || exe.ends_with(" ") {
             result.insert(ValidationResult {

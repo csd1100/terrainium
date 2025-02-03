@@ -25,6 +25,8 @@ pub fn handle(context: Context) -> Result<()> {
     )
     .expect("terrain to be parsed from toml");
 
+    // TODO: fix validations here
+
     context.shell().generate_scripts(&context, terrain)?;
 
     Ok(())

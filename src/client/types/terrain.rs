@@ -1,13 +1,16 @@
 use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
-use crate::client::validation::{ValidationError, ValidationMessageLevel, ValidationResults};
+use crate::client::validation::{
+    Target, ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResults,
+};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
+use tracing::{event, Level};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
@@ -206,9 +209,114 @@ impl Terrain {
         Ok(results)
     }
 
+    pub(crate) fn fix_invalid_values(self, validation_results: ValidationResults) -> Self {
+        let mut fixed = self.clone();
+        validation_results
+            .results()
+            .iter()
+            .for_each(|r| match &r.fix_action {
+                ValidationFixAction::None => {}
+                ValidationFixAction::Trim { biome_name, target } => {
+                    let (_, selected) = fixed.select_biome(&Some(biome_name.to_string())).unwrap();
+                    let mut fixed_biome = selected.clone();
+                    match target {
+                        Target::Env(e) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                e
+                            );
+                            let trimmed = e.trim();
+                            let value = fixed_biome.rm_env(e).unwrap();
+                            fixed_biome.set_env(trimmed.to_string(), value);
+                        }
+                        Target::Alias(a) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                a
+                            );
+                            let trimmed = a.trim();
+                            let value = fixed_biome.rm_alias(a).unwrap();
+                            fixed_biome.set_alias(trimmed.to_string(), value);
+                        }
+                        Target::ForegroundConstructor(fc) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                fc.exe()
+                            );
+                            let fixed = Command::new(
+                                fc.exe().trim().to_string(),
+                                fc.args().to_vec(),
+                                fc.cwd(),
+                            );
+
+                            let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
+                            fixed_biome.insert_foreground_constructor(idx, fixed);
+                        }
+                        Target::BackgroundConstructor(bc) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                bc.exe()
+                            );
+                            let fixed = Command::new(
+                                bc.exe().trim().to_string(),
+                                bc.args().to_vec(),
+                                bc.cwd(),
+                            );
+
+                            let idx = fixed_biome.remove_background_constructor(bc).unwrap();
+                            fixed_biome.insert_background_constructor(idx, fixed);
+                        }
+                        Target::ForegroundDestructor(fd) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                fd.exe()
+                            );
+                            let fixed = Command::new(
+                                fd.exe().trim().to_string(),
+                                fd.args().to_vec(),
+                                fd.cwd(),
+                            );
+
+                            let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
+                            fixed_biome.insert_foreground_destructor(idx, fixed);
+                        }
+                        Target::BackgroundDestructor(bd) => {
+                            event!(
+                                Level::INFO,
+                                target = r.r#for,
+                                "trimming whitespaces from {}",
+                                bd.exe()
+                            );
+                            let fixed = Command::new(
+                                bd.exe().trim().to_string(),
+                                bd.args().to_vec(),
+                                bd.cwd(),
+                            );
+
+                            let idx = fixed_biome.remove_background_destructor(bd).unwrap();
+                            fixed_biome.insert_background_destructor(idx, fixed);
+                        }
+                    }
+                    fixed.update(biome_name.to_string(), fixed_biome);
+                }
+            });
+        fixed
+    }
+
     pub fn from_toml(toml_str: String, terrain_dir: &Path) -> Result<Self> {
         let terrain: Terrain =
             toml::from_str(&toml_str).context("failed to parse terrain from toml")?;
+
         let result = terrain.validate(terrain_dir);
         if let Err(e) = &result {
             e.results.print_validation_message();
@@ -794,6 +902,142 @@ pub mod tests {
                         })
                 })
         });
+
+        restore_env_var("PATH".to_string(), real_path);
+    }
+
+    #[serial]
+    #[test]
+    fn test_validation_fix_trim() {
+        let test_dir = tempdir().unwrap();
+
+        let paths_root = tempdir().unwrap();
+        let paths_bin = paths_root.path().join("bin");
+
+        create_dir_all(&paths_bin).unwrap();
+
+        let mut map = BTreeMap::new();
+        map.insert(
+            " WITH_LEADING_SPACES".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+        map.insert(
+            "WITH_TRAILING_SPACES ".to_string(),
+            "VALUE_WITHOUT_SPACES".to_string(),
+        );
+
+        let leading_space_command = Command::new(
+            " with_leading_spaces".to_string(),
+            vec![],
+            Some(test_dir.path().to_path_buf()),
+        );
+        let trailing_space_command = Command::new(
+            "with_trailing_spaces ".to_string(),
+            vec![],
+            Some(test_dir.path().to_path_buf()),
+        );
+
+        ["with_leading_spaces", "with_trailing_spaces"]
+            .iter()
+            .for_each(|command| {
+                let mut path = paths_bin.clone();
+                path.push(command);
+                create_file_with_all_executable_permission(&path);
+            });
+
+        let command_vec = vec![
+            leading_space_command.clone(),
+            trailing_space_command.clone(),
+        ];
+        let commands = Commands::new(command_vec.clone(), command_vec.clone());
+
+        let mut terrain = Terrain::default();
+        let mut biome = Biome::default();
+        terrain.terrain_mut().set_envs(map.clone());
+        terrain.terrain_mut().set_aliases(map.clone());
+        terrain.terrain_mut().set_constructors(commands.clone());
+        terrain.terrain_mut().set_destructors(commands.clone());
+        biome.set_envs(map.clone());
+        biome.set_aliases(map);
+        biome.set_constructors(commands.clone());
+        biome.set_destructors(commands);
+
+        terrain.update("test_biome".to_string(), biome);
+
+        let before = terrain.clone();
+
+        let real_path = set_env_var(
+            "PATH".to_string(),
+            Some(format!(
+                "{}:{}",
+                paths_root.path().display(),
+                paths_bin.display(),
+            )),
+        );
+        let messages = before.validate(test_dir.path()).unwrap().results();
+
+        assert_eq!(messages.len(), 40);
+        ["none", "test_biome"].iter().for_each(|biome_name| {
+            ["env", "alias"].iter().for_each(|identifier_type| {
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }
+                } else {
+                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" WITH_LEADING_SPACES") }
+                };
+                assert!(messages.contains(&ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message:
+                    "trimming spaces from identifier: ` WITH_LEADING_SPACES`"
+                        .to_string(),
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action,
+                }), "failed to validate trimming leading spaces from identifier message for {}({})", biome_name, identifier_type);
+
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim { biome_name, target: Target::Env("WITH_TRAILING_SPACES ") }
+                } else {
+                    ValidationFixAction::Trim { biome_name, target: Target::Alias("WITH_TRAILING_SPACES ") }
+                };
+                assert!(messages.contains(&ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message:
+                    "trimming spaces from identifier: `WITH_TRAILING_SPACES `"
+                        .to_string(),
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action,
+                }), "failed to validate trimming trailing spaces from identifier message for {}({})", biome_name, identifier_type);
+            });
+
+             ["constructor", "destructor"]
+                .iter()
+                .for_each(|operation_type| {
+                    ["foreground", "background"]
+                        .iter()
+                        .for_each(|commands_type| {
+                            let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe ` with_leading_spaces` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", commands_type, operation_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action,
+                            }), "failed to validate exe leading spaces for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            let fix_action = get_test_fix_action(&trailing_space_command, biome_name, operation_type, commands_type);
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe `with_trailing_spaces ` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", commands_type, operation_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action,
+                            }), "failed to validate exe trailing for {}({}:{})", biome_name, operation_type, commands_type);
+                        })
+                })
+        });
+
+        let fixed = terrain.fix_invalid_values(before.validate(test_dir.path()).unwrap());
+
+        let fixed_result = fixed.validate(test_dir.path());
+        assert!(fixed_result.is_ok());
+        assert!(fixed_result.unwrap().results().is_empty());
 
         restore_env_var("PATH".to_string(), real_path);
     }

@@ -22,6 +22,7 @@ pub async fn handle(
         context.terrain_dir(),
     )
     .expect("failed to parse terrain from toml");
+    // TODO: fix validations here
 
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;

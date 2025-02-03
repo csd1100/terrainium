@@ -19,6 +19,7 @@ pub async fn handle(
     )
     .expect("terrain to be parsed from toml");
 
+    // TODO: fix validations here
     background::handle(&context, CONSTRUCTORS, terrain, biome_arg, None, client).await
 }
 

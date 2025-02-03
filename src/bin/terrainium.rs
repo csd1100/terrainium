@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
             .context("failed to update the terrain values")?,
 
             Verbs::Validate { fix } => {
-                validate::handle(context, fix);
+                validate::handle(context, fix)?;
             }
 
             Verbs::Construct { biome } => construct::handle(context, biome, None).await?,

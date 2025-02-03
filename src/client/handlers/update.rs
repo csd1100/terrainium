@@ -59,6 +59,8 @@ pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
         copy(context.toml_path()?, backup).context("failed to backup terrain.toml")?;
     }
 
+    // TODO: fix validations here
+
     // TODO: validate toml in to_toml
     write(
         context.toml_path()?,
