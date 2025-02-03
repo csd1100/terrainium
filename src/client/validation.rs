@@ -1,11 +1,12 @@
+use crate::client::types::command::{Command, CommandsType, OperationType};
 use regex::Regex;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Formatter;
 use tracing::{event, Level};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-pub(crate) enum ValidationMessageLevel {
+pub enum ValidationMessageLevel {
     Error,
     Warn,
     Info,
@@ -31,42 +32,96 @@ impl std::fmt::Display for ValidationMessageLevel {
     }
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-pub(crate) struct ValidationResult {
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+pub(crate) enum Target<'a> {
+    Env(&'a str),
+    Alias(&'a str),
+    ForegroundConstructor(&'a Command),
+    BackgroundConstructor(&'a Command),
+    ForegroundDestructor(&'a Command),
+    BackgroundDestructor(&'a Command),
+}
+
+impl<'a> Target<'a> {
+    pub fn from_identifier(identifier: &IdentifierType, value: &'a str) -> Self {
+        match identifier {
+            IdentifierType::Env => Target::Env(value),
+            IdentifierType::Alias => Target::Alias(value),
+        }
+    }
+
+    pub fn from_command(
+        commands_type: &CommandsType,
+        operation_type: &OperationType,
+        command: &'a Command,
+    ) -> Self {
+        match operation_type {
+            OperationType::Constructor => match commands_type {
+                CommandsType::Foreground => Target::ForegroundConstructor(command),
+                CommandsType::Background => Target::BackgroundConstructor(command),
+            },
+            OperationType::Destructor => match commands_type {
+                CommandsType::Foreground => Target::ForegroundDestructor(command),
+                CommandsType::Background => Target::BackgroundDestructor(command),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub(crate) enum ValidationFixAction<'a> {
+    None,
+    Trim {
+        biome_name: &'a str,
+        target: Target<'a>,
+    },
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ValidationResult<'a> {
     pub(crate) level: ValidationMessageLevel,
     pub(crate) message: String,
-    pub(crate) target: String,
+    pub(crate) r#for: String,
+    pub(crate) fix_action: ValidationFixAction<'a>,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
-pub(crate) struct ValidationResults {
-    results: Vec<ValidationResult>,
+impl ValidationResult<'_> {
+    pub fn level(&self) -> &ValidationMessageLevel {
+        &self.level
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub fn target(&self) -> &str {
+        &self.r#for
+    }
 }
 
-impl ValidationResults {
-    pub(crate) fn new(results: Vec<ValidationResult>) -> Self {
+#[derive(Debug, Clone)]
+pub struct ValidationResults<'a> {
+    results: HashSet<ValidationResult<'a>>,
+}
+
+impl<'a> ValidationResults<'a> {
+    pub(crate) fn new(results: HashSet<ValidationResult<'a>>) -> Self {
         Self { results }
     }
 
-    pub(crate) fn results_ref(&self) -> &Vec<ValidationResult> {
+    pub fn results_ref(&self) -> &HashSet<ValidationResult> {
         &self.results
     }
 
-    #[cfg(test)]
-    pub(crate) fn results(self) -> Vec<ValidationResult> {
-        self.results
+    pub(crate) fn append(&mut self, other: ValidationResults<'a>) {
+        self.results.extend(other.results);
     }
 
-    pub(crate) fn append(&mut self, other: &mut ValidationResults) {
-        self.results.append(&mut other.results);
-    }
-
-    pub(crate) fn print_validation_message(&self) {
-        let mut messages = self.results.clone();
-        messages.sort_by_key(|val| val.level.clone());
+    pub fn print_validation_message(&self) {
+        let messages = self.results.clone();
 
         messages.iter().for_each(|message| {
-            let target = format!("terrain_validation({})", message.target);
+            let target = format!("terrain_validation({})", message.r#for);
             match message.level {
                 ValidationMessageLevel::Debug => {
                     event!(Level::DEBUG, r#for = target, "{:?}", message.message);
@@ -83,14 +138,25 @@ impl ValidationResults {
             }
         })
     }
+
+    #[cfg(test)]
+    pub fn results(self) -> HashSet<ValidationResult<'a>> {
+        self.results
+    }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ValidationError {
-    pub(crate) results: ValidationResults,
+pub struct ValidationError<'a> {
+    pub(crate) results: ValidationResults<'a>,
 }
 
-impl std::fmt::Display for ValidationError {
+impl ValidationError<'_> {
+    pub fn results(&self) -> &ValidationResults {
+        &self.results
+    }
+}
+
+impl std::fmt::Display for ValidationError<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         self.results
             .results_ref()
@@ -117,12 +183,12 @@ impl std::fmt::Display for IdentifierType {
     }
 }
 
-pub(crate) fn validate_identifiers(
+pub(crate) fn validate_identifiers<'a>(
     data_type: IdentifierType,
-    data: &BTreeMap<String, String>,
-    target: &str,
-) -> ValidationResults {
-    let mut messages = vec![];
+    data: &'a BTreeMap<String, String>,
+    biome_name: &'a str,
+) -> ValidationResults<'a> {
+    let mut messages = HashSet::new();
 
     let starting_with_num = Regex::new(r"^[0-9]").unwrap();
     let invalid_identifier = Regex::new(r"[^a-zA-Z0-9_]").unwrap();
@@ -131,56 +197,61 @@ pub(crate) fn validate_identifiers(
         let mut k = k.as_str();
 
         if k.is_empty() {
-            messages.push(ValidationResult {
+            messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
                 message:
                 "empty identifier is not allowed".to_string(),
-                target: format!("{target}({data_type})"),
-            })
+                r#for: format!("{biome_name}({data_type})"),
+                fix_action: ValidationFixAction::None
+            });
         } else {
             if k.starts_with(" ") || k.ends_with(" ") {
-                messages.push(ValidationResult {
-                    level: ValidationMessageLevel::Info,
+                messages.insert(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
                     message: format!(
                         "trimming spaces from identifier: `{}`",
                          k
                     ),
-                    target: format!("{target}({data_type})"),
-                })
+                    r#for: format!("{biome_name}({data_type})"),
+                    fix_action: ValidationFixAction::Trim {biome_name,target: Target::from_identifier(&data_type,k) }
+                });
             }
 
             // trim leading and trailing spaces for further validation
             k = k.trim();
 
             if k.contains(" ") {
-                messages.push(ValidationResult {
+                messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
                         "identifier `{}` is invalid as it contains spaces",
                         k
                     ),
-                    target: format!("{target}({data_type})"),
-                })
+                    r#for: format!("{biome_name}({data_type})"),
+                    fix_action: ValidationFixAction::None
+                });
             }
 
             if starting_with_num.is_match(k) {
-                messages.push(ValidationResult {
+                messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
                         "identifier `{}` cannot start with number",
                         k
                     ),
-                    target: format!("{target}({data_type})"),
-                })
+                    r#for: format!("{biome_name}({data_type})"),
+                    fix_action: ValidationFixAction::None
+                });
             }
 
             if invalid_identifier.is_match(k) {
-                messages.push(ValidationResult {
+                messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!("identifier `{}` contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.",
                                     k),
-                    target: format!("{target}({data_type})"),
-                })
+                    r#for: format!("{biome_name}({data_type})"),
+                    fix_action: ValidationFixAction::None
+                });
             }
         }
     });

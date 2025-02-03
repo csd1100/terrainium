@@ -3,7 +3,7 @@ use clap::Parser;
 use home::home_dir;
 use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
 use terrainium::client::handlers::{
-    construct, destruct, edit, enter, exit, generate, get, init, update,
+    construct, destruct, edit, enter, exit, generate, get, init, update, validate,
 };
 use terrainium::client::logging::init_logging;
 use terrainium::client::types::context::Context;
@@ -94,6 +94,10 @@ async fn main() -> Result<()> {
                 },
             )
             .context("failed to update the terrain values")?,
+
+            Verbs::Validate { fix } => {
+                validate::handle(context, fix);
+            }
 
             Verbs::Construct { biome } => construct::handle(context, biome, None).await?,
 

@@ -2,6 +2,7 @@ use crate::client::types::command::{Command, CommandsType, OperationType};
 use crate::client::validation::ValidationResults;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::Path;
 
 #[cfg(feature = "terrain-schema")]
@@ -50,27 +51,27 @@ impl Commands {
         self.background.as_mut()
     }
 
-    pub(crate) fn validate_commands(
-        &self,
-        biome_name: &str,
+    pub(crate) fn validate_commands<'a>(
+        &'a self,
+        biome_name: &'a str,
         operation_type: OperationType,
-        terrain_dir: &Path,
-    ) -> ValidationResults {
-        let mut result = ValidationResults::new(vec![]);
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = ValidationResults::new(HashSet::new());
 
         self.foreground.iter().for_each(|c| {
-            result.append(&mut c.validate_command(
+            result.append(c.validate_command(
                 biome_name,
-                &operation_type,
+                operation_type.clone(),
                 CommandsType::Foreground,
                 terrain_dir,
             ))
         });
 
         self.background.iter().for_each(|c| {
-            result.append(&mut c.validate_command(
+            result.append(c.validate_command(
                 biome_name,
-                &operation_type,
+                operation_type.clone(),
                 CommandsType::Background,
                 terrain_dir,
             ))

@@ -1,4 +1,6 @@
-use crate::client::validation::{ValidationMessageLevel, ValidationResult, ValidationResults};
+use crate::client::validation::{
+    Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
+};
 use crate::common::types::pb;
 use anyhow::{anyhow, Context, Result};
 use home::home_dir;
@@ -6,7 +8,7 @@ use home::home_dir;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::fmt::Display;
 use std::fs;
@@ -52,7 +54,7 @@ impl Display for OperationType {
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Command {
     exe: String,
     args: Vec<String>,
@@ -86,30 +88,32 @@ impl Command {
         }
     }
 
-    pub(crate) fn validate_command(
-        &self,
-        biome_name: &str,
-        operation_type: &OperationType,
+    pub(crate) fn validate_command<'a>(
+        &'a self,
+        biome_name: &'a str,
+        operation_type: OperationType,
         commands_type: CommandsType,
-        terrain_dir: &Path,
-    ) -> ValidationResults {
-        let mut result = vec![];
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = HashSet::new();
         let exe = self.exe.as_str();
 
         if exe.starts_with(" ") || exe.ends_with(" ") {
-            result.push(ValidationResult {
+            result.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
-                message: format!("exe `{}` has leading / trailing spaces. make sure it is removed {} {} is to be run.", &self.exe, commands_type, operation_type),
-                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                message: format!("exe `{}` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", &self.exe, commands_type, operation_type),
+                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                fix_action: ValidationFixAction::Trim { biome_name, target:Target::from_command(&commands_type, &operation_type, self) }
             });
         }
         let trimmed = exe.trim();
 
         if trimmed.contains(" ") {
-            result.push(ValidationResult {
+            result.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
                 message: format!("exe `{}` contains whitespaces.", &self.exe,),
-                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                fix_action: ValidationFixAction::None,
             });
         }
 
@@ -117,58 +121,64 @@ impl Command {
         let executable_validation_message = ValidationResult {
             level: ValidationMessageLevel::Warn,
             message: format!("exe `{}` does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", exe, commands_type, operation_type),
-            target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+            r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+            fix_action: ValidationFixAction::None,
         };
 
         if exe_path.is_absolute() {
             if !exe_path.exists() {
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!("exe `{:?}` does not exists. make sure it is present before {} {} is to be run.", trimmed, commands_type, operation_type),
-                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
                 });
             } else if !is_executable(&exe_path) {
-                result.push(executable_validation_message);
+                result.insert(executable_validation_message);
             }
         } else if trimmed.starts_with("./") || trimmed.starts_with("../") {
             let wd = self.cwd.clone().unwrap_or(terrain_dir.to_path_buf());
             let exe_path = wd.join(trimmed);
             if !exe_path.exists() {
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!("exe `{}` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", trimmed, wd, commands_type, operation_type),
-                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
                 });
             } else if !is_executable(&exe_path) {
-                result.push(executable_validation_message);
+                result.insert(executable_validation_message);
             }
         } else {
             let res = is_exe_in_path(&self.exe);
             if let Some(exe_path) = res {
                 if !is_executable(&exe_path) {
-                    result.push(executable_validation_message);
+                    result.insert(executable_validation_message);
                 }
             } else {
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
-                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                fix_action: ValidationFixAction::None,
             });
             }
         }
 
         if trimmed.contains("sudo") {
             if commands_type == CommandsType::Background {
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).",trimmed, self.args.join(" ")),
-                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
                 });
             } else {
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.",trimmed, self.args.join(" ")),
-                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
                 });
             }
         }

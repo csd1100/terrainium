@@ -183,13 +183,16 @@ impl Terrain {
         }
     }
 
-    fn validate(&self, terrain_dir: &Path) -> Result<ValidationResults, ValidationError> {
+    fn validate<'a>(
+        &'a self,
+        terrain_dir: &'a Path,
+    ) -> Result<ValidationResults<'a>, ValidationError<'a>> {
         // validate terrain
         let mut results = self.terrain.validate("none", terrain_dir);
 
         // all biomes
         self.biomes.iter().for_each(|(biome_name, biome)| {
-            results.append(&mut biome.validate(biome_name, terrain_dir))
+            results.append(biome.validate(biome_name, terrain_dir))
         });
 
         if results
@@ -326,9 +329,11 @@ pub mod tests {
     use crate::client::types::commands::Commands;
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var};
-    use crate::client::validation::{ValidationMessageLevel, ValidationResult};
+    use crate::client::validation::{
+        Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
+    };
     use serial_test::serial;
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::BTreeMap;
     use std::fs::{create_dir_all, metadata, set_permissions, write};
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
@@ -429,97 +434,121 @@ pub mod tests {
         biome.set_envs(map.clone());
         biome.set_aliases(map);
         terrain.update("test_biome".to_string(), biome);
-
-        let validation_result = terrain
-            .validate(&PathBuf::new())
+        let path = PathBuf::new();
+        let messages = terrain
+            .validate(&path)
             .expect_err("expected validation error")
             .results
             .results();
 
-        let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
-
         assert_eq!(messages.len(), 44);
 
-        ["none", "test_biome"].iter().for_each(|target| {
-            ["env", "alias"].iter().for_each(|iterator_type| {
+        ["none", "test_biome"].iter().for_each(|biome_name| {
+            ["env", "alias"].iter().for_each(|identifier_type| {
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: "empty identifier is not allowed".to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate empty identifier message for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate empty identifier message for {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message:
                     "identifier `TEST WITH SPACES` is invalid as it contains spaces"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier with spaces message for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier with spaces message for {}({})", biome_name, identifier_type);
 
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }
+                } else {
+                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" WITH_LEADING_SPACES") }
+                };
                 assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Info,
+                    level: ValidationMessageLevel::Warn,
                     message:
                     "trimming spaces from identifier: ` WITH_LEADING_SPACES`"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate trimming leading spaces from identifier message for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action,
+                }), "failed to validate trimming leading spaces from identifier message for {}({})", biome_name, identifier_type);
 
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim { biome_name, target: Target::Env("WITH_TRAILING_SPACES ") }
+                } else {
+                    ValidationFixAction::Trim { biome_name, target: Target::Alias("WITH_TRAILING_SPACES ") }
+                };
                 assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Info,
+                    level: ValidationMessageLevel::Warn,
                     message:
                     "trimming spaces from identifier: `WITH_TRAILING_SPACES `"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate trimming trailing spaces from identifier message for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action,
+                }), "failed to validate trimming trailing spaces from identifier message for {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message:
                     "identifier `1STARTING_WITH_NUM` cannot start with number"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier starting with number message for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier starting with number message for {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: "identifier `WITH-INVALID-#.(` contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.".to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier with invalid chars for {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier with invalid chars for {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message:
                     "identifier `1INVALID-#. (` is invalid as it contains spaces"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier with spaces message for ` 1INVALID-#. ( ` and {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier with spaces message for ` 1INVALID-#. ( ` and {}({})", biome_name, identifier_type);
 
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim { biome_name, target: Target::Env(" 1INVALID-#. ( ") }
+                } else {
+                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" 1INVALID-#. ( ") }
+                };
                 assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Info,
+                    level: ValidationMessageLevel::Warn,
                     message: "trimming spaces from identifier: ` 1INVALID-#. ( `"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate trimming spaces environment variable message for ` 1INVALID-#. ( ` and {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: fix_action.clone(),
+                }), "failed to validate trimming spaces environment variable message for ` 1INVALID-#. ( ` and {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Info,
+                    level: ValidationMessageLevel::Warn,
                     message: "trimming spaces from identifier: ` 1INVALID-#. ( `"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate trimming spaces environment variable message for ` 1INVALID-#. ( ` and {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action,
+                }), "failed to validate trimming spaces environment variable message for ` 1INVALID-#. ( ` and {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: "identifier `1INVALID-#. (` cannot start with number"
                         .to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier starting with number for `1INVALID-#. (` and {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier starting with number for `1INVALID-#. (` and {}({})", biome_name, identifier_type);
 
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: "identifier `1INVALID-#. (` contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.".to_string(),
-                    target: format!("{}({})", target, iterator_type),
-                }), "failed to validate identifier with invalid chars for `1INVALID-#. (` and {}({})", target, iterator_type);
+                    r#for: format!("{}({})", biome_name, identifier_type),
+                    fix_action: ValidationFixAction::None,
+                }), "failed to validate identifier with invalid chars for `1INVALID-#. (` and {}({})", biome_name, identifier_type);
             })
         });
     }
@@ -573,7 +602,19 @@ pub mod tests {
         let mut terrain = Terrain::default();
         let mut biome = Biome::default();
 
+        let leading_space_command = Command::new(
+            " with_leading_spaces".to_string(),
+            vec![],
+            Some(test_dir.path().to_path_buf()),
+        );
+        let trailing_space_command = Command::new(
+            "with_trailing_spaces ".to_string(),
+            vec![],
+            Some(test_dir.path().to_path_buf()),
+        );
         let command_vec = vec![
+            leading_space_command.clone(),
+            trailing_space_command.clone(),
             Command::new(
                 "not_in_path".to_string(),
                 vec![],
@@ -581,16 +622,6 @@ pub mod tests {
             ),
             Command::new(
                 "with spaces".to_string(),
-                vec![],
-                Some(test_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                " with_leading_spaces".to_string(),
-                vec![],
-                Some(test_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                "with_trailing_spaces ".to_string(),
                 vec![],
                 Some(test_dir.path().to_path_buf()),
             ),
@@ -680,13 +711,11 @@ pub mod tests {
             )),
         );
 
-        let validation_result = terrain
+        let messages = terrain
             .validate(test_dir.path())
             .expect_err("to fail")
             .results
             .results();
-
-        let messages: HashSet<ValidationResult> = validation_result.iter().cloned().collect();
 
         assert_eq!(messages.len(), 104);
         ["none", "test_biome"].iter().for_each(|biome_name| {
@@ -699,56 +728,67 @@ pub mod tests {
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Error,
                                 message: "exe `with spaces` contains whitespaces.".to_string(),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
                             }), "failed to validate whitespace not being present in exe for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
                                 message: format!("exe `not_in_path` is not present in PATH variable. make sure it is present before {} {} is to be run.", commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in path for {}({}:{})", biome_name, operation_type, commands_type);
 
+                            let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
-                                message: format!("exe ` with_leading_spaces` has leading / trailing spaces. make sure it is removed {} {} is to be run.", commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                message: format!("exe ` with_leading_spaces` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", commands_type, operation_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action,
                             }), "failed to validate exe leading spaces for {}({}:{})", biome_name, operation_type, commands_type);
 
+                            let fix_action = get_test_fix_action(&trailing_space_command, biome_name, operation_type, commands_type);
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
-                                message: format!("exe `with_trailing_spaces ` has leading / trailing spaces. make sure it is removed {} {} is to be run.", commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                message: format!("exe `with_trailing_spaces ` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", commands_type, operation_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action,
                             }), "failed to validate exe trailing for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
                                 message: format!("exe `./not_executable` does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
                             }), "failed to validate exe not having execute permission for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
                                 message: format!("exe `./relative_not_present` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", test_dir.path(), commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in present in relative path for {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
                                 message: format!("exe `{:?}` does not exists. make sure it is present before {} {} is to be run.", absolute_path_not_present, commands_type, operation_type),
-                                target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
                             }), "failed to validate exe absolute path not being present for {}({}:{})", biome_name, operation_type, commands_type);
 
                             if commands_type == &CommandsType::Background.to_string() {
                                 assert!(messages.contains(&ValidationResult {
                                     level: ValidationMessageLevel::Warn,
                                     message: "command exe: `sudo` args: `whoami` uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).".to_string(),
-                                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                    fix_action: ValidationFixAction::None,
                                 }), "failed to validate exe containing sudo for {}({}:{})", biome_name, operation_type, commands_type);
                             } else {
                                 assert!(messages.contains(&ValidationResult {
                                     level: ValidationMessageLevel::Warn,
                                     message: "command exe: `sudo` args: `whoami` uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.".to_string(),
-                                    target: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                    fix_action: ValidationFixAction::None,
                                 }), "failed to validate exe containing sudo for {}({}:{})", biome_name, operation_type, commands_type);
                             }
                         })
@@ -756,6 +796,38 @@ pub mod tests {
         });
 
         restore_env_var("PATH".to_string(), real_path);
+    }
+
+    fn get_test_fix_action<'a>(
+        command: &'a Command,
+        biome_name: &&'a str,
+        operation_type: &&str,
+        commands_type: &&str,
+    ) -> ValidationFixAction<'a> {
+        let fix_action = if operation_type == &"constructor" {
+            if commands_type == &"foreground" {
+                ValidationFixAction::Trim {
+                    biome_name,
+                    target: Target::ForegroundConstructor(command),
+                }
+            } else {
+                ValidationFixAction::Trim {
+                    biome_name,
+                    target: Target::BackgroundConstructor(command),
+                }
+            }
+        } else if commands_type == &"foreground" {
+            ValidationFixAction::Trim {
+                biome_name,
+                target: Target::ForegroundDestructor(command),
+            }
+        } else {
+            ValidationFixAction::Trim {
+                biome_name,
+                target: Target::BackgroundDestructor(command),
+            }
+        };
+        fix_action
     }
 
     fn create_file_with_all_executable_permission(file_path: &PathBuf) {

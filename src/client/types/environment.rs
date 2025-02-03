@@ -2,12 +2,13 @@ use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::client::validation::{
-    ValidationError, ValidationMessageLevel, ValidationResult, ValidationResults,
+    ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
+    ValidationResults,
 };
 use anyhow::{anyhow, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -92,21 +93,22 @@ impl Environment {
     }
 
     fn validate_envs(&self) -> ValidationResults {
-        let mut result = vec![];
+        let mut result = HashSet::new();
         self.merged.envs().iter().for_each(|(k, v)| {
             // validate if all env references are resolved
             let env_refs = Biome::get_envs_to_substitute(v);
             if !env_refs.is_empty() {
                 let refs = env_refs.join("`, `");
-                result.push(ValidationResult {
+                result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
                         "environment variable `{k}` contains reference to variables \
                      (`{refs}`) that are not defined in terrain.toml and system environment variables. \
                       ensure that variables (`{refs}`) are set before using `{k}` environment variable."
                     ),
-                    target: self.selected_biome().clone(),
-                })
+                    r#for: self.selected_biome().clone(),
+                    fix_action: ValidationFixAction::None,
+                });
             }
         });
         ValidationResults::new(result)
@@ -171,9 +173,11 @@ mod tests {
     };
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var};
-    use crate::client::validation::{ValidationMessageLevel, ValidationResult};
+    use crate::client::validation::{
+        ValidationFixAction, ValidationMessageLevel, ValidationResult,
+    };
     use anyhow::Result;
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::BTreeMap;
     use std::fs;
     use std::fs::{canonicalize, create_dir_all};
     use std::path::PathBuf;
@@ -632,8 +636,7 @@ mod tests {
 
         environment.merged_mut().set_envs(envs);
 
-        let results = environment.validate().expect("should not fail");
-        let messages: HashSet<ValidationResult> = results.results_ref().iter().cloned().collect();
+        let messages = environment.validate().expect("should not fail").results();
 
         assert_eq!(messages.len(), 1);
         assert!(messages.contains(&ValidationResult {
@@ -641,7 +644,8 @@ mod tests {
             message: "environment variable `NESTED_POINTER` contains reference to variables \
                  (`NULL_1`, `NULL_2`) that are not defined in terrain.toml and system environment variables. \
                  ensure that variables (`NULL_1`, `NULL_2`) are set before using `NESTED_POINTER` environment variable.".to_string(),
-            target: "none".to_string(),
+            r#for: "none".to_string(),
+            fix_action: ValidationFixAction::None,
         }));
     }
 }

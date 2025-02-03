@@ -93,6 +93,11 @@ pub enum Verbs {
         backup: bool,
     },
 
+    Validate {
+        #[arg(short, long)]
+        fix: bool,
+    },
+
     Construct {
         #[arg(short, long)]
         biome: Option<BiomeArg>,

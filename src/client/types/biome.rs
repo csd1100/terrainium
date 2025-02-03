@@ -6,7 +6,7 @@ use regex::Regex;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -33,30 +33,42 @@ impl Biome {
         }
     }
 
-    fn validate_envs(&self, biome_name: &str) -> ValidationResults {
+    fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
         validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
     }
 
-    fn validate_aliases(&self, biome_name: &str) -> ValidationResults {
+    fn validate_aliases<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
         validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
     }
 
-    fn validate_constructors(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
+    fn validate_constructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
         self.constructors
             .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
     }
 
-    fn validate_destructors(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
+    fn validate_destructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
         self.destructors
             .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
     }
 
-    pub(crate) fn validate(&self, biome_name: &str, terrain_dir: &Path) -> ValidationResults {
-        let mut result = ValidationResults::new(vec![]);
-        result.append(&mut self.validate_envs(biome_name));
-        result.append(&mut self.validate_aliases(biome_name));
-        result.append(&mut self.validate_constructors(biome_name, terrain_dir));
-        result.append(&mut self.validate_destructors(biome_name, terrain_dir));
+    pub(crate) fn validate<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = ValidationResults::new(HashSet::new());
+        result.append(self.validate_envs(biome_name));
+        result.append(self.validate_aliases(biome_name));
+        result.append(self.validate_constructors(biome_name, terrain_dir));
+        result.append(self.validate_destructors(biome_name, terrain_dir));
         result
     }
 
