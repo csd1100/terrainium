@@ -27,6 +27,9 @@ pub struct Options {
 
     #[arg(short, long, default_value = "warn", global = true)]
     pub log_level: Level,
+
+    #[arg(long)]
+    pub create_config: bool,
 }
 
 #[derive(Subcommand, Debug)]

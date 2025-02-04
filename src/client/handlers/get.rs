@@ -1,7 +1,7 @@
 use crate::client::args::{option_string_from, GetArgs};
 use crate::client::types::context::Context;
 use crate::client::types::environment::{render, Environment};
-use crate::client::types::terrain::Terrain;
+use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{
     DOES_NOT_EXIST, GET_ALIASES_TEMPLATE_NAME, GET_CONSTRUCTORS_TEMPLATE_NAME,
     GET_DESTRUCTORS_TEMPLATE_NAME, GET_ENVS_TEMPLATE_NAME, GET_MAIN_TEMPLATE_NAME,
@@ -35,7 +35,11 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
     }
 
     if get_args.auto_apply {
-        result = terrain.auto_apply().clone().into();
+        if context.config().auto_apply() {
+            result = terrain.auto_apply().clone().into();
+            return Ok(result);
+        }
+        result = AutoApply::default().into();
         return Ok(result);
     }
 
@@ -172,6 +176,7 @@ fn templates() -> BTreeMap<String, String> {
 mod tests {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::shell::Zsh;
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::set_auto_apply;
     use crate::client::types::terrain::Terrain;
@@ -894,6 +899,37 @@ Environment Variables:
 
         let mut terrain = Terrain::example();
         set_auto_apply(&mut terrain, "off");
+
+        let output = super::get(context, terrain, args).expect("to not throw an error");
+        let expected = "off";
+
+        assert_eq!(output, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_auto_apply_globally_off() -> Result<()> {
+        let context = Context::build_with_config(
+            PathBuf::new(),
+            PathBuf::new(),
+            Config::auto_apply_off(),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        let args = GetArgs {
+            biome: None,
+            aliases: true,
+            envs: false,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: true,
+        };
+
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "all");
 
         let output = super::get(context, terrain, args).expect("to not throw an error");
         let expected = "off";

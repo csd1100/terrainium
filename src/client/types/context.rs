@@ -1,4 +1,5 @@
 use crate::client::shell::{Shell, Zsh};
+use crate::client::types::config::Config;
 use crate::common::constants::{
     CONFIG_LOCATION, TERRAINIUM_EXECUTABLE, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR,
     TERRAIN_SESSION_ID,
@@ -16,6 +17,7 @@ pub struct Context {
     session_id: String,
     terrain_dir: PathBuf,
     central_dir: PathBuf,
+    config: Config,
     shell: Zsh,
 }
 
@@ -28,6 +30,8 @@ impl Context {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
         let terrain_dir = env::current_dir().expect("failed to get current directory");
+
+        let config = Config::from_file().unwrap_or_default();
 
         let shell = Zsh::get(&terrain_dir);
 
@@ -48,6 +52,7 @@ impl Context {
             session_id,
             central_dir: get_central_dir_location(&terrain_dir),
             terrain_dir,
+            config,
             shell,
         }
     }
@@ -126,6 +131,10 @@ impl Context {
         Ok(())
     }
 
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     pub(crate) fn terrainium_envs(&self) -> BTreeMap<String, String> {
         let mut terrainium_envs = BTreeMap::<String, String>::new();
         terrainium_envs.insert(
@@ -154,6 +163,23 @@ impl Context {
             session_id: "some".to_string(),
             terrain_dir: current_dir,
             central_dir,
+            config: Config::default(),
+            shell,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn build_with_config(
+        current_dir: PathBuf,
+        central_dir: PathBuf,
+        config: Config,
+        shell: Zsh,
+    ) -> Self {
+        Context {
+            session_id: "some".to_string(),
+            terrain_dir: current_dir,
+            central_dir,
+            config,
             shell,
         }
     }
@@ -165,6 +191,7 @@ impl Context {
             session_id: "some".to_string(),
             central_dir: get_central_dir_location(&terrain_dir),
             terrain_dir,
+            config: Config::default(),
             shell,
         }
     }
