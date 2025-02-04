@@ -9,4 +9,3 @@ pub mod get;
 pub mod init;
 pub mod schema;
 pub mod update;
-pub mod validate;

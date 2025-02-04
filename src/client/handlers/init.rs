@@ -20,7 +20,7 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 
     let mut file = File::create_new(&toml_path).context("error while creating terrain.toml")?;
 
-    let terrain = if example {
+    let mut terrain = if example {
         Terrain::example()
     } else {
         Terrain::default()
@@ -34,12 +34,11 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
         .context("failed to write terrain in toml file")?;
 
     if edit {
-        // TODO: get validated toml from run_editor
         edit::run_editor(&toml_path, context.terrain_dir())?;
+        // get updated terrain after edit
+        terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
     }
 
-    // TODO: fix validations here
-    // FIXME: if edited run generate_scripts with updated terrain
     context.shell().generate_scripts(&context, terrain)?;
 
     Ok(())
