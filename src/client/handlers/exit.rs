@@ -3,18 +3,19 @@ use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 
-pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
+pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
     if session_id.is_empty() || selected_biome.is_empty() {
         return Err(anyhow!(
-            "no active terrain found, use `terrainium enter` command to activate a terrain."
+            "no active terrain found, use 'terrainium enter' command to activate a terrain."
         ));
     }
 
@@ -22,6 +23,7 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
         background::handle(
             &context,
             DESTRUCTORS,
+            terrain,
             Some(BiomeArg::Some(selected_biome)),
             Some(BTreeMap::<String, String>::new()),
             client,
@@ -33,7 +35,7 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     Ok(())
 }
 
-/// `terrainium exit` should run background destructor commands only in following case:
+/// 'terrainium exit' should run background destructor commands only in following case:
 /// 1. Auto-apply is disabled
 /// 2. Auto-apply is enabled but background flag is also turned on
 fn should_run_destructor() -> bool {
@@ -48,6 +50,8 @@ fn should_run_destructor() -> bool {
 mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
+    use crate::client::types::terrain::tests::set_auto_apply;
+    use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var, AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
         DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
@@ -62,7 +66,6 @@ mod tests {
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
-
     //
     // RUN THESE TESTS IN SERIAL BECAUSE ENV VARS IN PARALLEL TESTS GET MESSED UP
     //
@@ -119,7 +122,7 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, Some(expected_request))
+        super::handle(context, Terrain::example(), Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -181,7 +184,7 @@ mod tests {
             )
             .sent();
 
-        let err = super::handle(context, Some(expected_request))
+        let err = super::handle(context, Terrain::example(), Some(expected_request))
             .await
             .expect_err("to be thrown");
 
@@ -219,7 +222,10 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "enable");
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -279,7 +285,10 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "all");
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -317,7 +326,9 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, Some(expected_request))
+        let terrain = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 

@@ -14,7 +14,6 @@ use crate::common::utils::timestamp;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::collections::BTreeMap;
-use std::fs::read_to_string;
 use std::path::PathBuf;
 
 fn operation_from_string(op: &str) -> pb::Operation {
@@ -28,15 +27,11 @@ fn operation_from_string(op: &str) -> pb::Operation {
 pub async fn handle(
     context: &Context,
     operation: &str,
+    terrain: Terrain,
     biome_arg: Option<BiomeArg>,
     activate_envs: Option<BTreeMap<String, String>>,
     client: Option<Client>,
 ) -> Result<()> {
-    let terrain = Terrain::from_toml(
-        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-    )
-    .expect("terrain to be parsed from toml");
-
     let selected_biome = option_string_from(&biome_arg);
     let (biome_name, _) = terrain.select_biome(&selected_biome)?;
     let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())

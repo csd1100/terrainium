@@ -9,7 +9,7 @@ use std::io::Write;
 
 pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Result<()> {
     if context.toml_exists() {
-        return Err(anyhow!("terrain for this project is already present. edit existing terrain with `terrain edit` command"));
+        return Err(anyhow!("terrain for this project is already present. edit existing terrain with 'terrain edit' command"));
     }
 
     if !fs::exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
@@ -20,19 +20,23 @@ pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Res
 
     let mut file = File::create_new(&toml_path).context("error while creating terrain.toml")?;
 
-    let terrain = if example {
+    let mut terrain = if example {
         Terrain::example()
     } else {
         Terrain::default()
     };
 
-    let toml_str = terrain.to_toml().expect("terrain to be parsed to toml");
+    let toml_str = terrain
+        .to_toml(context.terrain_dir())
+        .expect("terrain to be parsed to toml");
 
     file.write(toml_str.as_ref())
         .context("failed to write terrain in toml file")?;
 
     if edit {
         edit::run_editor(&toml_path, context.terrain_dir())?;
+        // get updated terrain after edit
+        terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
     }
 
     context.shell().generate_scripts(&context, terrain)?;
@@ -181,7 +185,7 @@ pub mod tests {
         let err =
             super::handle(context, false, false, false).expect_err("expected error to be thrown");
 
-        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with `terrain edit` command");
+        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
 
         current_dir
             .close()
@@ -235,7 +239,7 @@ pub mod tests {
         let err =
             super::handle(context, true, false, false).expect_err("expected error to be thrown");
 
-        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with `terrain edit` command");
+        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
 
         Ok(())
     }

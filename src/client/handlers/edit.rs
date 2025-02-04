@@ -5,7 +5,6 @@ use crate::client::types::terrain::Terrain;
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
-use std::fs;
 use std::path::Path;
 
 const EDITOR: &str = "EDITOR";
@@ -17,11 +16,7 @@ pub fn handle(context: Context) -> Result<()> {
 
     run_editor(&toml_path, context.terrain_dir())?;
 
-    let terrain = Terrain::from_toml(
-        fs::read_to_string(&toml_path).context(format!("failed to read {:?}", toml_path))?,
-    )
-    .expect("terrain to be parsed from toml");
-
+    let terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
     context.shell().generate_scripts(&context, terrain)?;
 
     Ok(())
@@ -45,6 +40,7 @@ pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
 
     edit.wait()
         .context(format!("failed to edit file {:?}", toml_path))?;
+
     Ok(())
 }
 
@@ -58,6 +54,7 @@ pub(crate) mod tests {
     };
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
+    use fs::{copy, create_dir_all};
     use serial_test::serial;
     use std::fs;
     use std::os::unix::process::ExitStatusExt;
@@ -109,12 +106,10 @@ pub(crate) mod tests {
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-        fs::copy("./tests/data/terrain.example.toml", terrain_toml)
-            .expect("test file to be copied");
+        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
-        let central_dir1 = central_dir.path();
-        let script_dir = central_dir1.join("scripts");
-        fs::create_dir_all(script_dir).expect("test scripts dir to be created");
+        let script_dir = central_dir.path().join("scripts");
+        create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 
@@ -169,12 +164,11 @@ pub(crate) mod tests {
         );
 
         let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
-        fs::copy("./tests/data/terrain.example.toml", terrain_toml)
-            .expect("test file to be copied");
+        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
         let script_dir = central_dir1.join("scripts");
-        fs::create_dir_all(script_dir).expect("test scripts dir to be created");
+        create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 
@@ -249,12 +243,11 @@ pub(crate) mod tests {
         );
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-        fs::copy("./tests/data/terrain.example.toml", terrain_toml)
-            .expect("test file to be copied");
+        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
         let script_dir = central_dir1.join("scripts");
-        fs::create_dir_all(script_dir).expect("test scripts dir to be created");
+        create_dir_all(script_dir).expect("test scripts dir to be created");
 
         super::handle(context).expect("no error to be thrown");
 

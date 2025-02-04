@@ -8,19 +8,14 @@ use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED};
 use anyhow::{Context as AnyhowContext, Result};
-use std::fs::read_to_string;
 
 pub async fn handle(
     context: Context,
     biome_arg: Option<BiomeArg>,
+    terrain: Terrain,
     auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
-    let terrain = Terrain::from_toml(
-        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-    )
-    .expect("failed to parse terrain from toml");
-
     let biome = option_string_from(&biome_arg);
     let (selected_name, _) = terrain.select_biome(&biome)?;
     let environment = Environment::from(&terrain, biome, context.terrain_dir())
@@ -51,7 +46,14 @@ pub async fn handle(
     } else {
         let result = tokio::join!(
             context.shell().spawn(envs.clone()),
-            background::handle(&context, CONSTRUCTORS, biome_arg, Some(envs), client),
+            background::handle(
+                &context,
+                CONSTRUCTORS,
+                terrain,
+                biome_arg,
+                Some(envs),
+                client
+            ),
         );
 
         if let Err(e) = result.0 {
@@ -76,6 +78,8 @@ pub async fn handle(
 mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
+    use crate::client::types::terrain::tests::set_auto_apply;
+    use crate::client::types::terrain::Terrain;
     use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
     use crate::common::constants::{
         CONSTRUCTORS, FPATH, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
@@ -200,9 +204,15 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, None, false, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            None,
+            Terrain::example(),
+            false,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -286,7 +296,10 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "enable");
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -372,7 +385,10 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "replace");
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -491,7 +507,10 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "background");
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -610,7 +629,10 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "all");
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -675,7 +697,10 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let mut terrain = Terrain::default();
+        set_auto_apply(&mut terrain, "all");
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -761,7 +786,9 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, None, true, Some(expected_request))
+        let terrain = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
+
+        super::handle(context, None, terrain, true, Some(expected_request))
             .await
             .expect("no error to be thrown");
     }

@@ -4,6 +4,7 @@ use crate::common::execute::Execute;
 use crate::common::types::pb;
 use crate::common::types::pb::{ExecuteRequest, ExecuteResponse};
 use crate::daemon::handlers::RequestHandler;
+use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::terrain_state::{operation_name, CommandStatus, TerrainState};
 use anyhow::{Context, Result};
 use prost_types::Any;
@@ -18,7 +19,7 @@ pub(crate) struct ExecuteHandler;
 
 impl RequestHandler for ExecuteHandler {
     #[instrument(skip(request))]
-    async fn handle(request: Any) -> Any {
+    async fn handle(request: Any, context: DaemonContext) -> Any {
         event!(Level::INFO, "handling ExecuteRequest");
 
         let exe_request: Result<ExecuteRequest> = request
@@ -26,7 +27,7 @@ impl RequestHandler for ExecuteHandler {
             .context("failed to convert request to type ExecuteRequest");
 
         event!(
-            Level::DEBUG,
+            Level::TRACE,
             "result of attempting to parse request: {:#?}",
             exe_request
         );
@@ -34,12 +35,12 @@ impl RequestHandler for ExecuteHandler {
         match exe_request {
             Ok(request) => {
                 event!(
-                    Level::DEBUG,
+                    Level::TRACE,
                     "spawning task to execute request {:#?}",
                     request
                 );
 
-                tokio::spawn(execute(request));
+                tokio::spawn(execute(request, context));
 
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to Any")
             }
@@ -55,7 +56,7 @@ impl RequestHandler for ExecuteHandler {
 }
 
 #[instrument(skip(request))]
-pub(crate) async fn execute(request: ExecuteRequest) {
+pub(crate) async fn execute(request: ExecuteRequest, context: DaemonContext) {
     let operation = operation_name(request.operation);
     let mut terrain_state: TerrainState = request.clone().into();
 
@@ -107,6 +108,16 @@ pub(crate) async fn execute(request: ExecuteRequest) {
     let mut set = JoinSet::new();
 
     for (idx, command) in iter {
+        if command.get_exe().contains("sudo") && !context.should_run_sudo() {
+            event!(
+                Level::WARN,
+                "not executing command for operation {} as running sudo is not allowed ({})",
+                operation,
+                command,
+            );
+            continue;
+        }
+
         let operation = operation.clone();
         let state = arc.clone();
         {
@@ -120,7 +131,7 @@ pub(crate) async fn execute(request: ExecuteRequest) {
                 .await
                 .expect("to write state");
 
-            event!(Level::INFO, "spawning operation: {:?}", operation);
+            event!(Level::INFO, "spawning operation: {}", operation);
         }
         set.spawn(async move {
             start_process(idx, command, operation, state).await;
@@ -161,7 +172,7 @@ async fn start_process(
 
     event!(
         Level::INFO,
-        "operation:{}, starting to execute command with log_file: {}, process: {:?}",
+        "operation:{}, starting to execute command with log_file: '{}', process: '{}'",
         operation,
         log_file,
         guard.execute_context().command(idx, &operation)
@@ -174,21 +185,35 @@ async fn start_process(
     match res {
         Ok(exit_code) => {
             let mut guard = state.lock().await;
-            event!(
-                Level::INFO,
-                "operation:{}, completed executing command with exit code: {}, process: {:?}",
-                operation,
-                exit_code,
-                guard.execute_context().command(idx, &operation)
-            );
-
             if exit_code.success() {
+                event!(
+                    Level::INFO,
+                    "operation:{}, successfully completed executing command with exit code: {}, process: '{}'",
+                    operation,
+                    exit_code,
+                    guard.execute_context().command(idx, &operation)
+                );
+
                 guard.execute_context_mut().set_command_state(
                     idx,
                     &operation,
                     CommandStatus::Succeeded,
                 );
             } else {
+                event!(
+                    Level::WARN,
+                    "operation:{}, completed executing command with exit code: {}, process: '{}'",
+                    operation,
+                    exit_code,
+                    guard.execute_context().command(idx, &operation)
+                );
+                event!(
+                    Level::DEBUG,
+                    "operation:{}, failed process:{:?}",
+                    operation,
+                    guard.execute_context().command(idx, &operation)
+                );
+
                 guard.execute_context_mut().set_command_state(
                     idx,
                     &operation,
@@ -214,9 +239,15 @@ async fn start_process(
             let mut guard = state.lock().await;
             event!(
                 Level::WARN,
-                "operation:{}, failed to spawn command with error: {:?}, process:{:?}",
+                "operation:{}, failed to spawn command with error: {:?}, process:'{}'",
                 operation,
                 err,
+                guard.execute_context().command(idx, &operation)
+            );
+            event!(
+                Level::DEBUG,
+                "operation:{}, failed process:{:?}",
+                operation,
                 guard.execute_context().command(idx, &operation)
             );
 

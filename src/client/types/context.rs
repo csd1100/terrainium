@@ -1,6 +1,6 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::common::constants::{
-    TERRAINIUM_EXECUTABLE, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR,
+    CONFIG_LOCATION, TERRAINIUM_EXECUTABLE, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR,
     TERRAIN_SESSION_ID,
 };
 use anyhow::{anyhow, Result};
@@ -20,7 +20,6 @@ pub struct Context {
 }
 
 const TERRAIN_TOML: &str = "terrain.toml";
-const CONFIG_LOCATION: &str = ".config/terrainium";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
@@ -101,7 +100,7 @@ impl Context {
             Ok(self.central_toml_path())
         } else {
             Err(anyhow!(
-                "terrain.toml does not exists, run `terrainium init` to initialize terrain."
+                "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
             ))
         }
     }
@@ -204,7 +203,7 @@ mod tests {
     #[serial]
     #[test]
     fn new_creates_context() -> Result<()> {
-        let home_dir = tempfile::tempdir()?;
+        let home_dir = tempdir()?;
 
         let current_dir = env::current_dir().expect("failed to get current directory");
         let central_dir = get_central_dir_location();
@@ -391,7 +390,7 @@ mod tests {
         .to_string();
 
         assert_eq!(
-            "terrain.toml does not exists, run `terrainium init` to initialize terrain.",
+            "terrain.toml does not exists, run 'terrainium init' to initialize terrain.",
             err
         );
 

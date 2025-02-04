@@ -1,8 +1,11 @@
 use crate::client::types::terrain::AutoApply;
+use crate::client::validation::{validate_identifiers, IdentifierType};
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::str::FromStr;
+use tracing::Level;
 
 #[derive(Parser, Debug)]
 #[command(args_conflicts_with_subcommands = true)]
@@ -21,6 +24,9 @@ pub struct Options {
 
     #[arg(long, group = "update-rc")]
     pub update_rc_path: Option<PathBuf>,
+
+    #[arg(short, long, default_value = "warn", global = true)]
+    pub log_level: Level,
 }
 
 #[derive(Subcommand, Debug)]
@@ -40,7 +46,12 @@ pub enum Verbs {
 
     Generate,
 
+    Validate,
+
     Get {
+        #[arg(long)]
+        debug: bool,
+
         #[arg(short, long)]
         biome: Option<BiomeArg>,
 
@@ -187,6 +198,17 @@ impl FromStr for Pair {
             ));
         }
 
+        let mut env = BTreeMap::new();
+        env.insert(pair[0].to_string(), pair[1].to_string());
+
+        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, "none");
+        if !validation_results.results_ref().is_empty() {
+            validation_results.print_validation_message();
+            return Err(anyhow!(
+                "env or alias is not valid, please make sure that it is valid."
+            ));
+        }
+
         Ok(Pair {
             key: pair.first().expect("key to be present").to_string(),
             value: pair.get(1).expect("value to be present").to_string(),
@@ -256,6 +278,24 @@ mod tests {
         assert_eq!(
             "pair of key values should be passed in format <KEY>=<VALUE>.",
             err
+        );
+    }
+
+    #[test]
+    fn pair_from_str_throws_error_when_validation_fails() {
+        let err = Pair::from_str("1KEY=VALUE")
+            .expect_err("error to be thrown")
+            .to_string();
+        assert_eq!(
+            "env or alias is not valid, please make sure that it is valid.", err,
+            "failed to validate validation error key starting with number"
+        );
+        let err = Pair::from_str("K#EY=VALUE")
+            .expect_err("error to be thrown")
+            .to_string();
+        assert_eq!(
+            "env or alias is not valid, please make sure that it is valid.", err,
+            "failed to validate validation error key with invalid chars"
         );
     }
 

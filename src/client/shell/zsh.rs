@@ -268,13 +268,11 @@ impl Zsh {
         script_path: &PathBuf,
         terrain_dir: &Path,
     ) -> Result<()> {
-        let environment = Environment::from(terrain, biome_name.clone(), terrain_dir)
-            .unwrap_or_else(|_| {
-                panic!(
-                    "expected to generate environment from terrain for biome {:?}",
-                    biome_name
-                )
-            });
+        let environment =
+            Environment::from(terrain, biome_name.clone(), terrain_dir).context(format!(
+                "expected to generate environment from terrain for biome {:?}",
+                biome_name
+            ))?;
 
         let script = environment
             .to_rendered("zsh".to_string(), Zsh::templates())
@@ -385,7 +383,7 @@ mod tests {
     #[test]
     fn update_rc_path() {
         let temp_dir = tempfile::tempdir().unwrap();
-        fs::write(temp_dir.path().join(".zshrc"), "").unwrap();
+        write(temp_dir.path().join(".zshrc"), "").unwrap();
         Zsh::build(MockCommandToRun::default())
             .update_rc(Some(temp_dir.path().join(".zshrc")))
             .unwrap();

@@ -12,13 +12,25 @@ mod inner {
     use std::path::PathBuf;
 
     use crate::client::types::terrain::Terrain;
+    use crate::daemon::types::config::DaemonConfig;
     use anyhow::Result;
     use schemars::schema_for;
 
     pub fn generate_and_store_schema() -> Result<()> {
-        let schema = schema_for!(Terrain);
-        let json = serde_json::to_string_pretty(&schema).expect("schema to be generated");
-        fs::write(PathBuf::from("./schema/terrain-schema.json"), json)?;
+        let terrain_toml_schema = schema_for!(Terrain);
+        let terrain_toml_schema =
+            serde_json::to_string_pretty(&terrain_toml_schema).expect("schema to be generated");
+        fs::write(
+            PathBuf::from("./schema/terrain-schema.json"),
+            terrain_toml_schema,
+        )?;
+        let terrainiumd_conf_schema = schema_for!(DaemonConfig);
+        let terrainiumd_conf_schema =
+            serde_json::to_string_pretty(&terrainiumd_conf_schema).expect("schema to be generated");
+        fs::write(
+            PathBuf::from("./schema/terrainiumd-conf-schema.json"),
+            terrainiumd_conf_schema,
+        )?;
         Ok(())
     }
 }

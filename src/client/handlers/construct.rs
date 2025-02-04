@@ -3,21 +3,24 @@ use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
 use anyhow::Result;
 
 pub async fn handle(
     context: Context,
     biome_arg: Option<BiomeArg>,
+    terrain: Terrain,
     client: Option<Client>,
 ) -> Result<()> {
-    background::handle(&context, CONSTRUCTORS, biome_arg, None, client).await
+    background::handle(&context, CONSTRUCTORS, terrain, biome_arg, None, client).await
 }
 
 #[cfg(test)]
 mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
+    use crate::client::types::terrain::Terrain;
     use crate::client::utils::{AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
         CONSTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_DIR, TERRAIN_SELECTED_BIOME,
@@ -75,7 +78,7 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, None, Some(expected_request))
+        super::handle(context, None, Terrain::example(), Some(expected_request))
             .await
             .expect("no error to be thrown");
     }
@@ -127,7 +130,7 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, None, Some(expected_request))
+        let err = super::handle(context, None, Terrain::example(), Some(expected_request))
             .await
             .expect_err("to be thrown");
 
@@ -138,25 +141,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn construct_does_not_send_message_to_daemon_no_background() {
-        let current_dir = tempdir().expect("failed to create tempdir");
-
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-
-        copy(
-            "./tests/data/terrain.example.without.background.auto_apply.background.toml",
-            &terrain_toml,
-        )
-        .expect("copy to terrain to test dir");
-
+    async fn construct_does_not_send_message_to_daemon_no_background_process_defined() {
         let context = Context::build(
-            current_dir.path().into(),
+            PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
-        super::handle(context, None, Some(expected_request))
+        super::handle(context, None, Terrain::default(), Some(expected_request))
             .await
             .expect("no error to be thrown");
     }

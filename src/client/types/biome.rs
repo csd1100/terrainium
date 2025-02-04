@@ -1,11 +1,12 @@
-use crate::client::types::command::Command;
+use crate::client::types::command::{Command, OperationType};
 use crate::client::types::commands::Commands;
+use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -30,6 +31,45 @@ impl Biome {
             constructors,
             destructors,
         }
+    }
+
+    fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+        validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
+    }
+
+    fn validate_aliases<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+        validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
+    }
+
+    fn validate_constructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        self.constructors
+            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
+    }
+
+    fn validate_destructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        self.destructors
+            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
+    }
+
+    pub(crate) fn validate<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = ValidationResults::new(HashSet::new());
+        result.append(self.validate_envs(biome_name));
+        result.append(self.validate_aliases(biome_name));
+        result.append(self.validate_constructors(biome_name, terrain_dir));
+        result.append(self.validate_destructors(biome_name, terrain_dir));
+        result
     }
 
     pub fn aliases(&self) -> &BTreeMap<String, String> {
@@ -97,9 +137,90 @@ impl Biome {
         self.aliases = aliases;
     }
 
-    fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
+    pub(crate) fn set_env(&mut self, key: String, value: String) -> Option<String> {
+        self.envs.insert(key, value)
+    }
+
+    pub(crate) fn rm_env(&mut self, key: &str) -> Option<String> {
+        self.envs.remove(key)
+    }
+
+    pub(crate) fn set_alias(&mut self, key: String, value: String) -> Option<String> {
+        self.aliases.insert(key, value)
+    }
+
+    pub(crate) fn rm_alias(&mut self, key: &str) -> Option<String> {
+        self.aliases.remove(key)
+    }
+
+    pub(crate) fn insert_foreground_constructor(&mut self, idx: usize, command: Command) {
+        self.constructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_foreground_constructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .constructors
+            .foreground()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.constructors.foreground_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_background_constructor(&mut self, idx: usize, command: Command) {
+        self.constructors.background_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_background_constructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .constructors
+            .background()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.constructors.background_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_foreground_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_foreground_destructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .destructors
+            .foreground()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.destructors.foreground_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn insert_background_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.background_mut().insert(idx, command);
+    }
+
+    pub(crate) fn remove_background_destructor(&mut self, command: &Command) -> Option<usize> {
+        let idx = self
+            .destructors
+            .background()
+            .iter()
+            .position(|v| v == command);
+        if let Some(idx) = idx {
+            self.destructors.background_mut().remove(idx);
+        }
+        idx
+    }
+
+    pub(crate) fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
         let mut result = vec![];
-        let re = Regex::new(r"\$\{(.*?)}").expect("Regex parse failed");
+        let re =
+            Regex::new(r"\$\{(.*?)}").expect("environment variable reference regex to be parsed");
         for (_, [val]) in re.captures_iter(str_to_parse).map(|c| c.extract()) {
             result.push(val.to_string());
         }
@@ -200,12 +321,37 @@ impl Biome {
     }
 
     #[cfg(test)]
-    pub(crate) fn add_env(&mut self, env: (String, String)) {
-        self.envs.insert(env.0, env.1);
+    pub(crate) fn add_env(&mut self, env: &str, val: &str) {
+        self.envs.insert(env.to_string(), val.to_string());
     }
 
     #[cfg(test)]
-    pub(crate) fn add_bkg_constructor(&mut self, command: Command) {
+    pub(crate) fn add_bg_constructors(&mut self, command: Command) {
         self.constructors.background_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_bg_destructors(&mut self, command: Command) {
+        self.destructors.background_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_fg_constructors(&mut self, command: Command) {
+        self.constructors.foreground_mut().push(command.clone());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn add_fg_destructors(&mut self, command: Command) {
+        self.destructors.foreground_mut().push(command);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_constructors(&mut self, constructors: Commands) {
+        self.constructors = constructors;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_destructors(&mut self, destructors: Commands) {
+        self.destructors = destructors;
     }
 }

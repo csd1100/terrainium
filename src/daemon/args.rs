@@ -8,4 +8,6 @@ pub struct DaemonArgs {
     pub force: bool,
     #[arg(short, long, default_value = "info")]
     pub log_level: Level,
+    #[arg(long)]
+    pub create_config: bool,
 }

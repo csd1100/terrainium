@@ -1,6 +1,8 @@
-use crate::client::types::command::Command;
+use crate::client::types::command::{Command, CommandsType, OperationType};
+use crate::client::validation::ValidationResults;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::Path;
 
 #[cfg(feature = "terrain-schema")]
@@ -39,14 +41,41 @@ impl Commands {
             .context("failed to substitute cwd for background commands")
     }
 
-    #[cfg(test)]
     pub fn foreground_mut(&mut self) -> &mut Vec<Command> {
         self.foreground.as_mut()
     }
 
-    #[cfg(test)]
     pub fn background_mut(&mut self) -> &mut Vec<Command> {
         self.background.as_mut()
+    }
+
+    pub(crate) fn validate_commands<'a>(
+        &'a self,
+        biome_name: &'a str,
+        operation_type: OperationType,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = ValidationResults::new(HashSet::new());
+
+        self.foreground.iter().for_each(|c| {
+            result.append(c.validate_command(
+                biome_name,
+                operation_type.clone(),
+                CommandsType::Foreground,
+                terrain_dir,
+            ))
+        });
+
+        self.background.iter().for_each(|c| {
+            result.append(c.validate_command(
+                biome_name,
+                operation_type.clone(),
+                CommandsType::Background,
+                terrain_dir,
+            ))
+        });
+
+        result
     }
 }
 
