@@ -11,6 +11,7 @@ mod inner {
     use std::fs;
     use std::path::PathBuf;
 
+    use crate::client::types::config::Config;
     use crate::client::types::terrain::Terrain;
     use crate::daemon::types::config::DaemonConfig;
     use anyhow::Result;
@@ -30,6 +31,13 @@ mod inner {
         fs::write(
             PathBuf::from("./schema/terrainiumd-conf-schema.json"),
             terrainiumd_conf_schema,
+        )?;
+        let terrainium_conf_schema = schema_for!(Config);
+        let terrainium_conf_schema =
+            serde_json::to_string_pretty(&terrainium_conf_schema).expect("schema to be generated");
+        fs::write(
+            PathBuf::from("./schema/terrainium-conf-schema.json"),
+            terrainium_conf_schema,
         )?;
         Ok(())
     }
