@@ -88,6 +88,7 @@ async fn main() -> Result<()> {
                 backup,
             } => update::handle(
                 context,
+                terrain.unwrap(),
                 UpdateArgs {
                     set_default,
                     biome,

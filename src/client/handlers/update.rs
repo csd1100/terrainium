@@ -5,15 +5,10 @@ use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
-use std::fs::{copy, read_to_string, write};
+use std::fs::copy;
 
-pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
-    // TODO: get validated toml from from_toml
-    let mut terrain = Terrain::from_toml(
-        read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-    )
-    .expect("failed to parse terrain from toml");
-
+pub fn handle(context: Context, terrain: Terrain, update_args: UpdateArgs) -> Result<()> {
+    let mut terrain = terrain;
     if update_args.auto_apply.is_some() {
         terrain.set_auto_apply(update_args.auto_apply.expect("auto_apply to be present"));
     }
@@ -58,18 +53,10 @@ pub fn handle(context: Context, update_args: UpdateArgs) -> Result<()> {
         copy(context.toml_path()?, backup).context("failed to backup terrain.toml")?;
     }
 
-    // TODO: fix validations here
-
-    // TODO: validate toml in to_toml
-    write(
-        context.toml_path()?,
-        terrain
-            .to_toml(context.terrain_dir())
-            .expect("to generate toml from terrain"),
-    )
-    .context("failed to write updated terrain to file")?;
-
-    context.shell().generate_scripts(&context, terrain)?;
+    let validated_and_fixed = Terrain::store_and_get_fixed_terrain(&context, terrain)?;
+    context
+        .shell()
+        .generate_scripts(&context, validated_and_fixed)?;
 
     Ok(())
 }
@@ -87,7 +74,8 @@ mod tests {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
-    use crate::client::types::terrain::AutoApply;
+    use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
+    use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::client::utils::{
         AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML,
         WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML,
@@ -105,7 +93,6 @@ mod tests {
         let central_dir = tempdir().expect("tempdir to be created");
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
@@ -122,8 +109,12 @@ mod tests {
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
+        let mut terrain = Terrain::example();
+        force_set_invalid_default_biome(&mut terrain, None);
+
         super::handle(
             context,
+            terrain,
             UpdateArgs {
                 set_default: Some("example_biome".to_string()),
                 biome: None,
@@ -151,7 +142,6 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
@@ -161,8 +151,11 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
+        let mut terrain = Terrain::example();
+        force_set_invalid_default_biome(&mut terrain, None);
         let err = super::handle(
             context,
+            terrain,
             UpdateArgs {
                 set_default: Some("non_existent".to_string()),
                 biome: None,
@@ -216,6 +209,7 @@ mod tests {
 
         super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -282,6 +276,7 @@ mod tests {
 
         super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -335,6 +330,7 @@ mod tests {
 
         super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: Some(BiomeArg::None),
@@ -380,6 +376,7 @@ mod tests {
 
         let err = super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: Some(BiomeArg::Some("non_existent".to_string())),
@@ -434,6 +431,7 @@ mod tests {
 
         super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -488,6 +486,7 @@ mod tests {
 
         super::handle(
             context,
+            Terrain::example(),
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -534,8 +533,12 @@ mod tests {
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "enable");
+
         super::handle(
             context,
+            terrain,
             UpdateArgs {
                 set_default: None,
                 biome: None,
