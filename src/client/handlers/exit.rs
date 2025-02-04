@@ -8,9 +8,8 @@ use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::read_to_string;
 
-pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
+pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
@@ -21,12 +20,6 @@ pub async fn handle(context: Context, client: Option<Client>) -> Result<()> {
     }
 
     if should_run_destructor() {
-        let terrain = Terrain::from_toml(
-            read_to_string(context.toml_path()?).context("failed to read terrain.toml")?,
-        )
-        .expect("terrain to be parsed from toml");
-
-        // TODO: fix validations here
         background::handle(
             &context,
             DESTRUCTORS,
@@ -57,6 +50,8 @@ fn should_run_destructor() -> bool {
 mod tests {
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
+    use crate::client::types::terrain::tests::set_auto_apply;
+    use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var, AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
         DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
@@ -71,7 +66,6 @@ mod tests {
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
-
     //
     // RUN THESE TESTS IN SERIAL BECAUSE ENV VARS IN PARALLEL TESTS GET MESSED UP
     //
@@ -128,7 +122,7 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, Some(expected_request))
+        super::handle(context, Terrain::example(), Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -190,7 +184,7 @@ mod tests {
             )
             .sent();
 
-        let err = super::handle(context, Some(expected_request))
+        let err = super::handle(context, Terrain::example(), Some(expected_request))
             .await
             .expect_err("to be thrown");
 
@@ -228,7 +222,10 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "enable");
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -288,7 +285,10 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, Some(expected_request))
+        let mut terrain = Terrain::example();
+        set_auto_apply(&mut terrain, "all");
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 
@@ -326,7 +326,9 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        super::handle(context, Some(expected_request))
+        let terrain = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
+
+        super::handle(context, terrain, Some(expected_request))
             .await
             .expect("no error to be thrown");
 
