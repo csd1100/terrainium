@@ -213,7 +213,7 @@ pub(crate) fn validate_identifiers<'a>(
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "trimming spaces from identifier: `{}`",
+                        "trimming spaces from identifier: '{}'",
                          k
                     ),
                     r#for: format!("{biome_name}({data_type})"),
@@ -228,7 +228,7 @@ pub(crate) fn validate_identifiers<'a>(
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "identifier `{}` is invalid as it contains spaces",
+                        "identifier '{}' is invalid as it contains spaces",
                         k
                     ),
                     r#for: format!("{biome_name}({data_type})"),
@@ -240,7 +240,7 @@ pub(crate) fn validate_identifiers<'a>(
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "identifier `{}` cannot start with number",
+                        "identifier '{}' cannot start with number",
                         k
                     ),
                     r#for: format!("{biome_name}({data_type})"),
@@ -251,7 +251,7 @@ pub(crate) fn validate_identifiers<'a>(
             if invalid_identifier.is_match(k) {
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
-                    message: format!("identifier `{}` contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.",
+                    message: format!("identifier '{}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.",
                                     k),
                     r#for: format!("{biome_name}({data_type})"),
                     fix_action: ValidationFixAction::None

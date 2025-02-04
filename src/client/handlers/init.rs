@@ -9,7 +9,7 @@ use std::io::Write;
 
 pub fn handle(context: Context, central: bool, example: bool, edit: bool) -> Result<()> {
     if context.toml_exists() {
-        return Err(anyhow!("terrain for this project is already present. edit existing terrain with `terrain edit` command"));
+        return Err(anyhow!("terrain for this project is already present. edit existing terrain with 'terrain edit' command"));
     }
 
     if !fs::exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
@@ -185,7 +185,7 @@ pub mod tests {
         let err =
             super::handle(context, false, false, false).expect_err("expected error to be thrown");
 
-        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with `terrain edit` command");
+        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
 
         current_dir
             .close()
@@ -239,7 +239,7 @@ pub mod tests {
         let err =
             super::handle(context, true, false, false).expect_err("expected error to be thrown");
 
-        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with `terrain edit` command");
+        assert_eq!(err.to_string(), "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
 
         Ok(())
     }

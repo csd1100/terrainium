@@ -15,7 +15,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
 
     if session_id.is_empty() || selected_biome.is_empty() {
         return Err(anyhow!(
-            "no active terrain found, use `terrainium enter` command to activate a terrain."
+            "no active terrain found, use 'terrainium enter' command to activate a terrain."
         ));
     }
 
@@ -35,7 +35,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     Ok(())
 }
 
-/// `terrainium exit` should run background destructor commands only in following case:
+/// 'terrainium exit' should run background destructor commands only in following case:
 /// 1. Auto-apply is disabled
 /// 2. Auto-apply is enabled but background flag is also turned on
 fn should_run_destructor() -> bool {

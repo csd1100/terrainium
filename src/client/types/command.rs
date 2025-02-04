@@ -126,7 +126,7 @@ impl Command {
         if exe.starts_with(" ") || exe.ends_with(" ") {
             result.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
-                message: format!("exe `{}` has leading / trailing spaces. make sure it is removed before {} {} is to be run.", &self.exe, commands_type, operation_type),
+                message: format!("exe '{}' has leading / trailing spaces. make sure it is removed before {} {} is to be run.", &self.exe, commands_type, operation_type),
                 r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                 fix_action: ValidationFixAction::Trim { biome_name, target:Target::from_command(&commands_type, &operation_type, self) }
             });
@@ -136,7 +136,7 @@ impl Command {
         if trimmed.contains(" ") {
             result.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!("exe `{}` contains whitespaces.", &self.exe,),
+                message: format!("exe '{}' contains whitespaces.", &self.exe,),
                 r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                 fix_action: ValidationFixAction::None,
             });
@@ -145,7 +145,7 @@ impl Command {
         let exe_path = PathBuf::from(trimmed);
         let executable_validation_message = ValidationResult {
             level: ValidationMessageLevel::Warn,
-            message: format!("exe `{}` does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", exe, commands_type, operation_type),
+            message: format!("exe '{}' does not have permissions to execute. make sure it has correct permissions before {} {} is to be run.", exe, commands_type, operation_type),
             r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
             fix_action: ValidationFixAction::None,
         };
@@ -154,7 +154,7 @@ impl Command {
             if !exe_path.exists() {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("exe `{:?}` does not exists. make sure it is present before {} {} is to be run.", trimmed, commands_type, operation_type),
+                    message: format!("exe '{:?}' does not exists. make sure it is present before {} {} is to be run.", trimmed, commands_type, operation_type),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
@@ -167,7 +167,7 @@ impl Command {
             if !exe_path.exists() {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("exe `{}` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", trimmed, wd, commands_type, operation_type),
+                    message: format!("exe '{}' is not present in dir: {:?}. make sure it is present before {} {} is to be run.", trimmed, wd, commands_type, operation_type),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
@@ -183,7 +183,7 @@ impl Command {
             } else {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
+                    message: format!("exe '{}' is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
@@ -194,14 +194,14 @@ impl Command {
             if commands_type == CommandsType::Background {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).",trimmed, self.args.join(" ")),
+                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).",trimmed, self.args.join(" ")),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
             } else {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("command exe: `{}` args: `{}` uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.",trimmed, self.args.join(" ")),
+                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.",trimmed, self.args.join(" ")),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
@@ -224,8 +224,8 @@ impl Command {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "cwd: `{:?}` does not exists for command exe: `{}` args: `{}`.",
-                        cwd,
+                        "cwd: '{}' does not exists for command exe: '{}' args: '{}'.",
+                        cwd.display(),
                         trimmed,
                         self.args.join(" ")
                     ),
@@ -238,8 +238,8 @@ impl Command {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "cwd: `{:?}` is not a directory for command exe: `{}` args: `{}`.",
-                        cwd,
+                        "cwd: '{}' is not a directory for command exe: '{}' args: '{}'.",
+                        cwd.display(),
                         trimmed,
                         self.args.join(" ")
                     ),
@@ -282,7 +282,7 @@ impl TryFrom<Command> for pb::Command {
     fn try_from(value: Command) -> Result<Self> {
         if value.cwd.is_none() {
             return Err(anyhow!(
-                "`cwd` is required for command exe:`{}`, args: `{}`",
+                "'cwd' is required for command exe:'{}', args: '{}'",
                 value.exe,
                 value.args.join(" ")
             ));

@@ -100,7 +100,7 @@ impl Context {
             Ok(self.central_toml_path())
         } else {
             Err(anyhow!(
-                "terrain.toml does not exists, run `terrainium init` to initialize terrain."
+                "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
             ))
         }
     }
@@ -390,7 +390,7 @@ mod tests {
         .to_string();
 
         assert_eq!(
-            "terrain.toml does not exists, run `terrainium init` to initialize terrain.",
+            "terrain.toml does not exists, run 'terrainium init' to initialize terrain.",
             err
         );
 
