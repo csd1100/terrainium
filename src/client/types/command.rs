@@ -110,7 +110,18 @@ impl Command {
         let mut result = HashSet::new();
         let exe = self.exe.as_str();
 
-        // TODO: add empty validation
+        if exe.is_empty() {
+            result.insert(ValidationResult {
+                level: ValidationMessageLevel::Error,
+                message: format!(
+                    "exe cannot be empty, make sure it is set before {} {} is to be run.",
+                    commands_type, operation_type
+                ),
+                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                fix_action: ValidationFixAction::None,
+            });
+            return ValidationResults::new(result);
+        }
 
         if exe.starts_with(" ") || exe.ends_with(" ") {
             result.insert(ValidationResult {
@@ -171,11 +182,11 @@ impl Command {
                 }
             } else {
                 result.insert(ValidationResult {
-                level: ValidationMessageLevel::Warn,
-                message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
-                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
-                fix_action: ValidationFixAction::None,
-            });
+                    level: ValidationMessageLevel::Warn,
+                    message: format!("exe `{}` is not present in PATH variable. make sure it is present before {} {} is to be run.", &self.exe, commands_type, operation_type),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
+                });
             }
         }
 

@@ -729,6 +729,7 @@ pub mod tests {
         let command_vec = vec![
             leading_space_command.clone(),
             trailing_space_command.clone(),
+            Command::new("".to_string(), vec![], None),
             Command::new(
                 "not_in_path".to_string(),
                 vec![],
@@ -753,6 +754,11 @@ pub mod tests {
                 "./relative_not_present".to_string(),
                 vec![],
                 Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "./relative_not_present_current_dir".to_string(),
+                vec![],
+                None,
             ),
             Command::new(
                 absolute_path.to_string_lossy().to_string(),
@@ -827,7 +833,7 @@ pub mod tests {
 
         let messages = terrain.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 104);
+        assert_eq!(messages.len(), 120);
         ["none", "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
@@ -835,6 +841,16 @@ pub mod tests {
                     ["foreground", "background"]
                         .iter()
                         .for_each(|commands_type| {
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Error,
+                                message: format!(
+                                    "exe cannot be empty, make sure it is set before {} {} is to be run.",
+                                    commands_type, operation_type
+                                ),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate empty exe for {}({}:{})", biome_name, operation_type, commands_type);
+
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Error,
                                 message: "exe `with spaces` contains whitespaces.".to_string(),
@@ -878,6 +894,13 @@ pub mod tests {
                                 r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in present in relative path for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!("exe `./relative_not_present_current_dir` is not present in dir: {:?}. make sure it is present before {} {} is to be run.", test_dir.path(), commands_type, operation_type),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate exe being not in present in relative path for terrain directory {}({}:{})", biome_name, operation_type, commands_type);
 
                             assert!(messages.contains(&ValidationResult {
                                 level: ValidationMessageLevel::Warn,
@@ -1010,7 +1033,7 @@ pub mod tests {
                 }), "failed to validate trimming trailing spaces from identifier message for {}({})", biome_name, identifier_type);
             });
 
-             ["constructor", "destructor"]
+            ["constructor", "destructor"]
                 .iter()
                 .for_each(|operation_type| {
                     ["foreground", "background"]

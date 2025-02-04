@@ -47,6 +47,7 @@ impl<'a> Target<'a> {
         match identifier {
             IdentifierType::Env => Target::Env(value),
             IdentifierType::Alias => Target::Alias(value),
+            IdentifierType::Identifier => panic!("did not expect identifier without type"),
         }
     }
 
@@ -167,6 +168,7 @@ impl std::fmt::Display for ValidationError<'_> {
 pub(crate) enum IdentifierType {
     Env,
     Alias,
+    Identifier,
 }
 
 impl std::fmt::Display for IdentifierType {
@@ -177,6 +179,9 @@ impl std::fmt::Display for IdentifierType {
             }
             IdentifierType::Alias => {
                 write!(f, "alias")
+            }
+            IdentifierType::Identifier => {
+                write!(f, "env or alias")
             }
         }
     }
