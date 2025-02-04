@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
     let args = ClientArgs::parse();
     // need to keep _out_guard in scope till program exits for logger to work
     let (subscriber, _out_guard) = init_logging(LevelFilter::from(args.options.log_level));
-    if !matches!(args.command, Some(Verbs::Get { .. })) {
+    if !matches!(args.command, Some(Verbs::Get { debug: false, .. })) {
         // do not print any logs for get command as output will be used by scripts
         tracing::subscriber::set_global_default(subscriber)
             .expect("unable to set global subscriber");
@@ -55,6 +55,7 @@ async fn main() -> Result<()> {
                 .context("failed to generate scripts for the terrain")?,
 
             Verbs::Get {
+                debug: _debug,
                 biome,
                 aliases,
                 envs,

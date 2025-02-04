@@ -47,6 +47,9 @@ pub enum Verbs {
     Generate,
 
     Get {
+        #[arg(long)]
+        debug: bool,
+
         #[arg(short, long)]
         biome: Option<BiomeArg>,
 
