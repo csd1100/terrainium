@@ -4,7 +4,7 @@ use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fs::read_to_string;
+use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 use tracing::{event, Level};
 
@@ -50,11 +50,24 @@ impl Config {
                 Err(anyhow!("failed to read config"))
             };
         }
+        event!(Level::INFO, "terrainium config does not exist");
         Err(anyhow!("config file {:?} does not exist", path.display()))
     }
 
     pub(crate) fn auto_apply(&self) -> bool {
         self.auto_apply
+    }
+
+    pub fn create_file() -> Result<()> {
+        let path = get_config_path();
+        if path.exists() {
+            event!(Level::INFO, "config file already exists at path {:?}", path);
+            return Ok(());
+        }
+        event!(Level::INFO, "creating config file at path {:?}", path);
+        let config = toml::to_string_pretty(&Self::default())
+            .expect("default configuration should be parsed");
+        write(path, config).context("failed to write configuration file")
     }
 }
 

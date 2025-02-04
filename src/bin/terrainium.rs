@@ -12,6 +12,7 @@ use tracing::Level;
 
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
+use terrainium::client::types::config::Config;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
 
@@ -48,6 +49,8 @@ async fn main() -> Result<()> {
                 context
                     .update_rc(args.options.update_rc_path)
                     .context("failed to update rc")?;
+            } else if args.options.create_config {
+                Config::create_file().context("failed to create config file")?;
             }
         }
         Some(verbs) => match verbs {
