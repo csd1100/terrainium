@@ -208,6 +208,47 @@ impl Command {
             }
         }
 
+        if let Some(cwd) = self.cwd.clone() {
+            let path_that_does_not_exits = if cwd.is_absolute() && !cwd.exists() {
+                Some(cwd.clone())
+            } else {
+                let cwd = terrain_dir.join(cwd.clone());
+                if !cwd.exists() {
+                    Some(cwd)
+                } else {
+                    None
+                }
+            };
+
+            if let Some(cwd) = path_that_does_not_exits {
+                result.insert(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!(
+                        "cwd: `{:?}` does not exists for command exe: `{}` args: `{}`.",
+                        cwd,
+                        trimmed,
+                        self.args.join(" ")
+                    ),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
+                });
+            } else if (cwd.is_absolute() && !cwd.is_dir())
+                || !terrain_dir.join(cwd.clone()).is_dir()
+            {
+                result.insert(ValidationResult {
+                    level: ValidationMessageLevel::Warn,
+                    message: format!(
+                        "cwd: `{:?}` is not a directory for command exe: `{}` args: `{}`.",
+                        cwd,
+                        trimmed,
+                        self.args.join(" ")
+                    ),
+                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                    fix_action: ValidationFixAction::None,
+                });
+            }
+        }
+
         ValidationResults::new(result)
     }
 }

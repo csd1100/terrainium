@@ -8,16 +8,25 @@ use terrainium::client::handlers::{
 use terrainium::client::logging::init_logging;
 use terrainium::client::types::context::Context;
 use tracing::metadata::LevelFilter;
+use tracing::Level;
 
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
+use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
+
     // need to keep _out_guard in scope till program exits for logger to work
-    let (subscriber, _out_guard) = init_logging(LevelFilter::from(args.options.log_level));
+    let (subscriber, _out_guard) = if matches!(args.command, Some(Verbs::Validate)) {
+        // if validate show debug level logs
+        init_logging(LevelFilter::from(Level::DEBUG))
+    } else {
+        init_logging(LevelFilter::from(args.options.log_level))
+    };
+
     if !matches!(args.command, Some(Verbs::Get { debug: false, .. })) {
         // do not print any logs for get command as output will be used by scripts
         tracing::subscriber::set_global_default(subscriber)
@@ -53,6 +62,26 @@ async fn main() -> Result<()> {
 
             Verbs::Generate => generate::handle(context, terrain.unwrap())
                 .context("failed to generate scripts for the terrain")?,
+
+            Verbs::Validate => {
+                let terrain = terrain.unwrap();
+                // create environments to run environment validations inside `Environment::from`
+                Environment::from(&terrain, None, context.terrain_dir())?;
+                let res: Result<Vec<Environment>> = terrain
+                    .biomes()
+                    .iter()
+                    .map(|(biome_name, _)| {
+                        // create environments to run environment validations
+                        Environment::from(
+                            &terrain,
+                            Some(biome_name.to_string()),
+                            context.terrain_dir(),
+                        )
+                    })
+                    .collect();
+                // propagate any errors found during creation of environment
+                res?;
+            }
 
             Verbs::Get {
                 debug: _debug,

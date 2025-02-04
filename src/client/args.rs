@@ -46,6 +46,8 @@ pub enum Verbs {
 
     Generate,
 
+    Validate,
+
     Get {
         #[arg(long)]
         debug: bool,

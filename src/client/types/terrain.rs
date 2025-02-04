@@ -680,6 +680,8 @@ pub mod tests {
     #[test]
     fn validate_constructors_and_destructors() {
         let test_dir = tempdir().unwrap();
+        let relative_dir = test_dir.path().join("relative_dir");
+        create_dir_all(&relative_dir).unwrap();
 
         let paths_root = tempdir().unwrap();
         let paths_bin = paths_root.path().join("bin");
@@ -691,8 +693,8 @@ pub mod tests {
         let relative_file = test_dir.path().join("relative_path_with_cwd");
         create_file_with_all_executable_permission(&relative_file);
 
-        let absolute_path = test_dir.path().join("absolute_path");
-        create_file_with_all_executable_permission(&absolute_path);
+        let absolute_exe_path = test_dir.path().join("absolute_path");
+        create_file_with_all_executable_permission(&absolute_exe_path);
 
         let absolute_path_not_present = test_dir.path().join("absolute_path_not_present");
 
@@ -770,7 +772,7 @@ pub mod tests {
                 None,
             ),
             Command::new(
-                absolute_path.to_string_lossy().to_string(),
+                absolute_exe_path.to_string_lossy().to_string(),
                 vec![],
                 Some(test_dir.path().to_path_buf()),
             ),
@@ -785,11 +787,6 @@ pub mod tests {
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
-                "with_relative_path_in_arg".to_string(),
-                vec!["./present/file".to_string()],
-                Some(test_dir.path().to_path_buf()),
-            ),
-            Command::new(
                 "with_relative_arg_not_present".to_string(),
                 vec!["./not_present".to_string()],
                 Some(test_dir.path().to_path_buf()),
@@ -797,7 +794,32 @@ pub mod tests {
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                Some(test_dir.path().to_path_buf()),
+                Some(paths_usr_bin.clone()),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(PathBuf::from("./relative_dir")),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(PathBuf::from("./relative_dir_does_not_exist")),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(PathBuf::from("/absolute_dir_does_not_exist")),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(absolute_exe_path.clone()),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(PathBuf::from("./relative_path_with_cwd")),
             ),
         ];
         let commands = Commands::new(command_vec.clone(), command_vec.clone());
@@ -842,7 +864,7 @@ pub mod tests {
 
         let messages = terrain.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 120);
+        assert_eq!(messages.len(), 152);
         ["none", "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
@@ -873,6 +895,40 @@ pub mod tests {
                                 r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in path for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!(
+                                    "cwd: `{:?}` does not exists for command exe: `valid_command` args: `some_args1 some_args2`.",
+                                    test_dir.path().join("./relative_dir_does_not_exist"),
+                                ),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate relative cwd does not exist for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: "cwd: `\"/absolute_dir_does_not_exist\"` does not exists for command exe: `valid_command` args: `some_args1 some_args2`.".to_string(),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate absolute cwd does not exist for {}({}:{})", biome_name, operation_type, commands_type);
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!(
+                                    "cwd: `{:?}` is not a directory for command exe: `valid_command` args: `some_args1 some_args2`.",
+                                    absolute_exe_path,
+                                ),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }));
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: "cwd: `\"./relative_path_with_cwd\"` is not a directory for command exe: `valid_command` args: `some_args1 some_args2`.".to_string(),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }));
 
                             let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
                             assert!(messages.contains(&ValidationResult {
