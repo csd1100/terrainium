@@ -26,8 +26,9 @@ async fn main() -> Result<()> {
 
     let context = Context::generate(&home_dir().expect("to detect home directory"));
     let mut terrain: Option<Terrain> = None;
-    if !matches!(args.command, Some(Verbs::Init { .. }))
-        || !matches!(args.command, Some(Verbs::Edit { .. }))
+
+    if !(matches!(args.command, Some(Verbs::Init { .. }))
+        || matches!(args.command, Some(Verbs::Edit { .. })))
     {
         terrain = Some(Terrain::get_validated_and_fixed_terrain(&context)?);
     }

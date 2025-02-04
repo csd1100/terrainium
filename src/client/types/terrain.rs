@@ -114,6 +114,15 @@ impl Terrain {
     ) -> Result<Self> {
         let validation_results = unvalidated_terrain.validate(context.terrain_dir());
         validation_results.print_validation_message();
+
+        if validation_results
+            .results_ref()
+            .iter()
+            .any(|r| r.level == ValidationMessageLevel::Error)
+        {
+            return Err(anyhow!("failed to validate terrain"));
+        }
+
         let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
         write(
             context.toml_path()?,

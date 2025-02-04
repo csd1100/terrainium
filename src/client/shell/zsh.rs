@@ -268,13 +268,11 @@ impl Zsh {
         script_path: &PathBuf,
         terrain_dir: &Path,
     ) -> Result<()> {
-        let environment = Environment::from(terrain, biome_name.clone(), terrain_dir)
-            .unwrap_or_else(|_| {
-                panic!(
-                    "expected to generate environment from terrain for biome {:?}",
-                    biome_name
-                )
-            });
+        let environment =
+            Environment::from(terrain, biome_name.clone(), terrain_dir).context(format!(
+                "expected to generate environment from terrain for biome {:?}",
+                biome_name
+            ))?;
 
         let script = environment
             .to_rendered("zsh".to_string(), Zsh::templates())
