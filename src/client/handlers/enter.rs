@@ -82,13 +82,11 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
     use crate::common::constants::{
-        CONSTRUCTORS, FPATH, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
-        TERRAIN_ENABLED, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
-        TERRAIN_SESSION_ID,
+        CONSTRUCTORS, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
+        TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
     use crate::common::types::pb::ExecuteResponse;
     use prost_types::Any;
-    use std::env;
     use tempfile::tempdir;
     use tokio::fs::copy;
 
@@ -97,7 +95,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -124,7 +121,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -149,7 +145,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -160,19 +155,17 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
-        copy(
-            "./tests/data/terrain.example.toml",
-            context.new_toml_path(false),
-        )
-        .await
-        .expect("to copy test terrain.toml");
+        copy("./tests/data/terrain.example.toml", context.toml_path())
+            .await
+            .expect("to copy test terrain.toml");
 
         let toml_path = current_dir.path().join("terrain.toml");
         let expected_request = AssertExecuteRequest::with()
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(toml_path.to_str().unwrap())
             .operation(CONSTRUCTORS)
@@ -184,6 +177,7 @@ mod tests {
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -198,7 +192,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath),
             )
@@ -220,7 +213,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -233,6 +225,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -247,7 +240,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -273,7 +265,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -284,12 +275,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.example.auto_apply.enabled.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");
@@ -309,7 +301,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -322,6 +313,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -336,7 +328,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -347,6 +338,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-i")
                     .with_arg("-s")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "replaced")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -362,7 +354,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -373,12 +364,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.example.auto_apply.replace.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");
@@ -398,7 +390,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -411,6 +402,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -425,7 +417,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -436,6 +427,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-i")
                     .with_arg("-s")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -451,7 +443,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -461,12 +452,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.example.auto_apply.background.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");
@@ -474,7 +466,7 @@ mod tests {
         let toml_path = current_dir.path().join("terrain.toml");
 
         let expected_request = AssertExecuteRequest::with()
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(toml_path.to_str().unwrap())
             .operation(CONSTRUCTORS)
@@ -486,6 +478,7 @@ mod tests {
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -501,7 +494,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath),
             )
@@ -520,7 +512,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -533,6 +524,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -547,7 +539,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -558,6 +549,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-i")
                     .with_arg("-s")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -573,7 +565,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -583,12 +574,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.example.auto_apply.all.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");
@@ -596,7 +588,7 @@ mod tests {
         let toml_path = current_dir.path().join("terrain.toml");
 
         let expected_request = AssertExecuteRequest::with()
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(toml_path.to_str().unwrap())
             .operation(CONSTRUCTORS)
@@ -608,6 +600,7 @@ mod tests {
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -623,7 +616,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath),
             )
@@ -642,7 +634,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir.path().join("scripts").join("terrain-none.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
         let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
@@ -652,12 +643,12 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "none")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -668,13 +659,13 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-i")
                     .with_arg("-s")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "all")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "none")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -685,12 +676,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.empty.auto_apply.all.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");
@@ -710,7 +702,6 @@ mod tests {
         let current_dir = tempdir().expect("Couldn't create temp dir");
         let central_dir = tempdir().expect("Couldn't create temp dir");
 
-        let exe = env::args().next().unwrap();
         let compiled_script = central_dir
             .path()
             .join("scripts")
@@ -723,6 +714,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-c")
                     .with_arg("/bin/echo -n $FPATH")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -737,7 +729,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_expected_output(EXISTING_FPATH)
                     .with_expected_error(false)
@@ -748,6 +739,7 @@ mod tests {
                 RunCommand::with_exe("/bin/zsh")
                     .with_arg("-i")
                     .with_arg("-s")
+                    .with_cwd(current_dir.path())
                     .with_env(TERRAIN_AUTO_APPLY, "background")
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
@@ -763,7 +755,6 @@ mod tests {
                     .with_env(TERRAIN_ENABLED, "true")
                     .with_env(TERRAIN_SESSION_ID, "some")
                     .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str())
                     .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
                     .with_env(FPATH, &fpath)
                     .with_expected_error(false)
@@ -774,12 +765,13 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operations),
         );
 
         copy(
             "./tests/data/terrain.example.without.background.auto_apply.background.toml",
-            context.new_toml_path(false),
+            context.toml_path(),
         )
         .await
         .expect("to copy test terrain.toml");

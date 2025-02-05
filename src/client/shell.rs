@@ -10,15 +10,18 @@ use std::process::{ExitStatus, Output};
 
 pub mod zsh;
 
-pub(crate) trait Shell: Debug + PartialEq {
+pub trait Shell: Debug + PartialEq {
     fn get(cwd: &Path) -> Self;
     fn runner(&self) -> CommandToRun;
     fn get_init_rc_contents() -> String;
-    fn setup_integration(&self, init_script_dir: &Path) -> Result<()>;
-    fn update_rc(&self, path: Option<PathBuf>) -> Result<()>;
+    fn setup_integration(&self, init_script_dir: PathBuf) -> Result<()>;
+    fn update_rc(path: Option<PathBuf>) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
-    async fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus>;
+    fn spawn(
+        &self,
+        envs: BTreeMap<String, String>,
+    ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
     fn generate_envs(
         &self,
         context: &Context,

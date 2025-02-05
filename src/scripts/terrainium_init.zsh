@@ -1,19 +1,15 @@
 #!/usr/bin/env zsh
 
 function __terrainium_auto_apply() {
-    if [ -z "$TERRAINIUM_EXECUTABLE" ]; then
-        TERRAINIUM_EXECUTABLE=terrainium
-    fi
-
-    auto_apply="$($TERRAINIUM_EXECUTABLE get --auto-apply 2> /dev/null)"
+    auto_apply="$(terrainium get --auto-apply 2> /dev/null)"
     if [ $? != 0 ]; then
         auto_apply="off"
     fi
 
     if [ "$auto_apply" = "enabled" ] || [ "$auto_apply" = "background" ]; then
-        "$TERRAINIUM_EXECUTABLE" enter --auto-apply
+        terrainium enter --auto-apply
     elif [ "$auto_apply" = "replaced" ] || [ "$auto_apply" = "all" ]; then
-        exec "$TERRAINIUM_EXECUTABLE" enter --auto-apply
+        exec terrainium enter --auto-apply
     fi
 }
 

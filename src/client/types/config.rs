@@ -73,6 +73,7 @@ impl Config {
 
 #[cfg(test)]
 impl Config {
+    #[cfg(test)]
     pub(crate) fn auto_apply_off() -> Self {
         Config {
             auto_apply: false,

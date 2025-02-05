@@ -83,13 +83,9 @@ pub async fn handle(
 
     let request = ExecuteRequest {
         session_id,
-        terrain_name: context.name(),
+        terrain_name: environment.name().to_string(),
         biome_name,
-        toml_path: context
-            .toml_path()
-            .expect("to be present")
-            .display()
-            .to_string(),
+        toml_path: context.toml_path().display().to_string(),
         is_activate: activate_envs.is_some(),
         timestamp: timestamp(),
         operation: i32::from(operation_from_string(operation)),

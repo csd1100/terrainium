@@ -125,7 +125,7 @@ impl Terrain {
 
         let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
         write(
-            context.toml_path()?,
+            context.toml_path(),
             toml::to_string(&fixed).context("failed to create terrain.toml contents")?,
         )
         .context("failed to write fixed terrain.toml")?;
@@ -134,7 +134,7 @@ impl Terrain {
 
     pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<Self> {
         let terrain_toml =
-            read_to_string(&context.toml_path()?).context("failed to read terrain.toml")?;
+            read_to_string(context.toml_path()).context("failed to read terrain.toml")?;
         let unvalidated_terrain = Self::from_toml(terrain_toml)?;
         Self::store_and_get_fixed_terrain(context, unvalidated_terrain)
     }
@@ -503,6 +503,7 @@ pub mod tests {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn set_auto_apply(terrain: &mut Terrain, auto_apply: &str) {
         terrain.auto_apply = AutoApply::from_str(auto_apply).unwrap();
     }

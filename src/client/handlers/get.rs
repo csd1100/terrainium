@@ -193,6 +193,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -220,6 +221,7 @@ mod tests {
     #[test]
     fn get_all_for_empty_terrain() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -251,6 +253,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -278,6 +281,7 @@ mod tests {
     #[test]
     fn get_all_aliases_for_default_biome() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -310,6 +314,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -340,6 +345,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -365,6 +371,7 @@ mod tests {
     #[test]
     fn get_all_envs_for_default_biome() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -401,6 +408,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -435,6 +443,7 @@ mod tests {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -460,6 +469,7 @@ mod tests {
     #[test]
     fn get_all_envs_and_aliases_for_default_biome() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -499,6 +509,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -529,6 +540,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -557,6 +569,7 @@ Environment Variables:
     #[test]
     fn get_constructors() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -593,6 +606,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -625,6 +639,7 @@ Environment Variables:
     #[test]
     fn get_all_envs_aliases_constructors_destructors() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -677,6 +692,7 @@ Destructors:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -723,6 +739,7 @@ Destructors:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -754,6 +771,7 @@ Environment Variables:
     #[test]
     fn get_alias_and_all_envs() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -793,6 +811,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -821,6 +840,7 @@ Environment Variables:
     #[test]
     fn get_auto_apply_replace() -> Result<()> {
         let context = Context::build(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
@@ -853,6 +873,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -883,6 +904,7 @@ Environment Variables:
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
+            PathBuf::new(),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -911,6 +933,7 @@ Environment Variables:
     #[test]
     fn get_auto_apply_globally_off() -> Result<()> {
         let context = Context::build_with_config(
+            PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Config::auto_apply_off(),
