@@ -16,11 +16,11 @@ pub struct Commands {
 }
 
 impl Commands {
-    pub fn foreground(&self) -> &Vec<Command> {
+    pub(crate) fn foreground(&self) -> &Vec<Command> {
         self.foreground.as_ref()
     }
 
-    pub fn background(&self) -> &Vec<Command> {
+    pub(crate) fn background(&self) -> &Vec<Command> {
         self.background.as_ref()
     }
 
@@ -45,11 +45,11 @@ impl Commands {
             .context("failed to substitute cwd for background commands")
     }
 
-    pub fn foreground_mut(&mut self) -> &mut Vec<Command> {
+    pub(crate) fn foreground_mut(&mut self) -> &mut Vec<Command> {
         self.foreground.as_mut()
     }
 
-    pub fn background_mut(&mut self) -> &mut Vec<Command> {
+    pub(crate) fn background_mut(&mut self) -> &mut Vec<Command> {
         self.background.as_mut()
     }
 
@@ -84,17 +84,10 @@ impl Commands {
 }
 
 impl Commands {
-    pub fn new(foreground: Vec<Command>, background: Vec<Command>) -> Self {
+    pub(crate) fn new(foreground: Vec<Command>, background: Vec<Command>) -> Self {
         Commands {
             foreground,
             background,
-        }
-    }
-
-    pub fn example() -> Self {
-        Commands {
-            foreground: vec![Command::example()],
-            background: vec![Command::example()],
         }
     }
 }
