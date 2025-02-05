@@ -148,7 +148,7 @@ impl Environment {
     }
 }
 
-pub fn render<T: Serialize>(
+pub(crate) fn render<T: Serialize>(
     main_template: String,
     templates: BTreeMap<String, String>,
     arg: T,

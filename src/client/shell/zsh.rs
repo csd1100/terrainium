@@ -324,9 +324,11 @@ impl Zsh {
 
         Ok(())
     }
+}
 
-    #[cfg(test)]
-    pub fn build(runner: CommandToRun) -> Self {
+#[cfg(test)]
+impl Zsh {
+    pub(crate) fn build(runner: CommandToRun) -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
             runner,

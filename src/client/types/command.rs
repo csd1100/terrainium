@@ -4,7 +4,6 @@ use crate::client::validation::{
 };
 use crate::common::types::pb;
 use anyhow::{anyhow, Context, Result};
-use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -17,7 +16,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum CommandsType {
+pub(crate) enum CommandsType {
     Foreground,
     Background,
 }
@@ -36,7 +35,7 @@ impl Display for CommandsType {
 }
 
 #[derive(Clone, Debug)]
-pub enum OperationType {
+pub(crate) enum OperationType {
     Constructor,
     Destructor,
 }
@@ -56,14 +55,14 @@ impl Display for OperationType {
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub struct Command {
+pub(crate) struct Command {
     exe: String,
     args: Vec<String>,
     cwd: Option<PathBuf>,
 }
 
 impl Command {
-    pub fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {
+    pub(crate) fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {
         Command { exe, args, cwd }
     }
 
@@ -106,14 +105,6 @@ impl Command {
             self.cwd = Some(terrain_dir.to_path_buf());
         }
         Ok(())
-    }
-
-    pub fn example() -> Self {
-        Command {
-            exe: String::from("/bin/ls"),
-            args: vec!["-a".to_string(), "-l".to_string()],
-            cwd: home_dir(),
-        }
     }
 
     pub(crate) fn validate_command<'a>(
