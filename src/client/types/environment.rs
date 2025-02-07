@@ -56,6 +56,10 @@ impl Environment {
         Ok(environment)
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     pub fn default_biome(&self) -> &Option<String> {
         &self.default_biome
     }

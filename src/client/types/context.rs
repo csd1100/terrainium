@@ -1,14 +1,13 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::client::types::config::Config;
 use crate::common::constants::{
-    CONFIG_LOCATION, TERRAINIUM_EXECUTABLE, TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR,
-    TERRAIN_SESSION_ID,
+    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context as AnyhowContext, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::{create_dir_all, exists};
+use std::env::current_dir;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -17,6 +16,7 @@ pub struct Context {
     session_id: String,
     terrain_dir: PathBuf,
     central_dir: PathBuf,
+    toml_path: PathBuf,
     config: Config,
     shell: Zsh,
 }
@@ -25,36 +25,100 @@ const TERRAIN_TOML: &str = "terrain.toml";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
+fn is_terrain_present(cwd: &Path) -> Option<PathBuf> {
+    let local_toml = cwd.join(TERRAIN_TOML);
+    let central_toml = get_central_dir_location(cwd).join(TERRAIN_TOML);
+
+    if local_toml.exists() {
+        return Some(local_toml);
+    } else if central_toml.exists() {
+        return Some(central_toml);
+    }
+
+    None
+}
+
+fn get_central_dir_location(terrain_dir: &Path) -> PathBuf {
+    let terrain_dir_name = Path::canonicalize(terrain_dir)
+        .expect("expected current directory to be valid")
+        .to_string_lossy()
+        .to_string()
+        .replace('/', "_");
+
+    home_dir()
+        .expect("failed to get home directory")
+        .join(CONFIG_LOCATION)
+        .join(TERRAINS_DIR_NAME)
+        .join(terrain_dir_name)
+}
+
+fn get_terrain_dir(cwd: &Path) -> Option<(PathBuf, PathBuf)> {
+    if let Some(toml_path) = is_terrain_present(cwd) {
+        return Some((cwd.to_path_buf(), toml_path));
+    } else if cwd.parent().is_some() && cwd.parent().unwrap().exists() {
+        return get_terrain_dir(cwd.parent().unwrap());
+    }
+    None
+}
+
 impl Context {
-    pub fn generate(home_dir: &Path) -> Self {
+    pub fn get(home_dir: PathBuf, cwd: PathBuf) -> Result<Context> {
+        let terrain_paths = get_terrain_dir(&cwd);
+
+        if terrain_paths.is_none() {
+            return Err(anyhow!(
+                "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
+            ));
+        }
+
+        let (terrain_dir, toml_path) = terrain_paths.unwrap();
+        let central_dir = get_central_dir_location(&terrain_dir);
+
+        Self::generate(home_dir, terrain_dir, central_dir, toml_path)
+    }
+
+    pub fn create(home_dir: PathBuf, cwd: PathBuf, central: bool) -> Result<Context> {
+        let terrain_dir = cwd;
+        let central_dir = get_central_dir_location(&terrain_dir);
+
+        if terrain_dir.join(TERRAIN_TOML).exists() || central_dir.join(TERRAIN_TOML).exists() {
+            return Err(anyhow!(
+                "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+            ));
+        }
+
+        let toml_path = if central {
+            central_dir.join(TERRAIN_TOML)
+        } else {
+            terrain_dir.join(TERRAIN_TOML)
+        };
+        Self::generate(home_dir, terrain_dir, central_dir, toml_path)
+    }
+
+    fn generate(
+        home_dir: PathBuf,
+        terrain_dir: PathBuf,
+        central_dir: PathBuf,
+        toml_path: PathBuf,
+    ) -> Result<Context> {
         let session_id =
             env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
-        let terrain_dir = env::current_dir().expect("failed to get current directory");
-
         let config = Config::from_file().unwrap_or_default();
 
-        let shell = Zsh::get(&terrain_dir);
-
-        let shell_integration_scripts_dir =
-            Self::config_dir(home_dir).join(TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR);
-        if !exists(&shell_integration_scripts_dir)
-            .expect("failed to check if config and shell integration scripts directory exists")
-        {
-            create_dir_all(&shell_integration_scripts_dir)
-                .expect("failed to create config directory");
-        }
+        let shell = Zsh::get(&current_dir().context("failed to get current directory")?);
 
         shell
-            .setup_integration(&shell_integration_scripts_dir)
+            .setup_integration(Self::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))
             .expect("failed to setup shell integration");
 
-        Context {
+        Ok(Context {
             session_id,
-            central_dir: get_central_dir_location(&terrain_dir),
+            central_dir,
             terrain_dir,
+            toml_path,
             config,
             shell,
-        }
+        })
     }
 
     pub fn session_id(&self) -> &str {
@@ -69,53 +133,12 @@ impl Context {
         &self.central_dir
     }
 
-    pub fn config_dir(home_dir: &Path) -> PathBuf {
+    pub fn config_dir(home_dir: PathBuf) -> PathBuf {
         home_dir.join(CONFIG_LOCATION)
     }
 
-    pub fn name(&self) -> String {
-        self.terrain_dir
-            .file_name()
-            .expect("failed to get current directory name")
-            .to_str()
-            .expect("failed to convert directory name to string")
-            .to_string()
-    }
-
-    pub fn toml_exists(&self) -> bool {
-        exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists")
-            || exists(self.central_toml_path())
-                .expect("failed to check if central terrain.toml exists")
-    }
-
-    pub fn new_toml_path(&self, central: bool) -> PathBuf {
-        if central {
-            self.central_toml_path()
-        } else {
-            self.local_toml_path()
-        }
-    }
-
-    pub fn toml_path(&self) -> Result<PathBuf> {
-        if exists(self.local_toml_path()).expect("failed to check if local terrain.toml exists") {
-            Ok(self.local_toml_path())
-        } else if exists(self.central_toml_path())
-            .expect("failed to check if central terrain.toml exists")
-        {
-            Ok(self.central_toml_path())
-        } else {
-            Err(anyhow!(
-                "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
-            ))
-        }
-    }
-
-    pub fn local_toml_path(&self) -> PathBuf {
-        self.terrain_dir.join(TERRAIN_TOML)
-    }
-
-    pub fn central_toml_path(&self) -> PathBuf {
-        self.central_dir.join(TERRAIN_TOML)
+    pub fn toml_path(&self) -> &Path {
+        &self.toml_path
     }
 
     pub fn scripts_dir(&self) -> PathBuf {
@@ -124,11 +147,6 @@ impl Context {
 
     pub(crate) fn shell(&self) -> &Zsh {
         &self.shell
-    }
-
-    pub fn update_rc(&self, path: Option<PathBuf>) -> Result<()> {
-        self.shell.update_rc(path)?;
-        Ok(())
     }
 
     pub fn config(&self) -> &Config {
@@ -146,23 +164,21 @@ impl Context {
             self.session_id().to_string(),
         );
 
-        let exe = env::args().nth(0).unwrap();
-        if self.name() == "terrainium" && exe.starts_with("target/") {
-            let exe = self.terrain_dir().join(&exe);
-            terrainium_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe.display().to_string());
-        } else {
-            terrainium_envs.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
-        }
-
         terrainium_envs
     }
 
     #[cfg(test)]
-    pub(crate) fn build(current_dir: PathBuf, central_dir: PathBuf, shell: Zsh) -> Self {
+    pub(crate) fn build(
+        terrain_dir: PathBuf,
+        central_dir: PathBuf,
+        toml_path: PathBuf,
+        shell: Zsh,
+    ) -> Self {
         Context {
             session_id: "some".to_string(),
-            terrain_dir: current_dir,
+            terrain_dir,
             central_dir,
+            toml_path,
             config: Config::default(),
             shell,
         }
@@ -170,14 +186,16 @@ impl Context {
 
     #[cfg(test)]
     pub(crate) fn build_with_config(
-        current_dir: PathBuf,
+        terrain_dir: PathBuf,
         central_dir: PathBuf,
+        toml_path: PathBuf,
         config: Config,
         shell: Zsh,
     ) -> Self {
         Context {
             session_id: "some".to_string(),
-            terrain_dir: current_dir,
+            terrain_dir,
+            toml_path,
             central_dir,
             config,
             shell,
@@ -186,92 +204,388 @@ impl Context {
 
     #[cfg(test)]
     pub(crate) fn build_without_paths(shell: Zsh) -> Self {
-        let terrain_dir = env::current_dir().expect("failed to get current directory");
+        let terrain_dir = current_dir().expect("failed to get current directory");
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let central_dir = get_central_dir_location(&terrain_dir);
         Context {
             session_id: "some".to_string(),
-            central_dir: get_central_dir_location(&terrain_dir),
+            central_dir,
             terrain_dir,
+            toml_path,
             config: Config::default(),
             shell,
         }
     }
 }
 
-fn get_central_dir_location(terrain_dir: &Path) -> PathBuf {
-    let terrain_dir_name = Path::canonicalize(terrain_dir)
-        .expect("expected current directory to be valid")
-        .to_string_lossy()
-        .to_string()
-        .replace('/', "_");
-
-    home_dir()
-        .expect("failed to get home directory")
-        .join(CONFIG_LOCATION)
-        .join(TERRAINS_DIR_NAME)
-        .join(terrain_dir_name)
-}
-
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
     use crate::client::utils::ExpectShell;
-    use crate::common::constants::{TERRAINIUM_EXECUTABLE, TERRAIN_SESSION_ID};
+    use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
     use std::collections::BTreeMap;
-    use std::fs::exists;
+    use std::env::current_dir;
+    use std::fs::{create_dir_all, write};
     use std::path::{Path, PathBuf};
-    use std::{env, fs};
     use tempfile::tempdir;
 
     #[serial]
     #[test]
-    fn new_creates_context() -> Result<()> {
+    fn creates_terrain_dir_context() -> Result<()> {
         let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
 
-        let current_dir = env::current_dir().expect("failed to get current directory");
-        let central_dir = get_central_dir_location();
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let mut zsh_integration_script =
-            home_dir.path().join(".config/terrainium/shell_integration");
-        zsh_integration_script.push("terrainium_init.zsh");
-
-        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
-        compiled_zsh_integration_script.set_extension("zsh.zwc");
-
-        let expected_shell_operation = ExpectShell::to()
-            .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
-            .successfully();
-
-        let terrain_path = current_dir.clone();
-        let mock_zsh = MockCommandToRun::new_context();
-        mock_zsh
+        let shell = MockCommandToRun::new_context();
+        shell
             .expect()
-            .withf(move |exe, args, envs, cwd| {
-                exe == "/bin/zsh" && args.is_empty() && envs.is_none() && *cwd == terrain_path
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
             })
-            .return_once(move |_, _, _, _| expected_shell_operation);
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
 
-        let actual = Context::generate(home_dir.path());
-        assert_eq!(current_dir, actual.terrain_dir);
-        assert_eq!(central_dir, actual.central_dir);
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
 
-        assert!(exists(&zsh_integration_script)
-            .expect("failed to check if shell integration script created"));
+        let context = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            false,
+        )?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn creates_central_dir_context() -> Result<()> {
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let home_dir = tempdir()?;
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
+
+        let shell = MockCommandToRun::new_context();
+        shell
+            .expect()
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
+            })
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
+
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
+
+        let context = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            true,
+        )?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
 
         Ok(())
     }
 
     #[test]
-    fn current_dir_returns_current_dir() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
+    fn create_in_terrain_throws_error_if_already_present_in_terrain() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        write(terrain_dir.path().join("terrain.toml"), "")?;
+
+        let err = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            false,
+        )
+        .expect_err("expected error")
+        .to_string();
+
+        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+
+        Ok(())
+    }
+
+    #[test]
+    fn create_in_terrain_throws_error_if_already_present_in_central() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        create_dir_all(&central_dir)?;
+        write(central_dir.join("terrain.toml"), "")?;
+
+        let err = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            false,
+        )
+        .expect_err("expected error")
+        .to_string();
+
+        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+
+        Ok(())
+    }
+
+    #[test]
+    fn create_in_central_throws_error_if_already_present_in_terrain() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        write(terrain_dir.path().join("terrain.toml"), "")?;
+
+        let err = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            true,
+        )
+        .expect_err("expected error")
+        .to_string();
+
+        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+
+        Ok(())
+    }
+
+    #[test]
+    fn create_in_central_throws_error_if_already_present_in_central() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        create_dir_all(&central_dir)?;
+        write(central_dir.join("terrain.toml"), "")?;
+
+        let err = Context::create(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+            true,
+        )
+        .expect_err("expected error")
+        .to_string();
+
+        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn get_in_terrain_dir() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        write(terrain_dir.path().join("terrain.toml"), "")?;
+
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
+
+        let shell = MockCommandToRun::new_context();
+        shell
+            .expect()
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
+            })
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
+
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
+
+        let context = Context::get(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+        )?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn get_in_central_dir() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        create_dir_all(&central_dir)?;
+        write(central_dir.join("terrain.toml"), "")?;
+
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
+
+        let shell = MockCommandToRun::new_context();
+        shell
+            .expect()
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
+            })
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
+
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
+
+        let context = Context::get(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+        )?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn get_in_parent_terrain_dir() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let cwd = terrain_dir.path().join("grand/child");
+        create_dir_all(&cwd)?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        write(terrain_dir.path().join("terrain.toml"), "")?;
+
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
+
+        let shell = MockCommandToRun::new_context();
+        shell
+            .expect()
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
+            })
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
+
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
+
+        let context = Context::get(home_dir.path().to_path_buf(), cwd)?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+
+        Ok(())
+    }
+
+    #[serial]
+    #[test]
+    fn get_in_parent_central_dir() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let cwd = terrain_dir.path().join("grand/child");
+        create_dir_all(&cwd)?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        create_dir_all(&central_dir)?;
+        write(central_dir.join("terrain.toml"), "")?;
+
+        let shell_integration_dir = get_shell_integration_dir(home_dir.path());
+
+        let shell = MockCommandToRun::new_context();
+        shell
+            .expect()
+            .withf(move |exe, args, env, cwd| {
+                exe == "/bin/zsh"
+                    && args.is_empty()
+                    && env.is_none()
+                    && cwd == current_dir().unwrap()
+            })
+            .returning(move |_, _, _, _| {
+                let runner = MockCommandToRun::default();
+
+                ExpectShell::with(runner)
+                    .compile_script_for(
+                        &shell_integration_dir.join("terrainium_init.zsh"),
+                        &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                    )
+                    .successfully()
+            });
+
+        let context = Context::get(home_dir.path().to_path_buf(), cwd)?;
+
+        assert_eq!(terrain_dir.path(), context.terrain_dir());
+        assert_eq!(central_dir, context.central_dir());
+        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_throws_error_if_not_present() -> Result<()> {
+        let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+        let central_dir = get_central_dir_location(terrain_dir.path());
+        create_dir_all(&central_dir)?;
+
+        let err = Context::get(
+            home_dir.path().to_path_buf(),
+            terrain_dir.path().to_path_buf(),
+        )
+        .expect_err("expected error")
+        .to_string();
+
         assert_eq!(
-            &env::current_dir().expect("failed to get current directory"),
-            context.terrain_dir()
+            err,
+            "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
         );
+
         Ok(())
     }
 
@@ -280,13 +594,8 @@ mod tests {
         let mut expected_map = BTreeMap::<String, String>::new();
         expected_map.insert(
             "TERRAIN_DIR".to_string(),
-            env::current_dir()
-                .expect("to be found")
-                .display()
-                .to_string(),
+            current_dir()?.display().to_string(),
         );
-        let exe = env::args().next().unwrap();
-        expected_map.insert(TERRAINIUM_EXECUTABLE.to_string(), exe);
 
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
 
@@ -304,137 +613,9 @@ mod tests {
     }
 
     #[test]
-    fn local_toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let expected_terrain_toml = env::current_dir()
-            .expect("failed to get current directory")
-            .join("terrain.toml");
-
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-
-        assert_eq!(context.local_toml_path(), expected_terrain_toml);
-
-        Ok(())
-    }
-
-    #[test]
-    fn toml_path_return_current_terrain_toml_path() -> Result<()> {
-        let current_dir = tempdir()?;
-        let central_dir = tempdir()?;
-
-        let expected_terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
-
-        fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
-
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            Zsh::build(MockCommandToRun::default()),
-        );
-
-        assert_eq!(
-            expected_terrain_toml,
-            context.toml_path().expect("to return valid value")
-        );
-
-        current_dir
-            .close()
-            .expect("test directory to be cleaned up");
-        central_dir
-            .close()
-            .expect("test directory to be cleaned up");
-
-        Ok(())
-    }
-
-    #[test]
-    fn toml_path_return_central_terrain_toml_path() -> Result<()> {
-        let central_dir = tempdir()?;
-        let current_dir = tempdir()?;
-
-        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
-        fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
-
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            Zsh::build(MockCommandToRun::default()),
-        );
-
-        assert_eq!(
-            expected_terrain_toml,
-            context.toml_path().expect("to return valid value")
-        );
-
-        current_dir
-            .close()
-            .expect("test directory to be cleaned up");
-        central_dir
-            .close()
-            .expect("test directory to be cleaned up");
-
-        Ok(())
-    }
-
-    #[test]
-    fn central_toml_path_return_central_terrain_toml_path() -> Result<()> {
-        let current_dir = tempdir()?;
-        let central_dir = tempdir()?;
-
-        let expected_terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
-
-        fs::write(&expected_terrain_toml, "").expect("to create test terrain.toml");
-
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            Zsh::build(MockCommandToRun::default()),
-        );
-
-        assert_eq!(context.central_toml_path(), expected_terrain_toml);
-
-        current_dir
-            .close()
-            .expect("test directory to be cleaned up");
-        central_dir
-            .close()
-            .expect("test directory to be cleaned up");
-
-        Ok(())
-    }
-
-    #[test]
-    fn toml_path_returns_error_if_does_not_exists() -> Result<()> {
-        let central_dir = tempdir()?;
-        let current_dir = tempdir()?;
-
-        let err = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            Zsh::build(MockCommandToRun::default()),
-        )
-        .toml_path()
-        .expect_err("to error to be thrown")
-        .to_string();
-
-        assert_eq!(
-            "terrain.toml does not exists, run 'terrainium init' to initialize terrain.",
-            err
-        );
-
-        current_dir
-            .close()
-            .expect("test directory to be cleaned up");
-        central_dir
-            .close()
-            .expect("test directory to be cleaned up");
-
-        Ok(())
-    }
-
-    #[test]
     fn central_dir_returns_config_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let central_dir = get_central_dir_location();
+        let central_dir = get_central_dir_location(&current_dir()?);
 
         assert_eq!(&central_dir, context.central_dir());
         Ok(())
@@ -443,21 +624,18 @@ mod tests {
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let scripts_dir = get_central_dir_location().join("scripts");
+        let scripts_dir = get_central_dir_location(&current_dir()?).join("scripts");
 
         assert_eq!(scripts_dir, context.scripts_dir());
         Ok(())
     }
 
-    #[test]
-    fn name_return_current_dir_name() {
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        assert_eq!(context.name(), "terrainium");
+    pub(crate) fn get_shell_integration_dir(home_dir: &Path) -> PathBuf {
+        home_dir.join(".config/terrainium/shell_integration")
     }
 
-    fn get_central_dir_location() -> PathBuf {
-        let current_dir = env::current_dir().expect("failed to get current directory");
-        let terrain_dir_name = Path::canonicalize(current_dir.as_path())
+    fn get_central_dir_location(current_dir: &Path) -> PathBuf {
+        let terrain_dir_name = Path::canonicalize(current_dir)
             .expect("current directory to be present")
             .to_string_lossy()
             .to_string()

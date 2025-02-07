@@ -10,11 +10,7 @@ use std::path::Path;
 const EDITOR: &str = "EDITOR";
 
 pub fn handle(context: Context) -> Result<()> {
-    let toml_path = context
-        .toml_path()
-        .context("failed to edit terrain because it does not exist.")?;
-
-    run_editor(&toml_path, context.terrain_dir())?;
+    run_editor(context.toml_path(), context.terrain_dir())?;
 
     let terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
     context.shell().generate_scripts(&context, terrain)?;
@@ -102,6 +98,7 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -160,6 +157,7 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            central_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -179,24 +177,6 @@ pub(crate) mod tests {
             .script_was_created_for("example_biome");
 
         restore_env_var(EDITOR.to_string(), editor);
-        Ok(())
-    }
-
-    #[test]
-    fn edit_returns_error_when_no_terrain() -> Result<()> {
-        let current_dir = tempdir()?;
-        let central_dir = tempdir()?;
-
-        let err = super::handle(Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            Zsh::build(MockCommandToRun::default()),
-        ))
-        .expect_err("expected to get error")
-        .to_string();
-
-        assert_eq!("failed to edit terrain because it does not exist.", err);
-
         Ok(())
     }
 
@@ -239,6 +219,7 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 

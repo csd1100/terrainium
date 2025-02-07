@@ -27,5 +27,4 @@ pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
 
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub const TERRAINIUM_CONF: &str = "terrainium.toml";
-pub const TERRAINIUM_EXECUTABLE: &str = "TERRAINIUM_EXECUTABLE";
-pub const TERRAINIUM_SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";
+pub const SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";

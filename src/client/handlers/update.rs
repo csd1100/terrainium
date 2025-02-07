@@ -47,10 +47,10 @@ pub fn handle(context: Context, terrain: Terrain, update_args: UpdateArgs) -> Re
     }
 
     if update_args.backup {
-        let mut backup = context.toml_path()?;
+        let mut backup = context.toml_path().to_path_buf();
         backup.set_extension("toml.bkp");
 
-        copy(context.toml_path()?, backup).context("failed to backup terrain.toml")?;
+        copy(context.toml_path(), backup).context("failed to backup terrain.toml")?;
     }
 
     let validated_and_fixed = Terrain::store_and_get_fixed_terrain(&context, terrain)?;
@@ -104,6 +104,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -148,6 +149,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -202,6 +204,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -269,6 +272,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -323,6 +327,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -371,6 +376,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -424,6 +430,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -479,6 +486,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -528,6 +536,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 

@@ -54,15 +54,13 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var, AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
-        DESTRUCTORS, TERRAINIUM_EXECUTABLE, TERRAIN_AUTO_APPLY, TERRAIN_DIR,
-        TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+        DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::ExecuteResponse;
     use prost_types::Any;
     use serial_test::serial;
-    use std::env;
     use std::fs::copy;
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -89,23 +87,24 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
             .is_activated_as(true)
             .operation(DESTRUCTORS)
             .with_expected_reply(
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
             )
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -117,8 +116,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
             )
             .sent();
 
@@ -148,10 +146,10 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
             .is_activated_as(true)
             .operation(DESTRUCTORS)
@@ -161,13 +159,14 @@ mod tests {
                 })
                 .expect("to be converted to any"),
             )
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -179,8 +178,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
             )
             .sent();
 
@@ -217,6 +215,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
@@ -252,23 +251,24 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let exe = env::args().next().unwrap();
         let expected_request = AssertExecuteRequest::with()
             .is_activated_as(true)
             .operation(DESTRUCTORS)
             .with_expected_reply(
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
             )
-            .terrain_name(current_dir.path().file_name().unwrap().to_str().unwrap())
+            .terrain_name("terrainium")
             .biome_name("example_biome")
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
                     .with_arg("-c")
                     .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
+                    .with_cwd(current_dir.path())
                     .with_env("EDITOR", "nvim")
                     .with_env("NULL_POINTER", "${NULL}")
                     .with_env("PAGER", "less")
@@ -280,8 +280,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAINIUM_EXECUTABLE, exe.clone().as_str()),
+                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
             )
             .sent();
 
@@ -321,6 +320,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(MockCommandToRun::default()),
         );
 

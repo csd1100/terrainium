@@ -35,6 +35,7 @@ mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 
@@ -60,6 +61,7 @@ mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
             Zsh::build(expected_shell_operation),
         );
 

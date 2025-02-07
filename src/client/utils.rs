@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::env::VarError;
 use std::fs::read_to_string;
 use std::os::unix::prelude::ExitStatusExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 
 pub const IN_CURRENT_DIR: bool = false;
@@ -115,10 +115,10 @@ impl AssertExecuteRequest {
                 let request: ExecuteRequest =
                     Any::to_msg(execute_request).expect("request to be converted");
                 request.terrain_name == this.terrain_name
+                    && request.commands == this.commands
                     && request.biome_name == this.biome_name
                     && request.is_activate == this.is_activate
                     && request.toml_path == this.toml_path
-                    && request.commands == this.commands
             })
             .return_once(move |_| Ok(()))
             .times(1);
@@ -138,6 +138,7 @@ pub struct RunCommand {
     exe: &'static str,
     args: Vec<String>,
     env_vars: BTreeMap<String, String>,
+    cwd: PathBuf,
     exit_code: i32,
     error: bool,
     output: &'static str,
@@ -150,6 +151,7 @@ impl RunCommand {
             exe,
             args: vec![],
             env_vars: Default::default(),
+            cwd: Default::default(),
             exit_code: 0,
             error: false,
             output: "",
@@ -172,6 +174,11 @@ impl RunCommand {
         self
     }
 
+    pub fn with_cwd(mut self, cwd: &Path) -> Self {
+        self.cwd = cwd.to_path_buf();
+        self
+    }
+
     pub fn with_expected_exit_code(mut self, code: i32) -> Self {
         self.exit_code = code;
         self
@@ -190,7 +197,10 @@ impl RunCommand {
 
 impl PartialEq<RunCommand> for pb::Command {
     fn eq(&self, other: &RunCommand) -> bool {
-        self.exe == other.exe && self.args == other.args && self.envs == other.env_vars
+        self.exe == other.exe
+            && self.args == other.args
+            && self.envs == other.env_vars
+            && self.cwd == other.cwd.to_str().unwrap()
     }
 }
 
@@ -199,6 +209,10 @@ pub struct ExpectShell {
 }
 
 impl ExpectShell {
+    pub fn with(runner: MockCommandToRun) -> Self {
+        Self { runner }
+    }
+
     pub fn to() -> Self {
         Self {
             runner: Default::default(),
