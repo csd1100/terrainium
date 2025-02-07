@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
 
             match verbs {
                 Verbs::Init { .. } => {
-                    // no need to do anything as it is handle above
+                    // no need to do anything as it is handled above
                 }
 
                 Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
