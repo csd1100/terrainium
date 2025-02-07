@@ -1002,7 +1002,7 @@ pub mod tests {
                             }
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Info,
                                 message: format!(
                                     "cwd: '{}/${{RELATIVE_DIR}}' contains environment variable references: 'RELATIVE_DIR' for exe: 'valid_command' args: 'some_args1 some_args2'. Make sure they are set before the {} {} is executed",
                                     test_dir.path().display(),

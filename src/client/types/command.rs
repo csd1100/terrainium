@@ -240,7 +240,7 @@ impl Command {
                 let envs_to_sub = Biome::get_envs_to_substitute(&cwd.display().to_string());
                 if !envs_to_sub.is_empty() {
                     result.insert(ValidationResult {
-                        level: ValidationMessageLevel::Warn,
+                        level: ValidationMessageLevel::Info,
                         message: format!(
                             "cwd: '{}' contains environment variable references: '{}' for exe: '{}' args: '{}'. Make sure they are set before the {} {} is executed",
                             cwd.display(),
