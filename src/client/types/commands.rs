@@ -2,7 +2,7 @@ use crate::client::types::command::{Command, CommandsType, OperationType};
 use crate::client::validation::ValidationResults;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 #[cfg(feature = "terrain-schema")]
@@ -29,15 +29,19 @@ impl Commands {
         self.background.append(&mut another.background);
     }
 
-    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+    pub(crate) fn substitute_cwd(
+        &mut self,
+        terrain_dir: &Path,
+        envs: &BTreeMap<String, String>,
+    ) -> Result<()> {
         self.foreground
             .iter_mut()
-            .try_for_each(|command| command.substitute_cwd(terrain_dir))
+            .try_for_each(|command| command.substitute_cwd(terrain_dir, envs))
             .context("failed to substitute cwd for foreground commands")?;
 
         self.background
             .iter_mut()
-            .try_for_each(|command| command.substitute_cwd(terrain_dir))
+            .try_for_each(|command| command.substitute_cwd(terrain_dir, envs))
             .context("failed to substitute cwd for background commands")
     }
 

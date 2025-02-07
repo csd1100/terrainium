@@ -227,8 +227,8 @@ impl Biome {
         result
     }
 
-    fn recursive_substitute_envs(
-        &self,
+    pub(crate) fn recursive_substitute_envs(
+        envs: &BTreeMap<String, String>,
         result_string: String,
         envs_to_substitute: Vec<String>,
     ) -> String {
@@ -239,8 +239,8 @@ impl Biome {
         if !envs_to_substitute.is_empty() {
             let env = envs_to_substitute.pop().unwrap();
 
-            if self.envs.contains_key(&env) || std::env::var(&env).is_ok() {
-                let env_val = if let Some(env_val) = self.envs.get(&env) {
+            if envs.contains_key(&env) || std::env::var(&env).is_ok() {
+                let env_val = if let Some(env_val) = envs.get(&env) {
                     env_val.to_string()
                 } else {
                     std::env::var(&env).unwrap()
@@ -254,7 +254,7 @@ impl Biome {
                 let new_env_to_substitute = Self::get_envs_to_substitute(&env_val);
                 envs_to_substitute.extend(new_env_to_substitute);
             }
-            return self.recursive_substitute_envs(result_string, envs_to_substitute);
+            return Self::recursive_substitute_envs(envs, result_string, envs_to_substitute);
         }
         result_string
     }
@@ -267,7 +267,7 @@ impl Biome {
                 let envs_to_substitute = Self::get_envs_to_substitute(value);
                 (
                     key.clone(),
-                    self.recursive_substitute_envs(value.clone(), envs_to_substitute),
+                    Self::recursive_substitute_envs(biome_envs, value.clone(), envs_to_substitute),
                 )
             })
             .collect();
@@ -277,10 +277,10 @@ impl Biome {
 
     pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
         self.constructors
-            .substitute_cwd(terrain_dir)
+            .substitute_cwd(terrain_dir, &self.envs)
             .context("failed to substitute cwd for constructors")?;
         self.destructors
-            .substitute_cwd(terrain_dir)
+            .substitute_cwd(terrain_dir, &self.envs)
             .context("failed to substitute cwd for destructors")
     }
 
