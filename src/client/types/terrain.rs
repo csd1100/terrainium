@@ -805,6 +805,11 @@ pub mod tests {
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                Some(PathBuf::from("${RELATIVE_DIR}")),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
                 Some(PathBuf::from("./relative_dir_does_not_exist")),
             ),
             Command::new(
@@ -831,6 +836,9 @@ pub mod tests {
             Some(test_dir.path().to_path_buf()),
         );
 
+        terrain
+            .terrain_mut()
+            .add_env("RELATIVE_DIR", "relative_dir");
         terrain.terrain_mut().set_constructors(commands.clone());
         terrain.terrain_mut().set_destructors(commands.clone());
         terrain
@@ -845,6 +853,8 @@ pub mod tests {
         terrain
             .terrain_mut()
             .add_bg_destructors(sudo_command.clone());
+
+        biome.add_env("RELATIVE_DIR", "relative_dir");
         biome.set_constructors(commands.clone());
         biome.set_destructors(commands.clone());
         biome.add_fg_constructors(sudo_command.clone());
@@ -865,7 +875,7 @@ pub mod tests {
 
         let messages = terrain.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 152);
+        assert_eq!(messages.len(), 160);
         ["none", "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
@@ -990,6 +1000,18 @@ pub mod tests {
                                     fix_action: ValidationFixAction::None,
                                 }), "failed to validate exe containing sudo for {}({}:{})", biome_name, operation_type, commands_type);
                             }
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Warn,
+                                message: format!(
+                                    "cwd: '{}/${{RELATIVE_DIR}}' contains environment variable references: 'RELATIVE_DIR' for exe: 'valid_command' args: 'some_args1 some_args2'. Make sure they are set before the {} {} is executed",
+                                    test_dir.path().display(),
+                                    commands_type,
+                                    operation_type
+                                ),
+                                r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate cwd with env var for {}({}:{})", biome_name, operation_type, commands_type);
                         })
                 })
         });

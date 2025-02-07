@@ -1,3 +1,4 @@
+use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
@@ -78,8 +79,23 @@ impl Command {
         self.cwd.clone()
     }
 
-    pub(crate) fn substitute_cwd(&mut self, terrain_dir: &Path) -> Result<()> {
+    pub(crate) fn substitute_cwd(
+        &mut self,
+        terrain_dir: &Path,
+        envs: &BTreeMap<String, String>,
+    ) -> Result<()> {
         if let Some(cwd) = &self.cwd {
+            let cwd_str = cwd.to_str().unwrap();
+            let envs_to_sub = Biome::get_envs_to_substitute(cwd_str);
+            let cwd = if !envs_to_sub.is_empty() {
+                &PathBuf::from(Biome::recursive_substitute_envs(
+                    envs,
+                    cwd_str.to_string(),
+                    envs_to_sub,
+                ))
+            } else {
+                cwd
+            };
             if !cwd.is_absolute() {
                 self.cwd = Some(terrain_dir.join(cwd).canonicalize().context(format!(
                     "failed to normalize path for exe:'{}' args: '{}' terrain_dir: '{:?}' and cwd: '{:?}'",
@@ -128,7 +144,7 @@ impl Command {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe '{}' has leading / trailing spaces. make sure it is removed before {} {} is to be run.", &self.exe, commands_type, operation_type),
                 r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
-                fix_action: ValidationFixAction::Trim { biome_name, target:Target::from_command(&commands_type, &operation_type, self) }
+                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_command(&commands_type, &operation_type, self) },
             });
         }
         let trimmed = exe.trim();
@@ -194,14 +210,14 @@ impl Command {
             if commands_type == CommandsType::Background {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).",trimmed, self.args.join(" ")),
+                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).", trimmed, self.args.join(" ")),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
             } else {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
-                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.",trimmed, self.args.join(" ")),
+                    message: format!("command exe: '{}' args: '{}' uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.", trimmed, self.args.join(" ")),
                     r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
                     fix_action: ValidationFixAction::None,
                 });
@@ -221,17 +237,35 @@ impl Command {
             };
 
             if let Some(cwd) = path_that_does_not_exits {
-                result.insert(ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message: format!(
-                        "cwd: '{}' does not exists for command exe: '{}' args: '{}'.",
-                        cwd.display(),
-                        trimmed,
-                        self.args.join(" ")
-                    ),
-                    r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
-                    fix_action: ValidationFixAction::None,
-                });
+                let envs_to_sub = Biome::get_envs_to_substitute(&cwd.display().to_string());
+                if !envs_to_sub.is_empty() {
+                    result.insert(ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: format!(
+                            "cwd: '{}' contains environment variable references: '{}' for exe: '{}' args: '{}'. Make sure they are set before the {} {} is executed",
+                            cwd.display(),
+                            envs_to_sub.join("', '"),
+                            trimmed,
+                            self.args.join(" "),
+                            commands_type,
+                            operation_type
+                        ),
+                        r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                        fix_action: ValidationFixAction::None,
+                    });
+                } else {
+                    result.insert(ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: format!(
+                            "cwd: '{}' does not exists for command exe: '{}' args: '{}'.",
+                            cwd.display(),
+                            trimmed,
+                            self.args.join(" ")
+                        ),
+                        r#for: format!("{}({}:{})", biome_name, operation_type, commands_type),
+                        fix_action: ValidationFixAction::None,
+                    });
+                }
             } else if (cwd.is_absolute() && !cwd.is_dir())
                 || !terrain_dir.join(cwd.clone()).is_dir()
             {

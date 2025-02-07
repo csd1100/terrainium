@@ -223,6 +223,8 @@ mod tests {
         create_dir_all(terrain_dir.path().join("tests/scripts"))?;
 
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert("SCRIPTS_DIR".to_string(), "scripts".to_string());
+        expected_envs.insert("TEST_DIR".to_string(), "tests".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
         expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
         expected_envs.insert("PAGER".to_string(), "less".to_string());
@@ -291,14 +293,21 @@ mod tests {
             ),
         ];
 
-        let expected_destructor_background: Vec<Command> = vec![Command::new(
-            "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-            Some(terrain_dir.path().to_path_buf()),
-        )];
+        let expected_destructor_background: Vec<Command> = vec![
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                Some(terrain_dir.path().join("tests/scripts").canonicalize()?),
+            ),
+            Command::new(
+                "/bin/bash".to_string(),
+                vec![
+                    "-c".to_string(),
+                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                ],
+                Some(terrain_dir.path().to_path_buf()),
+            ),
+        ];
         let expected_constructor = Commands::new(
             expected_constructor_foreground,
             expected_constructor_background,
@@ -323,6 +332,9 @@ mod tests {
         terrain
             .terrain_mut()
             .add_env("PROCESS_ENV_REF_VAR", "${PROCESS_ENV_VAR}");
+        terrain.terrain_mut().add_env("SCRIPTS_DIR", "scripts");
+        terrain.terrain_mut().add_env("TEST_DIR", "tests");
+
         terrain.terrain_mut().add_bg_constructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
@@ -332,6 +344,11 @@ mod tests {
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
             Some(PathBuf::from("/tmp")),
+        ));
+        terrain.terrain_mut().add_bg_destructors(Command::new(
+            "/bin/bash".to_string(),
+            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            Some(PathBuf::from("${TEST_DIR}/${SCRIPTS_DIR}")),
         ));
 
         let old_env = set_env_var(
