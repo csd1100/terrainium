@@ -65,8 +65,7 @@ async fn main() -> Result<()> {
         if let Err(err) = res {
             event!(
                 Level::ERROR,
-                "failed to create terrainiumd config file: {}",
-                err
+                "failed to create terrainiumd config file: {err}",
             );
         }
         return Ok(());

@@ -111,9 +111,7 @@ pub(crate) async fn execute(request: ExecuteRequest, context: DaemonContext) {
         if command.get_exe().contains("sudo") && !context.should_run_sudo() {
             event!(
                 Level::WARN,
-                "not executing command for operation {} as running sudo is not allowed ({})",
-                operation,
-                command,
+                "not executing command for operation {operation} as running sudo is not allowed ({command})",
             );
             continue;
         }
@@ -131,7 +129,7 @@ pub(crate) async fn execute(request: ExecuteRequest, context: DaemonContext) {
                 .await
                 .expect("to write state");
 
-            event!(Level::INFO, "spawning operation: {}", operation);
+            event!(Level::INFO, "spawning operation: {operation}");
         }
         set.spawn(async move {
             start_process(idx, command, operation, state).await;
@@ -172,9 +170,7 @@ async fn start_process(
 
     event!(
         Level::INFO,
-        "operation:{}, starting to execute command with log_file: '{}', process: '{}'",
-        operation,
-        log_file,
+        "operation:{operation}, starting to execute command with log_file: '{log_file}', process: '{}'",
         guard.execute_context().command(idx, &operation)
     );
 
@@ -188,9 +184,7 @@ async fn start_process(
             if exit_code.success() {
                 event!(
                     Level::INFO,
-                    "operation:{}, successfully completed executing command with exit code: {}, process: '{}'",
-                    operation,
-                    exit_code,
+                    "operation:{operation}, successfully completed executing command with exit code: {exit_code}, process: '{}'",
                     guard.execute_context().command(idx, &operation)
                 );
 
@@ -202,15 +196,12 @@ async fn start_process(
             } else {
                 event!(
                     Level::WARN,
-                    "operation:{}, completed executing command with exit code: {}, process: '{}'",
-                    operation,
-                    exit_code,
+                    "operation:{operation}, completed executing command with exit code: {exit_code}, process: '{}'",
                     guard.execute_context().command(idx, &operation)
                 );
                 event!(
                     Level::DEBUG,
-                    "operation:{}, failed process:{:?}",
-                    operation,
+                    "operation:{operation}, failed process:{:?}",
                     guard.execute_context().command(idx, &operation)
                 );
 
@@ -239,15 +230,12 @@ async fn start_process(
             let mut guard = state.lock().await;
             event!(
                 Level::WARN,
-                "operation:{}, failed to spawn command with error: {:?}, process:'{}'",
-                operation,
-                err,
+                "operation:{operation}, failed to spawn command with error: {err}, process:'{}'",
                 guard.execute_context().command(idx, &operation)
             );
             event!(
                 Level::DEBUG,
-                "operation:{}, failed process:{:?}",
-                operation,
+                "operation:{operation}, failed process:{:?}",
                 guard.execute_context().command(idx, &operation)
             );
 

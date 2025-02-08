@@ -286,10 +286,10 @@ impl ExpectShell {
         self.compile_script_for(
             &central_dir
                 .join("scripts")
-                .join(format!("terrain-{}.zsh", &biome_name)),
+                .join(format!("terrain-{biome_name}.zsh")),
             &central_dir
                 .join("scripts")
-                .join(format!("terrain-{}.zwc", &biome_name)),
+                .join(format!("terrain-{biome_name}.zwc")),
         )
     }
 
@@ -378,9 +378,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             read_to_string(&toml).expect("to find terrain.toml"),
             read_to_string(mode).expect("to find test terrain.toml"),
-            "failed to terrain.toml was created for in_central {} for test terrain: {}",
-            in_central,
-            mode
+            "failed to terrain.toml was created for in_central {in_central} for test terrain: {mode}",
         );
 
         self
@@ -390,12 +388,11 @@ impl<'a> AssertTerrain<'a> {
         let script = self
             .central_dir
             .join("scripts")
-            .join(format!("terrain-{}.zsh", biome_name));
+            .join(format!("terrain-{biome_name}.zsh"));
 
         assert!(
             script.exists(),
-            "failed to find script for biome {}",
-            biome_name
+            "failed to find script for biome {biome_name}",
         );
 
         self
@@ -418,9 +415,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             new_toml_contents,
             read_to_string(new_toml_path).expect("to find test terrain.toml"),
-            "failed to terrain.toml was created for in_central {} for test terrain: {}",
-            in_central,
-            new_toml_path
+            "failed to terrain.toml was created for in_central {in_central} for test terrain: {new_toml_path}",
         );
 
         self
@@ -438,8 +433,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             self.older_toml,
             read_to_string(backup).expect("to find test terrain.toml"),
-            "failed to check terrain.toml.bkp was created for in_central {} for test terrain: {}",
-            in_central,
+            "failed to check terrain.toml.bkp was created for in_central {in_central} for test terrain: {}",
             self.older_toml_path
         );
 
@@ -461,8 +455,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             new_toml_contents,
             read_to_string(self.older_toml_path).expect("to find test terrain.toml"),
-            "failed to check terrain.toml was created for in_central {} for test terrain: {}",
-            in_central,
+            "failed to check terrain.toml was created for in_central {in_central} for test terrain: {}",
             self.older_toml_path
         );
 

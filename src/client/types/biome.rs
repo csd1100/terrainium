@@ -247,7 +247,7 @@ impl Biome {
                 };
 
                 // if value present in terrain envs or system envs replace the value
-                let value_to_replace = format!("${{{}}}", &env);
+                let value_to_replace = format!("${{{env}}}");
                 result_string = result_string.replace(&value_to_replace, &env_val);
 
                 // if the new value is also env ref add that to substitute list
