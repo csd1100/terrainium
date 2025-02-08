@@ -17,7 +17,7 @@ const GET_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/get_dest
 
 pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<()> {
     let output = get(context, terrain, get_args)?;
-    print!("{}", output);
+    print!("{output}");
     Ok(())
 }
 

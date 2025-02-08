@@ -39,9 +39,8 @@ impl Shell for Zsh {
     fn get_init_rc_contents() -> String {
         format!(
             r#"
-source "$HOME/.config/terrainium/shell_integration/{}"
+source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
 "#,
-            ZSH_INIT_SCRIPT_NAME
         )
     }
 
@@ -162,13 +161,10 @@ source "$HOME/.config/terrainium/shell_integration/{}"
 
         let mut envs = BTreeMap::new();
 
-        let updated_fpath = format!("{}:{}", compiled_script, self.get_fpath()?);
+        let updated_fpath = format!("{compiled_script}:{}", self.get_fpath()?);
         envs.insert(FPATH.to_string(), updated_fpath);
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
-        envs.insert(
-            TERRAIN_INIT_FN.to_string(),
-            format!("terrain-{}.zsh", biome),
-        );
+        envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
         envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome);
 
         Ok(envs)
@@ -273,11 +269,11 @@ impl Zsh {
     }
 
     fn compiled_script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        scripts_dir.join(format!("terrain-{}.zwc", biome_name))
+        scripts_dir.join(format!("terrain-{biome_name}.zwc"))
     }
 
     fn script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        scripts_dir.join(format!("terrain-{}.zsh", biome_name))
+        scripts_dir.join(format!("terrain-{biome_name}.zsh"))
     }
 
     fn create_script(

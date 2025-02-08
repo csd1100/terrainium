@@ -73,10 +73,8 @@ impl TerrainState {
                 .get_mut(idx)
                 .expect("to be present")
                 .log_path = format!(
-                "{}/{}.{}.{}.log",
+                "{}/{operation}.{idx}.{}.log",
                 self.dir_path(),
-                operation,
-                idx,
                 self.start_timestamp.as_str()
             );
         } else {
@@ -85,10 +83,8 @@ impl TerrainState {
                 .get_mut(idx)
                 .expect("to be present")
                 .log_path = format!(
-                "{}/{}.{}.{}.log",
+                "{}/{operation}.{idx}.{}.log",
                 self.dir_path(),
-                operation,
-                idx,
                 self.end_timestamp.as_str()
             );
         }
@@ -102,10 +98,7 @@ impl TerrainState {
         } else {
             &self.end_timestamp
         };
-        format!(
-            "{}/{}/{}",
-            TERRAINIUMD_TMP_DIR, self.terrain_name, identifier
-        )
+        format!("{TERRAINIUMD_TMP_DIR}/{}/{identifier}", self.terrain_name)
     }
 
     pub fn file_path(&self) -> String {
