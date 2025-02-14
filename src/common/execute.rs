@@ -30,7 +30,13 @@ pub struct CommandToRun {
 
 impl Display for CommandToRun {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.exe, self.args.join(" "))
+        write!(
+            f,
+            "{} {} in {}",
+            self.exe,
+            self.args.join(" "),
+            self.cwd.display()
+        )
     }
 }
 
