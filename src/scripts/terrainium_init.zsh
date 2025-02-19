@@ -21,7 +21,6 @@ if [ "$TERRAIN_ENABLED" = "true" ]; then
     autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
     "${terrain_init}"
     builtin unfunction -- "${terrain_init}"
-    unset terrain_init
     __terrainium_enter
 else
     chpwd_functions=(__terrainium_chpwd_functions $chpwd_functions)
