@@ -43,7 +43,7 @@ pub(crate) enum Target<'a> {
 }
 
 impl<'a> Target<'a> {
-    pub fn from_identifier(identifier: &IdentifierType, value: &'a str) -> Self {
+    pub(crate) fn from_identifier(identifier: &IdentifierType, value: &'a str) -> Self {
         match identifier {
             IdentifierType::Env => Target::Env(value),
             IdentifierType::Alias => Target::Alias(value),
@@ -51,7 +51,7 @@ impl<'a> Target<'a> {
         }
     }
 
-    pub fn from_command(
+    pub(crate) fn from_command(
         commands_type: &CommandsType,
         operation_type: &OperationType,
         command: &'a Command,

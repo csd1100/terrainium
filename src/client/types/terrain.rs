@@ -124,6 +124,7 @@ impl Terrain {
         }
 
         let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
+        event!(Level::INFO, "updating the terrain with fixable values");
         write(
             context.toml_path(),
             toml::to_string(&fixed).context("failed to create terrain.toml contents")?,

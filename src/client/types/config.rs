@@ -22,11 +22,9 @@ pub fn schema_url() -> String {
         .to_string()
 }
 
-fn get_config_path() -> PathBuf {
-    home_dir()
-        .expect("to get home directory path")
-        .join(CONFIG_LOCATION)
-        .join(TERRAINIUM_CONF)
+fn get_config_path() -> Result<PathBuf> {
+    let home_dir = home_dir().context("to get home directory path")?;
+    Ok(home_dir.join(CONFIG_LOCATION).join(TERRAINIUM_CONF))
 }
 
 impl Default for Config {
@@ -40,7 +38,7 @@ impl Default for Config {
 
 impl Config {
     pub fn from_file() -> Result<Self> {
-        let path = get_config_path();
+        let path = get_config_path().context("failed to get config path")?;
         event!(Level::INFO, "reading terrainium config from {:?}", path);
         if path.exists() {
             return if let Ok(toml_str) = read_to_string(&path) {
@@ -59,7 +57,7 @@ impl Config {
     }
 
     pub fn create_file() -> Result<()> {
-        let path = get_config_path();
+        let path = get_config_path().context("failed to get config path")?;
         if path.exists() {
             event!(Level::INFO, "config file already exists at path {:?}", path);
             return Ok(());

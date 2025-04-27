@@ -66,7 +66,7 @@ impl TerrainState {
         &mut self.execute_context
     }
 
-    pub fn set_log_path(&mut self, idx: usize, operation: &str) {
+    pub(crate) fn set_log_path(&mut self, idx: usize, operation: &str) {
         if operation == CONSTRUCTORS {
             self.execute_context
                 .constructors_state
@@ -191,7 +191,7 @@ impl ExecutionContext {
         }
     }
 
-    pub fn set_command_state(
+    pub(crate) fn set_command_state(
         &mut self,
         idx: usize,
         operation: &str,

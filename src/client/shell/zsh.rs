@@ -113,7 +113,8 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
                     &scripts_dir,
                     biome_name.to_string(),
                     context.terrain_dir(),
-                )?;
+                )
+                .context(format!("failed to generate scripts for '{biome_name}'"))?;
                 Ok(())
             })
             .collect();
@@ -124,7 +125,8 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
             &scripts_dir,
             "none".to_string(),
             context.terrain_dir(),
-        )?;
+        )
+        .context("failed to generate scripts for 'none'".to_string())?;
 
         Ok(())
     }
@@ -291,7 +293,10 @@ impl Zsh {
 
         let script = environment
             .to_rendered("zsh".to_string(), Zsh::templates())
-            .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
+            .context(format!(
+                "failed to render script for biome: '{:?}'",
+                biome_name
+            ))?;
 
         write(script_path, script)
             .context(format!("failed to write script to path {:?}", script_path))?;

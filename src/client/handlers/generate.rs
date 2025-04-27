@@ -23,7 +23,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    pub fn generates_script() -> Result<()> {
+    fn generates_script() -> Result<()> {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
@@ -49,7 +49,7 @@ mod tests {
     }
 
     #[test]
-    pub fn creates_scripts_dir_if_necessary() -> Result<()> {
+    fn creates_scripts_dir_if_necessary() -> Result<()> {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
