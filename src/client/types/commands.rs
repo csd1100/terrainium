@@ -59,7 +59,7 @@ impl Commands {
         operation_type: OperationType,
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
-        let mut result = ValidationResults::new(HashSet::new());
+        let mut result = ValidationResults::new(false, HashSet::new());
 
         self.foreground.iter().for_each(|c| {
             result.append(c.validate_command(

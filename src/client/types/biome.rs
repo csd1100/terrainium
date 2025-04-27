@@ -86,7 +86,7 @@ impl Biome {
         biome_name: &'a str,
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
-        let mut result = ValidationResults::new(HashSet::new());
+        let mut result = ValidationResults::new(false, HashSet::new());
         result.append(self.validate_envs(biome_name));
         result.append(self.validate_aliases(biome_name));
         result.append(self.validate_constructors(biome_name, terrain_dir));

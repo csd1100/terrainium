@@ -150,6 +150,10 @@ impl Terrain {
             return Err(anyhow!("failed to validate terrain"));
         }
 
+        if !validation_results.is_fixable() {
+            return Ok((unvalidated_terrain, terrain_toml));
+        }
+
         event!(Level::INFO, "updating the terrain with fixable values");
         let (fixed, fixed_toml) =
             Terrain::fix_invalid_values(&unvalidated_terrain, terrain_toml, validation_results);
