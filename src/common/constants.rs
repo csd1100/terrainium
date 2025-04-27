@@ -1,6 +1,3 @@
-pub const CONSTRUCTORS: &str = "constructors";
-pub const DESTRUCTORS: &str = "destructors";
-
 pub(crate) const GET_MAIN_TEMPLATE_NAME: &str = "get";
 pub(crate) const GET_ENVS_TEMPLATE_NAME: &str = "envs";
 pub(crate) const GET_ALIASES_TEMPLATE_NAME: &str = "aliases";
@@ -28,3 +25,17 @@ pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub const TERRAINIUM_CONF: &str = "terrainium.toml";
 pub const SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";
+
+pub const DEFAULT_BIOME: &str = "default_biome";
+pub const AUTO_APPLY: &str = "auto_apply";
+pub const AUTO_APPLY_ENABLED: &str = "enabled";
+pub const AUTO_APPLY_BACKGROUND: &str = "background";
+pub const AUTO_APPLY_REPLACE: &str = "replace";
+pub const TERRAIN: &str = "terrain";
+pub const BIOMES: &str = "biomes";
+pub const ENVS: &str = "envs";
+pub const ALIASES: &str = "aliases";
+pub const CONSTRUCTORS: &str = "constructors";
+pub const DESTRUCTORS: &str = "destructors";
+pub const FOREGROUND: &str = "foreground";
+pub const BACKGROUND: &str = "background";

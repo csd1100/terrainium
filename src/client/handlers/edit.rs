@@ -13,7 +13,7 @@ const EDITOR: &str = "EDITOR";
 pub fn handle(context: Context) -> Result<()> {
     run_editor(context.toml_path(), context.terrain_dir())?;
 
-    let terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
+    let (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
     context.shell().generate_scripts(&context, terrain)?;
 
     Ok(())

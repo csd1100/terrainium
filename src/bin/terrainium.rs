@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
             }
 
             let context = Context::get(home_dir, current_dir)?;
-            let terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
+            let (terrain, terrain_toml) = Terrain::get_validated_and_fixed_terrain(&context)?;
 
             match verbs {
                 Verbs::Init { .. } => {
@@ -131,6 +131,7 @@ async fn main() -> Result<()> {
                 } => update::handle(
                     context,
                     terrain,
+                    terrain_toml,
                     UpdateArgs {
                         set_default,
                         biome,

@@ -55,19 +55,3 @@ args = ["exiting biome example_biome"]
 [[biomes.example_biome.destructors.background]]
 exe = "/bin/bash"
 args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
-
-[biomes.example_biome2.envs]
-EDITOR = "nano"
-NEW = "VALUE"
-
-[biomes.example_biome2.aliases]
-new = "new_alias"
-tenter = "terrainium enter --biome example_biome2"
-
-[biomes.example_biome2.constructors]
-foreground = []
-background = []
-
-[biomes.example_biome2.destructors]
-foreground = []
-background = []

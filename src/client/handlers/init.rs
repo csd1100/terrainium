@@ -26,13 +26,14 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
         .to_toml(context.terrain_dir())
         .expect("default or example terrain to be parsed to toml");
 
+    // TODO: terrain toml update
     file.write(toml_str.as_ref())
         .context("failed to write terrain in toml file")?;
 
     if edit {
         edit::run_editor(toml_path, context.terrain_dir())?;
         // get updated terrain after edit
-        terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
+        (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
     }
 
     context.shell().generate_scripts(&context, terrain)?;

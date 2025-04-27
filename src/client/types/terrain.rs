@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
+use toml_edit::DocumentMut;
 use tracing::{event, Level};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -23,6 +24,18 @@ pub struct AutoApply {
 }
 
 impl AutoApply {
+    pub fn get_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    pub fn get_background(&self) -> bool {
+        self.background
+    }
+
+    pub fn get_replace(&self) -> bool {
+        self.replace
+    }
+
     pub fn enabled() -> Self {
         Self {
             enabled: true,
@@ -108,10 +121,21 @@ pub struct Terrain {
 }
 
 impl Terrain {
+    pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<(Self, DocumentMut)> {
+        let terrain_toml =
+            read_to_string(context.toml_path()).context("failed to read terrain.toml")?;
+        let toml = terrain_toml
+            .parse::<DocumentMut>()
+            .context("failed to parse terrain toml")?;
+        let unvalidated_terrain = Self::from_toml(terrain_toml)?;
+        Self::store_and_get_fixed_terrain(context, unvalidated_terrain, toml)
+    }
+
     pub fn store_and_get_fixed_terrain(
         context: &Context,
         unvalidated_terrain: Terrain,
-    ) -> Result<Self> {
+        terrain_toml: DocumentMut,
+    ) -> Result<(Self, DocumentMut)> {
         let validation_results = unvalidated_terrain.validate(context.terrain_dir());
         validation_results.print_validation_message();
 
@@ -123,21 +147,13 @@ impl Terrain {
             return Err(anyhow!("failed to validate terrain"));
         }
 
-        let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
+        // TODO: terrain toml update
         event!(Level::INFO, "updating the terrain with fixable values");
-        write(
-            context.toml_path(),
-            toml::to_string(&fixed).context("failed to create terrain.toml contents")?,
-        )
-        .context("failed to write fixed terrain.toml")?;
-        Ok(fixed)
-    }
-
-    pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<Self> {
-        let terrain_toml =
-            read_to_string(context.toml_path()).context("failed to read terrain.toml")?;
-        let unvalidated_terrain = Self::from_toml(terrain_toml)?;
-        Self::store_and_get_fixed_terrain(context, unvalidated_terrain)
+        let (fixed, fixed_toml) =
+            Terrain::fix_invalid_values(&unvalidated_terrain, terrain_toml, validation_results);
+        write(context.toml_path(), fixed_toml.to_string())
+            .context("failed to write fixed terrain.toml")?;
+        Ok((fixed, fixed_toml))
     }
 
     pub fn new(
@@ -232,8 +248,12 @@ impl Terrain {
         results
     }
 
-    pub fn fix_invalid_values(&self, validation_results: ValidationResults) -> Self {
-        let mut fixed = self.clone();
+    pub fn fix_invalid_values(
+        terrain: &Terrain,
+        mut toml: DocumentMut,
+        validation_results: ValidationResults,
+    ) -> (Self, DocumentMut) {
+        let mut fixed = terrain.clone();
         validation_results
             .results()
             .iter()
@@ -331,7 +351,7 @@ impl Terrain {
                     fixed.update(biome_name.to_string(), fixed_biome);
                 }
             });
-        fixed
+        (fixed, toml)
     }
 
     pub fn from_toml(toml_str: String) -> Result<Self> {
@@ -456,9 +476,10 @@ pub mod tests {
     use std::collections::BTreeMap;
     use std::fs::{create_dir_all, metadata, set_permissions, write};
     use std::os::unix::fs::PermissionsExt;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::str::FromStr;
     use tempfile::tempdir;
+    use toml_edit::DocumentMut;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
         terrain.default_biome = default_biome;
@@ -1142,7 +1163,14 @@ pub mod tests {
                 })
         });
 
-        let fixed = terrain.fix_invalid_values(before.validate(test_dir.path()));
+        let toml = terrain
+            .to_toml(&Path::new(""))
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
+
+        let (fixed, _) =
+            Terrain::fix_invalid_values(&terrain, toml, before.validate(test_dir.path()));
         let fixed_result = fixed.validate(test_dir.path());
 
         assert!(fixed_result.results().is_empty());

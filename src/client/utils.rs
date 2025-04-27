@@ -17,6 +17,7 @@ pub const IN_CENTRAL_DIR: bool = true;
 pub const WITH_EMPTY_TERRAIN_TOML: &str = "./tests/data/terrain.empty.toml";
 pub const WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT: &str = "./tests/data/terrain-none.empty.zsh";
 
+pub const WITH_EXAMPLE_TERRAIN_TOML_COMMENTS: &str = "./tests/data/terrain.example.comments.toml";
 pub const WITH_EXAMPLE_TERRAIN_TOML: &str = "./tests/data/terrain.example.toml";
 pub const WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT: &str = "./tests/data/terrain-none.example.zsh";
 pub const WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT: &str =
@@ -378,7 +379,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             read_to_string(&toml).expect("to find terrain.toml"),
             read_to_string(mode).expect("to find test terrain.toml"),
-            "failed to terrain.toml was created for in_central {in_central} for test terrain: {mode}",
+            "failed to validate that terrain.toml was created for in_central {in_central} for test terrain: {mode}",
         );
 
         self
@@ -415,7 +416,7 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             new_toml_contents,
             read_to_string(new_toml_path).expect("to find test terrain.toml"),
-            "failed to terrain.toml was created for in_central {in_central} for test terrain: {new_toml_path}",
+            "failed to validate terrain.toml was created for in_central {in_central} for test terrain: {new_toml_path}",
         );
 
         self

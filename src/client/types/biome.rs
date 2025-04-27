@@ -1,6 +1,7 @@
 use crate::client::types::command::{Command, OperationType};
 use crate::client::types::commands::Commands;
 use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
+use crate::common::constants::{ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, ENVS, FOREGROUND};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
@@ -8,6 +9,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
+use toml_edit::{Array, Table};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -31,6 +33,19 @@ impl Biome {
             constructors,
             destructors,
         }
+    }
+
+    pub(crate) fn new_toml() -> Table {
+        let mut commands = Table::new();
+        commands.insert(FOREGROUND, Array::new().into());
+        commands.insert(BACKGROUND, Array::new().into());
+
+        let mut new_biome = Table::new();
+        new_biome.insert(ENVS, Table::new().into());
+        new_biome.insert(ALIASES, Table::new().into());
+        new_biome.insert(CONSTRUCTORS, commands.clone().into());
+        new_biome.insert(DESTRUCTORS, commands.into());
+        new_biome
     }
 
     fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
