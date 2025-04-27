@@ -43,7 +43,7 @@ pub(crate) enum Target<'a> {
 }
 
 impl<'a> Target<'a> {
-    pub fn from_identifier(identifier: &IdentifierType, value: &'a str) -> Self {
+    pub(crate) fn from_identifier(identifier: &IdentifierType, value: &'a str) -> Self {
         match identifier {
             IdentifierType::Env => Target::Env(value),
             IdentifierType::Alias => Target::Alias(value),
@@ -51,7 +51,7 @@ impl<'a> Target<'a> {
         }
     }
 
-    pub fn from_command(
+    pub(crate) fn from_command(
         commands_type: &CommandsType,
         operation_type: &OperationType,
         command: &'a Command,
@@ -206,18 +206,17 @@ pub(crate) fn validate_identifiers<'a>(
                 message:
                 "empty identifier is not allowed".to_string(),
                 r#for: format!("{biome_name}({data_type})"),
-                fix_action: ValidationFixAction::None
+                fix_action: ValidationFixAction::None,
             });
         } else {
             if k.starts_with(" ") || k.ends_with(" ") {
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "trimming spaces from identifier: '{}'",
-                         k
+                        "trimming spaces from identifier: '{k}'"
                     ),
                     r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::Trim {biome_name,target: Target::from_identifier(&data_type,k) }
+                    fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_identifier(&data_type, k) },
                 });
             }
 
@@ -228,11 +227,10 @@ pub(crate) fn validate_identifiers<'a>(
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "identifier '{}' is invalid as it contains spaces",
-                        k
+                        "identifier '{k}' is invalid as it contains spaces",
                     ),
                     r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None
+                    fix_action: ValidationFixAction::None,
                 });
             }
 
@@ -240,21 +238,19 @@ pub(crate) fn validate_identifiers<'a>(
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
                     message: format!(
-                        "identifier '{}' cannot start with number",
-                        k
+                        "identifier '{k}' cannot start with number",
                     ),
                     r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None
+                    fix_action: ValidationFixAction::None,
                 });
             }
 
             if invalid_identifier.is_match(k) {
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Error,
-                    message: format!("identifier '{}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.",
-                                    k),
+                    message: format!("identifier '{k}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters."),
                     r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None
+                    fix_action: ValidationFixAction::None,
                 });
             }
         }

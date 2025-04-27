@@ -58,16 +58,12 @@ pub async fn handle(
 
         if let Err(e) = result.0 {
             anyhow::bail!(
-                "failed to spawn background processes while entering terrain environment: {}",
-                e
+                "failed to spawn background processes while entering terrain environment: {e}",
             );
         }
 
         if let Err(e) = result.1 {
-            anyhow::bail!(
-                "failed to spawn shell while entering terrain environment: {}",
-                e
-            );
+            anyhow::bail!("failed to spawn shell while entering terrain environment: {e}");
         }
     }
 
@@ -100,7 +96,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -218,7 +214,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -306,7 +302,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -395,7 +391,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -517,7 +513,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -636,7 +632,7 @@ mod tests {
 
         let compiled_script = central_dir.path().join("scripts").join("terrain-none.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(
@@ -707,7 +703,7 @@ mod tests {
             .join("scripts")
             .join("terrain-example_biome.zwc");
         const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{}", compiled_script.display(), EXISTING_FPATH);
+        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
 
         let expected_shell_operations = ExpectShell::to()
             .execute(

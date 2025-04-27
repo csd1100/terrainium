@@ -109,7 +109,7 @@ impl Context {
 
         shell
             .setup_integration(Self::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))
-            .expect("failed to setup shell integration");
+            .context("failed to setup shell integration")?;
 
         Ok(Context {
             session_id,

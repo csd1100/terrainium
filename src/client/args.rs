@@ -156,7 +156,7 @@ impl From<BiomeArg> for String {
     }
 }
 
-pub fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String> {
+pub(crate) fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String> {
     option_biome_arg.clone().map(|selected| selected.into())
 }
 
@@ -172,7 +172,7 @@ pub struct GetArgs {
 }
 
 impl GetArgs {
-    pub fn empty(&self) -> bool {
+    pub(crate) fn empty(&self) -> bool {
         !self.aliases
             && !self.envs
             && self.alias.is_empty()
@@ -229,7 +229,7 @@ impl FromStr for AutoApply {
             "background" => Ok(AutoApply::background()),
             "all" => Ok(AutoApply::all()),
             "off" => Ok(AutoApply::default()),
-            _ => Err(anyhow!("failed to parse auto_apply argument from: {}", s)),
+            _ => Err(anyhow!("failed to parse auto_apply argument from: {s}")),
         }
     }
 }

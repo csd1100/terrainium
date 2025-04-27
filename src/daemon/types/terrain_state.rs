@@ -66,17 +66,15 @@ impl TerrainState {
         &mut self.execute_context
     }
 
-    pub fn set_log_path(&mut self, idx: usize, operation: &str) {
+    pub(crate) fn set_log_path(&mut self, idx: usize, operation: &str) {
         if operation == CONSTRUCTORS {
             self.execute_context
                 .constructors_state
                 .get_mut(idx)
                 .expect("to be present")
                 .log_path = format!(
-                "{}/{}.{}.{}.log",
+                "{}/{operation}.{idx}.{}.log",
                 self.dir_path(),
-                operation,
-                idx,
                 self.start_timestamp.as_str()
             );
         } else {
@@ -85,10 +83,8 @@ impl TerrainState {
                 .get_mut(idx)
                 .expect("to be present")
                 .log_path = format!(
-                "{}/{}.{}.{}.log",
+                "{}/{operation}.{idx}.{}.log",
                 self.dir_path(),
-                operation,
-                idx,
                 self.end_timestamp.as_str()
             );
         }
@@ -102,10 +98,7 @@ impl TerrainState {
         } else {
             &self.end_timestamp
         };
-        format!(
-            "{}/{}/{}",
-            TERRAINIUMD_TMP_DIR, self.terrain_name, identifier
-        )
+        format!("{TERRAINIUMD_TMP_DIR}/{}/{identifier}", self.terrain_name)
     }
 
     pub fn file_path(&self) -> String {
@@ -198,7 +191,7 @@ impl ExecutionContext {
         }
     }
 
-    pub fn set_command_state(
+    pub(crate) fn set_command_state(
         &mut self,
         idx: usize,
         operation: &str,

@@ -30,7 +30,13 @@ pub struct CommandToRun {
 
 impl Display for CommandToRun {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.exe, self.args.join(" "))
+        write!(
+            f,
+            "{} {} in {}",
+            self.exe,
+            self.args.join(" "),
+            self.cwd.display()
+        )
     }
 }
 
@@ -107,8 +113,8 @@ impl Execute for CommandToRun {
 
     #[instrument]
     async fn async_get_output(self) -> Result<Output> {
-        event!(Level::INFO, "running async get_output for '{}'", self);
-        event!(Level::TRACE, "running async process {:?}", self);
+        event!(Level::INFO, "running async get_output for '{self}'");
+        event!(Level::TRACE, "running async process {self:?}");
         let mut command: tokio::process::Command = self.into();
         command.output().await.context("failed to get output")
     }
@@ -116,11 +122,9 @@ impl Execute for CommandToRun {
     async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
         event!(
             Level::INFO,
-            "running async process with wait for '{}', with logs in file: {:?}",
-            &self,
-            log_path,
+            "running async process with wait for '{self}', with logs in file: {log_path}",
         );
-        event!(Level::TRACE, "running async process with wait {:?}", &self,);
+        event!(Level::TRACE, "running async process with wait {self:?}");
 
         let log_file = fs::File::options()
             .create(true)

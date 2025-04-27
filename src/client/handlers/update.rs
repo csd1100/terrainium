@@ -19,9 +19,7 @@ pub fn handle(context: Context, terrain: Terrain, update_args: UpdateArgs) -> Re
             .expect("new default biome value to be some");
         if !terrain.biomes().contains_key(&new_default) {
             return Err(anyhow!(
-                "cannot update default biome to '{}', biome '{}' does not exists",
-                &new_default,
-                &new_default
+                "cannot update default biome to '{new_default}', biome '{new_default}' does not exists",
             ));
         }
         terrain.set_default(new_default);

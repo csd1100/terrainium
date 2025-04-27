@@ -3,13 +3,13 @@ use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use anyhow::{Context as AnyhowContext, Result};
-use std::fs;
 use std::fs::File;
+use std::fs::{create_dir_all, exists};
 use std::io::Write;
 
 pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
-    if !fs::exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
-        fs::create_dir_all(context.scripts_dir()).context("failed to create scripts dir")?;
+    if !exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
+        create_dir_all(context.scripts_dir()).context("failed to create scripts dir")?;
     }
 
     let toml_path = context.toml_path();
@@ -24,7 +24,7 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
 
     let toml_str = terrain
         .to_toml(context.terrain_dir())
-        .expect("terrain to be parsed to toml");
+        .expect("default or example terrain to be parsed to toml");
 
     file.write(toml_str.as_ref())
         .context("failed to write terrain in toml file")?;

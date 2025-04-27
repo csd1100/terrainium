@@ -6,6 +6,7 @@ use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
 use anyhow::{Context as AnyhowContext, Result};
 use std::path::Path;
+use tracing::{event, Level};
 
 const EDITOR: &str = "EDITOR";
 
@@ -20,7 +21,10 @@ pub fn handle(context: Context) -> Result<()> {
 
 pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
     let editor = std::env::var(EDITOR).unwrap_or_else(|_| {
-        println!("the environment variable EDITOR not set. using 'vi' as text editor");
+        event!(
+            Level::INFO,
+            "the environment variable EDITOR not set. using 'vi' as text editor"
+        );
         "vi".to_string()
     });
 

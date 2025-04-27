@@ -72,7 +72,7 @@ impl Biome {
         result
     }
 
-    pub fn aliases(&self) -> &BTreeMap<String, String> {
+    pub(crate) fn aliases(&self) -> &BTreeMap<String, String> {
         &self.aliases
     }
 
@@ -88,7 +88,7 @@ impl Biome {
         &self.destructors
     }
 
-    pub fn merge(&self, another: &Biome) -> Biome {
+    pub(crate) fn merge(&self, another: &Biome) -> Biome {
         Biome::new(
             self.append_envs(another),
             self.append_aliases(another),
@@ -247,7 +247,7 @@ impl Biome {
                 };
 
                 // if value present in terrain envs or system envs replace the value
-                let value_to_replace = format!("${{{}}}", &env);
+                let value_to_replace = format!("${{{env}}}");
                 result_string = result_string.replace(&value_to_replace, &env_val);
 
                 // if the new value is also env ref add that to substitute list
@@ -319,38 +319,34 @@ impl Biome {
         );
         Biome::new(envs, aliases, constructors, destructors)
     }
+}
 
-    #[cfg(test)]
+#[cfg(test)]
+impl Biome {
     pub(crate) fn add_env(&mut self, env: &str, val: &str) {
         self.envs.insert(env.to_string(), val.to_string());
     }
 
-    #[cfg(test)]
     pub(crate) fn add_bg_constructors(&mut self, command: Command) {
         self.constructors.background_mut().push(command);
     }
 
-    #[cfg(test)]
     pub(crate) fn add_bg_destructors(&mut self, command: Command) {
         self.destructors.background_mut().push(command);
     }
 
-    #[cfg(test)]
     pub(crate) fn add_fg_constructors(&mut self, command: Command) {
         self.constructors.foreground_mut().push(command.clone());
     }
 
-    #[cfg(test)]
     pub(crate) fn add_fg_destructors(&mut self, command: Command) {
         self.destructors.foreground_mut().push(command);
     }
 
-    #[cfg(test)]
     pub(crate) fn set_constructors(&mut self, constructors: Commands) {
         self.constructors = constructors;
     }
 
-    #[cfg(test)]
     pub(crate) fn set_destructors(&mut self, destructors: Commands) {
         self.destructors = destructors;
     }

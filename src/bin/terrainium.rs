@@ -1,4 +1,4 @@
-use anyhow::{Context as AnyhowContext, Result};
+use anyhow::{anyhow, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
 use std::env::current_dir;
@@ -41,6 +41,10 @@ async fn main() -> Result<()> {
                 Zsh::update_rc(args.options.update_rc_path).context("failed to update rc")?;
             } else if args.options.create_config {
                 Config::create_file().context("failed to create config file")?;
+            } else {
+                return Err(anyhow!(
+                    "must pass argument or command, run with --help for more information."
+                ));
             }
         }
         Some(verbs) => {

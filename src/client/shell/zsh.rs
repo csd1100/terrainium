@@ -39,9 +39,8 @@ impl Shell for Zsh {
     fn get_init_rc_contents() -> String {
         format!(
             r#"
-source "$HOME/.config/terrainium/shell_integration/{}"
+source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
 "#,
-            ZSH_INIT_SCRIPT_NAME
         )
     }
 
@@ -114,7 +113,8 @@ source "$HOME/.config/terrainium/shell_integration/{}"
                     &scripts_dir,
                     biome_name.to_string(),
                     context.terrain_dir(),
-                )?;
+                )
+                .context(format!("failed to generate scripts for '{biome_name}'"))?;
                 Ok(())
             })
             .collect();
@@ -125,7 +125,8 @@ source "$HOME/.config/terrainium/shell_integration/{}"
             &scripts_dir,
             "none".to_string(),
             context.terrain_dir(),
-        )?;
+        )
+        .context("failed to generate scripts for 'none'".to_string())?;
 
         Ok(())
     }
@@ -162,13 +163,10 @@ source "$HOME/.config/terrainium/shell_integration/{}"
 
         let mut envs = BTreeMap::new();
 
-        let updated_fpath = format!("{}:{}", compiled_script, self.get_fpath()?);
+        let updated_fpath = format!("{compiled_script}:{}", self.get_fpath()?);
         envs.insert(FPATH.to_string(), updated_fpath);
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
-        envs.insert(
-            TERRAIN_INIT_FN.to_string(),
-            format!("terrain-{}.zsh", biome),
-        );
+        envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
         envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome);
 
         Ok(envs)
@@ -273,11 +271,11 @@ impl Zsh {
     }
 
     fn compiled_script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        scripts_dir.join(format!("terrain-{}.zwc", biome_name))
+        scripts_dir.join(format!("terrain-{biome_name}.zwc"))
     }
 
     fn script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
-        scripts_dir.join(format!("terrain-{}.zsh", biome_name))
+        scripts_dir.join(format!("terrain-{biome_name}.zsh"))
     }
 
     fn create_script(
@@ -295,7 +293,10 @@ impl Zsh {
 
         let script = environment
             .to_rendered("zsh".to_string(), Zsh::templates())
-            .unwrap_or_else(|_| panic!("script to be rendered for biome: {:?}", biome_name));
+            .context(format!(
+                "failed to render script for biome: '{:?}'",
+                biome_name
+            ))?;
 
         write(script_path, script)
             .context(format!("failed to write script to path {:?}", script_path))?;
@@ -324,9 +325,11 @@ impl Zsh {
 
         Ok(())
     }
+}
 
-    #[cfg(test)]
-    pub fn build(runner: CommandToRun) -> Self {
+#[cfg(test)]
+impl Zsh {
+    pub(crate) fn build(runner: CommandToRun) -> Self {
         Self {
             exe: "/bin/zsh".to_string(),
             runner,
