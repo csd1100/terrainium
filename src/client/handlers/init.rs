@@ -32,7 +32,7 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
     if edit {
         edit::run_editor(toml_path, context.terrain_dir())?;
         // get updated terrain after edit
-        terrain = Terrain::get_validated_and_fixed_terrain(&context)?;
+        (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
     }
 
     context.shell().generate_scripts(&context, terrain)?;

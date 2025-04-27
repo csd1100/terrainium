@@ -115,7 +115,7 @@ impl Environment {
                 });
             }
         });
-        ValidationResults::new(result)
+        ValidationResults::new(false, result)
     }
 
     pub(crate) fn validate(&self) -> std::result::Result<ValidationResults, ValidationError> {

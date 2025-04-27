@@ -5,6 +5,9 @@ use crate::client::types::context::Context;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResults,
 };
+use crate::common::constants::{
+    BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, FOREGROUND, TERRAIN,
+};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -12,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
+use toml_edit::DocumentMut;
 use tracing::{event, Level};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -23,6 +27,18 @@ pub struct AutoApply {
 }
 
 impl AutoApply {
+    pub fn get_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    pub fn get_background(&self) -> bool {
+        self.background
+    }
+
+    pub fn get_replace(&self) -> bool {
+        self.replace
+    }
+
     pub fn enabled() -> Self {
         Self {
             enabled: true,
@@ -108,10 +124,21 @@ pub struct Terrain {
 }
 
 impl Terrain {
+    pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<(Self, DocumentMut)> {
+        let terrain_toml =
+            read_to_string(context.toml_path()).context("failed to read terrain.toml")?;
+        let toml = terrain_toml
+            .parse::<DocumentMut>()
+            .context("failed to parse terrain toml")?;
+        let unvalidated_terrain = Self::from_toml(terrain_toml)?;
+        Self::store_and_get_fixed_terrain(context, unvalidated_terrain, toml)
+    }
+
     pub fn store_and_get_fixed_terrain(
         context: &Context,
         unvalidated_terrain: Terrain,
-    ) -> Result<Self> {
+        terrain_toml: DocumentMut,
+    ) -> Result<(Self, DocumentMut)> {
         let validation_results = unvalidated_terrain.validate(context.terrain_dir());
         validation_results.print_validation_message();
 
@@ -123,21 +150,16 @@ impl Terrain {
             return Err(anyhow!("failed to validate terrain"));
         }
 
-        let fixed = unvalidated_terrain.fix_invalid_values(validation_results);
-        event!(Level::INFO, "updating the terrain with fixable values");
-        write(
-            context.toml_path(),
-            toml::to_string(&fixed).context("failed to create terrain.toml contents")?,
-        )
-        .context("failed to write fixed terrain.toml")?;
-        Ok(fixed)
-    }
+        if !validation_results.is_fixable() {
+            return Ok((unvalidated_terrain, terrain_toml));
+        }
 
-    pub fn get_validated_and_fixed_terrain(context: &Context) -> Result<Self> {
-        let terrain_toml =
-            read_to_string(context.toml_path()).context("failed to read terrain.toml")?;
-        let unvalidated_terrain = Self::from_toml(terrain_toml)?;
-        Self::store_and_get_fixed_terrain(context, unvalidated_terrain)
+        event!(Level::INFO, "updating the terrain with fixable values");
+        let (fixed, fixed_toml) =
+            Terrain::fix_invalid_values(&unvalidated_terrain, terrain_toml, validation_results);
+        write(context.toml_path(), fixed_toml.to_string())
+            .context("failed to write fixed terrain.toml")?;
+        Ok((fixed, fixed_toml))
     }
 
     pub fn new(
@@ -232,8 +254,12 @@ impl Terrain {
         results
     }
 
-    pub fn fix_invalid_values(&self, validation_results: ValidationResults) -> Self {
-        let mut fixed = self.clone();
+    pub fn fix_invalid_values(
+        terrain: &Terrain,
+        mut toml: DocumentMut,
+        validation_results: ValidationResults,
+    ) -> (Self, DocumentMut) {
+        let mut fixed = terrain.clone();
         validation_results
             .results()
             .iter()
@@ -242,6 +268,13 @@ impl Terrain {
                 ValidationFixAction::Trim { biome_name, target } => {
                     let (_, selected) = fixed.select_biome(&Some(biome_name.to_string())).unwrap();
                     let mut fixed_biome = selected.clone();
+
+                    let biome_toml = if *biome_name == "none" {
+                        &mut toml[TERRAIN]
+                    } else {
+                        &mut toml[BIOMES][biome_name]
+                    };
+
                     match target {
                         Target::Env(e) => {
                             event!(
@@ -250,8 +283,8 @@ impl Terrain {
                                 "trimming whitespaces from {e}",
                             );
                             let trimmed = e.trim();
-                            let value = fixed_biome.rm_env(e).unwrap();
-                            fixed_biome.set_env(trimmed.to_string(), value);
+                            fixed_biome.fix_env(e, trimmed);
+                            Biome::fix_env_toml(biome_toml, e, trimmed);
                         }
                         Target::Alias(a) => {
                             event!(
@@ -260,8 +293,8 @@ impl Terrain {
                                 "trimming whitespaces from {a}",
                             );
                             let trimmed = a.trim();
-                            let value = fixed_biome.rm_alias(a).unwrap();
-                            fixed_biome.set_alias(trimmed.to_string(), value);
+                            fixed_biome.fix_alias(a, trimmed);
+                            Biome::fix_alias_toml(biome_toml, a, trimmed);
                         }
                         Target::ForegroundConstructor(fc) => {
                             event!(
@@ -278,6 +311,14 @@ impl Terrain {
 
                             let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
                             fixed_biome.insert_foreground_constructor(idx, fixed);
+
+                            Biome::fix_command_toml(
+                                biome_toml,
+                                CONSTRUCTORS,
+                                FOREGROUND,
+                                idx,
+                                fc.exe().trim(),
+                            );
                         }
                         Target::BackgroundConstructor(bc) => {
                             event!(
@@ -294,6 +335,13 @@ impl Terrain {
 
                             let idx = fixed_biome.remove_background_constructor(bc).unwrap();
                             fixed_biome.insert_background_constructor(idx, fixed);
+                            Biome::fix_command_toml(
+                                biome_toml,
+                                CONSTRUCTORS,
+                                BACKGROUND,
+                                idx,
+                                bc.exe().trim(),
+                            )
                         }
                         Target::ForegroundDestructor(fd) => {
                             event!(
@@ -310,6 +358,14 @@ impl Terrain {
 
                             let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
                             fixed_biome.insert_foreground_destructor(idx, fixed);
+
+                            Biome::fix_command_toml(
+                                biome_toml,
+                                DESTRUCTORS,
+                                FOREGROUND,
+                                idx,
+                                fd.exe().trim(),
+                            );
                         }
                         Target::BackgroundDestructor(bd) => {
                             event!(
@@ -326,12 +382,20 @@ impl Terrain {
 
                             let idx = fixed_biome.remove_background_destructor(bd).unwrap();
                             fixed_biome.insert_background_destructor(idx, fixed);
+
+                            Biome::fix_command_toml(
+                                biome_toml,
+                                DESTRUCTORS,
+                                BACKGROUND,
+                                idx,
+                                bd.exe().trim(),
+                            )
                         }
                     }
                     fixed.update(biome_name.to_string(), fixed_biome);
                 }
             });
-        fixed
+        (fixed, toml)
     }
 
     pub fn from_toml(toml_str: String) -> Result<Self> {
@@ -349,10 +413,6 @@ impl Terrain {
         }
 
         toml::to_string(&self).context("failed to convert terrain to toml")
-    }
-
-    pub(crate) fn set_default(&mut self, new_default: String) {
-        self.default_biome = Some(new_default);
     }
 
     pub(crate) fn update(&mut self, biome_name: String, updated: Biome) {
@@ -444,21 +504,28 @@ impl Default for Terrain {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::client::shell::Zsh;
     use crate::client::types::biome::Biome;
     use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
+    use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::client::utils::{restore_env_var, set_env_var};
+    use crate::client::utils::{
+        restore_env_var, set_env_var, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
+        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
+    };
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
+    use crate::common::execute::MockCommandToRun;
     use serial_test::serial;
     use std::collections::BTreeMap;
-    use std::fs::{create_dir_all, metadata, set_permissions, write};
+    use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
     use std::os::unix::fs::PermissionsExt;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::str::FromStr;
     use tempfile::tempdir;
+    use toml_edit::DocumentMut;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
         terrain.default_biome = default_biome;
@@ -1142,12 +1209,42 @@ pub mod tests {
                 })
         });
 
-        let fixed = terrain.fix_invalid_values(before.validate(test_dir.path()));
+        let toml = terrain
+            .to_toml(&Path::new(""))
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
+
+        let (fixed, _) =
+            Terrain::fix_invalid_values(&terrain, toml, before.validate(test_dir.path()));
         let fixed_result = fixed.validate(test_dir.path());
 
         assert!(fixed_result.results().is_empty());
 
         restore_env_var("PATH".to_string(), real_path);
+    }
+
+    #[test]
+    fn fix_invalid_values() {
+        let current_dir = tempdir().expect("tempdir to be created");
+        let central_dir = tempdir().expect("tempdir to be created");
+
+        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES, &terrain_toml)
+            .expect("test terrain to be copied to test dir");
+
+        let context = Context::build(
+            current_dir.path().into(),
+            central_dir.path().into(),
+            current_dir.path().join("terrain.toml"),
+            Zsh::build(MockCommandToRun::default()),
+        );
+
+        Terrain::get_validated_and_fixed_terrain(&context).expect("terrain to fixed");
+
+        let actual = read_to_string(terrain_toml).unwrap();
+        let expected = read_to_string(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS).unwrap();
+        assert_eq!(expected, actual);
     }
 
     fn get_test_fix_action<'a>(

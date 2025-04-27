@@ -3,8 +3,8 @@ name = "terrainium"
 default_biome = "example_biome"
 
 [auto_apply]
-enabled = true
-background = true
+enabled = false
+background = false
 replace = false
 
 [terrain.envs]

@@ -774,7 +774,7 @@ mod tests {
 
         let expected_request = AssertExecuteRequest::not_sent();
 
-        let terrain = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
+        let (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
 
         super::handle(context, None, terrain, true, Some(expected_request))
             .await

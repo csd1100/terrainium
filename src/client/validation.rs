@@ -102,12 +102,17 @@ impl ValidationResult<'_> {
 
 #[derive(Debug, Clone, Default)]
 pub struct ValidationResults<'a> {
+    fixable: bool,
     results: HashSet<ValidationResult<'a>>,
 }
 
 impl<'a> ValidationResults<'a> {
-    pub(crate) fn new(results: HashSet<ValidationResult<'a>>) -> Self {
-        Self { results }
+    pub(crate) fn new(fixable: bool, results: HashSet<ValidationResult<'a>>) -> Self {
+        Self { fixable, results }
+    }
+
+    pub fn is_fixable(&self) -> bool {
+        self.fixable
     }
 
     pub fn results_ref(&self) -> &HashSet<ValidationResult> {
@@ -115,6 +120,9 @@ impl<'a> ValidationResults<'a> {
     }
 
     pub(crate) fn append(&mut self, other: ValidationResults<'a>) {
+        if other.fixable {
+            self.fixable = true;
+        }
         self.results.extend(other.results);
     }
 
@@ -192,6 +200,7 @@ pub(crate) fn validate_identifiers<'a>(
     data: &'a BTreeMap<String, String>,
     biome_name: &'a str,
 ) -> ValidationResults<'a> {
+    let mut fixable = false;
     let mut messages = HashSet::new();
 
     let starting_with_num = Regex::new(r"^[0-9]").unwrap();
@@ -210,6 +219,7 @@ pub(crate) fn validate_identifiers<'a>(
             });
         } else {
             if k.starts_with(" ") || k.ends_with(" ") {
+                fixable = true;
                 messages.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
@@ -255,5 +265,5 @@ pub(crate) fn validate_identifiers<'a>(
             }
         }
     });
-    ValidationResults::new(messages)
+    ValidationResults::new(fixable, messages)
 }

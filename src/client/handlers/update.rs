@@ -1,47 +1,61 @@
-use crate::client::args::{option_string_from, Pair, UpdateArgs};
+use crate::client::args::{option_string_from, UpdateArgs};
 use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
+use crate::common::constants::{
+    ALIASES, AUTO_APPLY, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_REPLACE, BIOMES,
+    DEFAULT_BIOME, ENVS, TERRAIN,
+};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
-use std::collections::BTreeMap;
-use std::fs::copy;
+use std::fs::{copy, write};
+use toml_edit::{value, DocumentMut};
 
-pub fn handle(context: Context, terrain: Terrain, update_args: UpdateArgs) -> Result<()> {
-    let mut terrain = terrain;
-    if update_args.auto_apply.is_some() {
-        terrain.set_auto_apply(update_args.auto_apply.expect("auto_apply to be present"));
+pub fn handle(
+    context: Context,
+    terrain: Terrain,
+    mut terrain_toml: DocumentMut,
+    update_args: UpdateArgs,
+) -> Result<()> {
+    if let Some(auto_apply) = update_args.auto_apply {
+        terrain_toml[AUTO_APPLY][AUTO_APPLY_ENABLED] = value(auto_apply.get_enabled());
+        terrain_toml[AUTO_APPLY][AUTO_APPLY_BACKGROUND] = value(auto_apply.get_background());
+        terrain_toml[AUTO_APPLY][AUTO_APPLY_REPLACE] = value(auto_apply.get_replace());
     }
 
-    if update_args.set_default.is_some() {
-        let new_default = update_args
-            .set_default
-            .expect("new default biome value to be some");
+    if let Some(new_default) = update_args.set_default {
         if !terrain.biomes().contains_key(&new_default) {
             return Err(anyhow!(
                 "cannot update default biome to '{new_default}', biome '{new_default}' does not exists",
             ));
         }
-        terrain.set_default(new_default);
+        terrain_toml[DEFAULT_BIOME] = value(new_default);
     } else {
-        let mut biome: Biome = Biome::default();
-
-        if !update_args.env.is_empty() {
-            biome.set_envs(map_from_pair(&update_args.env))
-        }
-
-        if !update_args.alias.is_empty() {
-            biome.set_aliases(map_from_pair(&update_args.alias))
-        }
-
-        if update_args.new.is_some() {
-            let biome_name = update_args.new.expect("new biome to be some");
-            terrain.update(biome_name, biome);
+        let biome_name = if update_args.new.is_some() {
+            let new_biome = update_args.new.expect("new biome to be some");
+            terrain_toml[BIOMES][&new_biome] = Biome::new_toml().into();
+            new_biome
         } else {
-            let (name, selected) = terrain.select_biome(&option_string_from(&update_args.biome))?;
-            let updated = selected.merge(&biome);
-            terrain.update(name, updated);
-        }
+            terrain
+                .select_biome(&option_string_from(&update_args.biome))?
+                .0
+        };
+
+        update_args.env.into_iter().for_each(|env| {
+            if biome_name == "none" {
+                terrain_toml[TERRAIN][ENVS][env.key] = value(env.value);
+            } else {
+                terrain_toml[BIOMES][&biome_name][ENVS][env.key] = value(env.value);
+            }
+        });
+
+        update_args.alias.into_iter().for_each(|alias| {
+            if biome_name == "none" {
+                terrain_toml[TERRAIN][ALIASES][alias.key] = value(alias.value);
+            } else {
+                terrain_toml[BIOMES][&biome_name][ALIASES][alias.key] = value(alias.value);
+            }
+        });
     }
 
     if update_args.backup {
@@ -51,20 +65,14 @@ pub fn handle(context: Context, terrain: Terrain, update_args: UpdateArgs) -> Re
         copy(context.toml_path(), backup).context("failed to backup terrain.toml")?;
     }
 
-    let validated_and_fixed = Terrain::store_and_get_fixed_terrain(&context, terrain)?;
+    write(context.toml_path(), terrain_toml.to_string()).context("failed to write updated toml")?;
+    let (validated_and_fixed, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
+
     context
         .shell()
         .generate_scripts(&context, validated_and_fixed)?;
 
     Ok(())
-}
-
-fn map_from_pair(pairs: &[Pair]) -> BTreeMap<String, String> {
-    let mut map = BTreeMap::<String, String>::new();
-    pairs.iter().for_each(|pair| {
-        let _ = map.insert(pair.key.to_string(), pair.value.to_string());
-    });
-    map
 }
 
 #[cfg(test)]
@@ -77,13 +85,14 @@ mod tests {
     use crate::client::utils::{
         AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML,
         WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML,
-        WITH_EXAMPLE_TERRAIN_TOML, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML,
+        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML,
         WITH_NONE_UPDATED_EXAMPLE_TOML,
     };
     use crate::common::execute::MockCommandToRun;
-    use std::fs::{copy, create_dir_all};
+    use std::fs::{copy, create_dir_all, read_to_string};
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
+    use toml_edit::DocumentMut;
 
     #[test]
     fn set_default_biome() {
@@ -93,6 +102,11 @@ mod tests {
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -114,6 +128,7 @@ mod tests {
         super::handle(
             context,
             terrain,
+            toml,
             UpdateArgs {
                 set_default: Some("example_biome".to_string()),
                 biome: None,
@@ -131,7 +146,7 @@ mod tests {
             central_dir.path(),
             WITHOUT_DEFAULT_BIOME_TOML,
         )
-        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS)
         .script_was_created_for("none")
         .script_was_created_for("example_biome");
     }
@@ -144,6 +159,11 @@ mod tests {
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
+
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
@@ -153,9 +173,11 @@ mod tests {
 
         let mut terrain = Terrain::example();
         force_set_invalid_default_biome(&mut terrain, None);
+
         let err = super::handle(
             context,
             terrain,
+            toml,
             UpdateArgs {
                 set_default: Some("non_existent".to_string()),
                 biome: None,
@@ -190,8 +212,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -211,6 +238,7 @@ mod tests {
         super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -244,7 +272,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             central_dir.path(),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML)
         .script_was_created_for("none")
@@ -259,8 +287,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -279,6 +312,7 @@ mod tests {
         super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -300,7 +334,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             central_dir.path(),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
         .script_was_created_for("none")
@@ -314,8 +348,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -334,6 +373,7 @@ mod tests {
         super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: Some(BiomeArg::None),
@@ -355,7 +395,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             central_dir.path(),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NONE_UPDATED_EXAMPLE_TOML)
         .script_was_created_for("none")
@@ -368,8 +408,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let context = Context::build(
             current_dir.path().into(),
@@ -381,6 +426,7 @@ mod tests {
         let err = super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: Some(BiomeArg::Some("non_existent".to_string())),
@@ -405,7 +451,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             Path::new(""),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_not_updated(IN_CURRENT_DIR);
     }
@@ -417,8 +463,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -437,6 +488,7 @@ mod tests {
         super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -458,7 +510,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             central_dir.path(),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
@@ -473,8 +525,13 @@ mod tests {
 
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
 
-        copy(WITH_EXAMPLE_TERRAIN_TOML, &terrain_toml)
+        copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -493,6 +550,7 @@ mod tests {
         super::handle(
             context,
             Terrain::example(),
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -508,7 +566,7 @@ mod tests {
         AssertTerrain::with_dirs_and_existing(
             current_dir.path(),
             central_dir.path(),
-            WITH_EXAMPLE_TERRAIN_TOML,
+            WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
@@ -525,6 +583,11 @@ mod tests {
 
         copy(WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
+
+        let toml = read_to_string(&terrain_toml)
+            .unwrap()
+            .parse::<DocumentMut>()
+            .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
             .compile_terrain_script_for("example_biome", central_dir.path())
@@ -546,6 +609,7 @@ mod tests {
         super::handle(
             context,
             terrain,
+            toml,
             UpdateArgs {
                 set_default: None,
                 biome: None,
@@ -563,7 +627,7 @@ mod tests {
             central_dir.path(),
             WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
         )
-        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
+        .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS)
         .with_backup(IN_CURRENT_DIR)
         .script_was_created_for("none")
         .script_was_created_for("example_biome");

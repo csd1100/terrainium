@@ -115,6 +115,7 @@ impl Command {
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         let mut result = HashSet::new();
+        let mut fixable = false;
         let exe = self.exe.as_str();
 
         if exe.is_empty() {
@@ -126,10 +127,11 @@ impl Command {
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                 fix_action: ValidationFixAction::None,
             });
-            return ValidationResults::new(result);
+            return ValidationResults::new(false, result);
         }
 
         if exe.starts_with(" ") || exe.ends_with(" ") {
+            fixable = true;
             result.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe '{}' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run.", &self.exe),
@@ -268,7 +270,7 @@ impl Command {
             }
         }
 
-        ValidationResults::new(result)
+        ValidationResults::new(fixable, result)
     }
 }
 

@@ -10,10 +10,10 @@ replace = true
 [terrain.envs]
 EDITOR = "vim"
 ENV_VAR = "env_val"
-NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}"
-NULL_POINTER = "${NULL}"
+POINTER_ENV_VAR = "${ENV_VAR}" # will resolve to value of `ENV_VAR` i.e. env_val
+NULL_POINTER = "${NULL}" # will resolve to "${NULL}"
+NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}" # will resolve values of variables
 PAGER = "less"
-POINTER_ENV_VAR = "${ENV_VAR}"
 
 [terrain.aliases]
 tenter = "terrainium enter"
