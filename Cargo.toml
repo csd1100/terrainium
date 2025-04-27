@@ -9,35 +9,35 @@ build = "build.rs"
 terrain-schema = ["schemars"]
 
 [dependencies]
-anyhow = "1.0.89"
-clap = { version = "4.5.17", features = ["derive"] }
-handlebars = "6.1.0"
-home = "0.5.9"
+anyhow = "1.0.98"
+clap = { version = "4.5.37", features = ["derive"] }
+handlebars = "6.3.2"
+home = "0.5.11"
 mockall_double = "0.3.1"
-prost = "0.13.2"
-prost-types = "0.13.2"
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
-toml = "0.8.19"
-time = { version = "0.3.36", features = ["local-offset", "formatting"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
+prost = "0.13.5"
+prost-types = "0.13.5"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+toml = "0.8.21"
+time = { version = "0.3.41", features = ["local-offset", "formatting"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["fmt"] }
 tracing-appender = { version = "0.2.3" }
-tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "process", "fs"] }
-tokio-stream = { version = "0.1.16", features = ["net"] }
-uuid = { version = "1.10.0", features = ["v4"] }
+tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "process", "fs"] }
+tokio-stream = { version = "0.1.17", features = ["net"] }
+uuid = { version = "1.16.0", features = ["v4"] }
 regex = "1.11.1"
 
 [dependencies.schemars]
-version = "0.8.21"
+version = "0.8.22"
 optional = true
 features = ["preserve_order", "indexmap"]
 
 [dev-dependencies]
-mockall = { version = "0.13.0" }
-serial_test = "3.1.1"
-tempfile = "3.12.0"
+mockall = { version = "0.13.1" }
+serial_test = "3.2.0"
+tempfile = "3.19.1"
 
 [build-dependencies]
-anyhow = "1.0.89"
-prost-build = "0.13.2"
+anyhow = "1.0.98"
+prost-build = "0.13.5"
