@@ -8,16 +8,16 @@ background = false
 replace = false
 
 [terrain.envs]
-" EDITOR" = "vim"
+EDITOR = "vim"
 ENV_VAR = "env_val"
 POINTER_ENV_VAR = "${ENV_VAR}" # will resolve to value of `ENV_VAR` i.e. env_val
 NULL_POINTER = "${NULL}" # will resolve to "${NULL}"
 NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}" # will resolve values of variables
-" PAGER " = "less"
+" PAGER" = "less"
 
 [terrain.aliases]
-"tenter " = "terrainium enter"
-texit = "terrainium exit"
+tenter = "terrainium enter"
+" texit" = "terrainium exit"
 
 [terrain.constructors]
 background = []
@@ -35,21 +35,21 @@ args = ["exiting terrain"]
 
 [biomes.example_biome.envs]
 EDITOR = "nvim"
-ENV_VAR = "overridden_env_val"
+" ENV_VAR " = "overridden_env_val"
 
 [biomes.example_biome.aliases]
 tenter = "terrainium enter --biome example_biome"
 
 [[biomes.example_biome.constructors.foreground]]
-exe = "/bin/echo"
+exe = " /bin/echo"
 args = ["entering biome example_biome"]
 
 [[biomes.example_biome.constructors.background]]
-exe = "/bin/bash"
+exe = "/bin/bash "
 args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
 
 [[biomes.example_biome.destructors.foreground]]
-exe = "/bin/echo"
+exe = " /bin/echo "
 args = ["exiting biome example_biome"]
 
 [[biomes.example_biome.destructors.background]]

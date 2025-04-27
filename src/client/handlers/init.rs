@@ -26,7 +26,6 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
         .to_toml(context.terrain_dir())
         .expect("default or example terrain to be parsed to toml");
 
-    // TODO: terrain toml update
     file.write(toml_str.as_ref())
         .context("failed to write terrain in toml file")?;
 

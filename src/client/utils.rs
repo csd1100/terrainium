@@ -23,6 +23,9 @@ pub const WITH_NONE_BIOME_FOR_EXAMPLE_SCRIPT: &str = "./tests/data/terrain-none.
 pub const WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT: &str =
     "./tests/data/terrain-example_biome.example.zsh";
 
+pub const WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES: &str =
+    "./tests/data/terrain.example.comments.spaces.toml";
+
 pub const WITHOUT_DEFAULT_BIOME_TOML: &str = "./tests/data/terrain.example.without.default.toml";
 
 pub const WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML: &str =

@@ -38,8 +38,8 @@ EDITOR = "nano"
 ENV_VAR = "overridden_env_val"
 
 [biomes.example_biome.aliases]
-greet = "echo hello"
 tenter = "terrainium enter --biome example_biome"
+greet = "echo hello"
 
 [[biomes.example_biome.constructors.foreground]]
 exe = "/bin/echo"

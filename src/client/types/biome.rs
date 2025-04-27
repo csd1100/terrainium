@@ -9,7 +9,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
-use toml_edit::{Array, Table};
+use toml_edit::{value, Array, Item, Table};
+
+fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
+    let value = table.as_table_mut().unwrap().remove(old_key);
+    table[new_key] = value.unwrap();
+}
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -45,6 +50,8 @@ impl Biome {
         new_biome.insert(ALIASES, Table::new().into());
         new_biome.insert(CONSTRUCTORS, commands.clone().into());
         new_biome.insert(DESTRUCTORS, commands.into());
+
+        new_biome.fmt();
         new_biome
     }
 
@@ -148,24 +155,39 @@ impl Biome {
         self.envs = envs;
     }
 
-    pub(crate) fn set_aliases(&mut self, aliases: BTreeMap<String, String>) {
-        self.aliases = aliases;
+    pub(crate) fn fix_env(&mut self, key: &str, fixed: &str) {
+        let value = self.envs.remove(key).unwrap();
+        self.envs.insert(fixed.to_string(), value);
     }
 
-    pub(crate) fn set_env(&mut self, key: String, value: String) -> Option<String> {
-        self.envs.insert(key, value)
+    pub(crate) fn fix_env_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
+        replace_key(&mut biome_toml[ENVS], key, fixed);
     }
 
-    pub(crate) fn rm_env(&mut self, key: &str) -> Option<String> {
-        self.envs.remove(key)
+    pub(crate) fn fix_alias(&mut self, key: &str, fixed: &str) {
+        let value = self.aliases.remove(key).unwrap();
+        self.aliases.insert(fixed.to_string(), value);
     }
 
-    pub(crate) fn set_alias(&mut self, key: String, value: String) -> Option<String> {
-        self.aliases.insert(key, value)
+    pub(crate) fn fix_alias_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
+        replace_key(&mut biome_toml[ALIASES], key, fixed);
     }
 
-    pub(crate) fn rm_alias(&mut self, key: &str) -> Option<String> {
-        self.aliases.remove(key)
+    pub(crate) fn fix_command_toml(
+        biome_toml: &mut Item,
+        operation_type: &str,
+        command_type: &str,
+        idx: usize,
+        fixed: &str,
+    ) {
+        assert_eq!(
+            biome_toml[operation_type][command_type][idx]["exe"]
+                .as_str()
+                .unwrap()
+                .trim(),
+            fixed
+        );
+        biome_toml[operation_type][command_type][idx]["exe"] = value(fixed);
     }
 
     pub(crate) fn insert_foreground_constructor(&mut self, idx: usize, command: Command) {
@@ -364,5 +386,9 @@ impl Biome {
 
     pub(crate) fn set_destructors(&mut self, destructors: Commands) {
         self.destructors = destructors;
+    }
+
+    pub(crate) fn set_aliases(&mut self, aliases: BTreeMap<String, String>) {
+        self.aliases = aliases;
     }
 }

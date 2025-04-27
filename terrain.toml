@@ -11,7 +11,7 @@ replace = true
 TERRAINIUM_DEV = "false"
 
 [terrain.aliases]
-ttest = "cargo check && cargo test"
+ttest = "cargo clippy && cargo test"
 
 [terrain.constructors]
 foreground = []
