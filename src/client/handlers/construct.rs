@@ -1,11 +1,12 @@
-use crate::client::args::BiomeArg;
+use crate::client::args::{option_string_from, BiomeArg};
 use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::CONSTRUCTORS;
-use anyhow::Result;
+use anyhow::{Context as AnyhowContext, Result};
 
 pub async fn handle(
     context: Context,
@@ -13,7 +14,10 @@ pub async fn handle(
     terrain: Terrain,
     client: Option<Client>,
 ) -> Result<()> {
-    background::handle(&context, CONSTRUCTORS, terrain, biome_arg, None, client).await
+    let biome = option_string_from(&biome_arg);
+    let environment = Environment::from(&terrain, biome, context.terrain_dir())
+        .context("failed to generate environment")?;
+    background::handle(&context, CONSTRUCTORS, environment, None, client).await
 }
 
 #[cfg(test)]

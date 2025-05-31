@@ -36,10 +36,10 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
 
     if get_args.auto_apply {
         if context.config().auto_apply() {
-            result = terrain.auto_apply().clone().into();
+            result = terrain.auto_apply().into();
             return Ok(result);
         }
-        result = AutoApply::default().into();
+        result = (&AutoApply::default()).into();
         return Ok(result);
     }
 

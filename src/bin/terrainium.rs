@@ -83,7 +83,6 @@ async fn main() -> Result<()> {
                 }
 
                 Verbs::Get {
-                    debug: _debug,
                     biome,
                     aliases,
                     envs,
@@ -92,6 +91,7 @@ async fn main() -> Result<()> {
                     constructors,
                     destructors,
                     auto_apply,
+                    ..
                 } => get::handle(
                     context,
                     terrain,

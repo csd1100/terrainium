@@ -154,9 +154,9 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         runner.async_spawn().await.context("Failed to run zsh")
     }
 
-    fn generate_envs(&self, context: &Context, biome: String) -> Result<BTreeMap<String, String>> {
+    fn generate_envs(&self, context: &Context, biome: &str) -> Result<BTreeMap<String, String>> {
         let scripts_dir = context.scripts_dir();
-        let compiled_script = Self::compiled_script_path(&scripts_dir, &biome)
+        let compiled_script = Self::compiled_script_path(&scripts_dir, biome)
             .to_str()
             .expect("path to be converted to string")
             .to_string();
@@ -167,7 +167,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         envs.insert(FPATH.to_string(), updated_fpath);
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
         envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
-        envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome);
+        envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome.to_string());
 
         Ok(envs)
     }
@@ -270,11 +270,11 @@ impl Zsh {
         Ok(())
     }
 
-    fn compiled_script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
+    fn compiled_script_path(scripts_dir: &Path, biome_name: &str) -> PathBuf {
         scripts_dir.join(format!("terrain-{biome_name}.zwc"))
     }
 
-    fn script_path(scripts_dir: &Path, biome_name: &String) -> PathBuf {
+    fn script_path(scripts_dir: &Path, biome_name: &str) -> PathBuf {
         scripts_dir.join(format!("terrain-{biome_name}.zsh"))
     }
 

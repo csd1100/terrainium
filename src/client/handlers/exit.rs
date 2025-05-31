@@ -1,8 +1,8 @@
-use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
+use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
@@ -20,11 +20,12 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     }
 
     if should_run_destructor() {
+        let environment = Environment::from(&terrain, Some(selected_biome), context.terrain_dir())
+            .context("failed to generate environment")?;
         background::handle(
             &context,
             DESTRUCTORS,
-            terrain,
-            Some(BiomeArg::Some(selected_biome)),
+            environment,
             Some(BTreeMap::<String, String>::new()),
             client,
         )

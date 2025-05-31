@@ -22,11 +22,8 @@ pub trait Shell: Debug + PartialEq {
         &self,
         envs: BTreeMap<String, String>,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
-    fn generate_envs(
-        &self,
-        context: &Context,
-        biome_arg: String,
-    ) -> Result<BTreeMap<String, String>>;
+    fn generate_envs(&self, context: &Context, biome_arg: &str)
+        -> Result<BTreeMap<String, String>>;
     fn templates() -> BTreeMap<String, String>;
 }
 

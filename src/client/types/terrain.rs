@@ -88,8 +88,8 @@ impl AutoApply {
     }
 }
 
-impl From<AutoApply> for String {
-    fn from(value: AutoApply) -> Self {
+impl From<&AutoApply> for String {
+    fn from(value: &AutoApply) -> Self {
         if value.is_all() {
             "all"
         } else if value.is_enabled() {

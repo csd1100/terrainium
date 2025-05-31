@@ -17,7 +17,6 @@ pub async fn handle(
     client: Option<Client>,
 ) -> Result<()> {
     let biome = option_string_from(&biome_arg);
-    let (selected_name, _) = terrain.select_biome(&biome)?;
     let environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
@@ -27,17 +26,17 @@ pub async fn handle(
 
     let mut zsh_envs = context
         .shell()
-        .generate_envs(&context, selected_name.to_string())?;
+        .generate_envs(&context, environment.selected_biome())?;
     envs.append(&mut zsh_envs);
 
     if auto_apply {
         envs.insert(
             TERRAIN_AUTO_APPLY.to_string(),
-            terrain.auto_apply().clone().into(),
+            environment.auto_apply().into(),
         );
     }
 
-    if auto_apply && !terrain.auto_apply().is_background() {
+    if auto_apply && !environment.auto_apply().is_background() {
         context
             .shell()
             .spawn(envs)
@@ -46,14 +45,7 @@ pub async fn handle(
     } else {
         let result = tokio::join!(
             context.shell().spawn(envs.clone()),
-            background::handle(
-                &context,
-                CONSTRUCTORS,
-                terrain,
-                biome_arg,
-                Some(envs),
-                client
-            ),
+            background::handle(&context, CONSTRUCTORS, environment, Some(envs), client),
         );
 
         if let Err(e) = result.0 {

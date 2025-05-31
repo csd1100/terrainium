@@ -1,4 +1,4 @@
-Default Biome: example_biome          Selected Biome: default
+Default Biome: example_biome          Selected Biome: example_biome
 Auto Apply:
     enabled: false
     replace: false

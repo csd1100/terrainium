@@ -1,9 +1,7 @@
-use crate::client::args::{option_string_from, BiomeArg};
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
-use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
     CONSTRUCTORS, TERRAINIUMD_SOCKET, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
@@ -27,16 +25,10 @@ fn operation_from_string(op: &str) -> pb::Operation {
 pub async fn handle(
     context: &Context,
     operation: &str,
-    terrain: Terrain,
-    biome_arg: Option<BiomeArg>,
+    environment: Environment,
     activate_envs: Option<BTreeMap<String, String>>,
     client: Option<Client>,
 ) -> Result<()> {
-    let selected_biome = option_string_from(&biome_arg);
-    let (biome_name, _) = terrain.select_biome(&selected_biome)?;
-    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
-        .context("failed to generate environment")?;
-
     let commands = if operation == CONSTRUCTORS {
         environment.constructors()
     } else {
@@ -55,7 +47,10 @@ pub async fn handle(
 
     let mut envs = environment.envs();
     envs.append(&mut context.terrainium_envs().clone());
-    envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome_name.clone());
+    envs.insert(
+        TERRAIN_SELECTED_BIOME.to_string(),
+        environment.selected_biome().to_string(),
+    );
 
     if let Some(zsh_envs) = &activate_envs {
         envs.append(&mut zsh_envs.clone());
@@ -84,7 +79,7 @@ pub async fn handle(
     let request = ExecuteRequest {
         session_id,
         terrain_name: environment.name().to_string(),
-        biome_name,
+        biome_name: environment.selected_biome().to_string(),
         toml_path: context.toml_path().display().to_string(),
         is_activate: activate_envs.is_some(),
         timestamp: timestamp(),

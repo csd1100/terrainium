@@ -35,7 +35,7 @@ impl Environment {
             if terrain.default_biome().is_none() {
                 "none".to_string()
             } else {
-                "default".to_string()
+                terrain.default_biome().clone().unwrap()
             }
         });
 
@@ -62,6 +62,10 @@ impl Environment {
 
     pub fn default_biome(&self) -> &Option<String> {
         &self.default_biome
+    }
+
+    pub fn auto_apply(&self) -> &AutoApply {
+        &self.auto_apply
     }
 
     pub fn selected_biome(&self) -> &String {
@@ -445,7 +449,7 @@ mod tests {
 
         let expected: Environment = Environment::build(
             Some("example_biome".to_string()),
-            "default".to_string(),
+            "example_biome".to_string(),
             &Biome::new(
                 expected_envs,
                 expected_aliases,
