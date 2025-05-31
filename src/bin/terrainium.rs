@@ -14,26 +14,11 @@ use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
-use tracing::metadata::LevelFilter;
-use tracing::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = ClientArgs::parse();
-
-    // need to keep _out_guard in scope till program exits for logger to work
-    let (subscriber, _out_guard) = if matches!(args.command, Some(Verbs::Validate)) {
-        // if validate show debug level logs
-        init_logging(LevelFilter::from(Level::DEBUG))
-    } else {
-        init_logging(LevelFilter::from(args.options.log_level))
-    };
-
-    if !matches!(args.command, Some(Verbs::Get { debug: false, .. })) {
-        // do not print any logs for get command as output will be used by scripts
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("unable to set global subscriber");
-    }
+    let _out_guard = init_logging(&args);
 
     match args.command {
         None => {
@@ -63,14 +48,17 @@ async fn main() -> Result<()> {
             }
 
             let context = Context::get(home_dir, current_dir)?;
+
+            if let Verbs::Edit = verbs {
+                return edit::handle(context).context("failed to edit the terrain");
+            }
+
             let (terrain, terrain_toml) = Terrain::get_validated_and_fixed_terrain(&context)?;
 
             match verbs {
-                Verbs::Init { .. } => {
+                Verbs::Init { .. } | Verbs::Edit => {
                     // no need to do anything as it is handled above
                 }
-
-                Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
 
                 Verbs::Generate => generate::handle(context, terrain)
                     .context("failed to generate scripts for the terrain")?,
