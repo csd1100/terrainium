@@ -19,6 +19,8 @@ fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Biome {
+    #[serde(skip)]
+    name: String,
     envs: BTreeMap<String, String>,
     aliases: BTreeMap<String, String>,
     constructors: Commands,
@@ -27,12 +29,14 @@ pub struct Biome {
 
 impl Biome {
     pub fn new(
+        name: String,
         envs: BTreeMap<String, String>,
         aliases: BTreeMap<String, String>,
         constructors: Commands,
         destructors: Commands,
     ) -> Self {
         Biome {
+            name,
             envs,
             aliases,
             constructors,
@@ -94,6 +98,10 @@ impl Biome {
         result
     }
 
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
+    }
+
     pub(crate) fn aliases(&self) -> &BTreeMap<String, String> {
         &self.aliases
     }
@@ -112,6 +120,7 @@ impl Biome {
 
     pub(crate) fn merge(&self, another: &Biome) -> Biome {
         Biome::new(
+            another.name(),
             self.append_envs(another),
             self.append_aliases(another),
             self.append_constructors(another),
@@ -149,6 +158,10 @@ impl Biome {
 
         envs.append(&mut another_envs);
         envs
+    }
+
+    pub(crate) fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     pub(crate) fn set_envs(&mut self, envs: BTreeMap<String, String>) {
@@ -321,7 +334,7 @@ impl Biome {
             .context("failed to substitute cwd for destructors")
     }
 
-    pub fn example() -> Self {
+    pub fn example(name: String) -> Self {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "vim".to_string());
         envs.insert("ENV_VAR".to_string(), "env_val".to_string());
@@ -354,7 +367,7 @@ impl Biome {
             )],
             vec![],
         );
-        Biome::new(envs, aliases, constructors, destructors)
+        Biome::new(name, envs, aliases, constructors, destructors)
     }
 }
 

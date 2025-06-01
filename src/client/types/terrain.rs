@@ -6,7 +6,7 @@ use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResults,
 };
 use crate::common::constants::{
-    BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, FOREGROUND, TERRAIN,
+    BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
@@ -399,7 +399,15 @@ impl Terrain {
     }
 
     pub fn from_toml(toml_str: String) -> Result<Self> {
-        toml::from_str(&toml_str).context("failed to parse terrain from toml")
+        let mut terrain: Self =
+            toml::from_str(&toml_str).context("failed to parse terrain from toml")?;
+
+        terrain.terrain.set_name(NONE.to_string());
+        terrain.biomes.iter_mut().for_each(|(name, biome)| {
+            biome.set_name(name.to_string());
+        });
+
+        Ok(terrain)
     }
 
     pub fn to_toml(&self, terrain_dir: &Path) -> Result<String> {
@@ -424,7 +432,7 @@ impl Terrain {
     }
 
     pub fn example() -> Self {
-        let terrain = Biome::example();
+        let terrain = Biome::example(NONE.to_string());
 
         let mut biome_envs: BTreeMap<String, String> = BTreeMap::new();
         biome_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -469,6 +477,7 @@ impl Terrain {
         );
 
         let example_biome = Biome::new(
+            EXAMPLE_BIOME.to_string(),
             biome_envs,
             biome_aliases,
             biome_constructors,
@@ -476,12 +485,12 @@ impl Terrain {
         );
 
         let mut biomes: BTreeMap<String, Biome> = BTreeMap::new();
-        biomes.insert(String::from("example_biome"), example_biome);
+        biomes.insert(EXAMPLE_BIOME.to_string(), example_biome);
 
         Terrain::new(
             terrain,
             biomes,
-            Some(String::from("example_biome")),
+            Some(EXAMPLE_BIOME.to_string()),
             AutoApply {
                 enabled: false,
                 background: false,
@@ -561,7 +570,9 @@ pub mod tests {
             Commands::new(biome_constructor_foreground, biome_constructor_background);
         let biome_destructor =
             Commands::new(biome_destructor_foreground, biome_destructor_background);
+
         Biome::new(
+            name,
             biome_envs,
             biome_aliases,
             biome_constructor,

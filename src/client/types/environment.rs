@@ -184,6 +184,7 @@ mod tests {
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
+    use crate::common::constants::EXAMPLE_BIOME;
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
@@ -325,6 +326,7 @@ mod tests {
             Some("example_biome".to_string()),
             "example_biome".to_string(),
             &Biome::new(
+                EXAMPLE_BIOME.to_string(),
                 expected_envs,
                 expected_aliases,
                 expected_constructor,
@@ -448,9 +450,10 @@ mod tests {
         );
 
         let expected: Environment = Environment::build(
-            Some("example_biome".to_string()),
-            "example_biome".to_string(),
+            Some(EXAMPLE_BIOME.to_string()),
+            EXAMPLE_BIOME.to_string(),
             &Biome::new(
+                EXAMPLE_BIOME.to_string(),
                 expected_envs,
                 expected_aliases,
                 expected_constructor,
@@ -563,9 +566,10 @@ mod tests {
         );
 
         let expected: Environment = Environment::build(
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
             "example_biome2".to_string(),
             &Biome::new(
+                "example_biome2".to_string(),
                 expected_envs,
                 expected_aliases,
                 expected_constructor,

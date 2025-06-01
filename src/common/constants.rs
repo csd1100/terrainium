@@ -39,3 +39,6 @@ pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 pub const FOREGROUND: &str = "foreground";
 pub const BACKGROUND: &str = "background";
+
+pub const EXAMPLE_BIOME: &str = "example_biome";
+pub const NONE: &str = "none";
