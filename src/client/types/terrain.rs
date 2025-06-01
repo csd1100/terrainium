@@ -293,8 +293,8 @@ impl Terrain {
                                 "trimming whitespaces from {e}",
                             );
                             let trimmed = e.trim();
-                            fixed_biome.fix_env(e, trimmed);
-                            Biome::fix_env_toml(biome_toml, e, trimmed);
+                            fixed_biome.replace_env_key(e, trimmed);
+                            Biome::replace_env_key_toml(biome_toml, e, trimmed);
                         }
                         Target::Alias(a) => {
                             event!(
@@ -303,8 +303,8 @@ impl Terrain {
                                 "trimming whitespaces from {a}",
                             );
                             let trimmed = a.trim();
-                            fixed_biome.fix_alias(a, trimmed);
-                            Biome::fix_alias_toml(biome_toml, a, trimmed);
+                            fixed_biome.replace_alias_key(a, trimmed);
+                            Biome::replace_alias_key_toml(biome_toml, a, trimmed);
                         }
                         Target::ForegroundConstructor(fc) => {
                             event!(
@@ -322,7 +322,7 @@ impl Terrain {
                             let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
                             fixed_biome.insert_foreground_constructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 FOREGROUND,
@@ -345,7 +345,7 @@ impl Terrain {
 
                             let idx = fixed_biome.remove_background_constructor(bc).unwrap();
                             fixed_biome.insert_background_constructor(idx, fixed);
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 BACKGROUND,
@@ -369,7 +369,7 @@ impl Terrain {
                             let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
                             fixed_biome.insert_foreground_destructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 FOREGROUND,
@@ -393,7 +393,7 @@ impl Terrain {
                             let idx = fixed_biome.remove_background_destructor(bd).unwrap();
                             fixed_biome.insert_background_destructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 BACKGROUND,

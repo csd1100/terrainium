@@ -6,6 +6,7 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
+use crate::common::constants::TERRAIN_DIR;
 use anyhow::{bail, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -24,6 +25,12 @@ pub struct Environment {
 impl Environment {
     pub fn from(terrain: &Terrain, selected_biome: BiomeArg, terrain_dir: &Path) -> Result<Self> {
         let mut merged: Biome = terrain.merged(&selected_biome)?;
+        // add terrain_dir as env
+        merged.insert_env(
+            TERRAIN_DIR.to_string(),
+            terrain_dir.to_string_lossy().to_string(),
+        );
+
         merged.substitute_envs();
         merged
             .substitute_cwd(terrain_dir)
@@ -80,6 +87,14 @@ impl Environment {
 
     pub fn destructors(&self) -> Commands {
         self.merged.destructors().clone()
+    }
+
+    pub(crate) fn insert_env(&mut self, key: String, value: String) {
+        self.merged.insert_env(key, value);
+    }
+
+    pub(crate) fn append_envs(&mut self, envs: BTreeMap<String, String>) {
+        self.merged.append_envs(envs);
     }
 
     pub(crate) fn to_rendered(

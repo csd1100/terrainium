@@ -3,9 +3,7 @@ use crate::client::shell::{Shell, Zsh};
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{
-    FPATH, NONE, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
-};
+use crate::common::constants::{FPATH, NONE, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT};
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
@@ -153,7 +151,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         runner.set_args(vec!["-i".to_string(), "-s".to_string()]);
         runner.set_envs(Some(envs));
 
-        runner.async_spawn().await.context("Failed to run zsh")
+        runner.async_spawn().await.context("failed to run zsh")
     }
 
     fn generate_envs(&self, context: &Context, biome: &str) -> Result<BTreeMap<String, String>> {
@@ -169,7 +167,6 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         envs.insert(FPATH.to_string(), updated_fpath);
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
         envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
-        envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome.to_string());
 
         Ok(envs)
     }
@@ -247,8 +244,11 @@ impl Zsh {
         let mut runner = self.runner();
         runner.set_args(args);
 
-        let output = runner.get_output().context("failed to get fpath")?.stdout;
-        String::from_utf8(output).context("failed to convert stdout to string")
+        let output: Output = runner.get_output().context("failed to get fpath")?;
+        if !output.status.success() {
+            bail!("getting fpath failed with status {}", output.status);
+        }
+        String::from_utf8(output.stdout).context("failed to convert stdout to string")
     }
 
     fn create_and_compile(

@@ -1,6 +1,8 @@
 use crate::common::types::pb;
+use crate::common::types::pb::response::Payload::Error;
 use crate::common::types::socket::Socket;
-use crate::daemon::handlers::run::ExecuteHandler;
+use crate::daemon::handlers::activate::ActivateHandler;
+use crate::daemon::handlers::construct::ConstructHandler;
 use crate::daemon::types::context::DaemonContext;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
@@ -8,7 +10,8 @@ use anyhow::Result;
 use prost_types::Any;
 use tracing::{event, instrument, Level};
 
-pub mod run;
+mod activate;
+mod construct;
 
 pub(crate) trait RequestHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any;
@@ -23,16 +26,19 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
 
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
-            "/terrainium.v1.ExecuteRequest" => ExecuteHandler::handle(request, context).await,
-
+            "/terrainium.v1.Activate" => ActivateHandler::handle(request, context).await,
+            "/terrainium.v1.Construct" => ConstructHandler::handle(request, context).await,
             "/terrainium.v1.StatusRequest" => {
                 todo!()
             }
             _ => {
                 event!(Level::ERROR, "invalid request type: {:?}", request.type_url);
 
-                Any::from_msg(&pb::Error {
-                    error_message: format!("invalid request type {:?}", request.type_url),
+                Any::from_msg(&pb::Response {
+                    payload: Some(Error(format!(
+                        "invalid request type {:?}",
+                        request.type_url
+                    ))),
                 })
                 .expect("failed to create an error response")
             }
@@ -40,8 +46,8 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
         Err(err) => {
             event!(Level::ERROR, "failed to read data from socket: {:#?}", err);
 
-            Any::from_msg(&pb::Error {
-                error_message: err.to_string(),
+            Any::from_msg(&pb::Response {
+                payload: Some(Error(err.to_string())),
             })
             .expect("failed to create an error response")
         }

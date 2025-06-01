@@ -316,3 +316,23 @@ impl TryFrom<Command> for pb::Command {
         })
     }
 }
+
+impl TryFrom<&Command> for pb::Command {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Command) -> Result<Self> {
+        if value.cwd.is_none() {
+            bail!(
+                "'cwd' is required for command exe:'{}', args: '{}'",
+                value.exe,
+                value.args.join(" ")
+            );
+        }
+        Ok(pb::Command {
+            exe: value.exe.to_string(),
+            args: value.args.clone(),
+            envs: BTreeMap::default(),
+            cwd: value.cwd.clone().unwrap().to_string_lossy().to_string(),
+        })
+    }
+}

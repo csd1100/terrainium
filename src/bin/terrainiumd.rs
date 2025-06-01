@@ -48,8 +48,10 @@ fn is_user_root() -> bool {
     false
 }
 
-fn get_daemon_context() -> DaemonContext {
-    DaemonContext::new(is_user_root(), get_daemon_config().is_root_allowed())
+async fn get_daemon_context() -> DaemonContext {
+    let context = DaemonContext::new(is_user_root(), get_daemon_config().is_root_allowed()).await;
+    context.setup_state_manager();
+    context
 }
 
 #[instrument]
@@ -71,9 +73,9 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let context = get_daemon_context();
+    let context = get_daemon_context().await;
 
-    if context.should_early_exit() {
+    if context.should_exit_early() {
         event!(
             Level::ERROR,
             context = ?context,

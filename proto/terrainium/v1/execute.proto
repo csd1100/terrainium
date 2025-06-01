@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package terrainium.v1;
 
-import "terrainium/v1/common.proto";
+import "terrainium/v1/command.proto";
 
 message ExecuteRequest {
   string session_id = 1;

@@ -1,11 +1,10 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::client::types::config::Config;
 use crate::common::constants::{
-    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID,
+    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_SESSION_ID,
 };
 use anyhow::{bail, Context as AnyhowContext, Result};
 use home::home_dir;
-use std::collections::BTreeMap;
 use std::env;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
@@ -151,20 +150,6 @@ impl Context {
         &self.config
     }
 
-    pub(crate) fn terrainium_envs(&self) -> BTreeMap<String, String> {
-        let mut terrainium_envs = BTreeMap::<String, String>::new();
-        terrainium_envs.insert(
-            TERRAIN_DIR.to_string(),
-            self.terrain_dir().to_string_lossy().to_string(),
-        );
-        terrainium_envs.insert(
-            TERRAIN_SESSION_ID.to_string(),
-            self.session_id().to_string(),
-        );
-
-        terrainium_envs
-    }
-
     #[cfg(test)]
     pub(crate) fn build(
         terrain_dir: PathBuf,
@@ -221,12 +206,10 @@ pub(crate) mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
     use crate::client::utils::ExpectShell;
-    use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
-    use std::collections::BTreeMap;
     use std::env::current_dir;
     use std::fs::{create_dir_all, write};
     use std::path::{Path, PathBuf};
@@ -583,29 +566,6 @@ pub(crate) mod tests {
             err,
             "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
         );
-
-        Ok(())
-    }
-
-    #[test]
-    fn terrainium_envs() -> Result<()> {
-        let mut expected_map = BTreeMap::<String, String>::new();
-        expected_map.insert(
-            "TERRAIN_DIR".to_string(),
-            current_dir()?.display().to_string(),
-        );
-
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-
-        assert!(context.terrainium_envs().contains_key(TERRAIN_SESSION_ID));
-
-        context
-            .terrainium_envs()
-            .iter()
-            .filter(|(key, _)| *key != TERRAIN_SESSION_ID)
-            .for_each(|(key, value)| {
-                assert_eq!(value, expected_map.get(key).expect("to be present"));
-            });
 
         Ok(())
     }

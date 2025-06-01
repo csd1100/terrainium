@@ -1,13 +1,18 @@
 use crate::client::args::BiomeArg;
-use crate::client::handlers::background;
 use crate::client::shell::Shell;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
+use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED};
-use anyhow::{Context as AnyhowContext, Result};
+use crate::common::constants::{
+    TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_SESSION_ID, TRUE,
+};
+use crate::common::types::pb;
+use crate::common::utils::timestamp;
+use anyhow::{bail, Context as AnyhowContext, Result};
+use std::path::PathBuf;
 
 pub async fn handle(
     context: Context,
@@ -16,49 +21,104 @@ pub async fn handle(
     auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
-    let environment = Environment::from(&terrain, biome, context.terrain_dir())
+    let mut environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
-    let mut envs = environment.envs();
-    envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
-    envs.append(&mut context.terrainium_envs().clone());
-
-    let mut zsh_envs = context
+    let zsh_envs = context
         .shell()
         .generate_envs(&context, environment.selected_biome())?;
-    envs.append(&mut zsh_envs);
+    environment.append_envs(zsh_envs);
 
+    environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+    environment.insert_env(
+        TERRAIN_SESSION_ID.to_string(),
+        context.session_id().to_string(),
+    );
     if auto_apply {
-        envs.insert(
+        environment.insert_env(
             TERRAIN_AUTO_APPLY.to_string(),
             environment.auto_apply().into(),
         );
     }
 
-    if auto_apply && !environment.auto_apply().is_background() {
-        context
-            .shell()
-            .spawn(envs)
-            .await
-            .context("failed to enter terrain environment")?;
+    let is_background = auto_apply && !environment.auto_apply().is_background();
+
+    let result = tokio::join!(
+        context.shell().spawn(environment.envs()),
+        send_activate_request(client, &context, environment, is_background)
+    );
+
+    if let Err(e) = result.0 {
+        bail!("failed to spawn shell while entering terrain environment: {e}");
     } else {
-        let result = tokio::join!(
-            context.shell().spawn(envs.clone()),
-            background::handle(&context, CONSTRUCTORS, environment, Some(envs), client),
-        );
-
-        if let Err(e) = result.0 {
-            anyhow::bail!(
-                "failed to spawn background processes while entering terrain environment: {e}",
-            );
+        let exit = result.0?;
+        if !exit.success() {
+            bail!("spawned shell exited with code: {:?}", exit.code());
         }
-
-        if let Err(e) = result.1 {
-            anyhow::bail!("failed to spawn shell while entering terrain environment: {e}");
-        }
+    }
+    if let Err(e) = result.1 {
+        bail!("failed to spawn background processes while entering terrain environment: {e}",);
     }
 
     Ok(())
+}
+
+async fn send_activate_request(
+    client: Option<Client>,
+    context: &Context,
+    environment: Environment,
+    is_background: bool,
+) -> Result<()> {
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
+    client
+        .request(ProtoRequest::Activate(activate_request(
+            context,
+            environment,
+            is_background,
+        )?))
+        .await?;
+
+    Ok(())
+}
+
+fn activate_request(
+    context: &Context,
+    environment: Environment,
+    is_background: bool,
+) -> Result<pb::Activate> {
+    let timestamp = timestamp();
+
+    let constructors = if is_background {
+        let commands: Vec<pb::Command> = environment
+            .constructors()
+            .to_proto_commands(environment.envs())
+            .context("failed to convert commands")?;
+
+        Some(pb::Construct {
+            session_id: Some(context.session_id().to_string()),
+            terrain_name: environment.name().to_string(),
+            biome_name: environment.selected_biome().to_string(),
+            timestamp: timestamp.clone(),
+            commands,
+        })
+    } else {
+        None
+    };
+
+    Ok(pb::Activate {
+        session_id: context.session_id().to_string(),
+        terrain_name: environment.name().to_string(),
+        biome_name: environment.selected_biome().to_string(),
+        toml_path: context.toml_path().display().to_string(),
+        start_timestamp: timestamp,
+        is_background,
+        constructors,
+    })
 }
 
 #[cfg(test)]

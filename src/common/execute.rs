@@ -1,3 +1,4 @@
+use crate::common::types::pb;
 use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
@@ -5,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus, Output};
+use std::process::{ExitStatus, Output};
 use tokio::fs;
 use tracing::{event, instrument, Level};
 
@@ -69,8 +70,8 @@ impl CommandToRun {
     }
 }
 
-impl From<CommandToRun> for Command {
-    fn from(value: CommandToRun) -> Command {
+impl From<CommandToRun> for std::process::Command {
+    fn from(value: CommandToRun) -> std::process::Command {
         let mut vars: BTreeMap<String, String> = std::env::vars().collect();
         let envs = if let Some(mut envs) = value.envs {
             vars.append(&mut envs);
@@ -78,7 +79,7 @@ impl From<CommandToRun> for Command {
         } else {
             vars
         };
-        let mut command = Command::new(value.exe);
+        let mut command = std::process::Command::new(value.exe);
         command.args(value.args).envs(envs).current_dir(value.cwd);
         command
     }
@@ -101,12 +102,12 @@ impl From<CommandToRun> for tokio::process::Command {
 
 impl Execute for CommandToRun {
     fn get_output(self) -> Result<Output> {
-        let mut command: Command = self.into();
+        let mut command: std::process::Command = self.into();
         command.output().context("failed to get output")
     }
 
     fn wait(self) -> Result<ExitStatus> {
-        let mut command: Command = self.into();
+        let mut command: std::process::Command = self.into();
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().context("failed to wait for command")
     }
@@ -153,6 +154,17 @@ impl Execute for CommandToRun {
         let mut command: tokio::process::Command = self.into();
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
+    }
+}
+
+impl From<pb::Command> for CommandToRun {
+    fn from(value: pb::Command) -> Self {
+        Self {
+            exe: value.exe,
+            args: value.args,
+            envs: Some(value.envs),
+            cwd: PathBuf::from(value.cwd),
+        }
     }
 }
 
