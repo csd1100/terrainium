@@ -8,6 +8,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::Level;
 
+const DEFAULT_SELECTED: &str = "__default__";
+
 #[derive(Parser, Debug)]
 #[command(args_conflicts_with_subcommands = true)]
 pub struct ClientArgs {
@@ -56,8 +58,8 @@ pub enum Verbs {
         #[arg(long)]
         debug: bool,
 
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
 
         #[arg(long, group = "get_alias")]
         aliases: bool,
@@ -85,8 +87,8 @@ pub enum Verbs {
         #[arg(short, long, groups = ["update_biome" , "update"])]
         set_default: Option<String>,
 
-        #[arg(short, long, group = "update_biome")]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
 
         #[arg(short, long, group = "update")]
         alias: Vec<Pair>,
@@ -105,18 +107,18 @@ pub enum Verbs {
     },
 
     Construct {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
     },
 
     Destruct {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
     },
 
     Enter {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
 
         #[arg(long, hide = true)]
         auto_apply: bool,
@@ -131,7 +133,7 @@ pub enum Verbs {
 #[derive(Debug, Clone)]
 pub enum BiomeArg {
     None,
-    Current,
+    Default,
     Some(String),
 }
 
@@ -139,9 +141,9 @@ impl FromStr for BiomeArg {
     type Err = anyhow::Error;
 
     fn from_str(arg: &str) -> anyhow::Result<Self, Self::Err> {
-        match arg {
+        match arg.to_lowercase().as_str() {
             NONE => Ok(BiomeArg::None),
-            "current" => Ok(BiomeArg::Current),
+            DEFAULT_SELECTED => Ok(BiomeArg::Default),
             _ => Ok(BiomeArg::Some(arg.to_string())),
         }
     }
@@ -151,18 +153,14 @@ impl From<BiomeArg> for String {
     fn from(val: BiomeArg) -> Self {
         match val {
             BiomeArg::None => NONE.to_string(),
-            BiomeArg::Current => "current".to_string(),
+            BiomeArg::Default => DEFAULT_SELECTED.to_string(),
             BiomeArg::Some(selected) => selected,
         }
     }
 }
 
-pub(crate) fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String> {
-    option_biome_arg.clone().map(|selected| selected.into())
-}
-
 pub struct GetArgs {
-    pub biome: Option<BiomeArg>,
+    pub biome: BiomeArg,
     pub aliases: bool,
     pub envs: bool,
     pub alias: Vec<String>,
@@ -237,7 +235,7 @@ impl FromStr for AutoApply {
 
 pub struct UpdateArgs {
     pub set_default: Option<String>,
-    pub biome: Option<BiomeArg>,
+    pub biome: BiomeArg,
     pub alias: Vec<Pair>,
     pub env: Vec<Pair>,
     pub new: Option<String>,

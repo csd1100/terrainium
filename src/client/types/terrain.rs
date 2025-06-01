@@ -1,3 +1,4 @@
+use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
 use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
@@ -15,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
+use std::str::FromStr;
 use toml_edit::DocumentMut;
 use tracing::{event, Level};
 
@@ -214,8 +216,8 @@ impl Terrain {
         self.auto_apply = auto_apply;
     }
 
-    pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
-        let selected = self.select_biome(selected_biome)?.1;
+    pub fn merged(&self, selected_biome: &BiomeArg) -> Result<Biome> {
+        let selected = self.select_biome(selected_biome)?;
         if selected == &self.terrain {
             Ok(self.terrain.clone())
         } else {
@@ -223,18 +225,23 @@ impl Terrain {
         }
     }
 
-    pub(crate) fn select_biome(&self, selected: &Option<String>) -> Result<(String, &Biome)> {
-        let selected = match selected {
-            None => self.default_biome.clone(),
-            Some(selected) => Some(selected.clone()),
-        };
+    pub(crate) fn select_biome(&self, selected: &BiomeArg) -> Result<&Biome> {
         match selected {
-            None => Ok((NONE.to_string(), &self.terrain)),
-            Some(selected) => {
-                if selected == NONE {
-                    Ok((NONE.to_string(), &self.terrain))
-                } else if let Some(biome) = self.biomes.get(&selected) {
-                    Ok((selected, biome))
+            BiomeArg::None => Ok(&self.terrain),
+            BiomeArg::Default => {
+                if let Some(default_biome) = &self.default_biome {
+                    if let Some(default) = self.biomes.get(default_biome) {
+                        Ok(default)
+                    } else {
+                        Err(anyhow!("the default biome {:?} does not exists", selected))
+                    }
+                } else {
+                    Ok(&self.terrain)
+                }
+            }
+            BiomeArg::Some(selected) => {
+                if let Some(biome) = self.biomes.get(selected) {
+                    Ok(biome)
                 } else {
                     Err(anyhow!("the biome {:?} does not exists", selected))
                 }
@@ -266,7 +273,10 @@ impl Terrain {
             .for_each(|r| match &r.fix_action {
                 ValidationFixAction::None => {}
                 ValidationFixAction::Trim { biome_name, target } => {
-                    let (_, selected) = fixed.select_biome(&Some(biome_name.to_string())).unwrap();
+                    let selected = fixed
+                        .select_biome(&BiomeArg::from_str(biome_name).unwrap())
+                        .unwrap();
+
                     let mut fixed_biome = selected.clone();
 
                     let biome_toml = if *biome_name == NONE {
@@ -502,12 +512,9 @@ impl Terrain {
 
 impl Default for Terrain {
     fn default() -> Self {
-        Terrain::new(
-            Biome::default(),
-            BTreeMap::new(),
-            None,
-            AutoApply::default(),
-        )
+        let mut terrain = Biome::default();
+        terrain.set_name(NONE.to_string());
+        Terrain::new(terrain, BTreeMap::new(), None, AutoApply::default())
     }
 }
 

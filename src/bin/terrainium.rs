@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
 use std::env::current_dir;
-use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
+use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
 use terrainium::client::handlers::{
@@ -65,7 +65,7 @@ async fn main() -> Result<()> {
 
                 Verbs::Validate => {
                     // create environments to run environment validations inside `Environment::from`
-                    Environment::from(&terrain, None, context.terrain_dir())?;
+                    Environment::from(&terrain, BiomeArg::None, context.terrain_dir())?;
                     let res: Result<Vec<Environment>> = terrain
                         .biomes()
                         .iter()
@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
                             // create environments to run environment validations
                             Environment::from(
                                 &terrain,
-                                Some(biome_name.to_string()),
+                                BiomeArg::Some(biome_name.to_string()),
                                 context.terrain_dir(),
                             )
                         })

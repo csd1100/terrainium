@@ -1,4 +1,4 @@
-use crate::client::args::{option_string_from, BiomeArg};
+use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
@@ -10,11 +10,10 @@ use anyhow::{Context as AnyhowContext, Result};
 
 pub async fn handle(
     context: Context,
-    biome_arg: Option<BiomeArg>,
+    biome: BiomeArg,
     terrain: Terrain,
     client: Option<Client>,
 ) -> Result<()> {
-    let biome = option_string_from(&biome_arg);
     let environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
     background::handle(&context, CONSTRUCTORS, environment, None, client).await
@@ -22,6 +21,7 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
+    use crate::client::args::BiomeArg;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
@@ -81,9 +81,14 @@ mod tests {
             )
             .sent();
 
-        super::handle(context, None, Terrain::example(), Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            Terrain::example(),
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -133,9 +138,14 @@ mod tests {
             Zsh::build(MockCommandToRun::default()),
         );
 
-        let err = super::handle(context, None, Terrain::example(), Some(expected_request))
-            .await
-            .expect_err("to be thrown");
+        let err = super::handle(
+            context,
+            BiomeArg::Default,
+            Terrain::example(),
+            Some(expected_request),
+        )
+        .await
+        .expect_err("to be thrown");
 
         assert_eq!(
             err.to_string(),
@@ -153,8 +163,13 @@ mod tests {
         );
 
         let expected_request = AssertExecuteRequest::not_sent();
-        super::handle(context, None, Terrain::default(), Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            Terrain::default(),
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 }

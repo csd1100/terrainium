@@ -1,4 +1,4 @@
-use crate::client::args::{option_string_from, GetArgs};
+use crate::client::args::GetArgs;
 use crate::client::types::context::Context;
 use crate::client::types::environment::{render, Environment};
 use crate::client::types::terrain::{AutoApply, Terrain};
@@ -22,9 +22,7 @@ pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<(
 }
 
 fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> {
-    let selected_biome = option_string_from(&get_args.biome);
-
-    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
+    let environment = Environment::from(&terrain, get_args.biome.clone(), context.terrain_dir())
         .context("failed to generate environment")?;
 
     let mut result = String::new();
@@ -199,7 +197,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -229,7 +227,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -259,7 +257,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::from_str(EXAMPLE_BIOME)?),
+            biome: BiomeArg::from_str(EXAMPLE_BIOME)?,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -289,7 +287,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -320,7 +318,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some(EXAMPLE_BIOME.to_string())),
+            biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: true,
             envs: false,
             alias: vec![],
@@ -351,7 +349,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::None,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -379,7 +377,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -414,7 +412,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some(EXAMPLE_BIOME.to_string())),
+            biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: false,
             envs: true,
             alias: vec![],
@@ -449,7 +447,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -477,7 +475,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: true,
             alias: vec![],
@@ -515,7 +513,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -546,7 +544,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -577,7 +575,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -612,7 +610,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -647,7 +645,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: true,
             alias: vec![],
@@ -698,7 +696,7 @@ Destructors:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -745,7 +743,7 @@ Destructors:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -779,7 +777,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -817,7 +815,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -848,7 +846,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -879,7 +877,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -910,7 +908,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -942,7 +940,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],

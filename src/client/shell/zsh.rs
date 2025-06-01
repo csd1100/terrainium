@@ -1,3 +1,4 @@
+use crate::client::args::BiomeArg;
 use crate::client::shell::{Shell, Zsh};
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
@@ -17,6 +18,7 @@ use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
+use std::str::FromStr;
 use tracing::{event, Level};
 
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
@@ -257,12 +259,7 @@ impl Zsh {
         terrain_dir: &Path,
     ) -> Result<()> {
         let script_path = Self::script_path(scripts_dir, &biome_name);
-        self.create_script(
-            terrain,
-            Some(biome_name.to_string()),
-            &script_path,
-            terrain_dir,
-        )?;
+        self.create_script(terrain, biome_name.to_string(), &script_path, terrain_dir)?;
 
         let compiled_script_path = Self::compiled_script_path(scripts_dir, &biome_name);
         self.compile_script(&script_path, &compiled_script_path)?;
@@ -281,15 +278,19 @@ impl Zsh {
     fn create_script(
         &self,
         terrain: &Terrain,
-        biome_name: Option<String>,
+        biome_name: String,
         script_path: &PathBuf,
         terrain_dir: &Path,
     ) -> Result<()> {
-        let environment =
-            Environment::from(terrain, biome_name.clone(), terrain_dir).context(format!(
-                "expected to generate environment from terrain for biome {:?}",
-                biome_name
-            ))?;
+        let environment = Environment::from(
+            terrain,
+            BiomeArg::from_str(&biome_name).unwrap(),
+            terrain_dir,
+        )
+        .context(format!(
+            "expected to generate environment from terrain for biome {:?}",
+            biome_name
+        ))?;
 
         let script = environment
             .to_rendered("zsh".to_string(), Zsh::templates())
@@ -351,7 +352,7 @@ mod tests {
     use std::process::{ExitStatus, Output};
 
     #[should_panic(
-        expected = "expected to generate environment from terrain for biome Some(\"invalid_biome_name\")"
+        expected = "expected to generate environment from terrain for biome \"invalid_biome_name\""
     )]
     #[test]
     fn create_script_will_panic_if_invalid_biome_name() {
@@ -361,11 +362,11 @@ mod tests {
 
         zsh.create_script(
             &terrain,
-            Some("invalid_biome_name".to_string()),
+            "invalid_biome_name".to_string(),
             &PathBuf::new(),
             &PathBuf::new(),
         )
-        .expect("error not to be thrown");
+        .expect("error to be thrown");
     }
 
     #[test]

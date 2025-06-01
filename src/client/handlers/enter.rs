@@ -1,4 +1,4 @@
-use crate::client::args::{option_string_from, BiomeArg};
+use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 use crate::client::shell::Shell;
 #[mockall_double::double]
@@ -11,12 +11,11 @@ use anyhow::{Context as AnyhowContext, Result};
 
 pub async fn handle(
     context: Context,
-    biome_arg: Option<BiomeArg>,
+    biome: BiomeArg,
     terrain: Terrain,
     auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
-    let biome = option_string_from(&biome_arg);
     let environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
@@ -64,6 +63,7 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
+    use crate::client::args::BiomeArg;
     use crate::client::shell::Zsh;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::set_auto_apply;
@@ -187,7 +187,7 @@ mod tests {
 
         super::handle(
             context,
-            None,
+            BiomeArg::Default,
             Terrain::example(),
             false,
             Some(expected_request),
@@ -279,9 +279,15 @@ mod tests {
         let mut terrain = Terrain::example();
         set_auto_apply(&mut terrain, "enable");
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -368,9 +374,15 @@ mod tests {
         let mut terrain = Terrain::example();
         set_auto_apply(&mut terrain, "replace");
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -490,9 +502,15 @@ mod tests {
         let mut terrain = Terrain::example();
         set_auto_apply(&mut terrain, "background");
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -612,9 +630,15 @@ mod tests {
         let mut terrain = Terrain::example();
         set_auto_apply(&mut terrain, "all");
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -680,9 +704,15 @@ mod tests {
         let mut terrain = Terrain::default();
         set_auto_apply(&mut terrain, "all");
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 
     #[tokio::test]
@@ -768,8 +798,14 @@ mod tests {
 
         let (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            true,
+            Some(expected_request),
+        )
+        .await
+        .expect("no error to be thrown");
     }
 }

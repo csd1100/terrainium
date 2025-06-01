@@ -1,3 +1,4 @@
+use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
 use crate::client::types::terrain::{AutoApply, Terrain};
@@ -5,7 +6,6 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
-use crate::common::constants::NONE;
 use anyhow::{anyhow, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -22,28 +22,17 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn from(
-        terrain: &Terrain,
-        selected_biome: Option<String>,
-        terrain_dir: &Path,
-    ) -> Result<Self> {
+    pub fn from(terrain: &Terrain, selected_biome: BiomeArg, terrain_dir: &Path) -> Result<Self> {
         let mut merged: Biome = terrain.merged(&selected_biome)?;
         merged.substitute_envs();
         merged
             .substitute_cwd(terrain_dir)
             .context("failed to substitute cwd for environment")?;
-        let selected = selected_biome.unwrap_or_else(|| {
-            if terrain.default_biome().is_none() {
-                NONE.to_string()
-            } else {
-                terrain.default_biome().clone().unwrap()
-            }
-        });
 
         let environment = Environment {
             name: terrain.name().clone(),
             default_biome: terrain.default_biome().clone(),
-            selected_biome: selected,
+            selected_biome: merged.name(),
             auto_apply: terrain.auto_apply().clone(),
             merged,
         };
@@ -172,6 +161,7 @@ pub(crate) fn render<T: Serialize>(
 
 #[cfg(test)]
 mod tests {
+    use crate::client::args::BiomeArg;
     use crate::client::shell::{Shell, Zsh};
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
@@ -198,7 +188,7 @@ mod tests {
         let expected: Environment =
             Environment::build(None, NONE.to_string(), Terrain::default().terrain());
 
-        let actual = Environment::from(&Terrain::default(), None, &PathBuf::new())
+        let actual = Environment::from(&Terrain::default(), BiomeArg::Default, &PathBuf::new())
             .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
@@ -216,7 +206,7 @@ mod tests {
         let expected = Environment::build(None, NONE.to_string(), terrain.terrain());
 
         assert_eq!(
-            Environment::from(&terrain, None, &PathBuf::new())?,
+            Environment::from(&terrain, BiomeArg::Default, &PathBuf::new())?,
             expected
         );
 
@@ -365,7 +355,7 @@ mod tests {
 
         let actual = Environment::from(
             &terrain,
-            Some(EXAMPLE_BIOME.to_string()),
+            BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             terrain_dir.path(),
         )
         .expect("no error to be thrown");
@@ -462,7 +452,7 @@ mod tests {
             ),
         );
 
-        let actual = Environment::from(&Terrain::example(), None, terrain_dir.path())
+        let actual = Environment::from(&Terrain::example(), BiomeArg::Default, terrain_dir.path())
             .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
@@ -478,17 +468,13 @@ mod tests {
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
 
         let expected: Environment = Environment::build(
-            Some(EXAMPLE_BIOME.to_string()),
-            NONE.to_string(),
+            Some("example_biome".to_string()),
+            "none".to_string(),
             terrain.terrain(),
         );
 
-        let actual = Environment::from(
-            &Terrain::example(),
-            Some(NONE.to_string()),
-            terrain_dir.path(),
-        )
-        .expect("no error to be thrown");
+        let actual = Environment::from(&Terrain::example(), BiomeArg::None, terrain_dir.path())
+            .expect("no error to be thrown");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -498,7 +484,7 @@ mod tests {
     fn environment_from_terrain_throws_error_if_selected_biome_does_not_exists() -> Result<()> {
         let error = Environment::from(
             &Terrain::default(),
-            Some("non_existent_biome".to_string()),
+            BiomeArg::Some("non_existent_biome".to_string()),
             &PathBuf::new(),
         )
         .expect_err("expected an error when selected_biome does not exists")
@@ -587,7 +573,7 @@ mod tests {
 
         let actual = Environment::from(
             &terrain,
-            Some("example_biome2".to_string()),
+            BiomeArg::Some("example_biome2".to_string()),
             terrain_dir.path(),
         )
         .expect("no error to be thrown");
@@ -598,12 +584,9 @@ mod tests {
 
     #[test]
     fn environment_to_get_template() {
-        let environment = Environment::from(
-            &Terrain::example(),
-            Some(EXAMPLE_BIOME.to_string()),
-            &PathBuf::new(),
-        )
-        .expect("not to fail");
+        let environment =
+            Environment::from(&Terrain::example(), BiomeArg::Default, &PathBuf::new())
+                .expect("not to fail");
 
         let base_template = fs::read_to_string("./templates/get.hbs").expect("to be read");
         let envs_template = fs::read_to_string("./templates/get_env.hbs").expect("to be read");
@@ -636,7 +619,7 @@ mod tests {
     fn environment_to_zsh() {
         let environment = Environment::from(
             &Terrain::example(),
-            Some(EXAMPLE_BIOME.to_string()),
+            BiomeArg::Default,
             &PathBuf::from("/home/user/work/terrainium"),
         )
         .expect("not to fail");
@@ -655,7 +638,8 @@ mod tests {
     #[test]
     fn validate_envs() {
         let mut environment =
-            Environment::from(&Terrain::default(), None, &PathBuf::new()).expect("not to fail");
+            Environment::from(&Terrain::default(), BiomeArg::Default, &PathBuf::new())
+                .expect("not to fail");
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("EDITOR".to_string(), "nano".to_string());
@@ -674,7 +658,7 @@ mod tests {
             message: "environment variable 'NESTED_POINTER' contains reference to variables \
                  ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system environment variables. \
                  ensure that variables ('NULL_1', 'NULL_2') are set before using 'NESTED_POINTER' environment variable.".to_string(),
-            r#for: NONE.to_string(),
+            r#for: "none".to_string(),
             fix_action: ValidationFixAction::None,
         }));
     }

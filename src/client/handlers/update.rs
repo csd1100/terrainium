@@ -1,4 +1,4 @@
-use crate::client::args::{option_string_from, UpdateArgs};
+use crate::client::args::UpdateArgs;
 use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
@@ -36,9 +36,7 @@ pub fn handle(
             terrain_toml[BIOMES][&new_biome] = Biome::new_toml().into();
             new_biome
         } else {
-            terrain
-                .select_biome(&option_string_from(&update_args.biome))?
-                .0
+            terrain.select_biome(&update_args.biome)?.name()
         };
 
         update_args.env.into_iter().for_each(|env| {
@@ -132,7 +130,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: Some(EXAMPLE_BIOME.to_string()),
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![],
                 env: vec![],
                 new: None,
@@ -181,7 +179,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: Some("non_existent".to_string()),
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![],
                 env: vec![],
                 new: None,
@@ -242,7 +240,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![
                     Pair {
                         key: "tenter".to_string(),
@@ -316,7 +314,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![Pair {
                     key: "greet".to_string(),
                     value: "echo hello".to_string(),
@@ -377,7 +375,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: Some(BiomeArg::None),
+                biome: BiomeArg::None,
                 alias: vec![Pair {
                     key: "greet".to_string(),
                     value: "echo hello".to_string(),
@@ -430,7 +428,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: Some(BiomeArg::Some("non_existent".to_string())),
+                biome: BiomeArg::Some("non_existent".to_string()),
                 alias: vec![Pair {
                     key: "greet".to_string(),
                     value: "echo hello".to_string(),
@@ -492,7 +490,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![Pair {
                     key: "greet".to_string(),
                     value: "echo hello".to_string(),
@@ -554,7 +552,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![],
                 env: vec![],
                 new: None,
@@ -613,7 +611,7 @@ mod tests {
             toml,
             UpdateArgs {
                 set_default: None,
-                biome: None,
+                biome: BiomeArg::Default,
                 alias: vec![],
                 env: vec![],
                 new: None,
