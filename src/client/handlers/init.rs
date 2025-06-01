@@ -48,6 +48,7 @@ pub mod tests {
         AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML,
         WITH_EXAMPLE_TERRAIN_TOML,
     };
+    use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
@@ -64,7 +65,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -80,7 +81,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -92,7 +93,7 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -108,7 +109,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -120,7 +121,7 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -145,7 +146,7 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -200,8 +201,8 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -215,8 +216,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }
@@ -251,8 +252,8 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -266,8 +267,8 @@ pub mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }
@@ -305,7 +306,7 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -321,7 +322,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -359,7 +360,7 @@ pub mod tests {
 
         // setup mock to assert scripts are compiled when init
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -375,7 +376,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }

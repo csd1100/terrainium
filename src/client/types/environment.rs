@@ -5,6 +5,7 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
+use crate::common::constants::NONE;
 use anyhow::{anyhow, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -33,7 +34,7 @@ impl Environment {
             .context("failed to substitute cwd for environment")?;
         let selected = selected_biome.unwrap_or_else(|| {
             if terrain.default_biome().is_none() {
-                "none".to_string()
+                NONE.to_string()
             } else {
                 terrain.default_biome().clone().unwrap()
             }
@@ -184,7 +185,7 @@ mod tests {
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
-    use crate::common::constants::EXAMPLE_BIOME;
+    use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
@@ -195,7 +196,7 @@ mod tests {
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
         let expected: Environment =
-            Environment::build(None, "none".to_string(), Terrain::default().terrain());
+            Environment::build(None, NONE.to_string(), Terrain::default().terrain());
 
         let actual = Environment::from(&Terrain::default(), None, &PathBuf::new())
             .expect("no error to be thrown");
@@ -212,7 +213,7 @@ mod tests {
         terrain.terrain_mut().substitute_envs();
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
 
-        let expected = Environment::build(None, "none".to_string(), terrain.terrain());
+        let expected = Environment::build(None, NONE.to_string(), terrain.terrain());
 
         assert_eq!(
             Environment::from(&terrain, None, &PathBuf::new())?,
@@ -323,8 +324,8 @@ mod tests {
         );
 
         let expected: Environment = Environment::build(
-            Some("example_biome".to_string()),
-            "example_biome".to_string(),
+            Some(EXAMPLE_BIOME.to_string()),
+            EXAMPLE_BIOME.to_string(),
             &Biome::new(
                 EXAMPLE_BIOME.to_string(),
                 expected_envs,
@@ -364,7 +365,7 @@ mod tests {
 
         let actual = Environment::from(
             &terrain,
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
             terrain_dir.path(),
         )
         .expect("no error to be thrown");
@@ -477,14 +478,14 @@ mod tests {
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
 
         let expected: Environment = Environment::build(
-            Some("example_biome".to_string()),
-            "none".to_string(),
+            Some(EXAMPLE_BIOME.to_string()),
+            NONE.to_string(),
             terrain.terrain(),
         );
 
         let actual = Environment::from(
             &Terrain::example(),
-            Some("none".to_string()),
+            Some(NONE.to_string()),
             terrain_dir.path(),
         )
         .expect("no error to be thrown");
@@ -599,7 +600,7 @@ mod tests {
     fn environment_to_get_template() {
         let environment = Environment::from(
             &Terrain::example(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
             &PathBuf::new(),
         )
         .expect("not to fail");
@@ -635,7 +636,7 @@ mod tests {
     fn environment_to_zsh() {
         let environment = Environment::from(
             &Terrain::example(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
             &PathBuf::from("/home/user/work/terrainium"),
         )
         .expect("not to fail");
@@ -673,7 +674,7 @@ mod tests {
             message: "environment variable 'NESTED_POINTER' contains reference to variables \
                  ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system environment variables. \
                  ensure that variables ('NULL_1', 'NULL_2') are set before using 'NESTED_POINTER' environment variable.".to_string(),
-            r#for: "none".to_string(),
+            r#for: NONE.to_string(),
             fix_action: ValidationFixAction::None,
         }));
     }

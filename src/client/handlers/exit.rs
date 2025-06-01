@@ -55,7 +55,8 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{restore_env_var, set_env_var, AssertExecuteRequest, RunCommand};
     use crate::common::constants::{
-        DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+        DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_SELECTED_BIOME,
+        TERRAIN_SESSION_ID,
     };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
@@ -74,7 +75,7 @@ mod tests {
     async fn exit_send_message_to_daemon() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
         );
         let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), None);
 
@@ -99,7 +100,7 @@ mod tests {
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
             )
             .terrain_name("terrainium")
-            .biome_name("example_biome")
+            .biome_name(EXAMPLE_BIOME)
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
@@ -117,7 +118,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
+                    .with_env(TERRAIN_SELECTED_BIOME, EXAMPLE_BIOME),
             )
             .sent();
 
@@ -134,7 +135,7 @@ mod tests {
     async fn exit_send_message_to_daemon_and_error() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
         );
         let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), None);
 
@@ -161,7 +162,7 @@ mod tests {
                 .expect("to be converted to any"),
             )
             .terrain_name("terrainium")
-            .biome_name("example_biome")
+            .biome_name(EXAMPLE_BIOME)
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
@@ -179,7 +180,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
+                    .with_env(TERRAIN_SELECTED_BIOME, EXAMPLE_BIOME),
             )
             .sent();
 
@@ -198,7 +199,7 @@ mod tests {
     async fn exit_does_not_send_message_to_daemon_auto_apply_without_background() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
         );
         let orig_auto_apply =
             set_env_var(TERRAIN_AUTO_APPLY.to_string(), Some("enabled".to_string()));
@@ -238,7 +239,7 @@ mod tests {
     async fn exit_does_send_message_to_daemon_auto_apply() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
         );
         let orig_auto_apply = set_env_var(TERRAIN_AUTO_APPLY.to_string(), Some("all".to_string()));
 
@@ -263,7 +264,7 @@ mod tests {
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
             )
             .terrain_name("terrainium")
-            .biome_name("example_biome")
+            .biome_name(EXAMPLE_BIOME)
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
@@ -281,7 +282,7 @@ mod tests {
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
                     .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
+                    .with_env(TERRAIN_SELECTED_BIOME, EXAMPLE_BIOME),
             )
             .sent();
 
@@ -301,7 +302,7 @@ mod tests {
     async fn exit_does_not_send_message_to_daemon_auto_apply_with_empty_background_commands() {
         let orig_selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
-            Some("example_biome".to_string()),
+            Some(EXAMPLE_BIOME.to_string()),
         );
         let orig_auto_apply = set_env_var(
             TERRAIN_AUTO_APPLY.to_string(),

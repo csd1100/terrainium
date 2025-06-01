@@ -19,6 +19,7 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{AssertTerrain, ExpectShell};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use anyhow::Result;
     use tempfile::tempdir;
 
@@ -28,8 +29,8 @@ mod tests {
         let central_dir = tempdir()?;
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -42,8 +43,8 @@ mod tests {
         super::handle(context, Terrain::example()).expect("no error to be thrown");
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }
@@ -54,8 +55,8 @@ mod tests {
         let central_dir = tempdir()?;
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
@@ -69,8 +70,8 @@ mod tests {
 
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }

@@ -1,5 +1,6 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
+use crate::common::constants::NONE;
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
@@ -139,7 +140,7 @@ impl FromStr for BiomeArg {
 
     fn from_str(arg: &str) -> anyhow::Result<Self, Self::Err> {
         match arg {
-            "none" => Ok(BiomeArg::None),
+            NONE => Ok(BiomeArg::None),
             "current" => Ok(BiomeArg::Current),
             _ => Ok(BiomeArg::Some(arg.to_string())),
         }
@@ -149,7 +150,7 @@ impl FromStr for BiomeArg {
 impl From<BiomeArg> for String {
     fn from(val: BiomeArg) -> Self {
         match val {
-            BiomeArg::None => "none".to_string(),
+            BiomeArg::None => NONE.to_string(),
             BiomeArg::Current => "current".to_string(),
             BiomeArg::Some(selected) => selected,
         }
@@ -204,7 +205,7 @@ impl FromStr for Pair {
         let mut env = BTreeMap::new();
         env.insert(pair[0].to_string(), pair[1].to_string());
 
-        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, "none");
+        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, NONE);
         if !validation_results.results_ref().is_empty() {
             validation_results.print_validation_message();
             return Err(anyhow!(
@@ -248,6 +249,7 @@ pub struct UpdateArgs {
 mod tests {
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
+    use crate::common::constants::NONE;
     use std::str::FromStr;
 
     #[test]
@@ -326,7 +328,7 @@ mod tests {
         );
 
         assert_eq!(
-            AutoApply::from_str("none").err().unwrap().to_string(),
+            AutoApply::from_str(NONE).err().unwrap().to_string(),
             "failed to parse auto_apply argument from: none"
         );
     }

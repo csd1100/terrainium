@@ -180,6 +180,7 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::set_auto_apply;
     use crate::client::types::terrain::Terrain;
+    use crate::common::constants::EXAMPLE_BIOME;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use serial_test::serial;
@@ -258,7 +259,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::from_str("example_biome")?),
+            biome: Some(BiomeArg::from_str(EXAMPLE_BIOME)?),
             aliases: false,
             envs: false,
             alias: vec![],
@@ -319,7 +320,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some("example_biome".to_string())),
+            biome: Some(BiomeArg::Some(EXAMPLE_BIOME.to_string())),
             aliases: true,
             envs: false,
             alias: vec![],
@@ -413,7 +414,7 @@ mod tests {
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some("example_biome".to_string())),
+            biome: Some(BiomeArg::Some(EXAMPLE_BIOME.to_string())),
             aliases: false,
             envs: true,
             alias: vec![],

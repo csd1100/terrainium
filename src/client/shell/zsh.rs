@@ -3,7 +3,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    FPATH, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
+    FPATH, NONE, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME,
 };
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
@@ -123,7 +123,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         self.create_and_compile(
             &terrain,
             &scripts_dir,
-            "none".to_string(),
+            NONE.to_string(),
             context.terrain_dir(),
         )
         .context("failed to generate scripts for 'none'".to_string())?;

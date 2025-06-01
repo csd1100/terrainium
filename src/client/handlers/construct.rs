@@ -26,7 +26,9 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
     use crate::client::utils::{AssertExecuteRequest, RunCommand};
-    use crate::common::constants::{CONSTRUCTORS, TERRAIN_DIR, TERRAIN_SELECTED_BIOME};
+    use crate::common::constants::{
+        CONSTRUCTORS, EXAMPLE_BIOME, TERRAIN_DIR, TERRAIN_SELECTED_BIOME,
+    };
     use crate::common::execute::MockCommandToRun;
     use crate::common::types::pb;
     use crate::common::types::pb::ExecuteResponse;
@@ -58,7 +60,7 @@ mod tests {
                 Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
             )
             .terrain_name("terrainium")
-            .biome_name("example_biome")
+            .biome_name(EXAMPLE_BIOME)
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
@@ -75,7 +77,7 @@ mod tests {
                     )
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
+                    .with_env(TERRAIN_SELECTED_BIOME, EXAMPLE_BIOME),
             )
             .sent();
 
@@ -103,7 +105,7 @@ mod tests {
                 .expect("to be converted to any"),
             )
             .terrain_name("terrainium")
-            .biome_name("example_biome")
+            .biome_name(EXAMPLE_BIOME)
             .toml_path(terrain_toml.to_str().unwrap())
             .with_command(
                 RunCommand::with_exe("/bin/bash")
@@ -120,7 +122,7 @@ mod tests {
                     )
                     .with_env("POINTER_ENV_VAR", "overridden_env_val")
                     .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome"),
+                    .with_env(TERRAIN_SELECTED_BIOME, EXAMPLE_BIOME),
             )
             .sent();
 

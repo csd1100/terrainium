@@ -229,10 +229,10 @@ impl Terrain {
             Some(selected) => Some(selected.clone()),
         };
         match selected {
-            None => Ok(("none".to_string(), &self.terrain)),
+            None => Ok((NONE.to_string(), &self.terrain)),
             Some(selected) => {
-                if selected == "none" {
-                    Ok(("none".to_string(), &self.terrain))
+                if selected == NONE {
+                    Ok((NONE.to_string(), &self.terrain))
                 } else if let Some(biome) = self.biomes.get(&selected) {
                     Ok((selected, biome))
                 } else {
@@ -244,7 +244,7 @@ impl Terrain {
 
     pub fn validate<'a>(&'a self, terrain_dir: &'a Path) -> ValidationResults<'a> {
         // validate terrain
-        let mut results = self.terrain.validate("none", terrain_dir);
+        let mut results = self.terrain.validate(NONE, terrain_dir);
 
         // all biomes
         self.biomes.iter().for_each(|(biome_name, biome)| {
@@ -269,7 +269,7 @@ impl Terrain {
                     let (_, selected) = fixed.select_biome(&Some(biome_name.to_string())).unwrap();
                     let mut fixed_biome = selected.clone();
 
-                    let biome_toml = if *biome_name == "none" {
+                    let biome_toml = if *biome_name == NONE {
                         &mut toml[TERRAIN]
                     } else {
                         &mut toml[BIOMES][biome_name]
@@ -424,7 +424,7 @@ impl Terrain {
     }
 
     pub(crate) fn update(&mut self, biome_name: String, updated: Biome) {
-        if biome_name == "none" {
+        if biome_name == NONE {
             self.terrain = updated
         } else {
             self.biomes.insert(biome_name, updated);
@@ -526,6 +526,7 @@ pub mod tests {
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
+    use crate::common::constants::NONE;
     use crate::common::execute::MockCommandToRun;
     use serial_test::serial;
     use std::collections::BTreeMap;
@@ -644,7 +645,7 @@ pub mod tests {
 
         assert_eq!(messages.len(), 44);
 
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
@@ -953,7 +954,7 @@ pub mod tests {
         let messages = terrain.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 160);
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
                 .for_each(|operation_type| {
@@ -1164,7 +1165,7 @@ pub mod tests {
         let messages = before.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 40);
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 let fix_action = if identifier_type == &"env" {
                     ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }

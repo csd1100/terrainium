@@ -5,7 +5,7 @@ use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
     ALIASES, AUTO_APPLY, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_REPLACE, BIOMES,
-    DEFAULT_BIOME, ENVS, TERRAIN,
+    DEFAULT_BIOME, ENVS, NONE, TERRAIN,
 };
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use std::fs::{copy, write};
@@ -42,7 +42,7 @@ pub fn handle(
         };
 
         update_args.env.into_iter().for_each(|env| {
-            if biome_name == "none" {
+            if biome_name == NONE {
                 terrain_toml[TERRAIN][ENVS][env.key] = value(env.value);
             } else {
                 terrain_toml[BIOMES][&biome_name][ENVS][env.key] = value(env.value);
@@ -50,7 +50,7 @@ pub fn handle(
         });
 
         update_args.alias.into_iter().for_each(|alias| {
-            if biome_name == "none" {
+            if biome_name == NONE {
                 terrain_toml[TERRAIN][ALIASES][alias.key] = value(alias.value);
             } else {
                 terrain_toml[BIOMES][&biome_name][ALIASES][alias.key] = value(alias.value);
@@ -88,6 +88,7 @@ mod tests {
         WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML,
         WITH_NONE_UPDATED_EXAMPLE_TOML,
     };
+    use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, read_to_string};
     use std::path::{Path, PathBuf};
@@ -109,8 +110,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -130,7 +131,7 @@ mod tests {
             terrain,
             toml,
             UpdateArgs {
-                set_default: Some("example_biome".to_string()),
+                set_default: Some(EXAMPLE_BIOME.to_string()),
                 biome: None,
                 alias: vec![],
                 env: vec![],
@@ -147,8 +148,8 @@ mod tests {
             WITHOUT_DEFAULT_BIOME_TOML,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 
     #[test]
@@ -221,9 +222,9 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for("example_biome2", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -275,8 +276,8 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome")
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME)
         .script_was_created_for("example_biome2");
     }
 
@@ -296,8 +297,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -337,8 +338,8 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 
     #[test]
@@ -357,8 +358,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -398,8 +399,8 @@ mod tests {
             WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         )
         .was_updated(IN_CURRENT_DIR, WITH_NONE_UPDATED_EXAMPLE_TOML)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 
     #[test]
@@ -472,8 +473,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -514,8 +515,8 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 
     #[test]
@@ -534,8 +535,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -570,8 +571,8 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 
     #[test]
@@ -590,8 +591,8 @@ mod tests {
             .unwrap();
 
         let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context = Context::build(
@@ -629,7 +630,7 @@ mod tests {
         )
         .was_updated(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS)
         .with_backup(IN_CURRENT_DIR)
-        .script_was_created_for("none")
-        .script_was_created_for("example_biome");
+        .script_was_created_for(NONE)
+        .script_was_created_for(EXAMPLE_BIOME);
     }
 }
