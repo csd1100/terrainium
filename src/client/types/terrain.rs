@@ -9,7 +9,7 @@ use crate::client::validation::{
 use crate::common::constants::{
     BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -149,7 +149,7 @@ impl Terrain {
             .iter()
             .any(|r| r.level == ValidationMessageLevel::Error)
         {
-            return Err(anyhow!("failed to validate terrain"));
+            bail!("terrain had validation errors");
         }
 
         if !validation_results.is_fixable() {
@@ -233,7 +233,7 @@ impl Terrain {
                     if let Some(default) = self.biomes.get(default_biome) {
                         Ok(default)
                     } else {
-                        Err(anyhow!("the default biome {:?} does not exists", selected))
+                        bail!("the default biome {:?} does not exists", selected)
                     }
                 } else {
                     Ok(&self.terrain)
@@ -243,7 +243,7 @@ impl Terrain {
                 if let Some(biome) = self.biomes.get(selected) {
                     Ok(biome)
                 } else {
-                    Err(anyhow!("the biome {:?} does not exists", selected))
+                    bail!("the biome {:?} does not exists", selected)
                 }
             }
         }
@@ -427,7 +427,7 @@ impl Terrain {
             .iter()
             .any(|r| r.level == ValidationMessageLevel::Error)
         {
-            return Err(anyhow!("failed to validate terrain before writing"));
+            bail!("failed to write terrain as it had validation errors");
         }
 
         toml::to_string(&self).context("failed to convert terrain to toml")
@@ -1229,7 +1229,7 @@ pub mod tests {
         });
 
         let toml = terrain
-            .to_toml(&Path::new(""))
+            .to_toml(Path::new(""))
             .unwrap()
             .parse::<DocumentMut>()
             .unwrap();

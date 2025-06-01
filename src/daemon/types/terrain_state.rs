@@ -2,7 +2,7 @@ use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR};
 use crate::common::execute::CommandToRun;
 use crate::common::types::pb;
 use crate::common::types::pb::Operation;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::fs;
@@ -48,6 +48,10 @@ impl TerrainState {
 
     pub fn from_json(json: &str) -> Result<Self> {
         serde_json::from_str(json).context("Failed to deserialize TerrainState")
+    }
+
+    pub fn session_id(&self) -> &str {
+        &self.session_id
     }
 
     pub fn terrain_name(&self) -> &str {
@@ -107,7 +111,7 @@ impl TerrainState {
 
     pub(crate) fn merge(&mut self, other: Self) -> Result<()> {
         if self.session_id != other.session_id {
-            return Err(anyhow!("cannot merge unrelated terrain states"));
+            bail!("cannot merge unrelated terrain states");
         }
 
         self.end_timestamp = other.end_timestamp;

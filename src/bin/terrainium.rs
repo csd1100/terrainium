@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
 use std::env::current_dir;
@@ -27,9 +27,7 @@ async fn main() -> Result<()> {
             } else if args.options.create_config {
                 Config::create_file().context("failed to create config file")?;
             } else {
-                return Err(anyhow!(
-                    "must pass argument or command, run with --help for more information."
-                ));
+                bail!("must pass argument or command, run with --help for more information.");
             }
         }
         Some(verbs) => {

@@ -1,7 +1,7 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
 use crate::common::constants::NONE;
-use anyhow::anyhow;
+use anyhow::bail;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -195,9 +195,7 @@ impl FromStr for Pair {
         let pair: Vec<&str> = pair.split("=").collect();
 
         if pair.len() != 2 {
-            return Err(anyhow!(
-                "pair of key values should be passed in format <KEY>=<VALUE>."
-            ));
+            bail!("pair of key values should be passed in format <KEY>=<VALUE>.");
         }
 
         let mut env = BTreeMap::new();
@@ -206,9 +204,7 @@ impl FromStr for Pair {
         let validation_results = validate_identifiers(IdentifierType::Identifier, &env, NONE);
         if !validation_results.results_ref().is_empty() {
             validation_results.print_validation_message();
-            return Err(anyhow!(
-                "env or alias is not valid, please make sure that it is valid."
-            ));
+            bail!("env or alias is not valid, please make sure that it is valid.");
         }
 
         Ok(Pair {
@@ -228,7 +224,7 @@ impl FromStr for AutoApply {
             "background" => Ok(AutoApply::background()),
             "all" => Ok(AutoApply::all()),
             "off" => Ok(AutoApply::default()),
-            _ => Err(anyhow!("failed to parse auto_apply argument from: {s}")),
+            _ => bail!("failed to parse auto_apply argument from: {s}"),
         }
     }
 }

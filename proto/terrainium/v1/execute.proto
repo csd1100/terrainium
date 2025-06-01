@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package terrainium.v1;
 
+import "terrainium/v1/common.proto";
+
 message ExecuteRequest {
   string session_id = 1;
 
@@ -19,13 +21,6 @@ enum Operation {
   OPERATION_UNSPECIFIED = 0;
   OPERATION_CONSTRUCTORS = 1;
   OPERATION_DESTRUCTORS = 2;
-}
-
-message Command {
-  string exe = 1;
-  repeated string args = 2;
-  map<string, string> envs = 3;
-  string cwd = 4;
 }
 
 message ExecuteResponse {

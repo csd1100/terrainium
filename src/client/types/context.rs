@@ -3,7 +3,7 @@ use crate::client::types::config::Config;
 use crate::common::constants::{
     CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID,
 };
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::env;
@@ -66,9 +66,7 @@ impl Context {
         let terrain_paths = get_terrain_dir(&cwd);
 
         if terrain_paths.is_none() {
-            return Err(anyhow!(
-                "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
-            ));
+            bail!("terrain.toml does not exists, run 'terrainium init' to initialize terrain.");
         }
 
         let (terrain_dir, toml_path) = terrain_paths.unwrap();
@@ -82,9 +80,9 @@ impl Context {
         let central_dir = get_central_dir_location(&terrain_dir);
 
         if terrain_dir.join(TERRAIN_TOML).exists() || central_dir.join(TERRAIN_TOML).exists() {
-            return Err(anyhow!(
+            bail!(
                 "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
-            ));
+            );
         }
 
         let toml_path = if central {

@@ -6,7 +6,7 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
@@ -39,7 +39,7 @@ impl Environment {
         let result = environment.validate();
         if let Err(e) = &result {
             e.results.print_validation_message();
-            return Err(anyhow!("failed to validate environment"));
+            bail!("failed to validate environment");
         }
         result.unwrap().print_validation_message();
 

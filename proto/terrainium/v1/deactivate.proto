@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+import "terrainium/v1/common.proto";
+
+message Deactivate {
+  string session_id = 1;
+  string end_timestamp = 2;
+  Destruct destructors = 3;
+}
+
+message Destruct {
+  optional string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string timestamp = 4;
+  repeated Command commands = 5;
+}

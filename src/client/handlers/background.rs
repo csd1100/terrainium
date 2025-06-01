@@ -9,7 +9,7 @@ use crate::common::types::pb;
 use crate::common::types::pb::{Error, ExecuteRequest, ExecuteResponse};
 use crate::common::types::socket::Socket;
 use crate::common::utils::timestamp;
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use prost_types::Any;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -99,10 +99,7 @@ pub async fn handle(
         println!("Success");
     } else {
         let error: Error = Any::to_msg(&response).context("failed to convert to error from Any")?;
-        return Err(anyhow!(
-            "error response from daemon {}",
-            error.error_message
-        ));
+        bail!("error response from daemon {}", error.error_message);
     }
     Ok(())
 }

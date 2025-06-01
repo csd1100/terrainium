@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
             context = ?context,
             "exiting as service was started as root without being configured.",
         );
-        return Err(anyhow::anyhow!("exiting as service was running as root"));
+        anyhow::bail!("exiting as service was running as root");
     }
 
     let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)

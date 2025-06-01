@@ -1,5 +1,5 @@
 use crate::common::constants::{CONFIG_LOCATION, TERRAINIUMD_CONF};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -47,10 +47,7 @@ impl DaemonConfig {
                 return toml::from_str(&toml_str).context("invalid config");
             }
         }
-        Err(anyhow!(
-            "failed to read configuration file {}",
-            path.display()
-        ))
+        bail!("failed to read configuration file {path:?}",)
     }
 
     pub fn create_file() -> Result<()> {

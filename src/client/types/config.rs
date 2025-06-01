@@ -1,5 +1,5 @@
 use crate::common::constants::{CONFIG_LOCATION, TERRAINIUM_CONF};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -45,11 +45,11 @@ impl Config {
                 toml::from_str(&toml_str).context("invalid config")
             } else {
                 event!(Level::WARN, "could not read config");
-                Err(anyhow!("failed to read config"))
+                bail!("failed to read config")
             };
         }
         event!(Level::INFO, "terrainium config does not exist");
-        Err(anyhow!("config file {:?} does not exist", path.display()))
+        bail!("config file {path:?} does not exist")
     }
 
     pub(crate) fn auto_apply(&self) -> bool {

@@ -7,7 +7,7 @@ use crate::common::constants::{
     ALIASES, AUTO_APPLY, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_REPLACE, BIOMES,
     DEFAULT_BIOME, ENVS, NONE, TERRAIN,
 };
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use std::fs::{copy, write};
 use toml_edit::{value, DocumentMut};
 
@@ -25,9 +25,9 @@ pub fn handle(
 
     if let Some(new_default) = update_args.set_default {
         if !terrain.biomes().contains_key(&new_default) {
-            return Err(anyhow!(
+            bail!(
                 "cannot update default biome to '{new_default}', biome '{new_default}' does not exists",
-            ));
+            );
         }
         terrain_toml[DEFAULT_BIOME] = value(new_default);
     } else {

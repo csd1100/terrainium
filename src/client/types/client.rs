@@ -1,8 +1,8 @@
 use crate::common::types::socket::{
     socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop, Socket,
 };
-use anyhow::Result;
-use anyhow::{anyhow, Context as AnyhowContext};
+use anyhow::Context as AnyhowContext;
+use anyhow::{bail, Result};
 #[cfg(test)]
 use mockall::mock;
 use prost_types::Any;
@@ -39,14 +39,11 @@ impl Socket for Client {
 impl Client {
     pub async fn new(path: PathBuf) -> Result<Client> {
         if !path.exists() {
-            return Err(anyhow!("Daemon Socket does not exist: {}", path.display()));
+            bail!("Daemon Socket does not exist: {path:?}");
         }
 
         if !path.is_absolute() {
-            return Err(anyhow!(
-                "Daemon path: {} should be absolute",
-                path.display()
-            ));
+            bail!("Daemon path: {path:?} should be absolute");
         }
 
         let stream = UnixStream::connect(path.clone())

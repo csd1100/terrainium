@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+import "terrainium/v1/common.proto";
+
+message Activate {
+  string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string toml_path = 4;
+  string start_timestamp = 6;
+  bool is_background = 7;
+  Construct constructors = 8;
+}
+
+message Construct {
+  optional string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string timestamp = 4;
+  repeated Command commands = 5;
+}

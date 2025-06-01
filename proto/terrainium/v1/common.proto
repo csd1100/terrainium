@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package terrainium.v1;
 
+message Command {
+  string exe = 1;
+  repeated string args = 2;
+  map<string, string> envs = 3;
+  string cwd = 4;
+}
+
+message Response {
+  optional Error error = 1;
+}
+
 message Error {
   string error_message = 1;
 }

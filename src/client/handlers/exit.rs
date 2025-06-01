@@ -6,7 +6,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use std::collections::BTreeMap;
 use std::env;
 use std::str::FromStr;
@@ -16,9 +16,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
     if session_id.is_empty() || selected_biome.is_empty() {
-        return Err(anyhow!(
-            "no active terrain found, use 'terrainium enter' command to activate a terrain."
-        ));
+        bail!("no active terrain found, use 'terrainium enter' command to activate a terrain.");
     }
 
     if should_run_destructor() {

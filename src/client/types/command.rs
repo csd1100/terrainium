@@ -3,7 +3,7 @@ use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
 use crate::common::types::pb;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -302,11 +302,11 @@ impl TryFrom<Command> for pb::Command {
 
     fn try_from(value: Command) -> Result<Self> {
         if value.cwd.is_none() {
-            return Err(anyhow!(
+            bail!(
                 "'cwd' is required for command exe:'{}', args: '{}'",
                 value.exe,
                 value.args.join(" ")
-            ));
+            );
         }
         Ok(pb::Command {
             exe: value.exe,

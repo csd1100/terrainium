@@ -58,9 +58,9 @@ impl RequestHandler for ExecuteHandler {
 #[instrument(skip(request))]
 pub(crate) async fn execute(request: ExecuteRequest, context: DaemonContext) {
     let operation = operation_name(request.operation);
-    let mut terrain_state: TerrainState = request.clone().into();
+    let mut terrain_state: TerrainState = request.into();
 
-    if operation == DESTRUCTORS && !request.session_id.is_empty() {
+    if operation == DESTRUCTORS && !terrain_state.session_id().is_empty() {
         let mut json = String::new();
         terrain_state
             .readable_file()

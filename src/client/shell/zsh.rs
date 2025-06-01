@@ -9,7 +9,7 @@ use crate::common::constants::{
 #[mockall_double::double]
 use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use home::home_dir;
 use std::collections::BTreeMap;
 use std::fs;
@@ -317,11 +317,11 @@ impl Zsh {
             .context(format!("failed to compile script {:?}", script_path))?;
 
         if output.status.into_raw() != 0 {
-            return Err(anyhow!(
+            bail!(
                 "compiling script failed with exit code {:?}\n error: {}",
                 output.status.into_raw(),
                 std::str::from_utf8(&output.stderr).expect("failed to convert STDERR to string")
-            ));
+            );
         }
 
         Ok(())
