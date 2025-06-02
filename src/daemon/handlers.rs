@@ -22,7 +22,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
     event!(Level::INFO, "handling requests on socket");
 
     let data: Result<Any> = daemon_socket.read().await;
-    event!(Level::DEBUG, "data received on socket: {:?} ", data);
+    // event!(Level::DEBUG, "data received on socket: {:?} ", data);
 
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
@@ -53,7 +53,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
         }
     };
 
-    event!(Level::TRACE, "sending response to client: {:#?}", response);
+    // event!(Level::TRACE, "sending response to client: {:#?}", response);
     let result = daemon_socket.write_and_stop(response).await;
 
     if result.is_err() {

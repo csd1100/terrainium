@@ -47,7 +47,7 @@ impl DaemonConfig {
                 return toml::from_str(&toml_str).context("invalid config");
             }
         }
-        bail!("failed to read configuration file {path:?}",)
+        bail!("failed to read configuration file {path:?}")
     }
 
     pub fn create_file() -> Result<()> {

@@ -41,7 +41,7 @@ pub async fn handle(
         );
     }
 
-    let is_background = auto_apply && !environment.auto_apply().is_background();
+    let is_background = !auto_apply || environment.auto_apply().is_background();
 
     let result = tokio::join!(
         context.shell().spawn(environment.envs()),
@@ -57,7 +57,7 @@ pub async fn handle(
         }
     }
     if let Err(e) = result.1 {
-        bail!("failed to spawn background processes while entering terrain environment: {e}",);
+        bail!("failed to spawn background processes while entering terrain environment: {e}");
     }
 
     Ok(())
@@ -103,6 +103,7 @@ fn activate_request(
             session_id: Some(context.session_id().to_string()),
             terrain_name: environment.name().to_string(),
             biome_name: environment.selected_biome().to_string(),
+            toml_path: context.toml_path().display().to_string(),
             timestamp: timestamp.clone(),
             commands,
         })

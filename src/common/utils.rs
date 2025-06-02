@@ -1,3 +1,10 @@
+use regex::Regex;
+
+pub fn remove_non_numeric(string: &str) -> String {
+    let re = Regex::new(r"[^0-9]").unwrap();
+    re.replace_all(string, "").to_string()
+}
+
 pub fn timestamp() -> String {
     if let Ok(now) = time::OffsetDateTime::now_local() {
         now.format(

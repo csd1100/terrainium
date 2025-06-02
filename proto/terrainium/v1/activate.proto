@@ -18,6 +18,7 @@ message Construct {
   optional string session_id = 1;
   string terrain_name = 2;
   string biome_name = 3;
-  string timestamp = 4;
-  repeated Command commands = 5;
+  string toml_path = 4;
+  string timestamp = 5;
+  repeated Command commands = 6;
 }

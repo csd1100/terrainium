@@ -27,13 +27,13 @@ pub async fn handle(
     };
 
     client
-        .request(ProtoRequest::Destruct(destruct(environment)?))
+        .request(ProtoRequest::Destruct(destruct(context, environment)?))
         .await?;
 
     Ok(())
 }
 
-fn destruct(environment: Environment) -> Result<pb::Destruct> {
+fn destruct(context: Context, environment: Environment) -> Result<pb::Destruct> {
     let commands: Vec<pb::Command> = environment
         .destructors()
         .to_proto_commands(environment.envs())
@@ -43,6 +43,7 @@ fn destruct(environment: Environment) -> Result<pb::Destruct> {
         session_id: std::env::var(TERRAIN_SESSION_ID).ok(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
+        toml_path: context.toml_path().to_string_lossy().to_string(),
         timestamp: timestamp(),
         commands,
     })

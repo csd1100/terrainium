@@ -21,6 +21,7 @@ pub const TERRAIN_AUTO_APPLY: &str = "TERRAIN_AUTO_APPLY";
 pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 pub const TERRAIN_SELECTED_BIOME: &str = "TERRAIN_SELECTED_BIOME";
 pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
+pub const TERRAIN_STATE_FILE_NAME: &str = "state.json";
 
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub const TERRAINIUM_CONF: &str = "terrainium.toml";

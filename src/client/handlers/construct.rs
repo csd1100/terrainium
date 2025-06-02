@@ -28,13 +28,13 @@ pub async fn handle(
     };
 
     client
-        .request(ProtoRequest::Construct(construct(environment)?))
+        .request(ProtoRequest::Construct(construct(context, environment)?))
         .await?;
 
     Ok(())
 }
 
-fn construct(environment: Environment) -> Result<Construct> {
+fn construct(context: Context, environment: Environment) -> Result<Construct> {
     let commands: Vec<pb::Command> = environment
         .constructors()
         .to_proto_commands(environment.envs())
@@ -44,6 +44,7 @@ fn construct(environment: Environment) -> Result<Construct> {
         session_id: std::env::var(TERRAIN_SESSION_ID).ok(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
+        toml_path: context.toml_path().to_string_lossy().to_string(),
         timestamp: timestamp(),
         commands,
     })

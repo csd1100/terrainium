@@ -144,7 +144,7 @@ impl Command {
         if trimmed.contains(" ") {
             result.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!("exe '{}' contains whitespaces.", &self.exe,),
+                message: format!("exe '{}' contains whitespaces.", &self.exe),
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                 fix_action: ValidationFixAction::None,
             });
