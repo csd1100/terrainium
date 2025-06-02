@@ -6,7 +6,7 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
-use crate::common::constants::TERRAIN_DIR;
+use crate::common::constants::{TERRAIN_DIR, TERRAIN_SELECTED_BIOME};
 use anyhow::{bail, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -25,11 +25,12 @@ pub struct Environment {
 impl Environment {
     pub fn from(terrain: &Terrain, selected_biome: BiomeArg, terrain_dir: &Path) -> Result<Self> {
         let mut merged: Biome = terrain.merged(&selected_biome)?;
-        // add terrain_dir as env
+        // add required envs
         merged.insert_env(
             TERRAIN_DIR.to_string(),
             terrain_dir.to_string_lossy().to_string(),
         );
+        merged.insert_env(TERRAIN_SELECTED_BIOME.to_string(), merged.name());
 
         merged.substitute_envs();
         merged
@@ -200,8 +201,15 @@ mod tests {
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
-        let expected: Environment =
-            Environment::build(None, NONE.to_string(), Terrain::default().terrain());
+        let mut terrain = Terrain::default();
+        terrain
+            .terrain_mut()
+            .insert_env("TERRAIN_DIR".to_string(), "".to_string());
+        terrain
+            .terrain_mut()
+            .insert_env("TERRAIN_SELECTED_BIOME".to_string(), NONE.to_string());
+
+        let expected: Environment = Environment::build(None, NONE.to_string(), terrain.terrain());
 
         let actual = Environment::from(&Terrain::default(), BiomeArg::Default, &PathBuf::new())
             .expect("no error to be thrown");
@@ -214,6 +222,13 @@ mod tests {
     fn environment_from_example_but_no_default_or_selected() -> Result<()> {
         let terrain_dir = tempdir()?;
         let mut terrain = Terrain::example();
+        terrain
+            .terrain_mut()
+            .insert_env("TERRAIN_DIR".to_string(), "".to_string());
+        terrain
+            .terrain_mut()
+            .insert_env("TERRAIN_SELECTED_BIOME".to_string(), NONE.to_string());
+
         force_set_invalid_default_biome(&mut terrain, None);
         terrain.terrain_mut().substitute_envs();
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
@@ -234,6 +249,14 @@ mod tests {
         create_dir_all(terrain_dir.path().join("tests/scripts"))?;
 
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert(
+            "TERRAIN_DIR".to_string(),
+            terrain_dir.path().to_string_lossy().to_string(),
+        );
+        expected_envs.insert(
+            "TERRAIN_SELECTED_BIOME".to_string(),
+            EXAMPLE_BIOME.to_string(),
+        );
         expected_envs.insert("SCRIPTS_DIR".to_string(), "scripts".to_string());
         expected_envs.insert("TEST_DIR".to_string(), "tests".to_string());
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -386,6 +409,14 @@ mod tests {
         let terrain_dir = tempdir()?;
 
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert(
+            "TERRAIN_DIR".to_string(),
+            terrain_dir.path().to_string_lossy().to_string(),
+        );
+        expected_envs.insert(
+            "TERRAIN_SELECTED_BIOME".to_string(),
+            EXAMPLE_BIOME.to_string(),
+        );
         expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
         expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
         expected_envs.insert(
@@ -479,6 +510,13 @@ mod tests {
         let terrain_dir = tempdir()?;
 
         let mut terrain = Terrain::example();
+        terrain.terrain_mut().insert_env(
+            "TERRAIN_DIR".to_string(),
+            terrain_dir.path().to_string_lossy().to_string(),
+        );
+        terrain
+            .terrain_mut()
+            .insert_env("TERRAIN_SELECTED_BIOME".to_string(), "none".to_string());
         terrain.terrain_mut().substitute_envs();
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
 
@@ -515,6 +553,14 @@ mod tests {
         let terrain_dir = tempdir()?;
 
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
+        expected_envs.insert(
+            "TERRAIN_DIR".to_string(),
+            terrain_dir.path().to_string_lossy().to_string(),
+        );
+        expected_envs.insert(
+            "TERRAIN_SELECTED_BIOME".to_string(),
+            "example_biome2".to_string(),
+        );
         expected_envs.insert("EDITOR".to_string(), "nano".to_string());
         expected_envs.insert("ENV_VAR".to_string(), "env_val".to_string());
         expected_envs.insert(

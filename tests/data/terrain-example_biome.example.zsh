@@ -12,6 +12,8 @@ export NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
 export NULL_POINTER="${NULL}"
 export PAGER="less"
 export POINTER_ENV_VAR="overridden_env_val"
+export TERRAIN_DIR="/home/user/work/terrainium"
+export TERRAIN_SELECTED_BIOME="example_biome"
 # USER DEFINED ENVS: END
 
 function __terrainium_unset_envs() {
@@ -21,6 +23,8 @@ function __terrainium_unset_envs() {
     unset NULL_POINTER
     unset PAGER
     unset POINTER_ENV_VAR
+    unset TERRAIN_DIR
+    unset TERRAIN_SELECTED_BIOME
 }
 
 function __terrainium_unalias() {

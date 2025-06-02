@@ -22,6 +22,12 @@ impl StateManager {
     }
 
     pub(crate) async fn create_state(&self, state: TerrainState) -> Result<()> {
+        trace!(
+            "creating state for {}({})",
+            state.terrain_name(),
+            state.session_id()
+        );
+
         self.add_state_file(state.session_id(), state.terrain_name())
             .await?;
         let files = self.files.read().await;
@@ -34,13 +40,15 @@ impl StateManager {
                 state.terrain_name(),
                 state.session_id()
             ))?;
-        file.flush().await?;
+        trace!("created state for {}", state.terrain_name());
         Ok(())
     }
 
     async fn add_state_file(&self, session_id: &str, terrain_name: &str) -> Result<()> {
         let terrain_state_dir = format!("{TERRAINIUMD_TMP_DIR}/{terrain_name}/{session_id}");
         create_dir_all(&terrain_state_dir).await?;
+        trace!("creating state in {terrain_state_dir}",);
+
         let mut files = self.files.write().await;
         let state_file = File::options()
             .create(true)

@@ -6,7 +6,7 @@ use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::terrain_state::TerrainState;
 use anyhow::{Context, Result};
 use prost_types::Any;
-use tracing::{trace, warn};
+use tracing::{error, trace, warn};
 
 pub(crate) struct ActivateHandler;
 
@@ -33,13 +33,15 @@ async fn create_state(request: Activate, context: DaemonContext) -> Response {
     trace!("creating state for {request:#?}");
     let state: TerrainState = request.into();
     let result = context.state_manager().create_state(state).await;
-    warn!("failed to create state {result:#?}");
     match result {
         Ok(()) => Response {
             payload: Some(Body(pb::Body { message: None })),
         },
-        Err(err) => Response {
-            payload: Some(Error(err.to_string())),
-        },
+        Err(err) => {
+            error!("failed to create state due to an error {err:#?}");
+            Response {
+                payload: Some(Error(err.to_string())),
+            }
+        }
     }
 }

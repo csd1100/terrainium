@@ -4,7 +4,7 @@ default_biome = "test"
 
 [auto_apply]
 enabled = true
-background = false
+background = true
 replace = false
 
 [terrain.envs]

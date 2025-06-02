@@ -1,12 +1,15 @@
 use crate::client::args::BiomeArg;
-use crate::client::handlers::background;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
+use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::DESTRUCTORS;
+use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_SESSION_ID};
+use crate::common::types::pb;
+use crate::common::utils::timestamp;
 use anyhow::{Context as AnyhowContext, Result};
+use std::path::PathBuf;
 
 pub async fn handle(
     context: Context,
@@ -16,7 +19,33 @@ pub async fn handle(
 ) -> Result<()> {
     let environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
-    background::handle(&context, DESTRUCTORS, environment, None, client).await
+
+    let mut client: Client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
+    client
+        .request(ProtoRequest::Destruct(destruct(environment)?))
+        .await?;
+
+    Ok(())
+}
+
+fn destruct(environment: Environment) -> Result<pb::Destruct> {
+    let commands: Vec<pb::Command> = environment
+        .destructors()
+        .to_proto_commands(environment.envs())
+        .context("failed to convert commands")?;
+
+    Ok(pb::Destruct {
+        session_id: std::env::var(TERRAIN_SESSION_ID).ok(),
+        terrain_name: environment.name().to_string(),
+        biome_name: environment.selected_biome().to_string(),
+        timestamp: timestamp(),
+        commands,
+    })
 }
 
 #[cfg(test)]

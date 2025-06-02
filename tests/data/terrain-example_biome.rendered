@@ -10,6 +10,8 @@ Environment Variables:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
