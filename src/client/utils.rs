@@ -1,8 +1,5 @@
-use crate::client::types::client::MockClient;
 use crate::common::execute::MockCommandToRun;
 use crate::common::types::pb;
-use crate::common::types::pb::ExecuteRequest;
-use prost_types::Any;
 use std::cmp::PartialEq;
 use std::collections::BTreeMap;
 use std::env::VarError;
@@ -46,96 +43,6 @@ pub const WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT: &str =
 
 pub const WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML: &str =
     "./tests/data/terrain.example.auto_apply.enabled.toml";
-
-#[derive(Clone)]
-pub struct AssertExecuteRequest {
-    terrain_name: String,
-    biome_name: &'static str,
-    toml_path: String,
-    is_activate: bool,
-    operation: &'static str,
-    commands: Vec<RunCommand>,
-    reply: Any,
-}
-
-impl AssertExecuteRequest {
-    pub fn with() -> Self {
-        Self {
-            terrain_name: "".to_string(),
-            biome_name: "",
-            is_activate: false,
-            operation: "",
-            toml_path: "".to_string(),
-            commands: vec![],
-            reply: Default::default(),
-        }
-    }
-
-    pub fn not_sent() -> MockClient {
-        MockClient::default()
-    }
-
-    pub fn terrain_name(mut self, name: &str) -> Self {
-        self.terrain_name = name.to_string();
-        self
-    }
-
-    pub fn biome_name(mut self, name: &'static str) -> Self {
-        self.biome_name = name;
-        self
-    }
-
-    pub fn operation(mut self, name: &'static str) -> Self {
-        self.operation = name;
-        self
-    }
-
-    pub fn with_command(mut self, command: RunCommand) -> Self {
-        self.commands.push(command);
-        self
-    }
-
-    pub fn is_activated_as(mut self, is_active: bool) -> Self {
-        self.is_activate = is_active;
-        self
-    }
-
-    pub fn with_expected_reply(mut self, reply: Any) -> Self {
-        self.reply = reply;
-        self
-    }
-
-    pub fn toml_path(mut self, toml_path: &str) -> Self {
-        self.toml_path = toml_path.to_string();
-        self
-    }
-
-    pub fn sent(self) -> MockClient {
-        let mut mock_client = MockClient::default();
-        let this = self.clone();
-        mock_client
-            .expect_write_and_stop()
-            .withf(move |execute_request| {
-                let request: ExecuteRequest =
-                    Any::to_msg(execute_request).expect("request to be converted");
-                request.terrain_name == this.terrain_name
-                    && request.commands == this.commands
-                    && request.biome_name == this.biome_name
-                    && request.is_activate == this.is_activate
-                    && request.toml_path == this.toml_path
-            })
-            .return_once(move |_| Ok(()))
-            .times(1);
-
-        mock_client
-            .expect_read()
-            .with()
-            .return_once(move || Ok(self.reply.clone()))
-            .times(1);
-
-        mock_client
-    }
-}
 
 #[derive(Clone)]
 pub struct RunCommand {

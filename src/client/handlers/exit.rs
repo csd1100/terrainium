@@ -1,14 +1,17 @@
 use crate::client::args::BiomeArg;
-use crate::client::handlers::background;
+use crate::client::handlers::destruct::destruct;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
+use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{DESTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
+use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
+use crate::common::types::pb;
+use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
-use std::collections::BTreeMap;
 use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) -> Result<()> {
@@ -19,25 +22,21 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
         bail!("no active terrain found, use 'terrainium enter' command to activate a terrain.");
     }
 
-    if should_run_destructor() {
-        let environment = Environment::from(
-            &terrain,
-            BiomeArg::from_str(&selected_biome).unwrap(),
-            context.terrain_dir(),
-        )
-        .context("failed to generate environment")?;
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
 
-        background::handle(
-            &context,
-            DESTRUCTORS,
-            environment,
-            Some(BTreeMap::<String, String>::new()),
-            client,
-        )
-        .await
-        .context("failed to run destructors")?;
-    }
-
+    client
+        .request(ProtoRequest::Deactivate(deactivate(
+            terrain.name().to_string(),
+            session_id.to_string(),
+            selected_biome,
+            terrain,
+            context,
+        )?))
+        .await?;
     Ok(())
 }
 
@@ -50,6 +49,34 @@ fn should_run_destructor() -> bool {
         Ok(auto_apply) => auto_apply == "all" || auto_apply == "background",
         Err(_) => true,
     }
+}
+
+fn deactivate(
+    terrain_name: String,
+    session_id: String,
+    selected_biome: String,
+    terrain: Terrain,
+    context: Context,
+) -> Result<pb::Deactivate> {
+    let end_timestamp = timestamp();
+    let destructors = if should_run_destructor() {
+        let environment = Environment::from(
+            &terrain,
+            BiomeArg::from_str(&selected_biome).unwrap(),
+            context.terrain_dir(),
+        )
+        .context("failed to generate environment")?;
+        Some(destruct(context, environment, end_timestamp.clone())?)
+    } else {
+        None
+    };
+
+    Ok(pb::Deactivate {
+        session_id,
+        terrain_name,
+        end_timestamp,
+        destructors,
+    })
 }
 
 #[cfg(test)]

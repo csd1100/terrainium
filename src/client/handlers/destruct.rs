@@ -27,13 +27,21 @@ pub async fn handle(
     };
 
     client
-        .request(ProtoRequest::Execute(destruct(context, environment)?))
+        .request(ProtoRequest::Execute(destruct(
+            context,
+            environment,
+            timestamp(),
+        )?))
         .await?;
 
     Ok(())
 }
 
-fn destruct(context: Context, environment: Environment) -> Result<pb::Execute> {
+pub(crate) fn destruct(
+    context: Context,
+    environment: Environment,
+    timestamp: String,
+) -> Result<pb::Execute> {
     let commands: Vec<pb::Command> = environment
         .destructors()
         .to_proto_commands(environment.envs())
@@ -45,7 +53,7 @@ fn destruct(context: Context, environment: Environment) -> Result<pb::Execute> {
         biome_name: environment.selected_biome().to_string(),
         toml_path: context.toml_path().to_string_lossy().to_string(),
         is_constructor: false,
-        timestamp: timestamp(),
+        timestamp,
         commands,
     })
 }

@@ -126,6 +126,15 @@ impl TerrainState {
 
         Ok(())
     }
+
+    pub fn update_end_timestamp(&mut self, timestamp: String) {
+        debug!(
+            terrain_name = self.terrain_name,
+            session_id = self.session_id,
+            "setting end_timestamp to {timestamp}",
+        );
+        self.end_timestamp = timestamp
+    }
 }
 
 impl From<pb::Activate> for TerrainState {

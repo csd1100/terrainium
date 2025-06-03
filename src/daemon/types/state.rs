@@ -67,6 +67,14 @@ impl State {
             .context("failed to update state in the file")
     }
 
+    pub async fn update_end_timestamp(&mut self, timestamp: String) -> Result<()> {
+        self.state.update_end_timestamp(timestamp);
+        let file = &mut self.file.lock().await;
+        file.write_state(&self.state)
+            .await
+            .context("failed to update state in the file")
+    }
+
     pub fn terrain_name(&self) -> &str {
         self.state.terrain_name()
     }

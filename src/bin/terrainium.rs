@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
                 Verbs::Enter { biome, auto_apply } => {
                     enter::handle(context, biome, terrain, auto_apply, None)
                         .await
-                        .context("failed to run enter the terrain")?
+                        .context("failed to enter the terrain")?
                 }
 
                 Verbs::Exit => exit::handle(context, terrain, None)

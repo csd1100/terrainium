@@ -111,6 +111,26 @@ impl StateManager {
             .context("failed to add commands")
     }
 
+    pub(crate) async fn update_end_time(
+        &self,
+        terrain_name: &str,
+        session_id: &str,
+        end_timestamp: String,
+    ) -> Result<()> {
+        let stored_state = self.refreshed_state(terrain_name, session_id).await?;
+        let mut state = stored_state.write().await;
+
+        debug!(
+            terrain_name = terrain_name,
+            session_id = session_id,
+            "updating end_timestamp"
+        );
+        state
+            .update_end_timestamp(end_timestamp)
+            .await
+            .context("failed to update end_timestamp")
+    }
+
     pub(crate) async fn refreshed_state(
         &self,
         terrain_name: &str,
