@@ -1,86 +1,91 @@
-use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
-use crate::daemon::types::state_file::StateFile;
-use crate::daemon::types::terrain_state::{CommandState, CommandStatus, TerrainState};
+use crate::common::constants::TERRAIN_STATE_FILE_NAME;
+use crate::common::types::terrain_state::{CommandState, TerrainState};
+use crate::daemon::types::state::State;
 use anyhow::{bail, Context, Result};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::fs::create_dir_all;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tokio::time;
 use tracing::{debug, trace};
 
+pub type StoredState = Arc<RwLock<State>>;
+
 #[derive(Default, Clone, Debug)]
 pub struct StateManager {
-    files: Arc<RwLock<HashMap<String, Arc<Mutex<StateFile>>>>>,
+    states: Arc<RwLock<HashMap<String, StoredState>>>,
 }
 
-pub fn get_state_paths(terrain_name: &str, session_id: &str) -> (PathBuf, PathBuf) {
-    let state_dir = PathBuf::from(format!(
-        "{TERRAINIUMD_TMP_DIR}/{}/{}",
-        terrain_name, session_id
-    ));
-    let state_file = state_dir.join(TERRAIN_STATE_FILE_NAME);
-
-    (state_dir, state_file)
+fn state_key(terrain_name: &str, session_id: &str) -> String {
+    format!("{terrain_name}({session_id})")
 }
 
 impl StateManager {
     pub async fn init() -> Self {
-        let files = Arc::new(RwLock::new(HashMap::<String, Arc<Mutex<StateFile>>>::new()));
-        Self { files }
+        let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
+        Self { states }
     }
 
-    pub(crate) async fn create_state(&self, state: &TerrainState) -> Result<()> {
+    pub(crate) async fn create_state(&self, terrain_state: TerrainState) -> Result<()> {
+        let terrain_name = terrain_state.terrain_name().to_string();
+        let session_id = terrain_state.session_id().to_string();
+
         trace!(
-            terrain_name = state.terrain_name(),
-            session_id = state.session_id(),
+            terrain_name = terrain_name,
+            session_id = session_id,
             "creating state"
         );
 
-        self.add_state_file(state.terrain_name(), state.session_id(), state.state_dir())
-            .await?;
+        let state = Arc::new(RwLock::new(
+            State::new(terrain_state)
+                .await
+                .context("failed to create state")?,
+        ));
 
-        let files = self.files.read().await;
-        let mut state_file = files.get(state.session_id()).unwrap().lock().await;
-
-        state_file
-            .write_state(state)
+        self.states
+            .write()
             .await
-            .context("failed to write state to the file")?;
+            .insert(state_key(&terrain_name, &session_id), state.clone());
 
         trace!(
-            terrain_name = state.terrain_name(),
-            session_id = state.session_id(),
+            terrain_name = terrain_name,
+            session_id = session_id,
             "created state"
         );
         Ok(())
     }
 
-    async fn add_state_file(
+    pub(crate) async fn add_state(
         &self,
         terrain_name: &str,
         session_id: &str,
-        state_dir: PathBuf,
-    ) -> Result<()> {
-        create_dir_all(state_dir.as_path()).await?;
+    ) -> Result<StoredState> {
         trace!(
             terrain_name = terrain_name,
             session_id = session_id,
-            "adding state file {state_dir:?} to state manager"
+            "adding state to manager"
         );
 
-        let mut files = self.files.write().await;
+        let state_file =
+            TerrainState::get_state_dir(terrain_name, session_id).join(TERRAIN_STATE_FILE_NAME);
 
-        files.insert(
-            session_id.to_string(),
-            Arc::new(Mutex::new(
-                StateFile::new(&state_dir.join(TERRAIN_STATE_FILE_NAME)).await?,
-            )),
+        let state = Arc::new(RwLock::new(
+            State::read(&state_file)
+                .await
+                .context("failed to create state")?,
+        ));
+
+        self.states
+            .write()
+            .await
+            .insert(state_key(terrain_name, session_id), state.clone());
+
+        trace!(
+            terrain_name = terrain_name,
+            session_id = session_id,
+            "created state"
         );
-
-        Ok(())
+        Ok(state)
     }
 
     pub(crate) async fn add_commands_if_necessary(
@@ -91,37 +96,40 @@ impl StateManager {
         is_constructor: bool,
         commands: Vec<CommandState>,
     ) -> Result<()> {
-        let mut state = self.fetch_state(terrain_name, session_id).await?;
-        state.add_commands_if_necessary(timestamp, is_constructor, commands);
+        let stored_state = self.refreshed_state(terrain_name, session_id).await?;
+        let mut state = stored_state.write().await;
 
-        let files = self.files.read().await;
-        let mut state_file = files.get(state.session_id()).unwrap().lock().await;
-
-        state_file
-            .write_state(&state)
+        debug!(
+            terrain_name = terrain_name,
+            session_id = session_id,
+            timestamp = timestamp,
+            "adding commands"
+        );
+        state
+            .add_commands_if_necessary(timestamp, is_constructor, commands)
             .await
-            .context("failed to write state to the file")?;
-
-        Ok(())
+            .context("failed to add commands")
     }
 
-    pub(crate) async fn fetch_state(
+    pub(crate) async fn refreshed_state(
         &self,
         terrain_name: &str,
         session_id: &str,
-    ) -> Result<TerrainState> {
-        self.refresh_state(terrain_name, session_id).await?;
-        let files = self.files.read().await;
-        let mut file = files.get(session_id).unwrap().lock().await;
-        file.read_state().await
-    }
+    ) -> Result<StoredState> {
+        let states = self.states.read().await;
+        if let Some(state) = states.get(&state_key(terrain_name, session_id)) {
+            debug!(
+                terrain_name = terrain_name,
+                session_id = session_id,
+                "state already exists"
+            );
+            Ok(state.clone())
+        } else {
+            drop(states);
 
-    pub(crate) async fn refresh_state(&self, terrain_name: &str, session_id: &str) -> Result<()> {
-        let files = self.files.read().await;
-        if files.get(session_id).is_none() {
-            drop(files);
+            let state_file =
+                TerrainState::get_state_dir(terrain_name, session_id).join(TERRAIN_STATE_FILE_NAME);
 
-            let (state_dir, state_file) = get_state_paths(terrain_name, session_id);
             if state_file.exists() {
                 debug!(
                     terrain_name = terrain_name,
@@ -129,96 +137,30 @@ impl StateManager {
                     "refreshing state"
                 );
 
-                self.add_state_file(terrain_name, session_id, state_dir)
-                    .await?
+                self.add_state(terrain_name, session_id).await
             } else {
                 bail!("state file {} doesn't exist", state_file.display());
             }
-        } else {
-            debug!(
-                terrain_name = terrain_name,
-                session_id = session_id,
-                "state file already exists"
-            );
         }
-        Ok(())
-    }
-
-    pub(crate) async fn update_command_status(
-        &self,
-        terrain_name: &str,
-        session_id: &str,
-        timestamp: &str,
-        index: usize,
-        is_constructor: bool,
-        status: CommandStatus,
-    ) -> Result<()> {
-        trace!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            timestamp = timestamp,
-            index = index,
-            is_constructor = is_constructor,
-            "acquiring read lock state files"
-        );
-
-        let files = self.files.read().await;
-
-        trace!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            timestamp = timestamp,
-            index = index,
-            is_constructor = is_constructor,
-            "fetching state file"
-        );
-        let state_file = files.get(session_id).context(format!(
-            "state file does not exist in state manager for session: {terrain_name}({session_id})"
-        ))?;
-        let mut file = state_file.lock().await;
-
-        trace!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            "reading and parsing state from file"
-        );
-
-        let mut state: TerrainState = file
-            .read_state()
-            .await
-            .context("failed to read state from the file")?;
-
-        state.update_command_status(is_constructor, timestamp, index, status)?;
-
-        trace!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            "writing updated state to file"
-        );
-
-        file.write_state(&state)
-            .await
-            .context("failed to write the state to file")?;
-        Ok(())
     }
 
     pub fn setup_cleanup(&self) {
-        let files_map = self.files.clone();
+        let states = self.states.clone();
         tokio::task::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(180));
             loop {
                 interval.tick().await;
-                Self::cleanup(files_map.clone()).await;
+                Self::cleanup(states.clone()).await;
             }
         });
     }
 
-    async fn cleanup(files_map: Arc<RwLock<HashMap<String, Arc<Mutex<StateFile>>>>>) {
+    async fn cleanup(files_map: Arc<RwLock<HashMap<String, StoredState>>>) {
         trace!("cleaning up state files");
         let mut cleanups = Vec::new();
         let mut map = files_map.write().await;
         map.iter().for_each(|(name, file)| {
-            if file.try_lock().is_ok() {
+            if file.try_read().is_ok() && file.try_write().is_ok() {
                 cleanups.push(name.clone());
             }
         });

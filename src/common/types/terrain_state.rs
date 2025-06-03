@@ -2,13 +2,13 @@ use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
 use crate::common::execute::CommandToRun;
 use crate::common::types::pb;
 use crate::common::utils::remove_non_numeric;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::debug;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TerrainState {
     pub(crate) session_id: String,
     pub(crate) terrain_name: String,
@@ -22,47 +22,11 @@ pub struct TerrainState {
 }
 
 impl TerrainState {
-    pub fn from_construct_destruct(
-        session_id: Option<String>,
-        terrain_name: String,
-        biome_name: String,
-        toml_path: String,
-        timestamp: String,
-        is_construct: bool,
-        commands: Vec<pb::Command>,
-    ) -> Self {
-        let non_numeric = remove_non_numeric(&timestamp);
-        let identifier = session_id.unwrap_or_else(|| non_numeric.clone());
-
-        let mut commands_state = HashMap::<String, Vec<CommandState>>::new();
-        let states: Vec<CommandState> = commands
-            .into_iter()
-            .enumerate()
-            .map(|(index, command)| CommandState {
-                command: command.into(),
-                log_path: get_log_path(&terrain_name, &identifier, index, &non_numeric),
-                status: CommandStatus::Starting,
-            })
-            .collect();
-        commands_state.insert(timestamp, states);
-
-        let (constructors, destructors) = if is_construct {
-            (commands_state, HashMap::new())
-        } else {
-            (HashMap::new(), commands_state)
-        };
-
-        Self {
-            session_id: identifier,
-            terrain_name,
-            biome_name,
-            toml_path,
-            is_background: false,
-            start_timestamp: "".to_string(),
-            end_timestamp: "".to_string(),
-            constructors,
-            destructors,
-        }
+    pub fn get_state_dir(terrain_name: &str, session_id: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{TERRAINIUMD_TMP_DIR}/{}/{}",
+            terrain_name, session_id
+        ))
     }
 
     pub fn session_id(&self) -> &str {
@@ -74,14 +38,43 @@ impl TerrainState {
     }
 
     pub fn state_dir(&self) -> PathBuf {
-        PathBuf::from(format!(
-            "{TERRAINIUMD_TMP_DIR}/{}/{}",
-            self.terrain_name, self.session_id
-        ))
+        Self::get_state_dir(self.terrain_name(), self.session_id())
     }
 
     pub fn state_file(&self) -> PathBuf {
         self.state_dir().join(TERRAIN_STATE_FILE_NAME)
+    }
+
+    pub fn log_paths(&self, is_constructor: bool, timestamp: &str) -> Vec<String> {
+        let map = if is_constructor {
+            &self.constructors
+        } else {
+            &self.destructors
+        };
+
+        map.get(timestamp)
+            .unwrap()
+            .iter()
+            .map(|cst| cst.log_path.clone())
+            .collect()
+    }
+
+    pub fn get_constructors(&self, timestamp: &str) -> Result<Vec<CommandState>> {
+        match self.constructors.get(timestamp) {
+            None => {
+                bail!("could not find constructor for timestamp {timestamp}");
+            }
+            Some(constructors) => Ok(constructors.clone()),
+        }
+    }
+
+    pub fn get_destructors(&self, timestamp: &str) -> Result<Vec<CommandState>> {
+        match self.destructors.get(timestamp) {
+            None => {
+                bail!("could not find destructor for timestamp {timestamp}");
+            }
+            Some(destructors) => Ok(destructors.clone()),
+        }
     }
 
     pub(crate) fn add_commands_if_necessary(
@@ -98,20 +91,6 @@ impl TerrainState {
         if !map.contains_key(timestamp) {
             map.insert(timestamp.to_string(), commands);
         }
-    }
-
-    pub fn log_paths(&self, is_constructor: bool, timestamp: &str) -> Vec<String> {
-        let map = if is_constructor {
-            &self.constructors
-        } else {
-            &self.destructors
-        };
-
-        map.get(timestamp)
-            .unwrap()
-            .iter()
-            .map(|cst| cst.log_path.clone())
-            .collect()
     }
 
     pub fn update_command_status(
@@ -189,6 +168,52 @@ impl From<pb::Activate> for TerrainState {
             end_timestamp: "".to_string(),
             constructors: constructors_state,
             destructors: Default::default(),
+        }
+    }
+}
+
+impl From<pb::Construct> for TerrainState {
+    fn from(value: pb::Construct) -> Self {
+        let pb::Construct {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+            timestamp,
+            commands,
+        } = value;
+
+        let non_numeric = remove_non_numeric(&timestamp);
+        let identifier = session_id.unwrap_or_else(|| non_numeric.clone());
+
+        let mut commands_state = HashMap::<String, Vec<CommandState>>::new();
+        let states: Vec<CommandState> = commands
+            .into_iter()
+            .enumerate()
+            .map(|(index, command)| CommandState {
+                command: command.into(),
+                log_path: get_log_path(&terrain_name, &identifier, index, &non_numeric),
+                status: CommandStatus::Starting,
+            })
+            .collect();
+        commands_state.insert(timestamp, states);
+
+        let (constructors, destructors) = if true {
+            (commands_state, HashMap::new())
+        } else {
+            (HashMap::new(), commands_state)
+        };
+
+        Self {
+            session_id: identifier,
+            terrain_name,
+            biome_name,
+            toml_path,
+            is_background: false,
+            start_timestamp: "".to_string(),
+            end_timestamp: "".to_string(),
+            constructors,
+            destructors,
         }
     }
 }

@@ -1,5 +1,6 @@
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Error;
+use crate::common::types::pb::Response;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::activate::ActivateHandler;
 use crate::daemon::handlers::construct::ConstructHandler;
@@ -8,7 +9,7 @@ use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::Result;
 use prost_types::Any;
-use tracing::{event, instrument, Level};
+use tracing::{error, event, instrument, Level};
 
 mod activate;
 mod construct;
@@ -62,5 +63,13 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
             "error responding execute request: {:?}",
             result
         );
+    }
+}
+
+pub fn error_response(err: anyhow::Error) -> Response {
+    let error = format!("{:?}", err);
+    error!("{}", error);
+    Response {
+        payload: Some(Error(error)),
     }
 }

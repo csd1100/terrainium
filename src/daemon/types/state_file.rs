@@ -1,5 +1,6 @@
-use crate::daemon::types::terrain_state::TerrainState;
+use crate::common::types::terrain_state::TerrainState;
 use anyhow::{anyhow, Context, Result};
+use std::fs::create_dir_all;
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
@@ -10,7 +11,14 @@ pub(crate) struct StateFile {
 }
 
 impl StateFile {
-    pub(crate) async fn new(path: &Path) -> Result<Self> {
+    pub(crate) async fn create(path: &Path) -> Result<Self> {
+        if path.parent().is_some_and(|parent| !parent.exists()) {
+            create_dir_all(path.parent().unwrap()).context(format!(
+                "failed to create state directory {:?}",
+                path.parent()
+            ))?;
+        }
+
         let file = File::options()
             .create(true)
             .read(true)
