@@ -6,7 +6,7 @@ use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs}
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
 use terrainium::client::handlers::{
-    construct, destruct, edit, enter, exit, generate, get, init, update,
+    construct, destruct, edit, enter, exit, generate, get, init, status, update,
 };
 use terrainium::client::logging::init_logging;
 use terrainium::client::shell::{Shell, Zsh};
@@ -148,6 +148,9 @@ async fn main() -> Result<()> {
                     .await
                     .context("failed to exit the terrain")?,
 
+                Verbs::Status => status::handle(context, terrain, None)
+                    .await
+                    .context("failed to get the terrain status")?,
                 #[cfg(feature = "terrain-schema")]
                 Verbs::Schema => schema::handle().context("failed to generate schema")?,
             }

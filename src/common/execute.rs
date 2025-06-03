@@ -100,6 +100,23 @@ impl From<CommandToRun> for tokio::process::Command {
     }
 }
 
+impl From<CommandToRun> for pb::Command {
+    fn from(value: CommandToRun) -> Self {
+        let CommandToRun {
+            exe,
+            args,
+            envs,
+            cwd,
+        } = value;
+        Self {
+            exe,
+            args,
+            envs: envs.unwrap_or_default(),
+            cwd: cwd.to_string_lossy().to_string(),
+        }
+    }
+}
+
 impl Execute for CommandToRun {
     fn get_output(self) -> Result<Output> {
         let mut command: std::process::Command = self.into();

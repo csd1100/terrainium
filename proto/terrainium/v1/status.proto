@@ -12,13 +12,17 @@ message StatusRequest {
 message StatusResponse {
   string session_id = 1;
   string terrain_name = 2;
-  string biome = 3;
+  string biome_name = 3;
   string toml_path = 4;
   bool is_background = 5;
-  string start_time = 6;
-  string end_time = 7;
-  map<string, CommandState> constructors = 11;
-  map<string, CommandState> destructors = 12;
+  string start_timestamp = 6;
+  string end_timestamp = 7;
+  map<string, CommandStates> constructors = 11;
+  map<string, CommandStates> destructors = 12;
+
+  message CommandStates {
+    repeated CommandState command_states = 1;
+  }
 
   message CommandState {
     Command command = 1;

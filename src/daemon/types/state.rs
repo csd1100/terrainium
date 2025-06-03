@@ -90,4 +90,8 @@ impl State {
             self.state.get_destructors(timestamp)
         }
     }
+
+    pub fn state(&self) -> TerrainState {
+        self.state.clone()
+    }
 }

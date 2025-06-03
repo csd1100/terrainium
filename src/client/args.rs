@@ -126,6 +126,8 @@ pub enum Verbs {
 
     Exit,
 
+    Status,
+
     #[cfg(feature = "terrain-schema")]
     Schema,
 }

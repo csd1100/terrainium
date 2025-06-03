@@ -4,21 +4,21 @@ use crate::common::types::pb;
 use crate::common::utils::remove_non_numeric;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use tracing::debug;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TerrainState {
-    pub(crate) session_id: String,
-    pub(crate) terrain_name: String,
-    pub(crate) biome_name: String,
-    pub(crate) toml_path: String,
-    pub(crate) is_background: bool,
-    pub(crate) start_timestamp: String,
-    pub(crate) end_timestamp: String,
-    pub(crate) constructors: HashMap<String, Vec<CommandState>>,
-    pub(crate) destructors: HashMap<String, Vec<CommandState>>,
+    session_id: String,
+    terrain_name: String,
+    biome_name: String,
+    toml_path: String,
+    is_background: bool,
+    start_timestamp: String,
+    end_timestamp: String,
+    constructors: BTreeMap<String, Vec<CommandState>>,
+    destructors: BTreeMap<String, Vec<CommandState>>,
 }
 
 impl TerrainState {
@@ -149,7 +149,7 @@ impl From<pb::Activate> for TerrainState {
             constructors,
         } = value;
 
-        let mut constructors_state = HashMap::<String, Vec<CommandState>>::new();
+        let mut constructors_state = BTreeMap::<String, Vec<CommandState>>::new();
         if let Some(constructors) = constructors {
             let command_states: Vec<CommandState> = constructors
                 .commands
@@ -197,7 +197,7 @@ impl From<pb::Execute> for TerrainState {
         let non_numeric = remove_non_numeric(&timestamp);
         let identifier = session_id.unwrap_or_else(|| non_numeric.clone());
 
-        let mut commands_state = HashMap::<String, Vec<CommandState>>::new();
+        let mut commands_state = BTreeMap::<String, Vec<CommandState>>::new();
         let states: Vec<CommandState> = commands
             .into_iter()
             .enumerate()
@@ -216,9 +216,9 @@ impl From<pb::Execute> for TerrainState {
         commands_state.insert(timestamp, states);
 
         let (constructors, destructors) = if is_constructor {
-            (commands_state, HashMap::new())
+            (commands_state, BTreeMap::new())
         } else {
-            (HashMap::new(), commands_state)
+            (BTreeMap::new(), commands_state)
         };
 
         Self {
@@ -231,6 +231,146 @@ impl From<pb::Execute> for TerrainState {
             end_timestamp: "".to_string(),
             constructors,
             destructors,
+        }
+    }
+}
+
+fn command_states_to_proto(
+    input: BTreeMap<String, Vec<CommandState>>,
+) -> BTreeMap<String, pb::status_response::CommandStates> {
+    let mut result = BTreeMap::<String, pb::status_response::CommandStates>::new();
+
+    input.into_iter().for_each(|(key, states)| {
+        let states = states.into_iter().map(Into::into).collect();
+        let wrapper = pb::status_response::CommandStates {
+            command_states: states,
+        };
+        result.insert(key, wrapper);
+    });
+
+    result
+}
+fn command_states_from(
+    input: BTreeMap<String, pb::status_response::CommandStates>,
+) -> Result<BTreeMap<String, Vec<CommandState>>> {
+    let mut result = BTreeMap::<String, Vec<CommandState>>::new();
+
+    let res: Result<Vec<_>> = input
+        .into_iter()
+        .map(|(key, wrapper)| -> Result<_> {
+            let res: Result<Vec<CommandState>> = wrapper
+                .command_states
+                .into_iter()
+                .map(|state| state.try_into())
+                .collect();
+            let res = res.context(format!(
+                "failed to convert command states for timestamp: {key}"
+            ))?;
+            result.insert(key, res);
+            Ok(())
+        })
+        .collect();
+
+    if let Err(e) = res {
+        bail!("failed to convert command states: {e}");
+    }
+
+    Ok(result)
+}
+
+impl TryFrom<pb::StatusResponse> for TerrainState {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::StatusResponse) -> Result<Self, Self::Error> {
+        let pb::StatusResponse {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+            is_background,
+            start_timestamp,
+            end_timestamp,
+            constructors,
+            destructors,
+        } = value;
+
+        let constructors_state = command_states_from(constructors)?;
+        let destructors_state = command_states_from(destructors)?;
+
+        Ok(Self {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+            is_background,
+            start_timestamp,
+            end_timestamp,
+            constructors: constructors_state,
+            destructors: destructors_state,
+        })
+    }
+}
+
+impl From<TerrainState> for pb::StatusResponse {
+    fn from(value: TerrainState) -> Self {
+        let TerrainState {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+            is_background,
+            start_timestamp,
+            end_timestamp,
+            constructors,
+            destructors,
+        } = value;
+
+        Self {
+            session_id,
+            terrain_name,
+            biome_name,
+            toml_path,
+            is_background,
+            start_timestamp,
+            end_timestamp,
+            constructors: command_states_to_proto(constructors),
+            destructors: command_states_to_proto(destructors),
+        }
+    }
+}
+
+impl From<CommandState> for pb::status_response::CommandState {
+    fn from(value: CommandState) -> Self {
+        let CommandState {
+            command,
+            log_path,
+            status,
+        } = value;
+
+        let (status, exit_code) = match status {
+            CommandStatus::Starting => {
+                let status = pb::status_response::command_state::CommandStatus::Starting.into();
+                (status, -100)
+            }
+            CommandStatus::Running => {
+                let status = pb::status_response::command_state::CommandStatus::Running.into();
+                (status, -200)
+            }
+            CommandStatus::Failed(exit_code) => {
+                let status = pb::status_response::command_state::CommandStatus::Failed.into();
+                let ec = exit_code.unwrap_or(-99);
+                (status, ec)
+            }
+            CommandStatus::Succeeded => {
+                let status = pb::status_response::command_state::CommandStatus::Succeeded.into();
+                (status, 0)
+            }
+        };
+
+        Self {
+            command: Some(command.into()),
+            log_path,
+            status,
+            exit_code,
         }
     }
 }
@@ -292,4 +432,48 @@ pub enum CommandStatus {
     Running,
     Failed(Option<i32>),
     Succeeded,
+}
+
+impl TryFrom<pb::status_response::CommandState> for CommandState {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: pb::status_response::CommandState,
+    ) -> std::result::Result<Self, Self::Error> {
+        let pb::status_response::CommandState {
+            command,
+            log_path,
+            status,
+            exit_code,
+        } = value;
+
+        let status = pb::status_response::command_state::CommandStatus::try_from(status)
+            .context(format!("failed to convert status {status}"))?;
+
+        let status = match status {
+            pb::status_response::command_state::CommandStatus::Unspecified => {
+                bail!("unspecified command status")
+            }
+            pb::status_response::command_state::CommandStatus::Starting => CommandStatus::Starting,
+            pb::status_response::command_state::CommandStatus::Running => CommandStatus::Running,
+            pb::status_response::command_state::CommandStatus::Failed => {
+                CommandStatus::Failed(Some(exit_code))
+            }
+            pb::status_response::command_state::CommandStatus::Succeeded => {
+                CommandStatus::Succeeded
+            }
+        };
+
+        let command = match command {
+            None => {
+                bail!("command not found");
+            }
+            Some(cmd) => cmd.into(),
+        };
+        Ok(Self {
+            command,
+            log_path,
+            status,
+        })
+    }
 }

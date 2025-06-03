@@ -4,6 +4,7 @@ use crate::common::types::socket::Socket;
 use crate::daemon::handlers::activate::ActivateHandler;
 use crate::daemon::handlers::deactivate::DeactivateHandler;
 use crate::daemon::handlers::execute::ExecuteHandler;
+use crate::daemon::handlers::status::StatusHandler;
 use crate::daemon::types::context::DaemonContext;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
@@ -14,6 +15,7 @@ use tracing::{error, event, instrument, Level};
 mod activate;
 mod deactivate;
 mod execute;
+mod status;
 
 pub(crate) trait RequestHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any;
@@ -33,9 +35,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
             "/terrainium.v1.Activate" => ActivateHandler::handle(request, context).await,
             "/terrainium.v1.Execute" => ExecuteHandler::handle(request, context).await,
             "/terrainium.v1.Deactivate" => DeactivateHandler::handle(request, context).await,
-            "/terrainium.v1.StatusRequest" => {
-                todo!()
-            }
+            "/terrainium.v1.StatusRequest" => StatusHandler::handle(request, context).await,
             _ => {
                 event!(Level::ERROR, "invalid request type: {:?}", request.type_url);
 
