@@ -3,7 +3,7 @@ use crate::common::types::pb::response::Payload::Error;
 use crate::common::types::pb::Response;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::activate::ActivateHandler;
-use crate::daemon::handlers::construct::ConstructHandler;
+use crate::daemon::handlers::execute::ExecuteHandler;
 use crate::daemon::types::context::DaemonContext;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
@@ -12,7 +12,7 @@ use prost_types::Any;
 use tracing::{error, event, instrument, Level};
 
 mod activate;
-mod construct;
+mod execute;
 
 pub(crate) trait RequestHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any;
@@ -28,7 +28,7 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
     let response = match data {
         Ok(request) => match request.type_url.as_str() {
             "/terrainium.v1.Activate" => ActivateHandler::handle(request, context).await,
-            "/terrainium.v1.Construct" => ConstructHandler::handle(request, context).await,
+            "/terrainium.v1.Execute" => ExecuteHandler::handle(request, context).await,
             "/terrainium.v1.StatusRequest" => {
                 todo!()
             }

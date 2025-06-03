@@ -11,14 +11,5 @@ message Activate {
   string toml_path = 4;
   string start_timestamp = 6;
   bool is_background = 7;
-  Construct constructors = 8;
-}
-
-message Construct {
-  optional string session_id = 1;
-  string terrain_name = 2;
-  string biome_name = 3;
-  string toml_path = 4;
-  string timestamp = 5;
-  repeated Command commands = 6;
+  Execute constructors = 8;
 }

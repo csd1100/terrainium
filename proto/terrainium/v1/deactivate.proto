@@ -7,14 +7,5 @@ import "terrainium/v1/command.proto";
 message Deactivate {
   string session_id = 1;
   string end_timestamp = 2;
-  Destruct destructors = 3;
-}
-
-message Destruct {
-  optional string session_id = 1;
-  string terrain_name = 2;
-  string biome_name = 3;
-  string toml_path = 4;
-  string timestamp = 5;
-  repeated Command commands = 6;
+  Execute destructors = 3;
 }

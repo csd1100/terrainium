@@ -99,10 +99,11 @@ fn activate_request(
             .to_proto_commands(environment.envs())
             .context("failed to convert commands")?;
 
-        Some(pb::Construct {
+        Some(pb::Execute {
             session_id: Some(context.session_id().to_string()),
             terrain_name: environment.name().to_string(),
             biome_name: environment.selected_biome().to_string(),
+            is_constructor: true,
             toml_path: context.toml_path().display().to_string(),
             timestamp: timestamp.clone(),
             commands,

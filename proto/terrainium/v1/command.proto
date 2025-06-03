@@ -8,3 +8,13 @@ message Command {
   map<string, string> envs = 3;
   string cwd = 4;
 }
+
+message Execute {
+  optional string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string toml_path = 4;
+  bool is_constructor = 5;
+  string timestamp = 6;
+  repeated Command commands = 7;
+}

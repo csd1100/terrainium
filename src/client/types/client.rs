@@ -60,8 +60,7 @@ impl Client {
         let request: Any = match &payload {
             ProtoRequest::Activate(activate) => Any::from_msg(activate),
             ProtoRequest::Deactivate(deactivate) => Any::from_msg(deactivate),
-            ProtoRequest::Construct(construct) => Any::from_msg(construct),
-            ProtoRequest::Destruct(destruct) => Any::from_msg(destruct),
+            ProtoRequest::Execute(commands) => Any::from_msg(commands),
             ProtoRequest::Status(status) => Any::from_msg(status),
         }
         .context(format!("failed to convert request {:?} to any", payload))?;

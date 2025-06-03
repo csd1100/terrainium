@@ -2,7 +2,7 @@ use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Activate, Response};
 use crate::common::types::terrain_state::TerrainState;
-use crate::daemon::handlers::construct::spawn_constructors;
+use crate::daemon::handlers::execute::spawn_commands;
 use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
 use anyhow::{Context, Result};
@@ -41,7 +41,7 @@ async fn activate(request: Activate, context: DaemonContext) -> Response {
         trace!("successfully created state for terrain {terrain_name}({session_id})");
         if let Some(constructors) = constructors {
             trace!("spawning constructors for terrain {terrain_name}({session_id})");
-            result = spawn_constructors(constructors, context)
+            result = spawn_commands(constructors, context)
                 .await
                 .context("failed to spawn constructors while activating");
         }

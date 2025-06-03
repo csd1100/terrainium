@@ -7,7 +7,6 @@ use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_SESSION_ID};
 use crate::common::types::pb;
-use crate::common::types::pb::Construct;
 use crate::common::utils::timestamp;
 use anyhow::{Context as AnyhowContext, Result};
 use std::path::PathBuf;
@@ -28,23 +27,24 @@ pub async fn handle(
     };
 
     client
-        .request(ProtoRequest::Construct(construct(context, environment)?))
+        .request(ProtoRequest::Execute(construct(context, environment)?))
         .await?;
 
     Ok(())
 }
 
-fn construct(context: Context, environment: Environment) -> Result<Construct> {
+fn construct(context: Context, environment: Environment) -> Result<pb::Execute> {
     let commands: Vec<pb::Command> = environment
         .constructors()
         .to_proto_commands(environment.envs())
         .context("failed to convert commands")?;
 
-    Ok(Construct {
+    Ok(pb::Execute {
         session_id: std::env::var(TERRAIN_SESSION_ID).ok(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
         toml_path: context.toml_path().to_string_lossy().to_string(),
+        is_constructor: true,
         timestamp: timestamp(),
         commands,
     })

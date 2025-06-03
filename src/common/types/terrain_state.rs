@@ -150,6 +150,7 @@ impl From<pb::Activate> for TerrainState {
                     CommandState::from(
                         &terrain_name,
                         &session_id,
+                        true,
                         index,
                         &remove_non_numeric(&constructors.timestamp),
                         command,
@@ -172,13 +173,14 @@ impl From<pb::Activate> for TerrainState {
     }
 }
 
-impl From<pb::Construct> for TerrainState {
-    fn from(value: pb::Construct) -> Self {
-        let pb::Construct {
+impl From<pb::Execute> for TerrainState {
+    fn from(value: pb::Execute) -> Self {
+        let pb::Execute {
             session_id,
             terrain_name,
             biome_name,
             toml_path,
+            is_constructor,
             timestamp,
             commands,
         } = value;
@@ -192,13 +194,19 @@ impl From<pb::Construct> for TerrainState {
             .enumerate()
             .map(|(index, command)| CommandState {
                 command: command.into(),
-                log_path: get_log_path(&terrain_name, &identifier, index, &non_numeric),
+                log_path: get_log_path(
+                    &terrain_name,
+                    &identifier,
+                    is_constructor,
+                    index,
+                    &non_numeric,
+                ),
                 status: CommandStatus::Starting,
             })
             .collect();
         commands_state.insert(timestamp, states);
 
-        let (constructors, destructors) = if true {
+        let (constructors, destructors) = if is_constructor {
             (commands_state, HashMap::new())
         } else {
             (HashMap::new(), commands_state)
@@ -221,11 +229,17 @@ impl From<pb::Construct> for TerrainState {
 fn get_log_path(
     terrain_name: &str,
     identifier: &str,
+    is_constructor: bool,
     index: usize,
     numeric_timestamp: &str,
 ) -> String {
+    let operation = if is_constructor {
+        "constructor"
+    } else {
+        "destructor"
+    };
     format!(
-        "{TERRAINIUMD_TMP_DIR}/{terrain_name}/{identifier}/constructor.{index}.{numeric_timestamp}.log"
+        "{TERRAINIUMD_TMP_DIR}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
     )
 }
 
@@ -244,13 +258,20 @@ impl CommandState {
     pub(crate) fn from(
         terrain_name: &str,
         session_id: &str,
+        is_constructor: bool,
         index: usize,
         numeric_timestamp: &str,
         command: pb::Command,
     ) -> Self {
         Self {
             command: command.into(),
-            log_path: get_log_path(terrain_name, session_id, index, numeric_timestamp),
+            log_path: get_log_path(
+                terrain_name,
+                session_id,
+                is_constructor,
+                index,
+                numeric_timestamp,
+            ),
             status: CommandStatus::Starting,
         }
     }

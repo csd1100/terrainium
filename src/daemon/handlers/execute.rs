@@ -1,7 +1,7 @@
 use crate::common::execute::{CommandToRun, Execute};
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
-use crate::common::types::pb::{Construct, Response};
+use crate::common::types::pb::Response;
 use crate::common::types::terrain_state::{CommandState, CommandStatus, TerrainState};
 use crate::common::utils::remove_non_numeric;
 use crate::daemon::handlers::{error_response, RequestHandler};
@@ -11,26 +11,26 @@ use anyhow::{bail, Context, Result};
 use prost_types::Any;
 use tracing::{debug, error, trace};
 
-pub(crate) struct ConstructHandler;
+pub(crate) struct ExecuteHandler;
 
-impl RequestHandler for ConstructHandler {
+impl RequestHandler for ExecuteHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any {
-        trace!("handling Construct request");
-        let activate: Result<Construct> = request
+        trace!("handling Execute request");
+        let activate: Result<pb::Execute> = request
             .to_msg()
-            .context("failed to convert request to Construct");
+            .context("failed to convert request to Execute");
 
         trace!("result of attempting to parse request: {:#?}", activate);
 
         let response = match activate {
-            Ok(construct) => {
-                let result = spawn_constructors(construct, context)
+            Ok(commands) => {
+                let result = spawn_commands(commands, context)
                     .await
-                    .context("failed to spawn constructors");
+                    .context("failed to spawn commands");
                 if let Err(err) = result {
                     error_response(err)
                 } else {
-                    debug!("successfully spawned constructors");
+                    debug!("successfully spawned commands");
                     Response {
                         payload: Some(Body(pb::Body { message: None })),
                     }
@@ -42,17 +42,15 @@ impl RequestHandler for ConstructHandler {
     }
 }
 
-pub(crate) async fn spawn_constructors(
-    constructors: Construct,
-    context: DaemonContext,
-) -> Result<()> {
-    let timestamp = constructors.timestamp.clone();
+pub(crate) async fn spawn_commands(request: pb::Execute, context: DaemonContext) -> Result<()> {
+    let timestamp = request.timestamp.clone();
+    let is_constructor = request.is_constructor;
 
-    let (terrain_name, session_id) = if constructors.session_id.is_none() {
-        // session_id is not provided that means running constructors outside
-        // terrainium shell so create a new state
+    let (terrain_name, session_id) = if request.session_id.is_none() {
+        // session_id is not provided that means running constructors or destructors
+        // outside terrainium shell so create a new state
 
-        let state: TerrainState = constructors.into();
+        let state: TerrainState = request.into();
 
         let terrain_name = state.terrain_name().to_string();
         let session_id = state.session_id().to_string();
@@ -63,23 +61,36 @@ pub(crate) async fn spawn_constructors(
     } else {
         // if session_id is present check if CommandStatus is present for current
         // timestamp else add new entry
-        let session_id = constructors.session_id.unwrap();
-        let timestamp = constructors.timestamp;
+        let session_id = request.session_id.unwrap();
+        let timestamp = request.timestamp;
         let numeric_timestamp = remove_non_numeric(&timestamp);
-        let terrain_name = constructors.terrain_name;
+        let terrain_name = request.terrain_name;
 
-        let commands = constructors
+        let commands = request
             .commands
             .into_iter()
             .enumerate()
             .map(|(index, cmd)| {
-                CommandState::from(&terrain_name, &session_id, index, &numeric_timestamp, cmd)
+                CommandState::from(
+                    &terrain_name,
+                    &session_id,
+                    is_constructor,
+                    index,
+                    &numeric_timestamp,
+                    cmd,
+                )
             })
             .collect();
 
         context
             .state_manager()
-            .add_commands_if_necessary(&terrain_name, &session_id, &timestamp, true, commands)
+            .add_commands_if_necessary(
+                &terrain_name,
+                &session_id,
+                &timestamp,
+                is_constructor,
+                commands,
+            )
             .await
             .context("failed to add commands to state manager")?;
 
@@ -96,7 +107,7 @@ pub(crate) async fn spawn_constructors(
         .clone()
         .read()
         .await
-        .commands(true, &timestamp)?;
+        .commands(is_constructor, &timestamp)?;
 
     commands
         .into_iter()
@@ -108,8 +119,15 @@ pub(crate) async fn spawn_constructors(
                 command, log_path, ..
             } = cmd_state;
             tokio::spawn(async move {
-                let res =
-                    spawn_command(stored_state, true, timestamp, index, command, log_path).await;
+                let res = spawn_command(
+                    stored_state,
+                    is_constructor,
+                    timestamp,
+                    index,
+                    command,
+                    log_path,
+                )
+                .await;
 
                 if let Err(err) = res {
                     error!("failed to spawn command: {:?}", err);

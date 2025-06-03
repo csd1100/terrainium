@@ -4,8 +4,7 @@ use crate::common::types::pb;
 pub enum ProtoRequest {
     Activate(pb::Activate),
     Deactivate(pb::Deactivate),
-    Construct(pb::Construct),
-    Destruct(pb::Destruct),
+    Execute(pb::Execute),
     Status(pb::StatusRequest),
 }
 
