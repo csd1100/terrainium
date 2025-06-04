@@ -1,5 +1,6 @@
 use crate::common::constants::TERRAIN_STATE_FILE_NAME;
 use crate::common::types::terrain_state::{CommandState, TerrainState};
+use crate::daemon::types::history::History;
 use crate::daemon::types::state::State;
 use anyhow::{bail, Context, Result};
 use std::collections::HashMap;
@@ -10,10 +11,12 @@ use tokio::time;
 use tracing::{debug, trace};
 
 pub type StoredState = Arc<RwLock<State>>;
+pub type StoredHistory = Arc<RwLock<History>>;
 
 #[derive(Default, Clone, Debug)]
 pub struct StateManager {
     states: Arc<RwLock<HashMap<String, StoredState>>>,
+    histories: Arc<RwLock<HashMap<String, StoredHistory>>>,
 }
 
 fn state_key(terrain_name: &str, session_id: &str) -> String {
@@ -23,7 +26,24 @@ fn state_key(terrain_name: &str, session_id: &str) -> String {
 impl StateManager {
     pub async fn init() -> Self {
         let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
-        Self { states }
+        let histories = Arc::new(RwLock::new(HashMap::<String, StoredHistory>::new()));
+        Self { states, histories }
+    }
+
+    pub(crate) async fn get_or_create_history(&self, terrain_name: &str) -> Result<StoredHistory> {
+        debug!("getting history for terrain {terrain_name}");
+        let history = self.histories.read().await;
+        if let Some(h) = history.get(terrain_name) {
+            debug!("history already exists for terrain {terrain_name}");
+            Ok(h.clone())
+        } else {
+            drop(history);
+            debug!("creating history for terrain {terrain_name}");
+            let history = Arc::new(RwLock::new(History::read(terrain_name).await?));
+            let mut histories = self.histories.write().await;
+            histories.insert(terrain_name.to_string(), history.clone());
+            Ok(history)
+        }
     }
 
     pub(crate) async fn create_state(&self, terrain_state: TerrainState) -> Result<()> {
@@ -36,8 +56,13 @@ impl StateManager {
             "creating state"
         );
 
+        let history = self
+            .get_or_create_history(&terrain_name)
+            .await
+            .context(format!("failed to create history file {terrain_name}"))?;
+
         let state = Arc::new(RwLock::new(
-            State::new(terrain_state)
+            State::new(history, terrain_state)
                 .await
                 .context("failed to create state")?,
         ));
@@ -105,8 +130,13 @@ impl StateManager {
             timestamp = timestamp,
             "adding commands"
         );
+        let history = self
+            .get_or_create_history(terrain_name)
+            .await
+            .context(format!("failed to create history file {terrain_name}"))?;
+
         state
-            .add_commands_if_necessary(timestamp, is_constructor, commands)
+            .add_commands_if_necessary(history, timestamp, is_constructor, commands)
             .await
             .context("failed to add commands")
     }
@@ -125,8 +155,12 @@ impl StateManager {
             session_id = session_id,
             "updating end_timestamp"
         );
+        let history = self
+            .get_or_create_history(terrain_name)
+            .await
+            .context(format!("failed to create history file {terrain_name}"))?;
         state
-            .update_end_timestamp(end_timestamp)
+            .update_end_timestamp(history, end_timestamp)
             .await
             .context("failed to update end_timestamp")
     }

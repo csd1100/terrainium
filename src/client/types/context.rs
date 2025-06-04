@@ -8,11 +8,10 @@ use home::home_dir;
 use std::env;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
-use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Context {
-    session_id: String,
+    session_id: Option<String>,
     terrain_dir: PathBuf,
     central_dir: PathBuf,
     toml_path: PathBuf,
@@ -98,8 +97,7 @@ impl Context {
         central_dir: PathBuf,
         toml_path: PathBuf,
     ) -> Result<Context> {
-        let session_id =
-            env::var(TERRAIN_SESSION_ID).unwrap_or_else(|_| Uuid::new_v4().to_string());
+        let session_id = env::var(TERRAIN_SESSION_ID).ok();
         let config = Config::from_file().unwrap_or_default();
 
         let shell = Zsh::get(&current_dir().context("failed to get current directory")?);
@@ -118,8 +116,8 @@ impl Context {
         })
     }
 
-    pub fn session_id(&self) -> &str {
-        &self.session_id
+    pub fn session_id(&self) -> Option<String> {
+        self.session_id.clone()
     }
 
     pub fn terrain_dir(&self) -> &Path {
@@ -150,6 +148,11 @@ impl Context {
         &self.config
     }
 
+    pub fn set_session_id(mut self, session_id: String) -> Self {
+        self.session_id = Some(session_id);
+        self
+    }
+
     #[cfg(test)]
     pub(crate) fn build(
         terrain_dir: PathBuf,
@@ -158,7 +161,7 @@ impl Context {
         shell: Zsh,
     ) -> Self {
         Context {
-            session_id: "some".to_string(),
+            session_id: Some("some".to_string()),
             terrain_dir,
             central_dir,
             toml_path,
@@ -176,7 +179,7 @@ impl Context {
         shell: Zsh,
     ) -> Self {
         Context {
-            session_id: "some".to_string(),
+            session_id: Some("some".to_string()),
             terrain_dir,
             toml_path,
             central_dir,
@@ -191,7 +194,7 @@ impl Context {
         let toml_path = terrain_dir.join(TERRAIN_TOML);
         let central_dir = get_central_dir_location(&terrain_dir);
         Context {
-            session_id: "some".to_string(),
+            session_id: Some("some".to_string()),
             central_dir,
             terrain_dir,
             toml_path,

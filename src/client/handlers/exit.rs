@@ -18,7 +18,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     let session_id = context.session_id();
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).unwrap_or_default();
 
-    if session_id.is_empty() || selected_biome.is_empty() {
+    if session_id.is_none() || selected_biome.is_empty() {
         bail!("no active terrain found, use 'terrainium enter' command to activate a terrain.");
     }
 
@@ -31,7 +31,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     client
         .request(ProtoRequest::Deactivate(deactivate(
             terrain.name().to_string(),
-            session_id.to_string(),
+            session_id.expect("session id to be present").to_string(),
             selected_biome,
             terrain,
             context,

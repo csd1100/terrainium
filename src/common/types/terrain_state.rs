@@ -1,5 +1,6 @@
 use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
 use crate::common::execute::CommandToRun;
+use crate::common::types::history::HistoryArg;
 use crate::common::types::pb;
 use crate::common::utils::remove_non_numeric;
 use anyhow::{bail, Context, Result};
@@ -394,16 +395,12 @@ fn get_log_path(
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommandState {
-    pub(crate) command: CommandToRun,
-    pub(crate) log_path: String,
+    command: CommandToRun,
+    log_path: String,
     status: CommandStatus,
 }
 
 impl CommandState {
-    pub(crate) fn set_status(&mut self, status: CommandStatus) {
-        self.status = status;
-    }
-
     pub(crate) fn from(
         terrain_name: &str,
         session_id: &str,
@@ -423,6 +420,14 @@ impl CommandState {
             ),
             status: CommandStatus::Starting,
         }
+    }
+
+    pub(crate) fn command_and_log_path(self) -> (CommandToRun, String) {
+        (self.command, self.log_path)
+    }
+
+    pub(crate) fn set_status(&mut self, status: CommandStatus) {
+        self.status = status;
     }
 }
 
@@ -475,5 +480,20 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
             log_path,
             status,
         })
+    }
+}
+
+impl TryFrom<pb::status_request::HistoryArg> for HistoryArg {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::status_request::HistoryArg) -> Result<Self, Self::Error> {
+        match value {
+            pb::status_request::HistoryArg::HistoryUnspecified => {
+                bail!("unspecified history parameter")
+            }
+            pb::status_request::HistoryArg::HistoryRecent => Ok(HistoryArg::Recent),
+            pb::status_request::HistoryArg::HistoryRecent1 => Ok(HistoryArg::Recent1),
+            pb::status_request::HistoryArg::HistoryRecent2 => Ok(HistoryArg::Recent2),
+            pb::status_request::HistoryArg::HistoryCurrent => Ok(HistoryArg::Current),
+        }
     }
 }

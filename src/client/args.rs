@@ -1,6 +1,7 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
 use crate::common::constants::NONE;
+use crate::common::types::history::HistoryArg;
 use anyhow::bail;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
@@ -126,7 +127,14 @@ pub enum Verbs {
 
     Exit,
 
-    Status,
+    Status {
+        #[arg(short, long)]
+        json: bool,
+        #[arg(long, default_value = "current", group = "session")]
+        history: HistoryArg,
+        #[arg(short, long, group = "session")]
+        session_id: Option<String>,
+    },
 
     #[cfg(feature = "terrain-schema")]
     Schema,
@@ -184,6 +192,16 @@ impl GetArgs {
     }
 }
 
+pub struct UpdateArgs {
+    pub set_default: Option<String>,
+    pub biome: BiomeArg,
+    pub alias: Vec<Pair>,
+    pub env: Vec<Pair>,
+    pub new: Option<String>,
+    pub backup: bool,
+    pub auto_apply: Option<AutoApply>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pair {
     pub key: String,
@@ -229,16 +247,6 @@ impl FromStr for AutoApply {
             _ => bail!("failed to parse auto_apply argument from: {s}"),
         }
     }
-}
-
-pub struct UpdateArgs {
-    pub set_default: Option<String>,
-    pub biome: BiomeArg,
-    pub alias: Vec<Pair>,
-    pub env: Vec<Pair>,
-    pub new: Option<String>,
-    pub backup: bool,
-    pub auto_apply: Option<AutoApply>,
 }
 
 #[cfg(test)]

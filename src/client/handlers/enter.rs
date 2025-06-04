@@ -13,6 +13,7 @@ use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
 use std::path::PathBuf;
+use uuid::Uuid;
 
 pub async fn handle(
     context: Context,
@@ -21,6 +22,8 @@ pub async fn handle(
     auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
+    let context = context.set_session_id(Uuid::new_v4().to_string());
+
     let mut environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
@@ -32,7 +35,10 @@ pub async fn handle(
     environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
     environment.insert_env(
         TERRAIN_SESSION_ID.to_string(),
-        context.session_id().to_string(),
+        context
+            .session_id()
+            .expect("session id to be set")
+            .to_string(),
     );
     if auto_apply {
         environment.insert_env(
@@ -100,7 +106,12 @@ fn activate_request(
             .context("failed to convert commands")?;
 
         Some(pb::Execute {
-            session_id: Some(context.session_id().to_string()),
+            session_id: Some(
+                context
+                    .session_id()
+                    .expect("session id to be set")
+                    .to_string(),
+            ),
             terrain_name: environment.name().to_string(),
             biome_name: environment.selected_biome().to_string(),
             is_constructor: true,
@@ -113,7 +124,10 @@ fn activate_request(
     };
 
     Ok(pb::Activate {
-        session_id: context.session_id().to_string(),
+        session_id: context
+            .session_id()
+            .expect("session id to be set")
+            .to_string(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
         toml_path: context.toml_path().display().to_string(),

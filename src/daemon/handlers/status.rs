@@ -3,7 +3,7 @@ use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Response, StatusRequest};
 use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::Context;
+use anyhow::{bail, Context, Result};
 use prost_types::Any;
 use tracing::trace;
 
@@ -19,33 +19,45 @@ impl RequestHandler for StatusHandler {
         trace!("result of attempting to parse request: {:#?}", request);
 
         let response = match request {
-            Ok(data) => status(data, context).await,
+            Ok(data) => status(data, context).await.unwrap_or_else(error_response),
             Err(err) => error_response(err),
         };
         Any::from_msg(&response).unwrap()
     }
 }
 
-async fn status(request: StatusRequest, context: DaemonContext) -> Response {
+async fn status(request: StatusRequest, context: DaemonContext) -> Result<Response> {
     let StatusRequest {
-        session_id,
+        identifier,
         terrain_name,
     } = request;
-    let result = context
+
+    if identifier.is_none() {
+        bail!("identifier missing from status request");
+    }
+
+    let stored_history = context
+        .state_manager()
+        .get_or_create_history(&terrain_name)
+        .await
+        .context(format!("failed to create history file {terrain_name}"))?;
+
+    let session_id = stored_history
+        .read()
+        .await
+        .get_session(identifier.unwrap())
+        .context("failed to get session id from history")?;
+
+    let stored_state = context
         .state_manager()
         .refreshed_state(&terrain_name, &session_id)
-        .await;
+        .await
+        .context("failed to fetch the state")?;
 
-    match result {
-        Ok(stored_state) => {
-            let state = stored_state.read().await;
-            let state: pb::StatusResponse = state.state().into();
-            Response {
-                payload: Some(Body(pb::Body {
-                    message: Some(state),
-                })),
-            }
-        }
-        Err(err) => error_response(err),
-    }
+    let state: pb::StatusResponse = stored_state.read().await.state().into();
+    Ok(Response {
+        payload: Some(Body(pb::Body {
+            message: Some(state),
+        })),
+    })
 }

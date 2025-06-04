@@ -5,7 +5,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_SESSION_ID};
+use crate::common::constants::TERRAINIUMD_SOCKET;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{Context as AnyhowContext, Result};
@@ -40,7 +40,7 @@ fn construct(context: Context, environment: Environment) -> Result<pb::Execute> 
         .context("failed to convert commands")?;
 
     Ok(pb::Execute {
-        session_id: std::env::var(TERRAIN_SESSION_ID).ok(),
+        session_id: context.session_id(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
         toml_path: context.toml_path().to_string_lossy().to_string(),

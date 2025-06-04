@@ -6,7 +6,7 @@ use crate::common::types::terrain_state::{CommandState, CommandStatus, TerrainSt
 use crate::common::utils::remove_non_numeric;
 use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
-use crate::daemon::types::state_manager::StoredState;
+use crate::daemon::types::state_manager::{StoredHistory, StoredState};
 use anyhow::{bail, Context, Result};
 use prost_types::Any;
 use tracing::{debug, error, trace};
@@ -109,17 +109,23 @@ pub(crate) async fn spawn_commands(request: pb::Execute, context: DaemonContext)
         .await
         .commands(is_constructor, &timestamp)?;
 
+    let history = context
+        .state_manager()
+        .get_or_create_history(&terrain_name)
+        .await
+        .context(format!("failed to create history file {terrain_name}"))?;
+
     commands
         .into_iter()
         .enumerate()
         .for_each(|(index, cmd_state)| {
+            let history = history.clone();
             let stored_state = stored_state.clone();
             let timestamp = timestamp.clone();
-            let CommandState {
-                command, log_path, ..
-            } = cmd_state;
+            let (command, log_path) = cmd_state.command_and_log_path();
             tokio::spawn(async move {
                 let res = spawn_command(
+                    history,
                     stored_state,
                     is_constructor,
                     timestamp,
@@ -139,6 +145,7 @@ pub(crate) async fn spawn_commands(request: pb::Execute, context: DaemonContext)
 }
 
 async fn spawn_command(
+    history: StoredHistory,
     stored_state: StoredState,
     is_constructor: bool,
     timestamp: String,
@@ -164,7 +171,13 @@ async fn spawn_command(
 
     let mut state_mut = stored_state.write().await;
     state_mut
-        .update_command_status(is_constructor, &timestamp, index, CommandStatus::Running)
+        .update_command_status(
+            history.clone(),
+            is_constructor,
+            &timestamp,
+            index,
+            CommandStatus::Running,
+        )
         .await?;
     drop(state_mut);
 
@@ -176,6 +189,7 @@ async fn spawn_command(
             if exit_status.success() {
                 state_mut
                     .update_command_status(
+                        history,
                         is_constructor,
                         &timestamp,
                         index,
@@ -193,6 +207,7 @@ async fn spawn_command(
             } else {
                 state_mut
                     .update_command_status(
+                        history,
                         is_constructor,
                         &timestamp,
                         index,
@@ -218,6 +233,7 @@ async fn spawn_command(
         Err(err) => {
             state_mut
                 .update_command_status(
+                    history,
                     is_constructor,
                     &timestamp,
                     index,
