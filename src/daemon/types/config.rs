@@ -6,7 +6,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use tracing::{event, Level};
+use tracing::info;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ impl Default for DaemonConfig {
 impl DaemonConfig {
     pub fn from_file() -> Result<Self> {
         let path = get_config_path();
-        event!(Level::INFO, "reading config from {:?}", path);
+        info!("reading config from {path:?}");
         if path.exists() {
             if let Ok(toml_str) = read_to_string(&path) {
                 return toml::from_str(&toml_str).context("invalid config");
@@ -53,10 +53,10 @@ impl DaemonConfig {
     pub fn create_file() -> Result<()> {
         let path = get_config_path();
         if path.exists() {
-            event!(Level::INFO, "config file already exists at path {:?}", path);
+            info!("config file already exists at path {path:?}");
             return Ok(());
         }
-        event!(Level::INFO, "creating config file at path {:?}", path);
+        info!("creating config file at path {path:?}");
         let config = toml::to_string_pretty(&Self::default())
             .expect("default configuration should be parsed");
         write(path, config).context("failed to write configuration file")

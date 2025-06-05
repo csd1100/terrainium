@@ -199,6 +199,7 @@ impl StateManager {
     }
 
     pub fn setup_cleanup(&self) {
+        trace!("setting up state cleanup timer");
         let states = self.states.clone();
         tokio::task::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(180));
@@ -219,7 +220,7 @@ impl StateManager {
             }
         });
         cleanups.into_iter().for_each(|name| {
-            debug!("cleaning up state file for {}", name);
+            debug!("cleaning up state file for {name}");
             map.remove(&name);
         });
     }

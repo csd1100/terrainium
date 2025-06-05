@@ -8,7 +8,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 use tokio::fs;
-use tracing::{event, instrument, Level};
+use tracing::{info, instrument, trace};
 
 pub trait Execute {
     fn get_output(self) -> Result<Output>;
@@ -139,18 +139,15 @@ impl Execute for CommandToRun {
 
     #[instrument]
     async fn async_get_output(self) -> Result<Output> {
-        event!(Level::INFO, "running async get_output for '{self}'");
-        event!(Level::TRACE, "running async process {self:?}");
+        info!("running async get_output for '{self}'");
+        trace!("running async process {self:?}");
         let mut command: tokio::process::Command = self.into();
         command.output().await.context("failed to get output")
     }
 
     async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
-        event!(
-            Level::INFO,
-            "running async process with wait for '{self}', with logs in file: {log_path}",
-        );
-        event!(Level::TRACE, "running async process with wait {self:?}");
+        info!("running async process with wait for '{self}', with logs in file: {log_path}",);
+        trace!("running async process with wait {self:?}");
 
         let log_file = fs::File::options()
             .create(true)

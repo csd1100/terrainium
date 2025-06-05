@@ -4,7 +4,7 @@ use std::fs::{create_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
-use tracing::{event, instrument, Level};
+use tracing::{error, info, instrument, warn};
 
 pub struct Daemon {
     path: PathBuf,
@@ -19,24 +19,18 @@ impl Daemon {
         }
 
         if !path.exists() {
-            event!(
-                Level::WARN,
-                "creating directories required for path: {path:?}"
-            );
+            warn!("creating directories required for path: {path:?}");
             create_dir_all(path.parent().expect("socket to have parent"))
                 .expect("creating parent directory");
         } else if path.exists() && force {
-            event!(Level::WARN, "cleaning up daemon socket on path: {path:?}");
+            warn!("cleaning up daemon socket on path: {path:?}");
             remove_file(&path).expect("dangling socket to be cleaned up");
         } else {
-            event!(
-                Level::ERROR,
-                "daemon socket already exists on path: {path:?}"
-            );
+            error!("daemon socket already exists on path: {path:?}");
             bail!("daemon socket already exists");
         }
 
-        event!(Level::INFO, "creating daemon on path: {path:?}");
+        info!("creating daemon on path: {path:?}");
         let listener = UnixListenerStream::new(
             UnixListener::bind(TERRAINIUMD_SOCKET).context("failed to bind to socket")?,
         );

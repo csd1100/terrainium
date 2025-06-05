@@ -17,7 +17,7 @@ use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 use std::str::FromStr;
-use tracing::{event, Level};
+use tracing::warn;
 
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
 
@@ -57,7 +57,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         if !exists(&init_script_location)
             .context("failed to check if shell integration script exists")?
         {
-            event!(Level::WARN,"shell-integration script not found in config directory, copying script to config directory");
+            warn!("shell-integration script not found in config directory, copying script to config directory");
 
             write(&init_script_location, INIT_SCRIPT)
                 .context("failed to create shell-integration script file")?;
@@ -74,7 +74,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
             remove_file(&init_script_location)
                 .context("failed to remove outdated shell-integration script")?;
 
-            event!(Level::WARN, "shell-integration script was outdated in config directory, copying newer script to config directory");
+            warn!("shell-integration script was outdated in config directory, copying newer script to config directory");
 
             write(&init_script_location, INIT_SCRIPT)
                 .context("failed to create updated shell-integration script file")?;

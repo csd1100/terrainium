@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
@@ -12,11 +12,11 @@ use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
 use tokio_stream::StreamExt;
 use tracing::metadata::LevelFilter;
-use tracing::{event, instrument, Level};
+use tracing::{debug, error, info, trace, warn};
 
 fn get_daemon_config() -> DaemonConfig {
     let config = DaemonConfig::from_file().unwrap_or_default();
-    event!(Level::INFO, "config: {:?}", config);
+    debug!("config: {config:#?}");
     config
 }
 
@@ -31,19 +31,15 @@ fn is_user_root() -> bool {
 
     if let Ok(user) = user {
         let user = String::from_utf8_lossy(&user.stdout);
-        event!(Level::INFO, "running service as user: {}", user.trim());
+        info!("running service as user: {}", user.trim());
         if user.contains("root") {
-            event!(
-                Level::WARN,
+            warn!(
                 "running service as root is not advised, see terrainium docs for more information."
             );
             return true;
         }
     } else {
-        event!(
-            Level::INFO,
-            "could not figure out user running service, running in non-root mode."
-        );
+        warn!("could not figure out user running service, running in non-root mode.");
     }
     false
 }
@@ -54,9 +50,7 @@ async fn get_daemon_context() -> DaemonContext {
     context
 }
 
-#[instrument]
-#[tokio::main]
-async fn main() -> Result<()> {
+async fn start() -> Result<()> {
     let args = DaemonArgs::parse();
 
     let (subscriber, (_file_guard, _out_guard)) = init_logging(LevelFilter::from(args.log_level));
@@ -65,10 +59,7 @@ async fn main() -> Result<()> {
     if args.create_config {
         let res = DaemonConfig::create_file();
         if let Err(err) = res {
-            event!(
-                Level::ERROR,
-                "failed to create terrainiumd config file: {err}",
-            );
+            error!("failed to create terrainiumd config file: {err:#?}",);
         }
         return Ok(());
     }
@@ -76,12 +67,8 @@ async fn main() -> Result<()> {
     let context = get_daemon_context().await;
 
     if context.should_exit_early() {
-        event!(
-            Level::ERROR,
-            context = ?context,
-            "exiting as service was started as root without being configured.",
-        );
-        anyhow::bail!("exiting as service was running as root");
+        error!("exiting as service was started as root without being configured.",);
+        bail!("exiting as service was running as root");
     }
 
     let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)
@@ -91,7 +78,7 @@ async fn main() -> Result<()> {
 
     while let Some(socket) = listener.next().await.transpose()? {
         let context = context.clone();
-        event!(Level::TRACE, "received socket connection");
+        trace!("received socket connection");
         let _ = tokio::spawn(async move {
             handle_request(DaemonSocket::new(socket), context).await;
         })
@@ -99,4 +86,18 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    match start().await {
+        Ok(_) => {
+            info!("exiting terrainiumd");
+        }
+        Err(err) => {
+            let error = format!("exiting terrainiumd with an error: {err:#?}");
+            eprintln!("{error}");
+            error!("{error}");
+        }
+    }
 }

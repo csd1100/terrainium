@@ -2,7 +2,7 @@ use crate::client::types::command::{Command, CommandsType, OperationType};
 use regex::Regex;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Formatter;
-use tracing::{event, Level};
+use tracing::{debug, error, info, warn};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
@@ -133,16 +133,16 @@ impl<'a> ValidationResults<'a> {
             let target = format!("terrain_validation({})", message.r#for);
             match message.level {
                 ValidationMessageLevel::Debug => {
-                    event!(Level::DEBUG, r#for = target, "{:?}", message.message);
+                    debug!(r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Info => {
-                    event!(Level::INFO, r#for = target, "{:?}", message.message);
+                    info!(r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Warn => {
-                    event!(Level::WARN, r#for = target, "{:?}", message.message);
+                    warn!(r#for = target, "{:?}", message.message);
                 }
                 ValidationMessageLevel::Error => {
-                    event!(Level::ERROR, r#for = target, "{:?}", message.message);
+                    error!(r#for = target, "{:?}", message.message);
                 }
             }
         })

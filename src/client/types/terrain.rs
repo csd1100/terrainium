@@ -18,7 +18,7 @@ use std::fs::{read_to_string, write};
 use std::path::Path;
 use std::str::FromStr;
 use toml_edit::DocumentMut;
-use tracing::{event, Level};
+use tracing::info;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -156,7 +156,7 @@ impl Terrain {
             return Ok((unvalidated_terrain, terrain_toml));
         }
 
-        event!(Level::INFO, "updating the terrain with fixable values");
+        info!("updating the terrain with fixable values");
         let (fixed, fixed_toml) =
             Terrain::fix_invalid_values(&unvalidated_terrain, terrain_toml, validation_results);
         write(context.toml_path(), fixed_toml.to_string())
@@ -287,32 +287,19 @@ impl Terrain {
 
                     match target {
                         Target::Env(e) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {e}",
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {e}");
                             let trimmed = e.trim();
                             fixed_biome.replace_env_key(e, trimmed);
                             Biome::replace_env_key_toml(biome_toml, e, trimmed);
                         }
                         Target::Alias(a) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {a}",
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {a}");
                             let trimmed = a.trim();
                             fixed_biome.replace_alias_key(a, trimmed);
                             Biome::replace_alias_key_toml(biome_toml, a, trimmed);
                         }
                         Target::ForegroundConstructor(fc) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                fc.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", fc.exe());
                             let fixed = Command::new(
                                 fc.exe().trim().to_string(),
                                 fc.args().to_vec(),
@@ -331,12 +318,7 @@ impl Terrain {
                             );
                         }
                         Target::BackgroundConstructor(bc) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                bc.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", bc.exe());
                             let fixed = Command::new(
                                 bc.exe().trim().to_string(),
                                 bc.args().to_vec(),
@@ -354,12 +336,7 @@ impl Terrain {
                             )
                         }
                         Target::ForegroundDestructor(fd) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                fd.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", fd.exe());
                             let fixed = Command::new(
                                 fd.exe().trim().to_string(),
                                 fd.args().to_vec(),
@@ -378,12 +355,7 @@ impl Terrain {
                             );
                         }
                         Target::BackgroundDestructor(bd) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                bd.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", bd.exe());
                             let fixed = Command::new(
                                 bd.exe().trim().to_string(),
                                 bd.args().to_vec(),
