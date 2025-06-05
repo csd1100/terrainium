@@ -2,12 +2,88 @@ use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
 use crate::common::execute::CommandToRun;
 use crate::common::types::history::HistoryArg;
 use crate::common::types::pb;
+use crate::common::types::styles::{
+    colored, error, heading, sub_heading, sub_value, success, value, warning,
+};
 use crate::common::utils::remove_non_numeric;
 use anyhow::{bail, Context, Result};
+use clap::builder::styling::AnsiColor;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use tracing::debug;
+
+fn get_log_path(
+    terrain_name: &str,
+    identifier: &str,
+    is_constructor: bool,
+    index: usize,
+    numeric_timestamp: &str,
+) -> String {
+    let operation = if is_constructor {
+        "constructor"
+    } else {
+        "destructor"
+    };
+    format!(
+        "{TERRAINIUMD_TMP_DIR}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
+    )
+}
+
+fn command_states_to_proto(
+    input: BTreeMap<String, Vec<CommandState>>,
+) -> BTreeMap<String, pb::status_response::CommandStates> {
+    let mut result = BTreeMap::<String, pb::status_response::CommandStates>::new();
+
+    input.into_iter().for_each(|(key, states)| {
+        let states = states.into_iter().map(Into::into).collect();
+        let wrapper = pb::status_response::CommandStates {
+            command_states: states,
+        };
+        result.insert(key, wrapper);
+    });
+
+    result
+}
+
+fn command_states_from(
+    input: BTreeMap<String, pb::status_response::CommandStates>,
+) -> Result<BTreeMap<String, Vec<CommandState>>> {
+    let mut result = BTreeMap::<String, Vec<CommandState>>::new();
+
+    let res: Result<Vec<_>> = input
+        .into_iter()
+        .map(|(key, wrapper)| -> Result<_> {
+            let res: Result<Vec<CommandState>> = wrapper
+                .command_states
+                .into_iter()
+                .map(|state| state.try_into())
+                .collect();
+            let res = res.context(format!(
+                "failed to convert command states for timestamp: {key}"
+            ))?;
+            result.insert(key, res);
+            Ok(())
+        })
+        .collect();
+
+    if let Err(e) = res {
+        bail!("failed to convert command states: {e}");
+    }
+
+    Ok(result)
+}
+
+fn command_states_to_display(command_states: &BTreeMap<String, Vec<CommandState>>) -> String {
+    command_states
+        .iter()
+        .map(|(key, value)| {
+            let commands: String = value.iter().map(|c| c.to_string()).collect();
+            format!(r#"  {} {}"#, sub_heading(key), commands)
+        })
+        .collect()
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TerrainState {
@@ -138,6 +214,136 @@ impl TerrainState {
     }
 }
 
+impl Display for TerrainState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"{} {}({})
+{} {}
+{} {}
+{} {}
+{} {}
+{} {}
+{}
+  {}
+{}
+  {}
+"#,
+            heading("󰛍 terrain"),
+            value(&self.terrain_name),
+            sub_value(&self.biome_name),
+            heading("󰇐 location"),
+            value(&self.toml_path),
+            heading("󰻾 session"),
+            value(&self.session_id),
+            heading("󱑀 started"),
+            value(&self.start_timestamp),
+            heading("󱑈 ended"),
+            value(&self.end_timestamp),
+            heading(" background"),
+            value(if self.is_background { "yes" } else { "no" }),
+            heading(" constructors"),
+            command_states_to_display(&self.constructors),
+            heading(" destructors"),
+            command_states_to_display(&self.destructors),
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CommandState {
+    command: CommandToRun,
+    log_path: String,
+    status: CommandStatus,
+}
+
+impl CommandState {
+    pub(crate) fn from(
+        terrain_name: &str,
+        session_id: &str,
+        is_constructor: bool,
+        index: usize,
+        numeric_timestamp: &str,
+        command: pb::Command,
+    ) -> Self {
+        Self {
+            command: command.into(),
+            log_path: get_log_path(
+                terrain_name,
+                session_id,
+                is_constructor,
+                index,
+                numeric_timestamp,
+            ),
+            status: CommandStatus::Starting,
+        }
+    }
+
+    pub(crate) fn command_and_log_path(self) -> (CommandToRun, String) {
+        (self.command, self.log_path)
+    }
+
+    pub(crate) fn set_status(&mut self, status: CommandStatus) {
+        self.status = status;
+    }
+}
+
+impl Display for CommandState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"
+        
+        ├ {}  {} {}
+        ├ {}  {}
+        ├ {}  {}
+        └ {}"#,
+            colored("", AnsiColor::BrightGreen),
+            value(self.command.exe()),
+            value(&self.command.args().join(" ")),
+            colored("", AnsiColor::BrightYellow),
+            value(self.command.cwd().to_str().unwrap()),
+            colored("", AnsiColor::BrightWhite),
+            sub_value(&self.log_path),
+            self.status
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum CommandStatus {
+    Starting,
+    Running,
+    Failed(Option<i32>),
+    Succeeded,
+}
+
+impl Display for CommandStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommandStatus::Starting => {
+                write!(f, "{}", value(" starting"))
+            }
+            CommandStatus::Running => {
+                write!(f, "{}", warning("󱍸 running"))
+            }
+            CommandStatus::Failed(exit_code) => {
+                write!(
+                    f,
+                    "{}",
+                    error(&format!(
+                        "  failed with exit code {}",
+                        exit_code.unwrap_or(-1)
+                    ))
+                )
+            }
+            CommandStatus::Succeeded => {
+                write!(f, "{}", success("  success"))
+            }
+        }
+    }
+}
+
 impl From<pb::Activate> for TerrainState {
     fn from(value: pb::Activate) -> Self {
         let pb::Activate {
@@ -236,49 +442,6 @@ impl From<pb::Execute> for TerrainState {
     }
 }
 
-fn command_states_to_proto(
-    input: BTreeMap<String, Vec<CommandState>>,
-) -> BTreeMap<String, pb::status_response::CommandStates> {
-    let mut result = BTreeMap::<String, pb::status_response::CommandStates>::new();
-
-    input.into_iter().for_each(|(key, states)| {
-        let states = states.into_iter().map(Into::into).collect();
-        let wrapper = pb::status_response::CommandStates {
-            command_states: states,
-        };
-        result.insert(key, wrapper);
-    });
-
-    result
-}
-fn command_states_from(
-    input: BTreeMap<String, pb::status_response::CommandStates>,
-) -> Result<BTreeMap<String, Vec<CommandState>>> {
-    let mut result = BTreeMap::<String, Vec<CommandState>>::new();
-
-    let res: Result<Vec<_>> = input
-        .into_iter()
-        .map(|(key, wrapper)| -> Result<_> {
-            let res: Result<Vec<CommandState>> = wrapper
-                .command_states
-                .into_iter()
-                .map(|state| state.try_into())
-                .collect();
-            let res = res.context(format!(
-                "failed to convert command states for timestamp: {key}"
-            ))?;
-            result.insert(key, res);
-            Ok(())
-        })
-        .collect();
-
-    if let Err(e) = res {
-        bail!("failed to convert command states: {e}");
-    }
-
-    Ok(result)
-}
-
 impl TryFrom<pb::StatusResponse> for TerrainState {
     type Error = anyhow::Error;
     fn try_from(value: pb::StatusResponse) -> Result<Self, Self::Error> {
@@ -374,69 +537,6 @@ impl From<CommandState> for pb::status_response::CommandState {
             exit_code,
         }
     }
-}
-
-fn get_log_path(
-    terrain_name: &str,
-    identifier: &str,
-    is_constructor: bool,
-    index: usize,
-    numeric_timestamp: &str,
-) -> String {
-    let operation = if is_constructor {
-        "constructor"
-    } else {
-        "destructor"
-    };
-    format!(
-        "{TERRAINIUMD_TMP_DIR}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
-    )
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommandState {
-    command: CommandToRun,
-    log_path: String,
-    status: CommandStatus,
-}
-
-impl CommandState {
-    pub(crate) fn from(
-        terrain_name: &str,
-        session_id: &str,
-        is_constructor: bool,
-        index: usize,
-        numeric_timestamp: &str,
-        command: pb::Command,
-    ) -> Self {
-        Self {
-            command: command.into(),
-            log_path: get_log_path(
-                terrain_name,
-                session_id,
-                is_constructor,
-                index,
-                numeric_timestamp,
-            ),
-            status: CommandStatus::Starting,
-        }
-    }
-
-    pub(crate) fn command_and_log_path(self) -> (CommandToRun, String) {
-        (self.command, self.log_path)
-    }
-
-    pub(crate) fn set_status(&mut self, status: CommandStatus) {
-        self.status = status;
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum CommandStatus {
-    Starting,
-    Running,
-    Failed(Option<i32>),
-    Succeeded,
 }
 
 impl TryFrom<pb::status_response::CommandState> for CommandState {

@@ -84,7 +84,7 @@ function __terrainium_preexec_functions() {
     tconstruct="terrainium construct*"
     tdestruct="terrainium destruct*"
 
-    if [ $TERRAIN_ENABLED = "true" ]; then
+    if [ "$TERRAIN_ENABLED" = "true" ]; then
         case "$3" in
             $~texit)
                 __terrainium_exit

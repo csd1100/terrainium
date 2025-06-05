@@ -12,7 +12,7 @@ pub struct StatusHandler;
 impl RequestHandler for StatusHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any {
         trace!("handling Status request");
-        let request: anyhow::Result<StatusRequest> = request
+        let request: Result<StatusRequest> = request
             .to_msg()
             .context("failed to convert request to Activate");
 

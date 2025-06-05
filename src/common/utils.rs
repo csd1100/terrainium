@@ -38,7 +38,7 @@ pub async fn create_file(path: &Path) -> anyhow::Result<File> {
         .read(true)
         .write(true)
         .append(false)
-        .truncate(true)
+        .truncate(false)
         .open(path)
         .await
         .context(format!("failed to open file for {path:?})"))?;

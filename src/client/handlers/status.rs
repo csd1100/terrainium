@@ -35,7 +35,7 @@ pub async fn handle(
         let status = if json {
             serde_json::to_string_pretty(&status).context("failed to serialize status")?
         } else {
-            format!("{:?}", status)
+            format!("{}", status)
         };
         println!("{status}");
     } else {

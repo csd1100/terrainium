@@ -57,8 +57,16 @@ impl CommandToRun {
         }
     }
 
-    pub fn get_exe(&self) -> &str {
+    pub fn exe(&self) -> &str {
         &self.exe
+    }
+
+    pub fn args(&self) -> &[String] {
+        &self.args
+    }
+
+    pub fn cwd(&self) -> &Path {
+        &self.cwd
     }
 
     pub fn set_args(&mut self, args: Vec<String>) {
