@@ -8,8 +8,9 @@ message Activate {
   string session_id = 1;
   string terrain_name = 2;
   string biome_name = 3;
-  string toml_path = 4;
-  string start_timestamp = 6;
-  bool is_background = 7;
-  Execute constructors = 8;
+  string terrain_dir = 4;
+  string toml_path = 5;
+  string start_timestamp = 7;
+  bool is_background = 8;
+  Execute constructors = 9;
 }

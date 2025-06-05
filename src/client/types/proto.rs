@@ -10,5 +10,5 @@ pub enum ProtoRequest {
 
 pub enum ProtoResponse {
     Success,
-    Status(pb::StatusResponse),
+    Status(Box<pb::StatusResponse>),
 }

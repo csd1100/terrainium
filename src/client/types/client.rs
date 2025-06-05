@@ -79,7 +79,7 @@ impl Client {
                 }
                 Payload::Body(body) => match body.message {
                     None => Ok(ProtoResponse::Success),
-                    Some(status) => Ok(ProtoResponse::Status(status)),
+                    Some(status) => Ok(ProtoResponse::Status(Box::new(status))),
                 },
             }
         } else {

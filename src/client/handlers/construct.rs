@@ -43,6 +43,7 @@ fn construct(context: Context, environment: Environment) -> Result<pb::Execute> 
         session_id: context.session_id(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
+        terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
         toml_path: context.toml_path().to_string_lossy().to_string(),
         is_constructor: true,
         timestamp: timestamp(),

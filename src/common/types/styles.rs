@@ -7,7 +7,7 @@ pub fn colored(string: &str, color: AnsiColor) -> String {
 
 pub fn heading(string: &str) -> String {
     let heading = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlue)));
-    format!("{heading}{string}{heading:#}")
+    format!("{heading}{:width$}{heading:#}", string, width = 30)
 }
 
 pub fn sub_heading(string: &str) -> String {

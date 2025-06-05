@@ -13,8 +13,9 @@ message Execute {
   optional string session_id = 1;
   string terrain_name = 2;
   string biome_name = 3;
-  string toml_path = 4;
-  bool is_constructor = 5;
-  string timestamp = 6;
-  repeated Command commands = 7;
+  string terrain_dir = 4;
+  string toml_path = 5;
+  bool is_constructor = 6;
+  string timestamp = 7;
+  repeated Command commands = 8;
 }

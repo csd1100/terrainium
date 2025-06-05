@@ -91,6 +91,7 @@ pub struct TerrainState {
     terrain_name: String,
     biome_name: String,
     toml_path: String,
+    terrain_dir: String,
     is_background: bool,
     start_timestamp: String,
     end_timestamp: String,
@@ -218,12 +219,13 @@ impl Display for TerrainState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"{} {}({})
-{} {}
-{} {}
-{} {}
-{} {}
-{} {}
+            r#"{}  {}({})
+{}  {}
+{}  {}
+{}  {}
+{}  {}
+{}  {}
+{}  {}
 {}
   {}
 {}
@@ -233,6 +235,8 @@ impl Display for TerrainState {
             value(&self.terrain_name),
             sub_value(&self.biome_name),
             heading("󰇐 location"),
+            value(&self.terrain_dir),
+            heading(" TOML"),
             value(&self.toml_path),
             heading("󰻾 session"),
             value(&self.session_id),
@@ -350,6 +354,7 @@ impl From<pb::Activate> for TerrainState {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background,
             start_timestamp,
@@ -379,6 +384,7 @@ impl From<pb::Activate> for TerrainState {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background,
             start_timestamp,
@@ -395,6 +401,7 @@ impl From<pb::Execute> for TerrainState {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_constructor,
             timestamp,
@@ -432,6 +439,7 @@ impl From<pb::Execute> for TerrainState {
             session_id: identifier,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background: false,
             start_timestamp: "".to_string(),
@@ -442,20 +450,21 @@ impl From<pb::Execute> for TerrainState {
     }
 }
 
-impl TryFrom<pb::StatusResponse> for TerrainState {
+impl TryFrom<Box<pb::StatusResponse>> for TerrainState {
     type Error = anyhow::Error;
-    fn try_from(value: pb::StatusResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: Box<pb::StatusResponse>) -> Result<Self, Self::Error> {
         let pb::StatusResponse {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background,
             start_timestamp,
             end_timestamp,
             constructors,
             destructors,
-        } = value;
+        } = *value;
 
         let constructors_state = command_states_from(constructors)?;
         let destructors_state = command_states_from(destructors)?;
@@ -464,6 +473,7 @@ impl TryFrom<pb::StatusResponse> for TerrainState {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background,
             start_timestamp,
@@ -481,6 +491,7 @@ impl From<TerrainState> for pb::StatusResponse {
             terrain_name,
             biome_name,
             toml_path,
+            terrain_dir,
             is_background,
             start_timestamp,
             end_timestamp,
@@ -492,6 +503,7 @@ impl From<TerrainState> for pb::StatusResponse {
             session_id,
             terrain_name,
             biome_name,
+            terrain_dir,
             toml_path,
             is_background,
             start_timestamp,

@@ -24,10 +24,11 @@ message StatusResponse {
   string session_id = 1;
   string terrain_name = 2;
   string biome_name = 3;
-  string toml_path = 4;
-  bool is_background = 5;
-  string start_timestamp = 6;
-  string end_timestamp = 7;
+  string terrain_dir = 4;
+  string toml_path = 5;
+  bool is_background = 6;
+  string start_timestamp = 7;
+  string end_timestamp = 8;
   map<string, CommandStates> constructors = 11;
   map<string, CommandStates> destructors = 12;
 
