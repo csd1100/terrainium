@@ -5,11 +5,11 @@ use anyhow::{bail, Result};
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, instrument, trace};
 
 #[derive(Debug)]
 pub struct History {
-    history: [String; 3],
+    history: Vec<String>,
     file: Mutex<HistoryFile>,
 }
 
@@ -18,8 +18,8 @@ impl History {
         PathBuf::from(&format!("{TERRAINIUMD_TMP_DIR}/{terrain_name}/history"))
     }
 
-    pub(crate) async fn read(terrain_name: &str) -> Result<Self> {
-        let mut file = HistoryFile::create(&Self::get_path(terrain_name)).await?;
+    pub(crate) async fn read(terrain_name: &str, size: usize) -> Result<Self> {
+        let mut file = HistoryFile::create(&Self::get_path(terrain_name), size).await?;
         let history = file.read().await?;
         let file = Mutex::new(file);
         Ok(Self { history, file })
@@ -55,24 +55,29 @@ impl History {
 #[derive(Debug)]
 struct HistoryFile {
     file: File,
+    size: usize,
 }
 
 impl HistoryFile {
-    async fn create(path: &Path) -> Result<Self> {
+    #[instrument]
+    async fn create(path: &Path, size: usize) -> Result<Self> {
+        trace!("creating history file");
         Ok(Self {
             file: utils::create_file(path).await?,
+            size,
         })
     }
 
-    async fn write(&mut self, history: &[String; 3]) -> Result<()> {
+    async fn write(&mut self, history: &[String]) -> Result<()> {
+        assert!(history.len() <= self.size);
         utils::write_to_file(&mut self.file, history.join("\n")).await
     }
 
-    async fn read(&mut self) -> Result<[String; 3]> {
+    async fn read(&mut self) -> Result<Vec<String>> {
         let data = utils::read_from_file(&mut self.file).await?;
         let lines: Vec<String> = data.lines().map(|line| line.to_string()).collect();
-        assert!(lines.len() <= 3);
-        let mut history: [String; 3] = Default::default();
+        assert!(lines.len() <= self.size);
+        let mut history = vec!["".to_string(); self.size];
         lines.into_iter().enumerate().for_each(|(index, line)| {
             history[index] = line;
         });

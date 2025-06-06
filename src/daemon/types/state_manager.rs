@@ -17,6 +17,7 @@ pub type StoredHistory = Arc<RwLock<History>>;
 pub struct StateManager {
     states: Arc<RwLock<HashMap<String, StoredState>>>,
     histories: Arc<RwLock<HashMap<String, StoredHistory>>>,
+    history_size: usize,
 }
 
 fn state_key(terrain_name: &str, session_id: &str) -> String {
@@ -24,10 +25,14 @@ fn state_key(terrain_name: &str, session_id: &str) -> String {
 }
 
 impl StateManager {
-    pub async fn init() -> Self {
+    pub async fn init(history_size: usize) -> Self {
         let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
         let histories = Arc::new(RwLock::new(HashMap::<String, StoredHistory>::new()));
-        Self { states, histories }
+        Self {
+            states,
+            histories,
+            history_size,
+        }
     }
 
     pub(crate) async fn get_or_create_history(&self, terrain_name: &str) -> Result<StoredHistory> {
@@ -39,7 +44,9 @@ impl StateManager {
         } else {
             drop(history);
             debug!("creating history for terrain {terrain_name}");
-            let history = Arc::new(RwLock::new(History::read(terrain_name).await?));
+            let history = Arc::new(RwLock::new(
+                History::read(terrain_name, self.history_size).await?,
+            ));
             let mut histories = self.histories.write().await;
             histories.insert(terrain_name.to_string(), history.clone());
             Ok(history)

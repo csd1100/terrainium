@@ -45,7 +45,7 @@ fn is_user_root() -> bool {
 }
 
 async fn get_daemon_context() -> DaemonContext {
-    let context = DaemonContext::new(is_user_root(), get_daemon_config().is_root_allowed()).await;
+    let context = DaemonContext::new(get_daemon_config(), is_user_root()).await;
     context.setup_state_manager();
     context
 }

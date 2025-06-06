@@ -1,3 +1,4 @@
+use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;
 use std::sync::Arc;
 
@@ -9,11 +10,11 @@ pub struct DaemonContext {
 }
 
 impl DaemonContext {
-    pub async fn new(is_root: bool, is_root_allowed: bool) -> Self {
-        let state_manager = StateManager::init().await;
+    pub async fn new(config: DaemonConfig, is_root: bool) -> Self {
+        let state_manager = StateManager::init(config.history_size()).await;
         DaemonContext {
             is_root,
-            is_root_allowed,
+            is_root_allowed: config.is_root_allowed(),
             state_manager: Arc::new(state_manager),
         }
     }

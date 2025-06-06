@@ -3,6 +3,7 @@
   "title": "DaemonConfig",
   "type": "object",
   "required": [
+    "history_size",
     "is_root_allowed"
   ],
   "properties": {
@@ -12,6 +13,11 @@
     },
     "is_root_allowed": {
       "type": "boolean"
+    },
+    "history_size": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0.0
     }
   }
 }

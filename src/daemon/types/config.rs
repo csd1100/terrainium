@@ -15,6 +15,7 @@ pub struct DaemonConfig {
     schema: String,
 
     is_root_allowed: bool,
+    history_size: usize,
 }
 
 pub fn schema_url() -> String {
@@ -34,6 +35,7 @@ impl Default for DaemonConfig {
         Self {
             schema: schema_url(),
             is_root_allowed: false,
+            history_size: 5,
         }
     }
 }
@@ -64,5 +66,9 @@ impl DaemonConfig {
 
     pub fn is_root_allowed(&self) -> bool {
         self.is_root_allowed
+    }
+
+    pub fn history_size(&self) -> usize {
+        self.history_size
     }
 }
