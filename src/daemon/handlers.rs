@@ -8,9 +8,9 @@ use crate::daemon::handlers::status::StatusHandler;
 use crate::daemon::types::context::DaemonContext;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use prost_types::Any;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, trace};
 
 mod activate;
 mod deactivate;
@@ -21,9 +21,8 @@ pub(crate) trait RequestHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any;
 }
 
-#[instrument(skip(daemon_socket))]
 pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonContext) {
-    info!("handling requests on socket");
+    trace!("handling requests on socket");
 
     let data: Result<Any> = daemon_socket
         .read()
@@ -39,15 +38,8 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
                 "/terrainium.v1.Deactivate" => DeactivateHandler::handle(request, context).await,
                 "/terrainium.v1.StatusRequest" => StatusHandler::handle(request, context).await,
                 _ => {
-                    error!("invalid request type: {:?}", request.type_url);
-
-                    Any::from_msg(&Response {
-                        payload: Some(Error(format!(
-                            "invalid request type {:?}",
-                            request.type_url
-                        ))),
-                    })
-                    .expect("failed to create an error response")
+                    let err = anyhow!("invalid request type: {:?}", request.type_url);
+                    Any::from_msg(&error_response(err)).expect("failed to create an error response")
                 }
             }
         }
@@ -56,8 +48,8 @@ pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonCont
 
     let result = daemon_socket.write_and_stop(response).await;
 
-    if result.is_err() {
-        error!("error responding execute request: {:?}", result);
+    if let Err(err) = result {
+        error!("error responding to the request: {err:#?}");
     }
 }
 

@@ -16,13 +16,11 @@ pub(crate) struct ExecuteHandler;
 impl RequestHandler for ExecuteHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any {
         trace!("handling Execute request");
-        let activate: Result<pb::Execute> = request
+        let execute: Result<pb::Execute> = request
             .to_msg()
             .context("failed to convert request to Execute");
 
-        trace!("result of attempting to parse request: {:#?}", activate);
-
-        let response = match activate {
+        let response = match execute {
             Ok(commands) => {
                 let result = spawn_commands(commands, context)
                     .await
@@ -55,6 +53,12 @@ pub(crate) async fn spawn_commands(request: pb::Execute, context: DaemonContext)
         let terrain_name = state.terrain_name().to_string();
         let session_id = state.session_id().to_string();
 
+        debug!(
+            terrain_name = terrain_name,
+            timestamp = timestamp,
+            is_constructor = is_constructor,
+            "execute request does not have associated session id"
+        );
         context.state_manager().create_state(state).await?;
 
         (terrain_name, session_id)

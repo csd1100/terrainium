@@ -6,7 +6,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{info, trace};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -55,7 +55,7 @@ impl DaemonConfig {
     pub fn create_file() -> Result<()> {
         let path = get_config_path();
         if path.exists() {
-            info!("config file already exists at path {path:?}");
+            trace!("config file already exists at path {path:?}");
             return Ok(());
         }
         info!("creating config file at path {path:?}");

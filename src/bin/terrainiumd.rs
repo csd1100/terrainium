@@ -62,23 +62,18 @@ async fn start() -> Result<()> {
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
     if args.create_config {
-        let res = DaemonConfig::create_file();
-        if let Err(err) = res {
-            error!("failed to create terrainiumd config file: {err:#?}",);
-        }
-        return Ok(());
+        return DaemonConfig::create_file().context("failed to create terrainiumd config");
     }
 
     let context = get_daemon_context().await;
 
     if context.should_exit_early() {
-        error!("exiting as service was started as root without being configured.",);
-        bail!("exiting as service was running as root");
+        bail!("exiting as service was started as root without being configured.");
     }
 
     let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)
         .await
-        .context("to create new terrainium daemon")?;
+        .context("to create start the terrainium daemon")?;
     let listener = daemon.listener();
 
     while let Some(socket) = listener.next().await.transpose()? {

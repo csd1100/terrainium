@@ -5,7 +5,7 @@ use anyhow::{bail, Context, Result};
 use std::path::Path;
 use tokio::fs::File;
 use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, instrument};
 
 #[derive(Debug)]
 pub struct State {
@@ -16,9 +16,9 @@ pub struct State {
 impl State {
     pub async fn new(history: StoredHistory, state: TerrainState) -> Result<Self> {
         debug!(
-            "creating new state for {}({})",
-            state.terrain_name(),
-            state.session_id()
+            terrain_name = state.terrain_name(),
+            session_id = state.session_id(),
+            "creating new state",
         );
         let mut file = StateFile::create(&state.state_file())
             .await
@@ -60,6 +60,7 @@ impl State {
             .context("failed to update state in the file")
     }
 
+    #[instrument(skip(self, history))]
     pub async fn update_command_status(
         &mut self,
         history: StoredHistory,
@@ -68,6 +69,11 @@ impl State {
         index: usize,
         status: CommandStatus,
     ) -> Result<()> {
+        debug!(
+            terrain_name = self.state.terrain_name(),
+            session_id = self.state.session_id(),
+            "updating command status"
+        );
         self.state
             .update_command_status(is_constructor, timestamp, index, status)
             .context("failed to update status")?;
@@ -116,13 +122,20 @@ struct StateFile {
 }
 
 impl StateFile {
+    #[instrument]
     async fn create(path: &Path) -> Result<Self> {
+        debug!("creating state file");
         Ok(Self {
             file: utils::create_file(path).await?,
         })
     }
 
     async fn write_state(&mut self, history: StoredHistory, state: &TerrainState) -> Result<()> {
+        debug!(
+            terrain_name = state.terrain_name(),
+            session_id = state.session_id(),
+            "writing state",
+        );
         let json =
             serde_json::to_string_pretty(state).context("failed to serialize terrain state")?;
         utils::write_to_file(&mut self.file, json)

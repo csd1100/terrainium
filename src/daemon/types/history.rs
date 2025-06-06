@@ -25,10 +25,11 @@ impl History {
         Ok(Self { history, file })
     }
 
+    #[instrument(skip(self))]
     pub(crate) async fn add(&mut self, session_id: String) -> Result<()> {
-        debug!("adding session {session_id}");
+        trace!("adding session");
         if self.history[0] == session_id {
-            debug!("session {session_id} already exists");
+            debug!("session already exists");
             Ok(())
         } else {
             let hist = self.history.as_mut_slice();
@@ -38,7 +39,10 @@ impl History {
             file.write(&self.history).await
         }
     }
+
+    #[instrument(skip(self))]
     pub(crate) fn get_session(&self, identifier: Identifier) -> Result<String> {
+        debug!("getting session information from request");
         match identifier {
             Identifier::SessionId(session_id) => Ok(session_id),
             Identifier::Recent(recent) => {

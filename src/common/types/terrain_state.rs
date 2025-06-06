@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use tracing::debug;
+use tracing::{debug, instrument, trace};
 
 fn get_log_path(
     terrain_name: &str,
@@ -154,6 +154,7 @@ impl TerrainState {
         }
     }
 
+    #[instrument]
     pub(crate) fn add_commands_if_necessary(
         &mut self,
         timestamp: &str,
@@ -166,6 +167,7 @@ impl TerrainState {
             &mut self.destructors
         };
         if !map.contains_key(timestamp) {
+            trace!("adding the command to state");
             map.insert(timestamp.to_string(), commands);
         }
     }

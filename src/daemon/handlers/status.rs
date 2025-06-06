@@ -16,10 +16,11 @@ impl RequestHandler for StatusHandler {
             .to_msg()
             .context("failed to convert request to Activate");
 
-        trace!("result of attempting to parse request: {:#?}", request);
-
         let response = match request {
-            Ok(data) => status(data, context).await.unwrap_or_else(error_response),
+            Ok(data) => status(data, context)
+                .await
+                .context("failed to handle status request")
+                .unwrap_or_else(error_response),
             Err(err) => error_response(err),
         };
         Any::from_msg(&response).unwrap()
@@ -55,6 +56,11 @@ async fn status(request: StatusRequest, context: DaemonContext) -> Result<Respon
         .context("failed to fetch the state")?;
 
     let state: pb::StatusResponse = stored_state.read().await.state().into();
+    trace!(
+        terrain_name = terrain_name,
+        session_id = session_id,
+        "successfully fetched state {state:#?}"
+    );
     Ok(Response {
         payload: Some(Body(pb::Body {
             message: Some(state),

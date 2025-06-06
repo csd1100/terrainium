@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time;
-use tracing::{debug, trace};
+use tracing::{debug, error, instrument, trace};
 
 pub type StoredState = Arc<RwLock<State>>;
 pub type StoredHistory = Arc<RwLock<History>>;
@@ -25,7 +25,9 @@ fn state_key(terrain_name: &str, session_id: &str) -> String {
 }
 
 impl StateManager {
+    #[instrument]
     pub async fn init(history_size: usize) -> Self {
+        trace!("initializing state manager");
         let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
         let histories = Arc::new(RwLock::new(HashMap::<String, StoredHistory>::new()));
         Self {
@@ -35,15 +37,16 @@ impl StateManager {
         }
     }
 
+    #[instrument(skip(self))]
     pub(crate) async fn get_or_create_history(&self, terrain_name: &str) -> Result<StoredHistory> {
-        debug!("getting history for terrain {terrain_name}");
+        trace!("getting history");
         let history = self.histories.read().await;
         if let Some(h) = history.get(terrain_name) {
-            debug!("history already exists for terrain {terrain_name}");
+            debug!("history already exists");
             Ok(h.clone())
         } else {
             drop(history);
-            debug!("creating history for terrain {terrain_name}");
+            debug!("creating history");
             let history = Arc::new(RwLock::new(
                 History::read(terrain_name, self.history_size).await?,
             ));
@@ -120,6 +123,7 @@ impl StateManager {
         Ok(state)
     }
 
+    #[instrument(skip(self, commands))]
     pub(crate) async fn add_commands_if_necessary(
         &self,
         terrain_name: &str,
@@ -131,12 +135,7 @@ impl StateManager {
         let stored_state = self.refreshed_state(terrain_name, session_id).await?;
         let mut state = stored_state.write().await;
 
-        debug!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            timestamp = timestamp,
-            "adding commands"
-        );
+        debug!("adding commands if necessary");
         let history = self
             .get_or_create_history(terrain_name)
             .await
@@ -148,6 +147,7 @@ impl StateManager {
             .context("failed to add commands")
     }
 
+    #[instrument(skip(self))]
     pub(crate) async fn update_end_time(
         &self,
         terrain_name: &str,
@@ -157,11 +157,7 @@ impl StateManager {
         let stored_state = self.refreshed_state(terrain_name, session_id).await?;
         let mut state = stored_state.write().await;
 
-        debug!(
-            terrain_name = terrain_name,
-            session_id = session_id,
-            "updating end_timestamp"
-        );
+        trace!("updating end_timestamp");
         let history = self
             .get_or_create_history(terrain_name)
             .await
@@ -172,18 +168,16 @@ impl StateManager {
             .context("failed to update end_timestamp")
     }
 
+    #[instrument(skip(self))]
     pub(crate) async fn refreshed_state(
         &self,
         terrain_name: &str,
         session_id: &str,
     ) -> Result<StoredState> {
+        trace!("refreshing state state");
         let states = self.states.read().await;
         if let Some(state) = states.get(&state_key(terrain_name, session_id)) {
-            debug!(
-                terrain_name = terrain_name,
-                session_id = session_id,
-                "state already exists"
-            );
+            debug!("state already exists");
             Ok(state.clone())
         } else {
             drop(states);
@@ -192,15 +186,13 @@ impl StateManager {
                 TerrainState::get_state_dir(terrain_name, session_id).join(TERRAIN_STATE_FILE_NAME);
 
             if state_file.exists() {
-                debug!(
-                    terrain_name = terrain_name,
-                    session_id = session_id,
-                    "refreshing state"
-                );
+                debug!("refreshing state");
 
                 self.add_state(terrain_name, session_id).await
             } else {
-                bail!("state file {} doesn't exist", state_file.display());
+                let err = format!("state file {} doesn't exist", state_file.display());
+                error!("{}", err);
+                bail!("{}", err);
             }
         }
     }

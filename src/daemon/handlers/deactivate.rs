@@ -4,19 +4,17 @@ use crate::common::types::pb::{Deactivate, Response};
 use crate::daemon::handlers::execute::spawn_commands;
 use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::Context;
+use anyhow::{Context, Result};
 use prost_types::Any;
 use tracing::trace;
 
 pub struct DeactivateHandler;
 impl RequestHandler for DeactivateHandler {
     async fn handle(request: Any, context: DaemonContext) -> Any {
-        trace!("handling Deactivate request");
-        let request: anyhow::Result<Deactivate> = request
+        trace!("handling deactivate request");
+        let request: Result<Deactivate> = request
             .to_msg()
             .context("failed to convert request to Deactivate");
-
-        trace!("result of attempting to parse request: {:#?}", request);
 
         let response = match request {
             Ok(data) => deactivate(data, context).await,
@@ -33,6 +31,12 @@ async fn deactivate(request: Deactivate, context: DaemonContext) -> Response {
         end_timestamp,
         destructors,
     } = request;
+    trace!(
+        terrain_name = terrain_name,
+        session_id = session_id,
+        end_timestamp = end_timestamp,
+        "executing deactivate request"
+    );
     let mut result = context
         .state_manager()
         .update_end_time(&terrain_name, &session_id, end_timestamp)
@@ -40,7 +44,13 @@ async fn deactivate(request: Deactivate, context: DaemonContext) -> Response {
         .context("failed to deactivate");
 
     if result.is_ok() {
+        trace!(
+            terrain_name = terrain_name,
+            session_id = session_id,
+            "updated end time successfully"
+        );
         if let Some(destructors) = destructors {
+            trace!("running destructors for deactivation request");
             result = spawn_commands(destructors, context).await;
         }
     }

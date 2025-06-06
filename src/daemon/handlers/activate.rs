@@ -18,8 +18,6 @@ impl RequestHandler for ActivateHandler {
             .to_msg()
             .context("failed to convert request to Activate");
 
-        trace!("result of attempting to parse request: {:#?}", request);
-
         let response = match request {
             Ok(data) => activate(data, context)
                 .await
@@ -34,16 +32,28 @@ impl RequestHandler for ActivateHandler {
 async fn activate(request: Activate, context: DaemonContext) -> Result<Response> {
     let terrain_name = request.terrain_name.clone();
     let session_id = request.session_id.clone();
-    trace!("activating terrain {terrain_name}({session_id})");
+    trace!(
+        terrain_name = terrain_name,
+        session_id = session_id,
+        "starting activation of terrain"
+    );
 
     let constructors = request.constructors.clone();
     create_state(request, &context)
         .await
         .context("failed to create state while activating")?;
 
-    trace!("successfully created state for terrain {terrain_name}({session_id})");
+    trace!(
+        terrain_name = terrain_name,
+        session_id = session_id,
+        "successfully created state"
+    );
     if let Some(constructors) = constructors {
-        trace!("spawning constructors for terrain {terrain_name}({session_id})");
+        trace!(
+            terrain_name = terrain_name,
+            session_id = session_id,
+            "spawning constructors for activation request"
+        );
         spawn_commands(constructors, context)
             .await
             .context("failed to spawn constructors while activating")?;
