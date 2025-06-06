@@ -1,7 +1,6 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
 use crate::common::constants::NONE;
-use crate::common::types::history::HistoryArg;
 use anyhow::bail;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
@@ -130,8 +129,8 @@ pub enum Verbs {
     Status {
         #[arg(short, long)]
         json: bool,
-        #[arg(long, default_value = "current", group = "session")]
-        history: HistoryArg,
+        #[arg(short, long, group = "session")]
+        recent: Option<u32>,
         #[arg(short, long, group = "session")]
         session_id: Option<String>,
     },

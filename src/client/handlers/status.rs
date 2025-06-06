@@ -4,7 +4,6 @@ use crate::client::types::context::Context;
 use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::TERRAINIUMD_SOCKET;
-use crate::common::types::history::HistoryArg;
 use crate::common::types::pb;
 use crate::common::types::terrain_state::TerrainState;
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -15,7 +14,7 @@ pub async fn handle(
     terrain: Terrain,
     json: bool,
     session_id: Option<String>,
-    history: HistoryArg,
+    recent: Option<u32>,
     client: Option<Client>,
 ) -> Result<()> {
     let mut client = if let Some(client) = client {
@@ -26,7 +25,7 @@ pub async fn handle(
 
     let response = client
         .request(ProtoRequest::Status(status(
-            context, session_id, history, terrain,
+            context, session_id, recent, terrain,
         )))
         .await?;
 
@@ -48,27 +47,20 @@ pub async fn handle(
 fn status(
     context: Context,
     session_id: Option<String>,
-    history: HistoryArg,
+    recent: Option<u32>,
     terrain: Terrain,
 ) -> pb::StatusRequest {
     let identifier = match session_id {
         Some(session_id) => pb::status_request::Identifier::SessionId(session_id),
-        None => match history {
-            HistoryArg::Current => match context.session_id() {
-                None => pb::status_request::Identifier::History(
-                    pb::status_request::HistoryArg::HistoryRecent.into(),
-                ),
-                Some(session_id) => pb::status_request::Identifier::SessionId(session_id),
-            },
-            HistoryArg::Recent => pb::status_request::Identifier::History(
-                pb::status_request::HistoryArg::HistoryRecent.into(),
-            ),
-            HistoryArg::Recent1 => pb::status_request::Identifier::History(
-                pb::status_request::HistoryArg::HistoryRecent1.into(),
-            ),
-            HistoryArg::Recent2 => pb::status_request::Identifier::History(
-                pb::status_request::HistoryArg::HistoryRecent2.into(),
-            ),
+        None => match recent {
+            None => {
+                if let Some(session_id) = context.session_id() {
+                    pb::status_request::Identifier::SessionId(session_id)
+                } else {
+                    pb::status_request::Identifier::Recent(0)
+                }
+            }
+            Some(recent) => pb::status_request::Identifier::Recent(recent),
         },
     };
 

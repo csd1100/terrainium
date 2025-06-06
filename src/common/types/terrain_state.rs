@@ -1,6 +1,5 @@
 use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
 use crate::common::execute::CommandToRun;
-use crate::common::types::history::HistoryArg;
 use crate::common::types::pb;
 use crate::common::types::styles::{
     colored, error, heading, sub_heading, sub_value, success, value, warning,
@@ -592,20 +591,5 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
             log_path,
             status,
         })
-    }
-}
-
-impl TryFrom<pb::status_request::HistoryArg> for HistoryArg {
-    type Error = anyhow::Error;
-    fn try_from(value: pb::status_request::HistoryArg) -> Result<Self, Self::Error> {
-        match value {
-            pb::status_request::HistoryArg::HistoryUnspecified => {
-                bail!("unspecified history parameter")
-            }
-            pb::status_request::HistoryArg::HistoryRecent => Ok(HistoryArg::Recent),
-            pb::status_request::HistoryArg::HistoryRecent1 => Ok(HistoryArg::Recent1),
-            pb::status_request::HistoryArg::HistoryRecent2 => Ok(HistoryArg::Recent2),
-            pb::status_request::HistoryArg::HistoryCurrent => Ok(HistoryArg::Current),
-        }
     }
 }

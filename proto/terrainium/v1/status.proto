@@ -7,17 +7,9 @@ import "terrainium/v1/command.proto";
 message StatusRequest {
   oneof identifier {
     string session_id = 1;
-    HistoryArg history = 2;
+    uint32 recent = 2;
   }
   string terrain_name = 3;
-
-  enum HistoryArg {
-    HISTORY_UNSPECIFIED = 0;
-    HISTORY_RECENT = 1;
-    HISTORY_RECENT_1 = 2;
-    HISTORY_RECENT_2 = 3;
-    HISTORY_CURRENT = 4;
-  }
 }
 
 message StatusResponse {

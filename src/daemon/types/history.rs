@@ -1,8 +1,7 @@
 use crate::common::constants::TERRAINIUMD_TMP_DIR;
-use crate::common::types::pb;
-use crate::common::types::pb::status_request::{HistoryArg, Identifier};
+use crate::common::types::pb::status_request::Identifier;
 use crate::common::utils;
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::sync::Mutex;
@@ -42,20 +41,12 @@ impl History {
     pub(crate) fn get_session(&self, identifier: Identifier) -> Result<String> {
         match identifier {
             Identifier::SessionId(session_id) => Ok(session_id),
-            Identifier::History(history) => {
-                let history = pb::status_request::HistoryArg::try_from(history)
-                    .context("failed to parse history")?;
-                match history {
-                    HistoryArg::HistoryUnspecified => {
-                        bail!("invalid history arg unspecified");
-                    }
-                    HistoryArg::HistoryRecent => Ok(self.history[0].clone()),
-                    HistoryArg::HistoryRecent1 => Ok(self.history[1].clone()),
-                    HistoryArg::HistoryRecent2 => Ok(self.history[2].clone()),
-                    HistoryArg::HistoryCurrent => {
-                        bail!("unexpected history arg current");
-                    }
+            Identifier::Recent(recent) => {
+                let session_id = self.history[recent as usize].clone();
+                if session_id.is_empty() {
+                    bail!("no session id found at index {recent}")
                 }
+                Ok(session_id)
             }
         }
     }
