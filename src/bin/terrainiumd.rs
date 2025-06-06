@@ -3,6 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
 use terrainium::common::execute::{CommandToRun, Execute};
+use terrainium::common::types::styles::warning;
 use terrainium::daemon::args::DaemonArgs;
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
@@ -51,6 +52,10 @@ async fn get_daemon_context() -> DaemonContext {
 }
 
 async fn start() -> Result<()> {
+    if cfg!(debug_assertions) {
+        println!("{}: you are running debug build of terrainiumd, which might cause some unwanted behavior.",warning("WARNING"));
+    }
+
     let args = DaemonArgs::parse();
 
     let (subscriber, (_file_guard, _out_guard)) = init_logging(LevelFilter::from(args.log_level));

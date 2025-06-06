@@ -14,9 +14,14 @@ use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
+use terrainium::common::types::styles::warning;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    if cfg!(debug_assertions) {
+        println!("{}: you are running debug build of terrainium, which might cause some unwanted behavior.",warning("WARNING"));
+    }
+
     let args = ClientArgs::parse();
     let _out_guard = init_logging(&args);
 

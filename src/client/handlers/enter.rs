@@ -7,7 +7,8 @@ use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_SESSION_ID, TRUE,
+    DEBUG_PATH, PATH, TERRAINIUMD_SOCKET, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED,
+    TERRAIN_SESSION_ID, TRUE,
 };
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
@@ -49,8 +50,16 @@ pub async fn handle(
 
     let is_background = !auto_apply || environment.auto_apply().is_background();
 
+    let mut shell_envs = environment.envs();
+    if cfg!(debug_assertions) && shell_envs.get(TERRAINIUM_DEV).is_some_and(|v| v == "true") {
+        let path = std::env::var(PATH).context("expected environment variable PATH")?;
+        let debug_path = context.terrain_dir().join(DEBUG_PATH);
+        let path = format!("{}:{path}", debug_path.display());
+        shell_envs.insert(PATH.to_string(), path);
+    }
+
     let result = tokio::join!(
-        context.shell().spawn(environment.envs()),
+        context.shell().spawn(shell_envs),
         send_activate_request(client, &context, environment, is_background)
     );
 

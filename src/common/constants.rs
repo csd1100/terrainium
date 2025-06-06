@@ -11,7 +11,9 @@ pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
 pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
 pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
 
+pub const PATH: &str = "PATH";
 pub const FPATH: &str = "FPATH";
+pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
 pub const TERRAIN_INIT_FN: &str = "terrain_init";
