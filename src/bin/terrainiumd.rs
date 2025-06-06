@@ -3,7 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
 use terrainium::common::execute::{CommandToRun, Execute};
-use terrainium::common::types::styles::warning;
+use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::DaemonArgs;
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
@@ -13,7 +13,7 @@ use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
 use tokio_stream::StreamExt;
 use tracing::metadata::LevelFilter;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 fn get_daemon_config() -> DaemonConfig {
     let config = DaemonConfig::from_file().unwrap_or_default();
@@ -92,12 +92,11 @@ async fn start() -> Result<()> {
 async fn main() {
     match start().await {
         Ok(_) => {
-            info!("exiting terrainiumd");
+            println!("exiting terrainiumd");
         }
         Err(err) => {
-            let error = format!("exiting terrainiumd with an error: {err:#?}");
-            eprintln!("{error}");
-            error!("{error}");
+            let err = format!("exiting terrainiumd with an error: {err:?}");
+            eprintln!("{}: {err}", error("ERROR"));
         }
     }
 }

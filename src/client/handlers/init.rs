@@ -43,11 +43,12 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
 #[cfg(test)]
 pub mod tests {
     use crate::client::shell::Zsh;
-    use crate::client::types::context::Context;
-    use crate::client::utils::{
-        AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML,
-        WITH_EXAMPLE_TERRAIN_TOML,
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::constants::{
+        IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_TERRAIN_TOML,
     };
+    use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -64,7 +65,7 @@ pub mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -92,7 +93,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -120,7 +121,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -145,7 +146,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -200,7 +201,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -251,7 +252,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -305,7 +306,7 @@ pub mod tests {
             .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -359,7 +360,7 @@ pub mod tests {
             .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 

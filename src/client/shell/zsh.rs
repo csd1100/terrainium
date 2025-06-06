@@ -341,8 +341,8 @@ impl Zsh {
 #[cfg(test)]
 mod tests {
     use crate::client::shell::{Shell, Zsh};
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::types::terrain::Terrain;
-    use crate::client::utils::ExpectShell;
     use crate::common::execute::MockCommandToRun;
     use serial_test::serial;
     use std::fs;
@@ -432,7 +432,7 @@ mod tests {
         let mut compiled_zsh_integration_script = zsh_integration_script.clone();
         compiled_zsh_integration_script.set_extension("zsh.zwc");
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
             .successfully();
 
@@ -472,7 +472,7 @@ mod tests {
         )
         .expect("test shell integration to be written");
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_script_for(&zsh_integration_script, &compiled_zsh_integration_script)
             .successfully();
 

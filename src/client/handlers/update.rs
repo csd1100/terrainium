@@ -77,15 +77,16 @@ pub fn handle(
 mod tests {
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::shell::Zsh;
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::constants::{
+        IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
+        WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
+        WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_UPDATED_EXAMPLE_TOML,
+    };
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::client::utils::{
-        AssertTerrain, ExpectShell, IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML,
-        WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML,
-        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML,
-        WITH_NONE_UPDATED_EXAMPLE_TOML,
-    };
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockCommandToRun;
     use std::fs::{copy, create_dir_all, read_to_string};
@@ -107,7 +108,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -219,7 +220,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for("example_biome2", central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
@@ -294,7 +295,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -355,7 +356,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -470,7 +471,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -532,7 +533,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -588,7 +589,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();

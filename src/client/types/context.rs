@@ -208,7 +208,7 @@ impl Context {
 pub(crate) mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
-    use crate::client::utils::ExpectShell;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
     use home::home_dir;
@@ -239,7 +239,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),
@@ -281,7 +281,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),
@@ -406,7 +406,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),
@@ -451,7 +451,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),
@@ -497,7 +497,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),
@@ -541,7 +541,7 @@ pub(crate) mod tests {
             .returning(move |_, _, _, _| {
                 let runner = MockCommandToRun::default();
 
-                ExpectShell::with(runner)
+                ExpectZSH::with(runner)
                     .compile_script_for(
                         &shell_integration_dir.join("terrainium_init.zsh"),
                         &shell_integration_dir.join("terrainium_init.zsh.zwc"),

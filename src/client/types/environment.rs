@@ -179,6 +179,7 @@ pub(crate) fn render<T: Serialize>(
 mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::shell::{Shell, Zsh};
+    use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
     use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
@@ -187,7 +188,6 @@ mod tests {
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
     use crate::client::types::terrain::Terrain;
-    use crate::client::utils::{restore_env_var, set_env_var};
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };

@@ -16,9 +16,10 @@ pub fn handle(context: Context, terrain: Terrain) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use crate::client::shell::Zsh;
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
-    use crate::client::utils::{AssertTerrain, ExpectShell};
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use anyhow::Result;
     use tempfile::tempdir;
@@ -28,7 +29,7 @@ mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -54,7 +55,7 @@ mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();

@@ -218,7 +218,7 @@ mock! {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::client::utils;
+    use crate::client::test_utils;
     use crate::common::execute::{CommandToRun, Execute};
     use anyhow::Result;
     use std::collections::BTreeMap;
@@ -226,7 +226,7 @@ pub(crate) mod tests {
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {
         let test_var = "TEST_VAR".to_string();
-        let orig_env = utils::set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
+        let orig_env = test_utils::set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
 
         let run = CommandToRun::new(
             "/bin/bash".to_string(),
@@ -242,7 +242,7 @@ pub(crate) mod tests {
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        utils::restore_env_var(test_var.clone(), orig_env);
+        test_utils::restore_env_var(test_var.clone(), orig_env);
 
         Ok(())
     }
@@ -252,8 +252,8 @@ pub(crate) mod tests {
         let test_var1: String = "TEST_VAR1".to_string();
         let test_var2 = "TEST_VAR2".to_string();
 
-        let orig_env1 = utils::set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
-        let orig_env2 = utils::set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
+        let orig_env1 = test_utils::set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
+        let orig_env2 = test_utils::set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(test_var1.clone(), "NEW_VALUE1".to_string());
@@ -275,8 +275,8 @@ pub(crate) mod tests {
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        utils::restore_env_var(test_var1, orig_env1);
-        utils::restore_env_var(test_var2, orig_env2);
+        test_utils::restore_env_var(test_var1, orig_env1);
+        test_utils::restore_env_var(test_var2, orig_env2);
 
         Ok(())
     }

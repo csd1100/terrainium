@@ -493,15 +493,15 @@ impl Default for Terrain {
 #[cfg(test)]
 pub mod tests {
     use crate::client::shell::Zsh;
+    use crate::client::test_utils::constants::{
+        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
+    };
+    use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
     use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::client::utils::{
-        restore_env_var, set_env_var, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
-        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
-    };
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };

@@ -44,11 +44,13 @@ pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::client::shell::Zsh;
-    use crate::client::types::context::Context;
-    use crate::client::utils::{
-        restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
-        WITH_EXAMPLE_TERRAIN_TOML,
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::constants::{
+        IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML,
     };
+    use crate::client::test_utils::{restore_env_var, set_env_var};
+    use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockCommandToRun;
     use anyhow::Result;
@@ -92,7 +94,7 @@ pub(crate) mod tests {
             .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when edit
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -151,7 +153,7 @@ pub(crate) mod tests {
             .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -213,7 +215,7 @@ pub(crate) mod tests {
             .return_once(|_, _, _, _| edit_run);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
+        let expected_shell_operation = ExpectZSH::to()
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
