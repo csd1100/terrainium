@@ -4,7 +4,6 @@ use crate::common::constants::{
     CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_SESSION_ID,
 };
 use anyhow::{bail, Context as AnyhowContext, Result};
-use home::home_dir;
 use std::env;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
@@ -23,9 +22,9 @@ const TERRAIN_TOML: &str = "terrain.toml";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
-fn is_terrain_present(cwd: &Path) -> Option<PathBuf> {
+fn is_terrain_present(home_dir: &Path, cwd: &Path) -> Option<PathBuf> {
     let local_toml = cwd.join(TERRAIN_TOML);
-    let central_toml = get_central_dir_location(cwd).join(TERRAIN_TOML);
+    let central_toml = get_central_dir_location(home_dir, cwd).join(TERRAIN_TOML);
 
     if local_toml.exists() {
         return Some(local_toml);
@@ -36,46 +35,45 @@ fn is_terrain_present(cwd: &Path) -> Option<PathBuf> {
     None
 }
 
-fn get_central_dir_location(terrain_dir: &Path) -> PathBuf {
+fn get_central_dir_location(home_dir: &Path, terrain_dir: &Path) -> PathBuf {
     let terrain_dir_name = Path::canonicalize(terrain_dir)
         .expect("expected current directory to be valid")
         .to_string_lossy()
         .to_string()
         .replace('/', "_");
 
-    home_dir()
-        .expect("failed to get home directory")
+    home_dir
         .join(CONFIG_LOCATION)
         .join(TERRAINS_DIR_NAME)
         .join(terrain_dir_name)
 }
 
-fn get_terrain_dir(cwd: &Path) -> Option<(PathBuf, PathBuf)> {
-    if let Some(toml_path) = is_terrain_present(cwd) {
+fn get_terrain_dir(home_dir: &Path, cwd: &Path) -> Option<(PathBuf, PathBuf)> {
+    if let Some(toml_path) = is_terrain_present(home_dir, cwd) {
         return Some((cwd.to_path_buf(), toml_path));
     } else if cwd.parent().is_some() && cwd.parent().unwrap().exists() {
-        return get_terrain_dir(cwd.parent().unwrap());
+        return get_terrain_dir(home_dir, cwd.parent().unwrap());
     }
     None
 }
 
 impl Context {
     pub fn get(home_dir: PathBuf, cwd: PathBuf) -> Result<Context> {
-        let terrain_paths = get_terrain_dir(&cwd);
+        let terrain_paths = get_terrain_dir(&home_dir, &cwd);
 
         if terrain_paths.is_none() {
             bail!("terrain.toml does not exists, run 'terrainium init' to initialize terrain.");
         }
 
         let (terrain_dir, toml_path) = terrain_paths.unwrap();
-        let central_dir = get_central_dir_location(&terrain_dir);
+        let central_dir = get_central_dir_location(&home_dir, &terrain_dir);
 
         Self::generate(home_dir, terrain_dir, central_dir, toml_path)
     }
 
     pub fn create(home_dir: PathBuf, cwd: PathBuf, central: bool) -> Result<Context> {
         let terrain_dir = cwd;
-        let central_dir = get_central_dir_location(&terrain_dir);
+        let central_dir = get_central_dir_location(&home_dir, &terrain_dir);
 
         if terrain_dir.join(TERRAIN_TOML).exists() || central_dir.join(TERRAIN_TOML).exists() {
             bail!(
@@ -190,9 +188,11 @@ impl Context {
 
     #[cfg(test)]
     pub(crate) fn build_without_paths(shell: Zsh) -> Self {
+        use home::home_dir;
+
         let terrain_dir = current_dir().expect("failed to get current directory");
         let toml_path = terrain_dir.join(TERRAIN_TOML);
-        let central_dir = get_central_dir_location(&terrain_dir);
+        let central_dir = get_central_dir_location(home_dir().unwrap().as_path(), &terrain_dir);
         Context {
             session_id: Some("some".to_string()),
             central_dir,
@@ -223,8 +223,8 @@ pub(crate) mod tests {
     fn creates_terrain_dir_context() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
 
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
         let shell = MockCommandToRun::new_context();
@@ -263,10 +263,10 @@ pub(crate) mod tests {
     #[serial]
     #[test]
     fn creates_central_dir_context() -> Result<()> {
-        let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
-
         let home_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
         let shell = MockCommandToRun::new_context();
@@ -325,7 +325,7 @@ pub(crate) mod tests {
     fn create_in_terrain_throws_error_if_already_present_in_central() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
 
         create_dir_all(&central_dir)?;
         write(central_dir.join("terrain.toml"), "")?;
@@ -366,7 +366,7 @@ pub(crate) mod tests {
     fn create_in_central_throws_error_if_already_present_in_central() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         create_dir_all(&central_dir)?;
         write(central_dir.join("terrain.toml"), "")?;
 
@@ -388,7 +388,8 @@ pub(crate) mod tests {
     fn get_in_terrain_dir() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         write(terrain_dir.path().join("terrain.toml"), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
@@ -430,7 +431,9 @@ pub(crate) mod tests {
     fn get_in_central_dir() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
+
         create_dir_all(&central_dir)?;
         write(central_dir.join("terrain.toml"), "")?;
 
@@ -473,9 +476,11 @@ pub(crate) mod tests {
     fn get_in_parent_terrain_dir() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
+
         let cwd = terrain_dir.path().join("grand/child");
         create_dir_all(&cwd)?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         write(terrain_dir.path().join("terrain.toml"), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
@@ -514,9 +519,11 @@ pub(crate) mod tests {
     fn get_in_parent_central_dir() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
+
         let cwd = terrain_dir.path().join("grand/child");
         create_dir_all(&cwd)?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         create_dir_all(&central_dir)?;
         write(central_dir.join("terrain.toml"), "")?;
 
@@ -555,7 +562,8 @@ pub(crate) mod tests {
     fn get_throws_error_if_not_present() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        let central_dir = get_central_dir_location(terrain_dir.path());
+
+        let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         create_dir_all(&central_dir)?;
 
         let err = Context::get(
@@ -576,7 +584,7 @@ pub(crate) mod tests {
     #[test]
     fn central_dir_returns_config_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let central_dir = get_central_dir_location(&current_dir()?);
+        let central_dir = get_central_dir_location(home_dir().unwrap().as_path(), &current_dir()?);
 
         assert_eq!(&central_dir, context.central_dir());
         Ok(())
@@ -585,7 +593,8 @@ pub(crate) mod tests {
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
         let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
-        let scripts_dir = get_central_dir_location(&current_dir()?).join("scripts");
+        let scripts_dir = get_central_dir_location(home_dir().unwrap().as_path(), &current_dir()?)
+            .join("scripts");
 
         assert_eq!(scripts_dir, context.scripts_dir());
         Ok(())
@@ -595,15 +604,14 @@ pub(crate) mod tests {
         home_dir.join(".config/terrainium/shell_integration")
     }
 
-    fn get_central_dir_location(current_dir: &Path) -> PathBuf {
+    fn get_central_dir_location(home_dir: &Path, current_dir: &Path) -> PathBuf {
         let terrain_dir_name = Path::canonicalize(current_dir)
             .expect("current directory to be present")
             .to_string_lossy()
             .to_string()
             .replace('/', "_");
 
-        home_dir()
-            .expect("failed to get home directory")
+        home_dir
             .join(".config/terrainium/terrains")
             .join(terrain_dir_name)
     }

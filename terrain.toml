@@ -3,15 +3,21 @@ name = "terrainium"
 default_biome = "test"
 
 [auto_apply]
-enabled = false
-background = false
-replace = false
+enabled = true
+background = true
+replace = true
 
 [terrain.envs]
 TERRAINIUM_DEV = "false"
 
 [terrain.aliases]
+t = "cargo run --"
+td = "cargo run --bin terrainiumd --"
 ttest = "cargo clippy && cargo test"
+tdaemon = "cargo run --bin terrainiumd -- -f --log-level trace"
+tenter = "cargo run -- enter"
+trenter = "exec cargo run -- enter"
+tstatus = "cargo run -- status"
 
 [terrain.constructors]
 foreground = []
