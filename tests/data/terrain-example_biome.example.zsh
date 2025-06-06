@@ -101,10 +101,10 @@ function __terrainium_preexec_functions() {
 
 function __terrainium_zshexit_functions() {
     __terrainium_shell_destructor
+    echo "exiting terrain with session id: ${TERRAIN_SESSION_ID}"
+    terrainium exit
     __terrainium_unalias
     __terrainium_unset_envs
-    echo "exiting terrain with session: ${TERRAIN_SESSION_ID}"
-    terrainium exit
 }
 
 preexec_functions=(__terrainium_preexec_functions $preexec_functions)
