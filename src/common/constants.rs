@@ -46,3 +46,4 @@ pub const BACKGROUND: &str = "background";
 pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const NONE: &str = "none";
 pub const TRUE: &str = "true";
+pub const JSON: &str = "json";

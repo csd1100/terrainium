@@ -2,6 +2,7 @@ use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
+use crate::common::constants::JSON;
 use crate::common::execute::Execute;
 use crate::common::types::pb;
 use anyhow::{Context, Result};
@@ -9,7 +10,8 @@ use anyhow::{Context, Result};
 use mockall::mock;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::os::unix::fs::PermissionsExt;
@@ -79,12 +81,36 @@ fn is_executable(path: &Path) -> bool {
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Hash, Eq)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq, Deserialize)]
 pub struct Command {
     exe: String,
     args: Vec<String>,
+    // do not serialize envs for terrain.toml
+    #[cfg_attr(feature = "terrain-schema", schemars(skip))]
+    #[serde(skip_serializing)]
     envs: Option<BTreeMap<String, String>>,
     cwd: Option<PathBuf>,
+}
+
+impl Serialize for Command {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let type_name = std::any::type_name::<S>();
+        let is_json = type_name.contains(JSON);
+
+        let mut command = serializer.serialize_struct("Command", if is_json { 4 } else { 3 })?;
+        command.serialize_field("exe", &self.exe)?;
+        command.serialize_field("args", &self.args)?;
+        // do serialize envs for command state but do not serialize for toml
+        // as for terrain.toml we have common env vars specified
+        if is_json {
+            command.serialize_field("envs", &self.envs)?;
+        }
+        command.serialize_field("cwd", &self.cwd)?;
+        command.end()
+    }
 }
 
 impl Display for Command {
