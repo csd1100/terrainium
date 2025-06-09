@@ -1,9 +1,9 @@
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-#[mockall_double::double]
-use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
+#[mockall_double::double]
+use crate::common::types::command::Command;
 use anyhow::{Context as AnyhowContext, Result};
 use std::path::Path;
 use tracing::info;
@@ -25,14 +25,14 @@ pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
         "vi".to_string()
     });
 
-    let edit = CommandToRun::new(
+    let edit = Command::new(
         editor,
         vec![toml_path
             .to_string_lossy()
             .parse()
             .context(format!("failed to convert path {:?} to string", toml_path))?],
         Some(std::env::vars().collect()),
-        terrain_dir,
+        Some(terrain_dir.to_path_buf()),
     );
 
     edit.wait()
@@ -52,7 +52,7 @@ pub(crate) mod tests {
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
     use anyhow::Result;
     use fs::{copy, create_dir_all};
     use serial_test::serial;
@@ -75,20 +75,20 @@ pub(crate) mod tests {
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
+        let mut edit_run = MockCommand::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
+        let edit_mock = MockCommand::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
-                    && *cwd == terrain_dir
+                    && cwd.clone().unwrap() == terrain_dir
             })
             .times(1)
             .return_once(|_, _, _, _| edit_run);
@@ -134,20 +134,20 @@ pub(crate) mod tests {
         let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
+        let mut edit_run = MockCommand::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
+        let edit_mock = MockCommand::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs, cwd| {
                 exe == &"vim".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
-                    && *cwd == terrain_dir
+                    && cwd.clone().unwrap() == terrain_dir
             })
             .times(1)
             .return_once(|_, _, _, _| edit_run);
@@ -196,20 +196,20 @@ pub(crate) mod tests {
         let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
+        let mut edit_run = MockCommand::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
+        let edit_mock = MockCommand::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs, cwd| {
                 exe == &"vi".to_string()
                     && *args == vec![terrain_toml.to_string_lossy()]
                     && envs.is_some()
-                    && *cwd == terrain_dir
+                    && cwd.clone().unwrap() == terrain_dir
             })
             .times(1)
             .return_once(|_, _, _, _| edit_run);

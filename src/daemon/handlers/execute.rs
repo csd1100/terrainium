@@ -1,4 +1,5 @@
-use crate::common::execute::{CommandToRun, Execute};
+use crate::common::execute::Execute;
+use crate::common::types::command::Command;
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::Response;
@@ -158,7 +159,7 @@ async fn spawn_command(
     is_constructor: bool,
     timestamp: String,
     index: usize,
-    command: CommandToRun,
+    command: Command,
     log_path: String,
 ) -> Result<()> {
     let cmd_str = command.to_string();

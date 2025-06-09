@@ -1,7 +1,7 @@
-use crate::client::types::command::{Command, OperationType};
 use crate::client::types::commands::Commands;
 use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
 use crate::common::constants::{ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, ENVS, FOREGROUND};
+use crate::common::types::command::{Command, OperationType};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
@@ -362,6 +362,7 @@ impl Biome {
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
                 None,
+                None,
             )],
             vec![],
         );
@@ -370,6 +371,7 @@ impl Biome {
             vec![Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
+                None,
                 None,
             )],
             vec![],

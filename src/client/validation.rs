@@ -1,4 +1,4 @@
-use crate::client::types::command::{Command, CommandsType, OperationType};
+use crate::common::types::command::{Command, CommandsType, OperationType};
 use regex::Regex;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Formatter;

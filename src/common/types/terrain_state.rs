@@ -1,5 +1,5 @@
 use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
-use crate::common::execute::CommandToRun;
+use crate::common::types::command::Command;
 use crate::common::types::pb;
 use crate::common::types::styles::{
     colored, error, heading, sub_heading, sub_value, success, value, warning,
@@ -257,7 +257,7 @@ impl Display for TerrainState {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommandState {
-    command: CommandToRun,
+    command: Command,
     log_path: String,
     status: CommandStatus,
 }
@@ -284,7 +284,7 @@ impl CommandState {
         }
     }
 
-    pub(crate) fn command_and_log_path(self) -> (CommandToRun, String) {
+    pub(crate) fn command_and_log_path(self) -> (Command, String) {
         (self.command, self.log_path)
     }
 
@@ -307,7 +307,7 @@ impl Display for CommandState {
             value(self.command.exe()),
             value(&self.command.args().join(" ")),
             colored("", AnsiColor::BrightYellow),
-            value(self.command.cwd().to_str().unwrap()),
+            value(&format!("{:?}", self.command.cwd())),
             colored("", AnsiColor::BrightWhite),
             sub_value(&self.log_path),
             self.status

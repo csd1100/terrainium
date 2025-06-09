@@ -181,7 +181,6 @@ mod tests {
     use crate::client::shell::{Shell, Zsh};
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
-    use crate::client::types::command::Command;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
     use crate::client::types::terrain::tests::{
@@ -192,6 +191,7 @@ mod tests {
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::types::command::Command;
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
@@ -286,11 +286,13 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -298,11 +300,13 @@ mod tests {
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                None,
                 Some(canonicalize(terrain_dir.path().join("tests/scripts"))?),
             ),
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                None,
                 Some(PathBuf::from("/tmp")),
             ),
             Command::new(
@@ -311,6 +315,7 @@ mod tests {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -318,11 +323,13 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -331,6 +338,7 @@ mod tests {
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                None,
                 Some(terrain_dir.path().join("tests/scripts").canonicalize()?),
             ),
             Command::new(
@@ -339,6 +347,7 @@ mod tests {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -373,16 +382,19 @@ mod tests {
         terrain.terrain_mut().add_bg_constructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            None,
             Some(PathBuf::from("tests/scripts")),
         ));
         terrain.terrain_mut().add_bg_constructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            None,
             Some(PathBuf::from("/tmp")),
         ));
         terrain.terrain_mut().add_bg_destructors(Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            None,
             Some(PathBuf::from("${TEST_DIR}/${SCRIPTS_DIR}")),
         ));
 
@@ -440,11 +452,13 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -454,17 +468,20 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
             Some(terrain_dir.path().to_path_buf()),
         )];
         let expected_destructor_foreground: Vec<Command> = vec![
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -475,6 +492,7 @@ mod tests {
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
+            None,
             Some(terrain_dir.path().to_path_buf()),
         )];
         let expected_constructor = Commands::new(
@@ -581,11 +599,13 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome2".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -594,11 +614,13 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome2".to_string()],
+                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];

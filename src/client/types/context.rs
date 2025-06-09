@@ -209,7 +209,7 @@ pub(crate) mod tests {
     use super::Context;
     use crate::client::shell::Zsh;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
@@ -227,17 +227,17 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -269,17 +269,17 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -394,17 +394,17 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -439,17 +439,17 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -485,17 +485,17 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -529,17 +529,17 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let shell = MockCommandToRun::new_context();
+        let shell = MockCommand::new_context();
         shell
             .expect()
             .withf(move |exe, args, env, cwd| {
                 exe == "/bin/zsh"
                     && args.is_empty()
                     && env.is_none()
-                    && cwd == current_dir().unwrap()
+                    && cwd.as_ref().unwrap() == current_dir().unwrap().as_path()
             })
             .returning(move |_, _, _, _| {
-                let runner = MockCommandToRun::default();
+                let runner = MockCommand::default();
 
                 ExpectZSH::with(runner)
                     .compile_script_for(
@@ -583,7 +583,7 @@ pub(crate) mod tests {
 
     #[test]
     fn central_dir_returns_config_location() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
+        let context = Context::build_without_paths(Zsh::build(MockCommand::default()));
         let central_dir = get_central_dir_location(home_dir().unwrap().as_path(), &current_dir()?);
 
         assert_eq!(&central_dir, context.central_dir());
@@ -592,7 +592,7 @@ pub(crate) mod tests {
 
     #[test]
     fn scripts_dir_returns_scripts_location() -> Result<()> {
-        let context = Context::build_without_paths(Zsh::build(MockCommandToRun::default()));
+        let context = Context::build_without_paths(Zsh::build(MockCommand::default()));
         let scripts_dir = get_central_dir_location(home_dir().unwrap().as_path(), &current_dir()?)
             .join("scripts");
 

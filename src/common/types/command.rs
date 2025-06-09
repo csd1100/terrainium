@@ -2,18 +2,20 @@ use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
+use crate::common::execute::Execute;
 use crate::common::types::pb;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
+#[cfg(test)]
+use mockall::mock;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashSet};
-use std::env;
 use std::fmt::Display;
-use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
+use std::process::{ExitStatus, Output};
+use tracing::{info, instrument, trace};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CommandsType {
@@ -53,29 +55,77 @@ impl Display for OperationType {
     }
 }
 
+fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("PATH") {
+        for p in path.split(':') {
+            let p_str = format!("{p}/{exe}");
+            if std::fs::metadata(&p_str).is_ok() {
+                return Some(PathBuf::from(p_str));
+            }
+        }
+    }
+    None
+}
+
+fn is_executable(path: &Path) -> bool {
+    let md = std::fs::metadata(path);
+    if md.is_err() {
+        return false;
+    }
+    let permissions = md.unwrap().permissions();
+    let mode = permissions.mode();
+
+    mode & 0o111 != 0
+}
+
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct Command {
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Hash, Eq)]
+pub struct Command {
     exe: String,
     args: Vec<String>,
+    envs: Option<BTreeMap<String, String>>,
     cwd: Option<PathBuf>,
 }
 
+impl Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} in {:?}", self.exe, self.args.join(" "), self.cwd)
+    }
+}
+
 impl Command {
-    pub(crate) fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {
-        Command { exe, args, cwd }
+    pub fn new(
+        exe: String,
+        args: Vec<String>,
+        envs: Option<BTreeMap<String, String>>,
+        cwd: Option<PathBuf>,
+    ) -> Self {
+        Command {
+            exe,
+            args,
+            envs,
+            cwd,
+        }
     }
 
-    pub(crate) fn exe(&self) -> &str {
+    pub fn exe(&self) -> &str {
         &self.exe
     }
 
-    pub(crate) fn args(&self) -> &[String] {
+    pub fn args(&self) -> &[String] {
         &self.args
     }
 
-    pub(crate) fn cwd(&self) -> Option<PathBuf> {
-        self.cwd.clone()
+    pub fn cwd(&self) -> &Option<PathBuf> {
+        &self.cwd
+    }
+
+    pub fn set_args(&mut self, args: Vec<String>) {
+        self.args = args;
+    }
+
+    pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
+        self.envs = envs;
     }
 
     pub(crate) fn substitute_cwd(
@@ -274,65 +324,146 @@ impl Command {
     }
 }
 
-fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
-    if let Ok(path) = env::var("PATH") {
-        for p in path.split(':') {
-            let p_str = format!("{p}/{exe}");
-            if fs::metadata(&p_str).is_ok() {
-                return Some(PathBuf::from(p_str));
-            }
-        }
+impl From<Command> for std::process::Command {
+    fn from(value: Command) -> std::process::Command {
+        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
+        let envs = if let Some(mut envs) = value.envs {
+            vars.append(&mut envs);
+            vars
+        } else {
+            vars
+        };
+        let mut command = std::process::Command::new(value.exe);
+        command
+            .args(value.args)
+            .envs(envs)
+            .current_dir(value.cwd.expect("cwd to be present"));
+        command
     }
-    None
 }
 
-fn is_executable(path: &Path) -> bool {
-    let md = fs::metadata(path);
-    if md.is_err() {
-        return false;
+impl From<Command> for tokio::process::Command {
+    fn from(value: Command) -> tokio::process::Command {
+        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
+        let envs = if let Some(mut envs) = value.envs {
+            vars.append(&mut envs);
+            vars
+        } else {
+            vars
+        };
+        let mut command = tokio::process::Command::new(value.exe);
+        command
+            .args(value.args)
+            .envs(envs)
+            .current_dir(value.cwd.expect("cwd to be present"));
+        command
     }
-    let permissions = md.unwrap().permissions();
-    let mode = permissions.mode();
-
-    mode & 0o111 != 0
 }
 
-impl TryFrom<Command> for pb::Command {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Command) -> Result<Self> {
-        if value.cwd.is_none() {
-            bail!(
-                "'cwd' is required for command exe:'{}', args: '{}'",
-                value.exe,
-                value.args.join(" ")
-            );
+impl From<Command> for pb::Command {
+    fn from(value: Command) -> Self {
+        let Command {
+            exe,
+            args,
+            envs,
+            cwd,
+        } = value;
+        Self {
+            exe,
+            args,
+            envs: envs.unwrap_or_default(),
+            cwd: cwd.unwrap().to_string_lossy().to_string(),
         }
-        Ok(pb::Command {
+    }
+}
+
+impl Execute for Command {
+    fn get_output(self) -> Result<Output> {
+        let mut command: std::process::Command = self.into();
+        command.output().context("failed to get output")
+    }
+
+    fn wait(self) -> Result<ExitStatus> {
+        let mut command: std::process::Command = self.into();
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().context("failed to wait for command")
+    }
+
+    #[instrument]
+    async fn async_get_output(self) -> Result<Output> {
+        info!("running async get_output for '{self}'");
+        trace!("running async process {self:?}");
+        let mut command: tokio::process::Command = self.into();
+        command.output().await.context("failed to get output")
+    }
+
+    async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
+        info!("running async process with wait for '{self}', with logs in file: {log_path}",);
+        trace!("running async process with wait {self:?}");
+
+        let log_file = tokio::fs::File::options()
+            .create(true)
+            .append(true)
+            .open(log_path)
+            .await
+            .expect("failed to create / append to log file");
+
+        let stdout: std::fs::File = log_file
+            .try_clone()
+            .await
+            .expect("failed to clone file handle")
+            .into_std()
+            .await;
+
+        let stderr: std::fs::File = log_file.into_std().await;
+
+        let mut command: tokio::process::Command = self.into();
+        command.stdout(stdout);
+        command.stderr(stderr);
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().await.context("failed to wait for command")
+    }
+
+    async fn async_spawn(self) -> Result<ExitStatus> {
+        let mut command: tokio::process::Command = self.into();
+        let mut child = command.spawn().context("failed to run command")?;
+        child.wait().await.context("failed to wait for command")
+    }
+}
+
+impl From<pb::Command> for Command {
+    fn from(value: pb::Command) -> Self {
+        Self {
             exe: value.exe,
             args: value.args,
-            envs: BTreeMap::default(),
-            cwd: value.cwd.unwrap().to_string_lossy().to_string(),
-        })
+            envs: Some(value.envs),
+            cwd: Some(PathBuf::from(value.cwd)),
+        }
     }
 }
 
-impl TryFrom<&Command> for pb::Command {
-    type Error = anyhow::Error;
+#[cfg(test)]
+mock! {
+    #[derive(Debug)]
+    pub Command {
+        pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>, cwd: Option<PathBuf>) -> Self;
+        pub fn set_args(&mut self, args: Vec<String>);
+        pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
+    }
 
-    fn try_from(value: &Command) -> Result<Self> {
-        if value.cwd.is_none() {
-            bail!(
-                "'cwd' is required for command exe:'{}', args: '{}'",
-                value.exe,
-                value.args.join(" ")
-            );
-        }
-        Ok(pb::Command {
-            exe: value.exe.to_string(),
-            args: value.args.clone(),
-            envs: BTreeMap::default(),
-            cwd: value.cwd.clone().unwrap().to_string_lossy().to_string(),
-        })
+    impl Execute for Command {
+        fn get_output(self) -> Result<Output>;
+        fn wait(self) -> Result<ExitStatus>;
+        async fn async_get_output(self) -> Result<Output>;
+        async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
+        async fn async_spawn(self) -> Result<ExitStatus>;
+    }
+
+    impl Clone for Command {
+        fn clone(&self) -> Self;
+    }
+
+    impl PartialEq for Command {
+        fn eq(&self, other: &Self) -> bool;
     }
 }

@@ -1,6 +1,5 @@
 use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
-use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
 use crate::client::types::context::Context;
 use crate::client::validation::{
@@ -9,6 +8,7 @@ use crate::client::validation::{
 use crate::common::constants::{
     BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
+use crate::common::types::command::Command;
 use anyhow::{bail, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -303,7 +303,8 @@ impl Terrain {
                             let fixed = Command::new(
                                 fc.exe().trim().to_string(),
                                 fc.args().to_vec(),
-                                fc.cwd(),
+                                None,
+                                fc.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
@@ -322,7 +323,8 @@ impl Terrain {
                             let fixed = Command::new(
                                 bc.exe().trim().to_string(),
                                 bc.args().to_vec(),
-                                bc.cwd(),
+                                None,
+                                bc.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_background_constructor(bc).unwrap();
@@ -340,7 +342,8 @@ impl Terrain {
                             let fixed = Command::new(
                                 fd.exe().trim().to_string(),
                                 fd.args().to_vec(),
-                                fd.cwd(),
+                                None,
+                                fd.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
@@ -359,7 +362,8 @@ impl Terrain {
                             let fixed = Command::new(
                                 bd.exe().trim().to_string(),
                                 bd.args().to_vec(),
-                                bd.cwd(),
+                                None,
+                                bd.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_background_destructor(bd).unwrap();
@@ -431,6 +435,7 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
                 None,
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -438,6 +443,7 @@ impl Terrain {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 None,
             )],
         );
@@ -447,6 +453,7 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
                 None,
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -454,6 +461,7 @@ impl Terrain {
                     "-c".to_string(),
                     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 None,
             )],
         );
@@ -498,7 +506,6 @@ pub mod tests {
     };
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
-    use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
@@ -506,7 +513,8 @@ pub mod tests {
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
     use crate::common::constants::NONE;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
+    use crate::common::types::command::{Command, CommandsType};
     use serial_test::serial;
     use std::collections::BTreeMap;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
@@ -537,11 +545,13 @@ pub mod tests {
             "/bin/echo".to_string(),
             vec!["entering biome ".to_string() + &name],
             None,
+            None,
         )];
         let biome_constructor_background: Vec<Command> = vec![];
         let biome_destructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome ".to_string() + &name],
+            None,
             None,
         )];
         let biome_destructor_background: Vec<Command> = vec![];
@@ -788,100 +798,119 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let command_vec = vec![
             leading_space_command.clone(),
             trailing_space_command.clone(),
-            Command::new("".to_string(), vec![], None),
+            Command::new("".to_string(), vec![], None, None),
             Command::new(
                 "not_in_path".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with spaces".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_path_with_cwd".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./not_executable".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present_current_dir".to_string(),
                 vec![],
                 None,
+                None,
             ),
             Command::new(
                 absolute_exe_path.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_present.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_executable.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with_relative_arg_not_present".to_string(),
                 vec!["./not_present".to_string()],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(paths_usr_bin.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_dir")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("${RELATIVE_DIR}")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("/absolute_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(absolute_exe_path.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_path_with_cwd")),
             ),
         ];
@@ -890,6 +919,7 @@ pub mod tests {
         let sudo_command = Command::new(
             "sudo".to_string(),
             vec!["whoami".to_string()],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
 
@@ -1096,11 +1126,13 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
 
@@ -1228,7 +1260,7 @@ pub mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         Terrain::get_validated_and_fixed_terrain(&context).expect("terrain to fixed");

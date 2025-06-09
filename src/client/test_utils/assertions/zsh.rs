@@ -1,15 +1,15 @@
 use crate::client::test_utils::assertions::command::RunCommand;
-use crate::common::execute::MockCommandToRun;
+use crate::common::types::command::MockCommand;
 use std::os::unix::prelude::ExitStatusExt;
 use std::path::Path;
 use std::process::{ExitStatus, Output};
 
 pub struct ExpectZSH {
-    runner: MockCommandToRun,
+    runner: MockCommand,
 }
 
 impl ExpectZSH {
-    pub fn with(runner: MockCommandToRun) -> Self {
+    pub fn with(runner: MockCommand) -> Self {
         Self { runner }
     }
 
@@ -23,12 +23,12 @@ impl ExpectZSH {
         self
     }
 
-    pub fn successfully(self) -> MockCommandToRun {
+    pub fn successfully(self) -> MockCommand {
         self.runner
     }
 
     pub fn execute(mut self, command: RunCommand) -> Self {
-        let mut mock_get_output = MockCommandToRun::default();
+        let mut mock_get_output = MockCommand::default();
         mock_get_output
             .expect_set_args()
             .withf(move |args| *args == command.args.clone())
@@ -94,7 +94,7 @@ impl ExpectZSH {
     }
 
     pub fn spawn_command(mut self, command: RunCommand) -> Self {
-        let mut mock_spawn = MockCommandToRun::default();
+        let mut mock_spawn = MockCommand::default();
         mock_spawn
             .expect_set_args()
             .withf(move |args| *args == command.args.clone())

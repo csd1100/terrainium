@@ -50,7 +50,7 @@ pub mod tests {
     };
     use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
     use anyhow::Result;
     use serial_test::serial;
     use std::os::unix::prelude::ExitStatusExt;
@@ -177,7 +177,7 @@ pub mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
@@ -232,7 +232,7 @@ pub mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             central_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
@@ -287,20 +287,20 @@ pub mod tests {
         let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
+        let mut edit_run = MockCommand::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
+        let edit_mock = MockCommand::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs, cwd| {
                 *exe == editor
                     && *args == vec![terrain_toml_path.to_string_lossy()]
                     && envs.is_some()
-                    && *cwd == terrain_dir
+                    && cwd.clone().unwrap() == terrain_dir
             })
             .times(1)
             .return_once(|_, _, _, _| edit_run);
@@ -341,19 +341,19 @@ pub mod tests {
         let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
         let terrain_dir_path = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
+        let mut edit_run = MockCommand::default();
         edit_run
             .expect_wait()
             .with()
             .times(1)
             .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
+        let edit_mock = MockCommand::new_context();
         edit_mock
             .expect()
             .withf(move |exe, args, envs, cwd| {
                 *exe == editor
                     && envs.is_some()
-                    && *cwd == terrain_dir_path
+                    && *cwd.clone().unwrap() == terrain_dir_path
                     && *args == vec![terrain_toml_path.to_string_lossy()]
             })
             .times(1)

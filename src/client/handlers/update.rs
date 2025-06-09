@@ -88,7 +88,7 @@ mod tests {
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
     use std::fs::{copy, create_dir_all, read_to_string};
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
@@ -168,7 +168,7 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let mut terrain = Terrain::example();
@@ -420,7 +420,7 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let err = super::handle(

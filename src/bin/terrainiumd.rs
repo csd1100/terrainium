@@ -3,7 +3,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
-use terrainium::common::execute::{CommandToRun, Execute};
+use terrainium::common::execute::Execute;
+use terrainium::common::types::command::Command;
 use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::DaemonArgs;
 use terrainium::daemon::handlers::handle_request;
@@ -23,11 +24,11 @@ fn get_daemon_config() -> DaemonConfig {
 }
 
 fn is_user_root() -> bool {
-    let user = CommandToRun::new(
+    let user = Command::new(
         "whoami".to_string(),
         vec![],
         None,
-        &PathBuf::from(TERRAINIUMD_TMP_DIR),
+        Some(PathBuf::from(TERRAINIUMD_TMP_DIR)),
     )
     .get_output();
 

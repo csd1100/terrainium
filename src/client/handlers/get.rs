@@ -179,7 +179,7 @@ mod tests {
     use crate::client::types::terrain::tests::set_auto_apply;
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::EXAMPLE_BIOME;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::types::command::MockCommand;
     use anyhow::Result;
     use serial_test::serial;
     use std::fs::read_to_string;
@@ -193,7 +193,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -223,7 +223,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -253,7 +253,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -283,7 +283,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -314,7 +314,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -345,7 +345,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -373,7 +373,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -410,7 +410,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -447,7 +447,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -478,7 +478,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -518,7 +518,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -549,7 +549,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -580,7 +580,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -615,7 +615,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -650,7 +650,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -703,7 +703,7 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -750,7 +750,7 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -784,7 +784,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -824,7 +824,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -855,7 +855,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -886,7 +886,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -917,7 +917,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {
@@ -949,7 +949,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             Config::auto_apply_off(),
-            Zsh::build(MockCommandToRun::default()),
+            Zsh::build(MockCommand::default()),
         );
 
         let args = GetArgs {

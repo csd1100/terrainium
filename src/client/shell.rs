@@ -1,7 +1,7 @@
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 #[mockall_double::double]
-use crate::common::execute::CommandToRun;
+use crate::common::types::command::Command;
 use anyhow::Result;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -12,7 +12,7 @@ pub mod zsh;
 
 pub trait Shell: Debug + PartialEq {
     fn get(cwd: &Path) -> Self;
-    fn runner(&self) -> CommandToRun;
+    fn runner(&self) -> Command;
     fn get_init_rc_contents() -> String;
     fn setup_integration(&self, init_script_dir: PathBuf) -> Result<()>;
     fn update_rc(path: Option<PathBuf>) -> Result<()>;
@@ -30,5 +30,5 @@ pub trait Shell: Debug + PartialEq {
 #[derive(Debug, PartialEq)]
 pub struct Zsh {
     exe: String,
-    runner: CommandToRun,
+    runner: Command,
 }
