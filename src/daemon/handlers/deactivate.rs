@@ -6,11 +6,12 @@ use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
 use anyhow::{Context, Result};
 use prost_types::Any;
+use std::sync::Arc;
 use tracing::trace;
 
 pub struct DeactivateHandler;
 impl RequestHandler for DeactivateHandler {
-    async fn handle(request: Any, context: DaemonContext) -> Any {
+    async fn handle(request: Any, context: Arc<DaemonContext>) -> Any {
         trace!("handling deactivate request");
         let request: Result<Deactivate> = request
             .to_msg()
@@ -24,7 +25,7 @@ impl RequestHandler for DeactivateHandler {
     }
 }
 
-async fn deactivate(request: Deactivate, context: DaemonContext) -> Response {
+async fn deactivate(request: Deactivate, context: Arc<DaemonContext>) -> Response {
     let Deactivate {
         session_id,
         terrain_name,

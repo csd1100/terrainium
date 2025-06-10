@@ -5,12 +5,13 @@ use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
 use anyhow::{bail, Context, Result};
 use prost_types::Any;
+use std::sync::Arc;
 use tracing::trace;
 
 pub struct StatusHandler;
 
 impl RequestHandler for StatusHandler {
-    async fn handle(request: Any, context: DaemonContext) -> Any {
+    async fn handle(request: Any, context: Arc<DaemonContext>) -> Any {
         trace!("handling Status request");
         let request: Result<StatusRequest> = request
             .to_msg()
@@ -27,7 +28,7 @@ impl RequestHandler for StatusHandler {
     }
 }
 
-async fn status(request: StatusRequest, context: DaemonContext) -> Result<Response> {
+async fn status(request: StatusRequest, context: Arc<DaemonContext>) -> Result<Response> {
     let StatusRequest {
         identifier,
         terrain_name,

@@ -1,6 +1,7 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use std::path::PathBuf;
+use std::sync::Arc;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
 use terrainium::common::execute::{CommandToRun, Execute};
 use terrainium::common::types::styles::{error, warning};
@@ -65,7 +66,7 @@ async fn start() -> Result<()> {
         return DaemonConfig::create_file().context("failed to create terrainiumd config");
     }
 
-    let context = get_daemon_context().await;
+    let context = Arc::new(get_daemon_context().await);
 
     if context.should_exit_early() {
         bail!("exiting as service was started as root without being configured.");

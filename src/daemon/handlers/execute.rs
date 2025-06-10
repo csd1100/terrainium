@@ -9,12 +9,13 @@ use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::state_manager::{StoredHistory, StoredState};
 use anyhow::{bail, Context, Result};
 use prost_types::Any;
+use std::sync::Arc;
 use tracing::{debug, error, trace};
 
 pub(crate) struct ExecuteHandler;
 
 impl RequestHandler for ExecuteHandler {
-    async fn handle(request: Any, context: DaemonContext) -> Any {
+    async fn handle(request: Any, context: Arc<DaemonContext>) -> Any {
         trace!("handling Execute request");
         let execute: Result<pb::Execute> = request
             .to_msg()
@@ -40,7 +41,10 @@ impl RequestHandler for ExecuteHandler {
     }
 }
 
-pub(crate) async fn spawn_commands(request: pb::Execute, context: DaemonContext) -> Result<()> {
+pub(crate) async fn spawn_commands(
+    request: pb::Execute,
+    context: Arc<DaemonContext>,
+) -> Result<()> {
     let timestamp = request.timestamp.clone();
     let is_constructor = request.is_constructor;
 

@@ -10,6 +10,7 @@ use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::daemon_socket::DaemonSocket;
 use anyhow::{anyhow, Context, Result};
 use prost_types::Any;
+use std::sync::Arc;
 use tracing::{debug, error, trace};
 
 mod activate;
@@ -18,10 +19,10 @@ mod execute;
 mod status;
 
 pub(crate) trait RequestHandler {
-    async fn handle(request: Any, context: DaemonContext) -> Any;
+    async fn handle(request: Any, context: Arc<DaemonContext>) -> Any;
 }
 
-pub async fn handle_request(mut daemon_socket: DaemonSocket, context: DaemonContext) {
+pub async fn handle_request(mut daemon_socket: DaemonSocket, context: Arc<DaemonContext>) {
     trace!("handling requests on socket");
 
     let data: Result<Any> = daemon_socket

@@ -7,12 +7,13 @@ use crate::daemon::handlers::{error_response, RequestHandler};
 use crate::daemon::types::context::DaemonContext;
 use anyhow::{Context, Result};
 use prost_types::Any;
+use std::sync::Arc;
 use tracing::trace;
 
 pub(crate) struct ActivateHandler;
 
 impl RequestHandler for ActivateHandler {
-    async fn handle(request: Any, context: DaemonContext) -> Any {
+    async fn handle(request: Any, context: Arc<DaemonContext>) -> Any {
         trace!("handling Activate request");
         let request: Result<Activate> = request
             .to_msg()
@@ -29,7 +30,7 @@ impl RequestHandler for ActivateHandler {
     }
 }
 
-async fn activate(request: Activate, context: DaemonContext) -> Result<Response> {
+async fn activate(request: Activate, context: Arc<DaemonContext>) -> Result<Response> {
     let terrain_name = request.terrain_name.clone();
     let session_id = request.session_id.clone();
     trace!(
