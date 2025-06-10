@@ -1,4 +1,4 @@
-use crate::common::execute::Execute;
+use crate::common::execute::{Execute, Executor};
 use crate::common::types::command::Command;
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
@@ -40,6 +40,14 @@ impl RequestHandler for ExecuteHandler {
         };
         Any::from_msg(&response).unwrap()
     }
+}
+
+struct CommandInfo {
+    index: usize,
+    command: Command,
+    is_constructor: bool,
+    timestamp: String,
+    log_path: String,
 }
 
 pub(crate) async fn spawn_commands(
@@ -131,16 +139,20 @@ pub(crate) async fn spawn_commands(
             let history = history.clone();
             let stored_state = stored_state.clone();
             let timestamp = timestamp.clone();
+            let executor = context.executor();
             let (command, log_path) = cmd_state.command_and_log_path();
             tokio::spawn(async move {
                 let res = spawn_command(
+                    executor,
                     history,
                     stored_state,
-                    is_constructor,
-                    timestamp,
-                    index,
-                    command,
-                    log_path,
+                    CommandInfo {
+                        index,
+                        command,
+                        is_constructor,
+                        timestamp,
+                        log_path,
+                    },
                 )
                 .await;
 
@@ -154,14 +166,19 @@ pub(crate) async fn spawn_commands(
 }
 
 async fn spawn_command(
+    executor: Arc<Executor>,
     history: StoredHistory,
     stored_state: StoredState,
-    is_constructor: bool,
-    timestamp: String,
-    index: usize,
-    command: Command,
-    log_path: String,
+    command_info: CommandInfo,
 ) -> Result<()> {
+    let CommandInfo {
+        index,
+        command,
+        is_constructor,
+        timestamp,
+        log_path,
+    } = command_info;
+
     let cmd_str = command.to_string();
     let state = stored_state.read().await;
     let terrain_name = state.terrain_name().to_string();
@@ -190,7 +207,7 @@ async fn spawn_command(
         .await?;
     drop(state_mut);
 
-    let res = command.async_wait(&log_path).await;
+    let res = executor.async_wait(command, &log_path).await;
 
     let mut state_mut = stored_state.write().await;
     match res {

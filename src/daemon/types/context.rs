@@ -1,3 +1,4 @@
+use crate::common::execute::Executor;
 use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;
 use std::sync::Arc;
@@ -6,21 +7,27 @@ use std::sync::Arc;
 pub struct DaemonContext {
     is_root: bool,
     is_root_allowed: bool,
+    executor: Arc<Executor>,
     state_manager: Arc<StateManager>,
 }
 
 impl DaemonContext {
-    pub async fn new(config: DaemonConfig, is_root: bool) -> Self {
+    pub async fn new(executor: Arc<Executor>, config: DaemonConfig, is_root: bool) -> Self {
         let state_manager = StateManager::init(config.history_size()).await;
         DaemonContext {
             is_root,
             is_root_allowed: config.is_root_allowed(),
+            executor,
             state_manager: Arc::new(state_manager),
         }
     }
 
     pub fn state_manager(&self) -> Arc<StateManager> {
         self.state_manager.clone()
+    }
+
+    pub fn executor(&self) -> Arc<Executor> {
+        self.executor.clone()
     }
 
     pub fn setup_state_manager(&self) {

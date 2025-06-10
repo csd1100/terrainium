@@ -3,11 +3,8 @@ use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
 use crate::common::constants::JSON;
-use crate::common::execute::Execute;
 use crate::common::types::pb;
 use anyhow::{Context, Result};
-#[cfg(test)]
-use mockall::mock;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::ser::SerializeStruct;
@@ -16,8 +13,6 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::{ExitStatus, Output};
-use tracing::{info, instrument, trace};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CommandsType {
@@ -403,60 +398,6 @@ impl From<Command> for pb::Command {
     }
 }
 
-impl Execute for Command {
-    fn get_output(self) -> Result<Output> {
-        let mut command: std::process::Command = self.into();
-        command.output().context("failed to get output")
-    }
-
-    fn wait(self) -> Result<ExitStatus> {
-        let mut command: std::process::Command = self.into();
-        let mut child = command.spawn().context("failed to run command")?;
-        child.wait().context("failed to wait for command")
-    }
-
-    #[instrument]
-    async fn async_get_output(self) -> Result<Output> {
-        info!("running async get_output for '{self}'");
-        trace!("running async process {self:?}");
-        let mut command: tokio::process::Command = self.into();
-        command.output().await.context("failed to get output")
-    }
-
-    async fn async_wait(self, log_path: &str) -> Result<ExitStatus> {
-        info!("running async process with wait for '{self}', with logs in file: {log_path}",);
-        trace!("running async process with wait {self:?}");
-
-        let log_file = tokio::fs::File::options()
-            .create(true)
-            .append(true)
-            .open(log_path)
-            .await
-            .expect("failed to create / append to log file");
-
-        let stdout: std::fs::File = log_file
-            .try_clone()
-            .await
-            .expect("failed to clone file handle")
-            .into_std()
-            .await;
-
-        let stderr: std::fs::File = log_file.into_std().await;
-
-        let mut command: tokio::process::Command = self.into();
-        command.stdout(stdout);
-        command.stderr(stderr);
-        let mut child = command.spawn().context("failed to run command")?;
-        child.wait().await.context("failed to wait for command")
-    }
-
-    async fn async_spawn(self) -> Result<ExitStatus> {
-        let mut command: tokio::process::Command = self.into();
-        let mut child = command.spawn().context("failed to run command")?;
-        child.wait().await.context("failed to wait for command")
-    }
-}
-
 impl From<pb::Command> for Command {
     fn from(value: pb::Command) -> Self {
         Self {
@@ -465,31 +406,5 @@ impl From<pb::Command> for Command {
             envs: Some(value.envs),
             cwd: Some(PathBuf::from(value.cwd)),
         }
-    }
-}
-
-#[cfg(test)]
-mock! {
-    #[derive(Debug)]
-    pub Command {
-        pub fn new(exe: String, args: Vec<String>, envs: Option<BTreeMap<String, String>>, cwd: Option<PathBuf>) -> Self;
-        pub fn set_args(&mut self, args: Vec<String>);
-        pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>);
-    }
-
-    impl Execute for Command {
-        fn get_output(self) -> Result<Output>;
-        fn wait(self) -> Result<ExitStatus>;
-        async fn async_get_output(self) -> Result<Output>;
-        async fn async_wait(self, log_path: &str) -> Result<ExitStatus>;
-        async fn async_spawn(self) -> Result<ExitStatus>;
-    }
-
-    impl Clone for Command {
-        fn clone(&self) -> Self;
-    }
-
-    impl PartialEq for Command {
-        fn eq(&self, other: &Self) -> bool;
     }
 }
