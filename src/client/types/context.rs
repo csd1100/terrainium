@@ -3,6 +3,7 @@ use crate::client::types::config::Config;
 use crate::common::constants::{
     CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_SESSION_ID,
 };
+#[mockall_double::double]
 use crate::common::execute::Executor;
 use anyhow::{bail, Context as AnyhowContext, Result};
 use std::env;
@@ -100,7 +101,8 @@ impl Context {
     ) -> Result<Context> {
         let session_id = env::var(TERRAIN_SESSION_ID).ok();
         let config = Config::from_file().unwrap_or_default();
-        let executor = Arc::new(Executor);
+        #[allow(clippy::default_constructed_unit_structs)]
+        let executor = Arc::new(Executor::default());
 
         let shell = Zsh::get(
             &current_dir().context("failed to get current directory")?,

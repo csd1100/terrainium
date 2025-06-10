@@ -4,7 +4,9 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{FPATH, NONE, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT};
-use crate::common::execute::{Execute, Executor};
+use crate::common::execute::Execute;
+#[mockall_double::double]
+use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use anyhow::{bail, Context as AnyhowContext, Result};
 use home::home_dir;
@@ -34,7 +36,7 @@ impl Shell for Zsh {
     }
 
     fn command(&self) -> Command {
-        Command::new("/bin/zsh".to_string(), vec![], None, Some(self.cwd.clone()))
+        Command::new(self.bin.to_string(), vec![], None, Some(self.cwd.clone()))
     }
 
     fn get_init_rc_contents() -> String {

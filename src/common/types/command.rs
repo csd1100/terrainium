@@ -149,6 +149,10 @@ impl Command {
         self.envs = envs;
     }
 
+    pub fn set_cwd(&mut self, cwd: Option<PathBuf>) {
+        self.cwd = cwd;
+    }
+
     pub(crate) fn substitute_cwd(
         &mut self,
         terrain_dir: &Path,

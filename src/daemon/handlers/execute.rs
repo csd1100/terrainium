@@ -207,7 +207,7 @@ async fn spawn_command(
         .await?;
     drop(state_mut);
 
-    let res = executor.async_wait(command, &log_path).await;
+    let res = executor.async_spawn_with_output(command, &log_path).await;
 
     let mut state_mut = stored_state.write().await;
     match res {
