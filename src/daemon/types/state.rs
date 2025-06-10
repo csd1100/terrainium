@@ -4,13 +4,12 @@ use crate::daemon::types::state_manager::StoredHistory;
 use anyhow::{bail, Context, Result};
 use std::path::Path;
 use tokio::fs::File;
-use tokio::sync::Mutex;
 use tracing::{debug, instrument};
 
 #[derive(Debug)]
 pub struct State {
     state: TerrainState,
-    file: Mutex<StateFile>,
+    file: StateFile,
 }
 
 impl State {
@@ -26,7 +25,6 @@ impl State {
         file.write_state(history, &state)
             .await
             .context("failed to write initial state")?;
-        let file = Mutex::new(file);
         Ok(Self { state, file })
     }
 
@@ -41,7 +39,6 @@ impl State {
             .read_state()
             .await
             .context("failed to read state from the file")?;
-        let file = Mutex::new(file);
         Ok(Self { state, file })
     }
 
@@ -54,8 +51,8 @@ impl State {
     ) -> Result<()> {
         self.state
             .add_commands_if_necessary(timestamp, is_constructor, commands);
-        let file = &mut self.file.lock().await;
-        file.write_state(history, &self.state)
+        self.file
+            .write_state(history, &self.state)
             .await
             .context("failed to update state in the file")
     }
@@ -77,8 +74,8 @@ impl State {
         self.state
             .update_command_status(is_constructor, timestamp, index, status)
             .context("failed to update status")?;
-        let file = &mut self.file.lock().await;
-        file.write_state(history, &self.state)
+        self.file
+            .write_state(history, &self.state)
             .await
             .context("failed to update state in the file")
     }
@@ -89,8 +86,8 @@ impl State {
         timestamp: String,
     ) -> Result<()> {
         self.state.update_end_timestamp(timestamp);
-        let file = &mut self.file.lock().await;
-        file.write_state(history, &self.state)
+        self.file
+            .write_state(history, &self.state)
             .await
             .context("failed to update state in the file")
     }

@@ -174,7 +174,7 @@ impl StateManager {
         terrain_name: &str,
         session_id: &str,
     ) -> Result<StoredState> {
-        trace!("refreshing state state");
+        trace!("refreshing state");
         let states = self.states.read().await;
         if let Some(state) = states.get(&state_key(terrain_name, session_id)) {
             debug!("state already exists");
