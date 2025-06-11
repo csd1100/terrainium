@@ -10,7 +10,7 @@ pub struct ExpectedCommand {
     pub command: Command,
     pub exit_code: i32,
     pub should_error: bool,
-    pub output: &'static str,
+    pub output: String,
 }
 
 pub struct AssertExecutor {
@@ -28,7 +28,7 @@ impl AssertExecutor {
         Self { executor }
     }
 
-    pub fn wait_for(mut self, command: ExpectedCommand) -> Self {
+    pub fn wait_for(mut self, command: ExpectedCommand) -> MockExecutor {
         let ExpectedCommand {
             command, exit_code, ..
         } = command;
@@ -38,7 +38,7 @@ impl AssertExecutor {
             .with(eq(command))
             .return_once(move |_| Ok(ExitStatus::from_raw(exit_code)));
 
-        self
+        self.executor
     }
 
     pub fn get_output_for(mut self, command: ExpectedCommand) -> Self {

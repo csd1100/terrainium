@@ -14,6 +14,7 @@ use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
+use terrainium::common::execute::Executor;
 use terrainium::common::types::styles::warning;
 
 #[tokio::main]
@@ -45,12 +46,12 @@ async fn main() -> Result<()> {
                 edit,
             } = verbs
             {
-                let context = Context::create(home_dir, current_dir, central)?;
+                let context = Context::create(home_dir, current_dir, Executor, central)?;
                 return init::handle(context, example, edit)
                     .context("failed to initialize new terrain");
             }
 
-            let context = Context::get(home_dir, current_dir)?;
+            let context = Context::get(home_dir, current_dir, Executor)?;
 
             if let Verbs::Edit = verbs {
                 return edit::handle(context).context("failed to edit the terrain");

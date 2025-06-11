@@ -15,7 +15,14 @@ impl ExpectZSH {
         Self { executor, cwd }
     }
 
-    pub fn compile_script_for(self, script_path: &Path, compiled_path: &Path) -> Self {
+    fn compile_script(
+        self,
+        script_path: &Path,
+        compiled_path: &Path,
+        should_error: bool,
+        exit_code: i32,
+        output: String,
+    ) -> Self {
         let command = Command::new(
             ZSH.to_string(),
             vec![
@@ -31,9 +38,9 @@ impl ExpectZSH {
         );
         let expected = ExpectedCommand {
             command,
-            exit_code: 0,
-            should_error: false,
-            output: "",
+            exit_code,
+            should_error,
+            output,
         };
 
         Self {
@@ -44,8 +51,26 @@ impl ExpectZSH {
         }
     }
 
+    pub fn compile_script_successfully_for(self, script_path: &Path, compiled_path: &Path) -> Self {
+        self.compile_script(script_path, compiled_path, false, 0, String::new())
+    }
+
+    pub fn compile_script_with_non_zero_exit_code(
+        self,
+        script_path: &Path,
+        compiled_path: &Path,
+    ) -> Self {
+        self.compile_script(
+            script_path,
+            compiled_path,
+            true,
+            1,
+            "some error while compiling".to_string(),
+        )
+    }
+
     pub fn compile_terrain_script_for(self, biome_name: &str, central_dir: &Path) -> Self {
-        self.compile_script_for(
+        self.compile_script_successfully_for(
             &central_dir
                 .join("scripts")
                 .join(format!("terrain-{biome_name}.zsh")),

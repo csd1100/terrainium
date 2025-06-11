@@ -127,7 +127,7 @@ impl<'a> ValidationResults<'a> {
     }
 
     pub fn print_validation_message(&self) {
-        let messages = self.results.clone();
+        let messages = &self.results;
 
         messages.iter().for_each(|message| {
             let target = format!("terrain_validation({})", message.r#for);
