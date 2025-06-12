@@ -25,3 +25,6 @@ pub const WITH_EXAMPLE_BIOME_FOR_UPDATED_NONE_EXAMPLE_SCRIPT: &str =
     "./tests/data/terrain-example_biome.example.none.updated.zsh";
 pub const WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML: &str =
     "./tests/data/terrain.example.auto_apply.enabled.toml";
+pub const TEST_TERRAIN_NAME: &str = "terrainium";
+pub const TEST_TIMESTAMP: &str = "timestamp";
+pub const TEST_SESSION_ID: &str = "session_id";

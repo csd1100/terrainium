@@ -20,13 +20,14 @@ pub async fn handle(
 mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
+    use crate::client::test_utils::constants::{TEST_TERRAIN_NAME, TEST_TIMESTAMP};
     use crate::client::test_utils::expected_env_vars_example_biome;
     use crate::client::types::client::MockClient;
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::TERRAIN_SESSION_ID;
+    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_SESSION_ID};
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
     use std::path::{Path, PathBuf};
@@ -38,15 +39,15 @@ mod tests {
     ) -> pb::Execute {
         pb::Execute {
             session_id,
-            terrain_name: "terrainium".to_string(),
-            biome_name: "example_biome".to_string(),
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: EXAMPLE_BIOME.to_string(),
             terrain_dir: terrain_dir.to_string_lossy().to_string(),
             toml_path: terrain_dir
                 .join("terrain.toml")
                 .to_string_lossy()
                 .to_string(),
             is_constructor: true,
-            timestamp: "timestamp".to_string(),
+            timestamp: TEST_TIMESTAMP.to_string(),
             commands: vec![pb::Command {
                 exe: "/bin/bash".to_string(),
                 args: vec![
