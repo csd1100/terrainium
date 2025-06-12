@@ -11,18 +11,22 @@ pub fn remove_non_numeric(string: &str) -> String {
 }
 
 pub fn timestamp() -> String {
-    if let Ok(now) = time::OffsetDateTime::now_local() {
+    if cfg!(test) {
+        "timestamp".to_string()
+    } else if let Ok(now) = time::OffsetDateTime::now_local() {
         now.format(
             &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
                 .expect("time format to be parsed"),
         )
+        .expect("time to be formatted")
     } else {
-        time::OffsetDateTime::now_utc().format(
-            &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
-                .expect("time format to be parsed"),
-        )
+        time::OffsetDateTime::now_utc()
+            .format(
+                &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")
+                    .expect("time format to be parsed"),
+            )
+            .expect("time to be formatted")
     }
-    .expect("time to be formatted")
 }
 
 pub async fn create_file(path: &Path) -> anyhow::Result<File> {

@@ -1,6 +1,6 @@
 use crate::common::types::pb;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProtoRequest {
     Activate(pb::Activate),
     Deactivate(pb::Deactivate),

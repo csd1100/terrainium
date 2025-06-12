@@ -47,12 +47,14 @@ pub(crate) fn destruct(
         .to_proto_commands(environment.envs())
         .context("failed to convert commands")?;
 
+    let (session_id, terrain_dir, _, toml_path, ..) = context.destructure();
+
     Ok(pb::Execute {
-        session_id: context.session_id(),
+        session_id,
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
-        terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
-        toml_path: context.toml_path().to_string_lossy().to_string(),
+        terrain_dir: terrain_dir.to_string_lossy().to_string(),
+        toml_path: toml_path.to_string_lossy().to_string(),
         is_constructor: false,
         timestamp,
         commands,
