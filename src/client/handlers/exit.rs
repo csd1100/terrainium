@@ -91,7 +91,7 @@ mod tests {
         TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
     };
     use crate::client::test_utils::{
-        expected_env_vars_example_biome, restore_env_var, set_env_var,
+        expected_execute_request_example_biome, restore_env_var, set_env_var,
     };
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
@@ -114,27 +114,11 @@ mod tests {
             session_id: session_id.clone(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
-            destructors: Some(pb::Execute {
-                session_id: Some(session_id),
-                terrain_name: TEST_TERRAIN_NAME.to_string(),
-                biome_name: EXAMPLE_BIOME.to_string(),
-                terrain_dir: terrain_dir.to_string_lossy().to_string(),
-                toml_path: terrain_dir
-                    .join("terrain.toml")
-                    .to_string_lossy()
-                    .to_string(),
-                is_constructor: false,
-                timestamp: TEST_TIMESTAMP.to_string(),
-                commands: vec![pb::Command {
-                    exe: "/bin/bash".to_string(),
-                    args: vec![
-                        "-c".to_string(),
-                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                    ],
-                    envs: expected_env_vars_example_biome(terrain_dir),
-                    cwd: terrain_dir.to_string_lossy().to_string(),
-                }],
-            }),
+            destructors: Some(expected_execute_request_example_biome(
+                Some(session_id),
+                terrain_dir,
+                false,
+            )),
         }
     }
 

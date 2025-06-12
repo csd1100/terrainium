@@ -20,44 +20,23 @@ pub async fn handle(
 mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::constants::{TEST_TERRAIN_NAME, TEST_TIMESTAMP};
-    use crate::client::test_utils::expected_env_vars_example_biome;
+    use crate::client::test_utils::expected_execute_request_example_biome;
     use crate::client::types::client::MockClient;
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_SESSION_ID};
+    use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
-    fn expected_request_example_biome(
+    pub(crate) fn expected_construct_request_example_biome(
         session_id: Option<String>,
         terrain_dir: &Path,
     ) -> pb::Execute {
-        pb::Execute {
-            session_id,
-            terrain_name: TEST_TERRAIN_NAME.to_string(),
-            biome_name: EXAMPLE_BIOME.to_string(),
-            terrain_dir: terrain_dir.to_string_lossy().to_string(),
-            toml_path: terrain_dir
-                .join("terrain.toml")
-                .to_string_lossy()
-                .to_string(),
-            is_constructor: true,
-            timestamp: TEST_TIMESTAMP.to_string(),
-            commands: vec![pb::Command {
-                exe: "/bin/bash".to_string(),
-                args: vec![
-                    "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                ],
-                envs: expected_env_vars_example_biome(terrain_dir),
-                cwd: terrain_dir.to_string_lossy().to_string(),
-            }],
-        }
+        expected_execute_request_example_biome(session_id, terrain_dir, true)
     }
 
     #[tokio::test]
@@ -73,10 +52,9 @@ mod tests {
             MockExecutor::new(),
         );
 
-        let client = ExpectClient::to_send(ProtoRequest::Execute(expected_request_example_biome(
-            session_id,
-            terrain_dir.path(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Execute(
+            expected_construct_request_example_biome(session_id, terrain_dir.path()),
+        ))
         .successfully();
 
         super::handle(context, BiomeArg::Default, Terrain::example(), Some(client))
@@ -120,10 +98,9 @@ mod tests {
 
         let expected_error = "failed to parse execute request".to_string();
 
-        let client = ExpectClient::to_send(ProtoRequest::Execute(expected_request_example_biome(
-            session_id,
-            terrain_dir.path(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Execute(
+            expected_construct_request_example_biome(session_id, terrain_dir.path()),
+        ))
         .with_returning_error(expected_error.clone());
 
         let actual_error =

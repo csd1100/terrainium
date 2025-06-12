@@ -28,3 +28,4 @@ pub const WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML: &str =
 pub const TEST_TERRAIN_NAME: &str = "terrainium";
 pub const TEST_TIMESTAMP: &str = "timestamp";
 pub const TEST_SESSION_ID: &str = "session_id";
+pub const TEST_FPATH: &str = "/usr/share/zsh/completions";

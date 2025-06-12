@@ -1,6 +1,8 @@
 use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
+use crate::client::test_utils::constants::TEST_FPATH;
 use crate::common::execute::MockExecutor;
 use crate::common::types::command::Command;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 const ZSH: &str = "/bin/zsh";
@@ -78,6 +80,48 @@ impl ExpectZSH {
                 .join("scripts")
                 .join(format!("terrain-{biome_name}.zwc")),
         )
+    }
+
+    pub fn get_fpath(self) -> Self {
+        let ExpectZSH { executor, cwd } = self;
+        let executor = AssertExecutor::with(executor)
+            .get_output_for(ExpectedCommand {
+                command: Command::new(
+                    "/bin/zsh".to_string(),
+                    vec!["-c".to_string(), "/bin/echo -n $FPATH".to_string()],
+                    None,
+                    Some(cwd.clone().to_path_buf()),
+                ),
+                exit_code: 0,
+                should_error: false,
+                output: TEST_FPATH.to_string(),
+            })
+            .successfully();
+        Self { executor, cwd }
+    }
+
+    pub fn spawn_shell(
+        self,
+        envs: BTreeMap<String, String>,
+        exit_code: i32,
+        should_error: bool,
+        error_message: String,
+    ) -> Self {
+        let ExpectZSH { executor, cwd } = self;
+        let executor = AssertExecutor::with(executor)
+            .async_spawn(ExpectedCommand {
+                command: Command::new(
+                    "/bin/zsh".to_string(),
+                    vec!["-i".to_string(), "-s".to_string()],
+                    Some(envs),
+                    Some(cwd.clone().to_path_buf()),
+                ),
+                exit_code,
+                should_error,
+                output: error_message,
+            })
+            .successfully();
+        Self { executor, cwd }
     }
 
     pub fn successfully(self) -> MockExecutor {

@@ -1,6 +1,8 @@
+use crate::client::test_utils::constants::{TEST_TERRAIN_NAME, TEST_TIMESTAMP};
 use crate::client::types::commands::Commands;
-use crate::common::constants::EXAMPLE_BIOME;
+use crate::common::constants::{EXAMPLE_BIOME, NONE};
 use crate::common::types::command::Command;
+use crate::common::types::pb;
 use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;
@@ -31,6 +33,25 @@ pub fn restore_env_var(key: String, orig_env: anyhow::Result<String, VarError>) 
         std::env::remove_var(&key);
         assert!(std::env::var(&key).is_err());
     }
+}
+
+pub(crate) fn expected_env_vars_none(terrain_dir: &Path) -> BTreeMap<String, String> {
+    let mut expected_envs = BTreeMap::new();
+    expected_envs.insert(
+        "TERRAIN_DIR".to_string(),
+        terrain_dir.to_string_lossy().to_string(),
+    );
+    expected_envs.insert("TERRAIN_SELECTED_BIOME".to_string(), NONE.to_string());
+    expected_envs.insert("EDITOR".to_string(), "vim".to_string());
+    expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
+    expected_envs.insert("PAGER".to_string(), "less".to_string());
+    expected_envs.insert("ENV_VAR".to_string(), "env_val".to_string());
+    expected_envs.insert(
+        "NESTED_POINTER".to_string(),
+        "env_val-env_val-${NULL}".to_string(),
+    );
+    expected_envs.insert("POINTER_ENV_VAR".to_string(), "env_val".to_string());
+    expected_envs
 }
 
 pub(crate) fn expected_env_vars_example_biome(terrain_dir: &Path) -> BTreeMap<String, String> {
@@ -138,4 +159,32 @@ pub(crate) fn expected_destructors_example_biome(terrain_dir: &Path) -> Commands
         expected_destructor_foreground_example_biome(terrain_dir),
         expected_destructor_background_example_biome(terrain_dir),
     )
+}
+
+pub(crate) fn expected_execute_request_example_biome(
+    session_id: Option<String>,
+    terrain_dir: &Path,
+    is_constructor: bool,
+) -> pb::Execute {
+    pb::Execute {
+        session_id,
+        terrain_name: TEST_TERRAIN_NAME.to_string(),
+        biome_name: EXAMPLE_BIOME.to_string(),
+        terrain_dir: terrain_dir.to_string_lossy().to_string(),
+        toml_path: terrain_dir
+            .join("terrain.toml")
+            .to_string_lossy()
+            .to_string(),
+        is_constructor,
+        timestamp: TEST_TIMESTAMP.to_string(),
+        commands: vec![pb::Command {
+            exe: "/bin/bash".to_string(),
+            args: vec![
+                "-c".to_string(),
+                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            ],
+            envs: expected_env_vars_example_biome(terrain_dir),
+            cwd: terrain_dir.to_string_lossy().to_string(),
+        }],
+    }
 }

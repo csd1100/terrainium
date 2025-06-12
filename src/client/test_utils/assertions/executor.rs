@@ -1,9 +1,9 @@
 use crate::common::execute::MockExecutor;
+use crate::common::types::command::Command;
+use anyhow::bail;
 use mockall::predicate::eq;
 use std::os::unix::prelude::ExitStatusExt;
 use std::process::{ExitStatus, Output};
-
-use crate::common::types::command::Command;
 
 #[derive(Clone)]
 pub struct ExpectedCommand {
@@ -71,13 +71,25 @@ impl AssertExecutor {
 
     pub fn async_spawn(mut self, command: ExpectedCommand) -> Self {
         let ExpectedCommand {
-            command, exit_code, ..
+            command,
+            exit_code,
+            should_error,
+            output,
         } = command;
 
         self.executor
             .expect_async_spawn()
             .with(eq(command))
-            .return_once(move |_| Ok(ExitStatus::from_raw(exit_code)));
+            .return_once(move |_| {
+                if should_error {
+                    bail!("{}", output)
+                } else {
+                    let ec = ExitStatus::from_raw(exit_code);
+                    let some = ec.code();
+                    println!("{:?}", some);
+                    Ok(ec)
+                }
+            });
         self
     }
 
