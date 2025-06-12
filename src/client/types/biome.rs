@@ -342,64 +342,85 @@ impl Biome {
     }
 
     pub fn example(name: String) -> Self {
-        let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert("EDITOR".to_string(), "vim".to_string());
-        envs.insert("ENV_VAR".to_string(), "env_val".to_string());
-        envs.insert(
-            "NESTED_POINTER".to_string(),
-            "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}".to_string(),
-        );
-        envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-        envs.insert("PAGER".to_string(), "less".to_string());
-        envs.insert("POINTER_ENV_VAR".to_string(), "${ENV_VAR}".to_string());
-
-        let mut aliases: BTreeMap<String, String> = BTreeMap::new();
-        aliases.insert("tenter".to_string(), "terrainium enter".to_string());
-        aliases.insert("texit".to_string(), "terrainium exit".to_string());
-
-        let constructors: Commands = Commands::new(
-            vec![Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering terrain".to_string()],
-                None,
-                None,
-            )],
-            vec![],
-        );
-
-        let destructors: Commands = Commands::new(
-            vec![Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting terrain".to_string()],
-                None,
-                None,
-            )],
-            vec![],
-        );
-        Biome::new(name, envs, aliases, constructors, destructors)
+        Biome::new(
+            name,
+            example_envs(),
+            example_aliases(),
+            example_constructors(),
+            example_destructors(),
+        )
     }
+}
+
+pub(crate) fn example_envs() -> BTreeMap<String, String> {
+    let mut envs: BTreeMap<String, String> = BTreeMap::new();
+    envs.insert("EDITOR".to_string(), "vim".to_string());
+    envs.insert("ENV_VAR".to_string(), "env_val".to_string());
+    envs.insert(
+        "NESTED_POINTER".to_string(),
+        "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}".to_string(),
+    );
+    envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
+    envs.insert("PAGER".to_string(), "less".to_string());
+    envs.insert("POINTER_ENV_VAR".to_string(), "${ENV_VAR}".to_string());
+    envs
+}
+
+pub(crate) fn example_aliases() -> BTreeMap<String, String> {
+    let mut aliases: BTreeMap<String, String> = BTreeMap::new();
+    aliases.insert("tenter".to_string(), "terrainium enter".to_string());
+    aliases.insert("texit".to_string(), "terrainium exit".to_string());
+    aliases
+}
+
+pub(crate) fn example_constructors() -> Commands {
+    Commands::new(
+        vec![Command::new(
+            "/bin/echo".to_string(),
+            vec!["entering terrain".to_string()],
+            None,
+            None,
+        )],
+        vec![],
+    )
+}
+
+pub(crate) fn example_destructors() -> Commands {
+    Commands::new(
+        vec![Command::new(
+            "/bin/echo".to_string(),
+            vec!["exiting terrain".to_string()],
+            None,
+            None,
+        )],
+        vec![],
+    )
 }
 
 #[cfg(test)]
 impl Biome {
-    pub(crate) fn add_env(&mut self, env: &str, val: &str) {
-        self.envs.insert(env.to_string(), val.to_string());
+    pub(crate) fn add_envs(&mut self, envs: Vec<(&str, &str)>) {
+        envs.into_iter().for_each(|(k, v)| {
+            self.envs.insert(k.to_string(), v.to_string());
+        })
     }
 
-    pub(crate) fn add_bg_constructors(&mut self, command: Command) {
-        self.constructors.background_mut().push(command);
+    pub(crate) fn add_bg_constructors(&mut self, commands: Vec<Command>) {
+        self.constructors.background_mut().extend(commands);
     }
 
-    pub(crate) fn add_bg_destructors(&mut self, command: Command) {
-        self.destructors.background_mut().push(command);
+    pub(crate) fn add_bg_destructors(&mut self, commands: Vec<Command>) {
+        self.destructors.background_mut().extend(commands);
     }
 
-    pub(crate) fn add_fg_constructors(&mut self, command: Command) {
-        self.constructors.foreground_mut().push(command.clone());
+    #[allow(dead_code)]
+    pub(crate) fn add_fg_constructors(&mut self, commands: Vec<Command>) {
+        self.constructors.foreground_mut().extend(commands);
     }
 
-    pub(crate) fn add_fg_destructors(&mut self, command: Command) {
-        self.destructors.foreground_mut().push(command);
+    #[allow(dead_code)]
+    pub(crate) fn add_fg_destructors(&mut self, commands: Vec<Command>) {
+        self.destructors.foreground_mut().extend(commands);
     }
 
     pub(crate) fn set_constructors(&mut self, constructors: Commands) {

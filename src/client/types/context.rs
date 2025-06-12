@@ -176,34 +176,15 @@ impl Context {
         terrain_dir: PathBuf,
         central_dir: PathBuf,
         toml_path: PathBuf,
-        executor: Executor,
-    ) -> Self {
-        let executor = Arc::new(executor);
-        Context {
-            session_id: Some("some".to_string()),
-            terrain_dir: terrain_dir.clone(),
-            central_dir,
-            toml_path,
-            config: Config::default(),
-            executor: executor.clone(),
-            shell: Zsh::get(terrain_dir.as_path(), executor),
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn build_with_config(
-        terrain_dir: PathBuf,
-        central_dir: PathBuf,
-        toml_path: PathBuf,
         config: Config,
         executor: Executor,
     ) -> Self {
         let executor = Arc::new(executor);
         Context {
-            session_id: Some("some".to_string()),
+            session_id: None,
             terrain_dir: terrain_dir.clone(),
-            toml_path,
             central_dir,
+            toml_path,
             config,
             executor: executor.clone(),
             shell: Zsh::get(terrain_dir.as_path(), executor),
@@ -220,7 +201,7 @@ impl Context {
         let executor = Arc::new(executor);
 
         Context {
-            session_id: Some("some".to_string()),
+            session_id: None,
             central_dir,
             terrain_dir: terrain_dir.clone(),
             toml_path,

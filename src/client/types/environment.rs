@@ -179,7 +179,13 @@ pub(crate) fn render<T: Serialize>(
 mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::shell::{Shell, Zsh};
-    use crate::client::test_utils::{restore_env_var, set_env_var};
+    use crate::client::test_utils::{
+        expected_aliases_example_biome, expected_constructor_background_example_biome,
+        expected_constructor_foreground_example_biome, expected_constructors_example_biome,
+        expected_destructor_background_example_biome, expected_destructor_foreground_example_biome,
+        expected_destructors_example_biome, expected_env_vars_example_biome, restore_env_var,
+        set_env_var,
+    };
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
@@ -195,7 +201,7 @@ mod tests {
     use anyhow::Result;
     use std::collections::BTreeMap;
     use std::fs;
-    use std::fs::{canonicalize, create_dir_all};
+    use std::fs::create_dir_all;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
@@ -248,60 +254,21 @@ mod tests {
         let terrain_dir = tempdir()?;
         create_dir_all(terrain_dir.path().join("tests/scripts"))?;
 
-        let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
-        expected_envs.insert(
-            "TERRAIN_DIR".to_string(),
-            terrain_dir.path().to_string_lossy().to_string(),
-        );
-        expected_envs.insert(
-            "TERRAIN_SELECTED_BIOME".to_string(),
-            EXAMPLE_BIOME.to_string(),
-        );
-        expected_envs.insert("SCRIPTS_DIR".to_string(), "scripts".to_string());
-        expected_envs.insert("TEST_DIR".to_string(), "tests".to_string());
-        expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
-        expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-        expected_envs.insert("PAGER".to_string(), "less".to_string());
-        expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
-        expected_envs.insert(
-            "NESTED_POINTER".to_string(),
-            "overridden_env_val-overridden_env_val-${NULL}".to_string(),
-        );
-        expected_envs.insert(
-            "POINTER_ENV_VAR".to_string(),
-            "overridden_env_val".to_string(),
-        );
+        let mut expected_envs = expected_env_vars_example_biome(terrain_dir.path());
         expected_envs.insert(
             "PROCESS_ENV_REF_VAR".to_string(),
             "PROCESS_ENV_VALUE".to_string(),
         );
+        expected_envs.insert("SCRIPTS_DIR".to_string(), "scripts".to_string());
+        expected_envs.insert("TEST_DIR".to_string(), "tests".to_string());
 
-        let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
-        expected_aliases.insert(
-            "tenter".to_string(),
-            "terrainium enter --biome example_biome".to_string(),
-        );
-        expected_aliases.insert("texit".to_string(), "terrainium exit".to_string());
-        let expected_constructor_foreground: Vec<Command> = vec![
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering terrain".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering biome example_biome".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-        ];
-        let expected_constructor_background: Vec<Command> = vec![
+        // terrain bg constructors
+        let mut expected_bg_constructors = vec![
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
                 None,
-                Some(canonicalize(terrain_dir.path().join("tests/scripts"))?),
+                Some(fs::canonicalize(terrain_dir.path().join("tests/scripts"))?),
             ),
             Command::new(
                 "/bin/bash".to_string(),
@@ -309,55 +276,32 @@ mod tests {
                 None,
                 Some(PathBuf::from("/tmp")),
             ),
-            Command::new(
-                "/bin/bash".to_string(),
-                vec![
-                    "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                ],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-        ];
-        let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting terrain".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting biome example_biome".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
         ];
 
-        let expected_destructor_background: Vec<Command> = vec![
-            Command::new(
-                "/bin/bash".to_string(),
-                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                None,
-                Some(terrain_dir.path().join("tests/scripts").canonicalize()?),
-            ),
-            Command::new(
-                "/bin/bash".to_string(),
-                vec![
-                    "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-                ],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-        ];
-        let expected_constructor = Commands::new(
-            expected_constructor_foreground,
-            expected_constructor_background,
+        // biome bg constructors
+        expected_bg_constructors.extend(expected_constructor_background_example_biome(
+            terrain_dir.path(),
+        ));
+
+        // terrain bg destructors
+        let mut expected_bg_destructors = vec![Command::new(
+            "/bin/bash".to_string(),
+            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+            None,
+            Some(fs::canonicalize(terrain_dir.path().join("tests/scripts"))?),
+        )];
+        // biome bg destructors
+        expected_bg_destructors.extend(expected_destructor_background_example_biome(
+            terrain_dir.path(),
+        ));
+
+        let expected_constructors = Commands::new(
+            expected_constructor_foreground_example_biome(terrain_dir.path()),
+            expected_bg_constructors,
         );
-        let expected_destructor = Commands::new(
-            expected_destructor_foreground,
-            expected_destructor_background,
+        let expected_destructors = Commands::new(
+            expected_destructor_foreground_example_biome(terrain_dir.path()),
+            expected_bg_destructors,
         );
 
         let expected: Environment = Environment::build(
@@ -366,37 +310,39 @@ mod tests {
             &Biome::new(
                 EXAMPLE_BIOME.to_string(),
                 expected_envs,
-                expected_aliases,
-                expected_constructor,
-                expected_destructor,
+                expected_aliases_example_biome(),
+                expected_constructors,
+                expected_destructors,
             ),
         );
 
         let mut terrain = Terrain::example();
-        terrain
-            .terrain_mut()
-            .add_env("PROCESS_ENV_REF_VAR", "${PROCESS_ENV_VAR}");
-        terrain.terrain_mut().add_env("SCRIPTS_DIR", "scripts");
-        terrain.terrain_mut().add_env("TEST_DIR", "tests");
+        terrain.terrain_mut().add_envs(vec![
+            ("PROCESS_ENV_REF_VAR", "${PROCESS_ENV_VAR}"),
+            ("SCRIPTS_DIR", "scripts"),
+            ("TEST_DIR", "tests"),
+        ]);
 
-        terrain.terrain_mut().add_bg_constructors(Command::new(
-            "/bin/bash".to_string(),
-            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-            None,
-            Some(PathBuf::from("tests/scripts")),
-        ));
-        terrain.terrain_mut().add_bg_constructors(Command::new(
-            "/bin/bash".to_string(),
-            vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-            None,
-            Some(PathBuf::from("/tmp")),
-        ));
-        terrain.terrain_mut().add_bg_destructors(Command::new(
+        terrain.terrain_mut().add_bg_constructors(vec![
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                None,
+                Some(PathBuf::from("tests/scripts")),
+            ),
+            Command::new(
+                "/bin/bash".to_string(),
+                vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
+                None,
+                Some(PathBuf::from("/tmp")),
+            ),
+        ]);
+        terrain.terrain_mut().add_bg_destructors(vec![Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
             None,
             Some(PathBuf::from("${TEST_DIR}/${SCRIPTS_DIR}")),
-        ));
+        )]);
 
         let old_env = set_env_var(
             "PROCESS_ENV_VAR".to_string(),
@@ -420,99 +366,15 @@ mod tests {
     fn environment_from_example_terrain_default() -> Result<()> {
         let terrain_dir = tempdir()?;
 
-        let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
-        expected_envs.insert(
-            "TERRAIN_DIR".to_string(),
-            terrain_dir.path().to_string_lossy().to_string(),
-        );
-        expected_envs.insert(
-            "TERRAIN_SELECTED_BIOME".to_string(),
-            EXAMPLE_BIOME.to_string(),
-        );
-        expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
-        expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
-        expected_envs.insert(
-            "NESTED_POINTER".to_string(),
-            "overridden_env_val-overridden_env_val-${NULL}".to_string(),
-        );
-        expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-        expected_envs.insert("PAGER".to_string(), "less".to_string());
-        expected_envs.insert(
-            "POINTER_ENV_VAR".to_string(),
-            "overridden_env_val".to_string(),
-        );
-
-        let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
-        expected_aliases.insert(
-            "tenter".to_string(),
-            "terrainium enter --biome example_biome".to_string(),
-        );
-        expected_aliases.insert("texit".to_string(), "terrainium exit".to_string());
-        let expected_constructor_foreground: Vec<Command> = vec![
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering terrain".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering biome example_biome".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-        ];
-        let expected_constructor_background: Vec<Command> = vec![Command::new(
-            "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-            None,
-            Some(terrain_dir.path().to_path_buf()),
-        )];
-        let expected_destructor_foreground: Vec<Command> = vec![
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting terrain".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-            Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting biome example_biome".to_string()],
-                None,
-                Some(terrain_dir.path().to_path_buf()),
-            ),
-        ];
-
-        let expected_destructor_background: Vec<Command> = vec![Command::new(
-            "/bin/bash".to_string(),
-            vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-            None,
-            Some(terrain_dir.path().to_path_buf()),
-        )];
-        let expected_constructor = Commands::new(
-            expected_constructor_foreground,
-            expected_constructor_background,
-        );
-        let expected_destructor = Commands::new(
-            expected_destructor_foreground,
-            expected_destructor_background,
-        );
-
         let expected: Environment = Environment::build(
             Some(EXAMPLE_BIOME.to_string()),
             EXAMPLE_BIOME.to_string(),
             &Biome::new(
                 EXAMPLE_BIOME.to_string(),
-                expected_envs,
-                expected_aliases,
-                expected_constructor,
-                expected_destructor,
+                expected_env_vars_example_biome(terrain_dir.path()),
+                expected_aliases_example_biome(),
+                expected_constructors_example_biome(terrain_dir.path()),
+                expected_destructors_example_biome(terrain_dir.path()),
             ),
         );
 

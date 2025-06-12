@@ -189,6 +189,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -219,6 +220,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -249,6 +251,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -279,6 +282,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -310,6 +314,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -341,6 +346,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -369,6 +375,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -406,6 +413,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -443,6 +451,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -474,6 +483,7 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -514,6 +524,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -545,6 +556,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -576,6 +588,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -611,6 +624,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -646,6 +660,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -699,6 +714,7 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -746,6 +762,7 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -780,6 +797,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -820,6 +838,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -851,6 +870,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -882,6 +902,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -913,6 +934,7 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
+            Config::default(),
             MockExecutor::new(),
         );
 
@@ -940,7 +962,7 @@ Environment Variables:
 
     #[test]
     fn get_auto_apply_globally_off() -> Result<()> {
-        let context = Context::build_with_config(
+        let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),

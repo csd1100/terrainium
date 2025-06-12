@@ -17,6 +17,7 @@ pub fn handle(context: Context, terrain: Terrain) -> Result<()> {
 mod tests {
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
@@ -38,6 +39,7 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
+            Config::default(),
             executor,
         );
 
@@ -64,6 +66,7 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
+            Config::default(),
             executor,
         );
 

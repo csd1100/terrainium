@@ -506,6 +506,7 @@ pub mod tests {
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::client::validation::{
@@ -912,42 +913,24 @@ pub mod tests {
                 None,
                 Some(PathBuf::from("./relative_path_with_cwd")),
             ),
+            Command::new(
+                "sudo".to_string(),
+                vec!["whoami".to_string()],
+                None,
+                Some(test_dir.path().to_path_buf()),
+            ),
         ];
         let commands = Commands::new(command_vec.clone(), command_vec.clone());
 
-        let sudo_command = Command::new(
-            "sudo".to_string(),
-            vec!["whoami".to_string()],
-            None,
-            Some(test_dir.path().to_path_buf()),
-        );
-
         terrain
             .terrain_mut()
-            .add_env("RELATIVE_DIR", "relative_dir");
+            .add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         terrain.terrain_mut().set_constructors(commands.clone());
         terrain.terrain_mut().set_destructors(commands.clone());
-        terrain
-            .terrain_mut()
-            .add_fg_constructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_bg_constructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_fg_destructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_bg_destructors(sudo_command.clone());
 
-        biome.add_env("RELATIVE_DIR", "relative_dir");
+        biome.add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         biome.set_constructors(commands.clone());
         biome.set_destructors(commands.clone());
-        biome.add_fg_constructors(sudo_command.clone());
-        biome.add_bg_constructors(sudo_command.clone());
-        biome.add_fg_destructors(sudo_command.clone());
-        biome.add_bg_destructors(sudo_command);
-
         terrain.update("test_biome".to_string(), biome);
 
         let real_path = set_env_var(
@@ -1259,6 +1242,7 @@ pub mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
+            Config::default(),
             MockExecutor::new(),
         );
 

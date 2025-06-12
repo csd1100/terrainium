@@ -61,6 +61,7 @@ pub(crate) mod tests {
         IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML,
     };
     use crate::client::test_utils::{restore_env_var, set_env_var};
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::types::command::Command;
@@ -108,6 +109,7 @@ pub(crate) mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
+            Config::default(),
             executor,
         );
 
@@ -163,6 +165,7 @@ pub(crate) mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             central_dir.path().join("terrain.toml"),
+            Config::default(),
             executor,
         );
 
@@ -221,6 +224,7 @@ pub(crate) mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join("terrain.toml"),
+            Config::default(),
             executor,
         );
 
