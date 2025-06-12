@@ -1,5 +1,5 @@
 use crate::client::args::BiomeArg;
-use crate::client::handlers::destruct::destruct;
+use crate::client::handlers::background::execute_request;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
@@ -66,7 +66,7 @@ fn deactivate(
             context.terrain_dir(),
         )
         .context("failed to generate environment")?;
-        Some(destruct(context, environment, end_timestamp.clone())?)
+        execute_request(&context, environment, false, end_timestamp.clone())?
     } else {
         None
     };

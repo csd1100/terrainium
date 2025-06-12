@@ -177,12 +177,10 @@ mod tests {
     use crate::common::constants::EXAMPLE_BIOME;
     use crate::common::execute::MockExecutor;
     use anyhow::Result;
-    use serial_test::serial;
     use std::fs::read_to_string;
     use std::path::PathBuf;
     use std::str::FromStr;
 
-    #[serial]
     #[test]
     fn get_all_for_default_biome() -> Result<()> {
         let context = Context::build(

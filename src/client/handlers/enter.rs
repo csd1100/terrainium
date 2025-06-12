@@ -1,4 +1,5 @@
 use crate::client::args::BiomeArg;
+use crate::client::handlers::background::execute_request;
 use crate::client::shell::Shell;
 #[mockall_double::double]
 use crate::client::types::client::Client;
@@ -108,31 +109,12 @@ fn activate_request(
 ) -> Result<pb::Activate> {
     let timestamp = timestamp();
 
-    let constructors = if is_background {
-        let commands: Vec<pb::Command> = environment
-            .constructors()
-            .to_proto_commands(environment.envs())
-            .context("failed to convert commands")?;
+    let terrain_name = environment.name().to_owned();
+    let biome_name = environment.selected_biome().to_owned();
 
-        if commands.is_empty() {
-            None
-        } else {
-            Some(pb::Execute {
-                session_id: Some(
-                    context
-                        .session_id()
-                        .expect("session id to be set")
-                        .to_string(),
-                ),
-                terrain_name: environment.name().to_string(),
-                biome_name: environment.selected_biome().to_string(),
-                terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
-                is_constructor: true,
-                toml_path: context.toml_path().display().to_string(),
-                timestamp: timestamp.clone(),
-                commands,
-            })
-        }
+    let constructors = if is_background {
+        execute_request(context, environment, true, timestamp.clone())
+            .context("failed to create constructors request")?
     } else {
         None
     };
@@ -142,8 +124,8 @@ fn activate_request(
             .session_id()
             .expect("session id to be set")
             .to_string(),
-        terrain_name: environment.name().to_string(),
-        biome_name: environment.selected_biome().to_string(),
+        terrain_name,
+        biome_name,
         terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
         toml_path: context.toml_path().display().to_string(),
         start_timestamp: timestamp,

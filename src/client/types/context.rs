@@ -191,36 +191,6 @@ impl Context {
         }
     }
 
-    /// Get all the fields from context as tuple in following sequence
-    /// 1. session_id
-    /// 2. terrain_dir
-    /// 3. central_dir
-    /// 4. toml_path
-    /// 5. config
-    /// 6. executor
-    /// 7. shell
-    pub(crate) fn destructure(
-        self,
-    ) -> (
-        Option<String>,
-        PathBuf,
-        PathBuf,
-        PathBuf,
-        Config,
-        Arc<Executor>,
-        Zsh,
-    ) {
-        (
-            self.session_id,
-            self.terrain_dir,
-            self.central_dir,
-            self.toml_path,
-            self.config,
-            self.executor,
-            self.shell,
-        )
-    }
-
     #[cfg(test)]
     pub(crate) fn build_without_paths(executor: Executor) -> Self {
         use home::home_dir;
