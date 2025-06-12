@@ -852,7 +852,7 @@ Environment Variables:
         };
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "enable");
+        set_auto_apply(&mut terrain, "enabled");
 
         let output = super::get(context, terrain, args).expect("to not throw an error");
         let expected = "enabled";
@@ -887,7 +887,7 @@ Environment Variables:
         set_auto_apply(&mut terrain, "replace");
 
         let output = super::get(context, terrain, args).expect("to not throw an error");
-        let expected = "replaced";
+        let expected = "replace";
 
         assert_eq!(output, expected);
 

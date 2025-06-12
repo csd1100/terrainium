@@ -6,6 +6,7 @@ use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResults,
 };
 use crate::common::constants::{
+    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
     BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
 use crate::common::types::command::Command;
@@ -93,15 +94,15 @@ impl AutoApply {
 impl From<&AutoApply> for String {
     fn from(value: &AutoApply) -> Self {
         if value.is_all() {
-            "all"
+            AUTO_APPLY_ALL
         } else if value.is_enabled() {
-            "enabled"
+            AUTO_APPLY_ENABLED
         } else if value.is_replace() {
-            "replaced"
+            AUTO_APPLY_REPLACE
         } else if value.is_background() {
-            "background"
+            AUTO_APPLY_BACKGROUND
         } else {
-            "off"
+            AUTO_APPLY_OFF
         }
         .to_string()
     }

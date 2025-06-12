@@ -613,7 +613,7 @@ mod tests {
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "enable");
+        set_auto_apply(&mut terrain, "enabled");
 
         super::handle(
             context,

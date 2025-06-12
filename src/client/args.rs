@@ -1,6 +1,9 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
-use crate::common::constants::NONE;
+use crate::common::constants::{
+    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
+    NONE,
+};
 use anyhow::bail;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
@@ -238,11 +241,11 @@ impl FromStr for AutoApply {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "enable" => Ok(AutoApply::enabled()),
-            "replace" => Ok(AutoApply::replace()),
-            "background" => Ok(AutoApply::background()),
-            "all" => Ok(AutoApply::all()),
-            "off" => Ok(AutoApply::default()),
+            AUTO_APPLY_ENABLED => Ok(AutoApply::enabled()),
+            AUTO_APPLY_REPLACE => Ok(AutoApply::replace()),
+            AUTO_APPLY_BACKGROUND => Ok(AutoApply::background()),
+            AUTO_APPLY_ALL => Ok(AutoApply::all()),
+            AUTO_APPLY_OFF => Ok(AutoApply::default()),
             _ => bail!("failed to parse auto_apply argument from: {s}"),
         }
     }
@@ -310,7 +313,7 @@ mod tests {
     #[test]
     fn auto_apply_from_str() {
         assert_eq!(
-            AutoApply::from_str("enable").expect("to be parsed"),
+            AutoApply::from_str("enabled").expect("to be parsed"),
             AutoApply::enabled()
         );
         assert_eq!(

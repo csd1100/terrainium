@@ -5,7 +5,7 @@ use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
-use crate::client::types::terrain::Terrain;
+use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
@@ -42,12 +42,16 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
 
 /// 'terrainium exit' should run background destructor commands only in following case:
 /// 1. Auto-apply is disabled i.e. TERRAIN_AUTO_APPLY env var is not set i.e.
-///     user activated terrain manually
+///    user activated terrain manually
 /// 2. Auto-apply is enabled and background flag is also turned on
 fn should_run_destructor() -> bool {
     let auto_apply = env::var(TERRAIN_AUTO_APPLY);
     match auto_apply {
-        Ok(auto_apply) => auto_apply == "all" || auto_apply == "background",
+        Ok(auto_apply) => {
+            let auto_apply = AutoApply::from_str(&auto_apply)
+                .expect("expect auto-apply to be converted from string");
+            auto_apply.is_background() || auto_apply.is_all()
+        }
         Err(_) => true,
     }
 }
@@ -92,8 +96,10 @@ mod tests {
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
-    use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_SELECTED_BIOME};
+    use crate::client::types::terrain::{AutoApply, Terrain};
+    use crate::common::constants::{
+        EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME,
+    };
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
     use serial_test::serial;
@@ -244,6 +250,79 @@ mod tests {
             .unwrap();
 
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn send_request_for_auto_apply_enabled_but_not_background() {
+        let session_id = "session_id".to_string();
+        let selected_biome = set_env_var(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            Some(EXAMPLE_BIOME.to_string()),
+        );
+        let auto_apply = set_env_var(
+            TERRAIN_AUTO_APPLY.to_string(),
+            Some((&AutoApply::enabled()).into()),
+        );
+
+        let terrain_dir = tempdir().unwrap();
+
+        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
+            session_id.clone(),
+        )))
+        .successfully();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id);
+
+        super::handle(context, Terrain::example(), Some(client))
+            .await
+            .unwrap();
+
+        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), auto_apply);
+    }
+    #[serial]
+    #[tokio::test]
+    async fn send_request_for_auto_apply_replace_but_not_background() {
+        let session_id = "session_id".to_string();
+        let selected_biome = set_env_var(
+            TERRAIN_SELECTED_BIOME.to_string(),
+            Some(EXAMPLE_BIOME.to_string()),
+        );
+        let auto_apply = set_env_var(
+            TERRAIN_AUTO_APPLY.to_string(),
+            Some((&AutoApply::replace()).into()),
+        );
+
+        let terrain_dir = tempdir().unwrap();
+
+        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
+            session_id.clone(),
+        )))
+        .successfully();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id);
+
+        super::handle(context, Terrain::example(), Some(client))
+            .await
+            .unwrap();
+
+        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), auto_apply);
     }
 
     #[serial]
