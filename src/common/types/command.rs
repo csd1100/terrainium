@@ -412,3 +412,33 @@ impl From<pb::Command> for Command {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn does_not_serialize_envs_to_toml() {
+        let mut envs = BTreeMap::<String, String>::new();
+        envs.insert("TEST".to_string(), "value".to_string());
+
+        let command = Command::new("test".to_string(), vec![], Some(envs), None);
+
+        assert_eq!(
+            "exe = \"test\"\nargs = []\n",
+            toml::to_string(&command).unwrap()
+        );
+    }
+
+    #[test]
+    fn does_serialize_envs_to_json() {
+        let mut envs = BTreeMap::<String, String>::new();
+        envs.insert("TEST".to_string(), "value".to_string());
+
+        let command = Command::new("test".to_string(), vec![], Some(envs), None);
+
+        assert_eq!(
+            r#"{"exe":"test","args":[],"envs":{"TEST":"value"},"cwd":null}"#,
+            serde_json::to_string(&command).unwrap()
+        );
+    }
+}
