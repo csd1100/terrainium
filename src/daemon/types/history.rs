@@ -53,6 +53,13 @@ impl History {
         match identifier {
             Identifier::SessionId(session_id) => Ok(session_id),
             Identifier::Recent(recent) => {
+                if self.history.len() < recent as usize {
+                    bail!(
+                        "invalid request for {recent}th entry, history size is only {}",
+                        self.history.len()
+                    );
+                }
+
                 let session_id = self.history[recent as usize].clone();
                 if session_id.is_empty() {
                     bail!("no session id found at index {recent}")

@@ -79,41 +79,11 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME};
+    use crate::common::test_utils;
+    use crate::common::test_utils::{RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
-
-    enum RequestFor {
-        SessionId(String),
-        Recent(u32),
-        None,
-    }
-
-    fn expected_status_request(
-        request_for: RequestFor,
-        current_session_id: String,
-    ) -> pb::StatusRequest {
-        pb::StatusRequest {
-            terrain_name: TEST_TERRAIN_NAME.to_string(),
-            identifier: {
-                let id = match request_for {
-                    RequestFor::SessionId(session_id) => {
-                        pb::status_request::Identifier::SessionId(session_id)
-                    }
-                    RequestFor::Recent(r) => pb::status_request::Identifier::Recent(r),
-                    RequestFor::None => {
-                        if current_session_id.is_empty() {
-                            pb::status_request::Identifier::Recent(0)
-                        } else {
-                            pb::status_request::Identifier::SessionId(current_session_id)
-                        }
-                    }
-                };
-                Some(id)
-            },
-        }
-    }
 
     fn expected_status_response(session_id: String, terrain_dir: &Path) -> pb::StatusResponse {
         pb::StatusResponse {
@@ -144,10 +114,9 @@ mod tests {
         )
         .set_session_id(session_id.clone());
 
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::None,
-            session_id.clone(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Status(
+            test_utils::expected_status_request(RequestFor::None, session_id.clone()),
+        ))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
             session_id,
             terrain_dir.path(),
@@ -173,15 +142,16 @@ mod tests {
         )
         .set_session_id(session_id.clone());
 
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::SessionId(session_id.clone()),
-            "".to_string(),
-        )))
-        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id.clone(),
-            terrain_dir.path(),
-        ))))
-        .successfully();
+        let client =
+            ExpectClient::to_send(ProtoRequest::Status(test_utils::expected_status_request(
+                RequestFor::SessionId(session_id.clone()),
+                "".to_string(),
+            )))
+            .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+                session_id.clone(),
+                terrain_dir.path(),
+            ))))
+            .successfully();
 
         super::handle(
             context,
@@ -208,10 +178,9 @@ mod tests {
             MockExecutor::default(),
         );
 
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::Recent(1),
-            "".to_string(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Status(
+            test_utils::expected_status_request(RequestFor::Recent(1), "".to_string()),
+        ))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
             session_id,
             terrain_dir.path(),
@@ -243,10 +212,9 @@ mod tests {
         );
 
         let session_id = TEST_SESSION_ID.to_string();
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::None,
-            "".to_string(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Status(
+            test_utils::expected_status_request(RequestFor::None, "".to_string()),
+        ))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
             session_id,
             terrain_dir.path(),
@@ -272,10 +240,9 @@ mod tests {
         )
         .set_session_id(session_id.clone());
 
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::None,
-            session_id.clone(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Status(
+            test_utils::expected_status_request(RequestFor::None, session_id.clone()),
+        ))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
             session_id,
             terrain_dir.path(),
@@ -301,10 +268,9 @@ mod tests {
         )
         .set_session_id(session_id.clone());
 
-        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
-            RequestFor::None,
-            session_id.clone(),
-        )))
+        let client = ExpectClient::to_send(ProtoRequest::Status(
+            test_utils::expected_status_request(RequestFor::None, session_id.clone()),
+        ))
         .with_expected_response(ProtoResponse::Success)
         .successfully();
 

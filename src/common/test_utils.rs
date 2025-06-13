@@ -114,3 +114,34 @@ pub fn expected_deactivate_request_example_biome(session_id: String) -> pb::Deac
         )),
     }
 }
+
+pub enum RequestFor {
+    SessionId(String),
+    Recent(u32),
+    None,
+}
+
+pub fn expected_status_request(
+    request_for: RequestFor,
+    current_session_id: String,
+) -> pb::StatusRequest {
+    pb::StatusRequest {
+        terrain_name: TEST_TERRAIN_NAME.to_string(),
+        identifier: {
+            let id = match request_for {
+                RequestFor::SessionId(session_id) => {
+                    pb::status_request::Identifier::SessionId(session_id)
+                }
+                RequestFor::Recent(r) => pb::status_request::Identifier::Recent(r),
+                RequestFor::None => {
+                    if current_session_id.is_empty() {
+                        pb::status_request::Identifier::Recent(0)
+                    } else {
+                        pb::status_request::Identifier::SessionId(current_session_id)
+                    }
+                }
+            };
+            Some(id)
+        },
+    }
+}
