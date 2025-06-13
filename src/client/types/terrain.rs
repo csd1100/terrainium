@@ -442,7 +442,7 @@ impl Terrain {
                 "/bin/bash".to_string(),
                 vec![
                     "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
                 None,
                 None,
@@ -460,7 +460,7 @@ impl Terrain {
                 "/bin/bash".to_string(),
                 vec![
                     "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
                 None,
                 None,

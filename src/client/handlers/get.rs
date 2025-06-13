@@ -605,7 +605,7 @@ Environment Variables:
 
         let expected = r#"Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
@@ -641,7 +641,7 @@ Environment Variables:
 
         let expected = r#"Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -689,13 +689,13 @@ Environment Variables:
     TERRAIN_SELECTED_BIOME="example_biome"
 Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -737,13 +737,13 @@ Environment Variables:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 

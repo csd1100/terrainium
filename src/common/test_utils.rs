@@ -1,4 +1,7 @@
-use crate::client::test_utils::expected_env_vars_example_biome;
+use crate::client::test_utils::{
+    expected_constructor_background_example_biome, expected_destructor_background_example_biome,
+    expected_env_vars_example_biome,
+};
 use crate::client::types::terrain::AutoApply;
 use crate::common::constants::{
     EXAMPLE_BIOME, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
@@ -65,7 +68,7 @@ pub fn expected_activate_request_example_biome(
                     exe: "/bin/bash".to_string(),
                     args: vec![
                         "-c".to_string(),
-                        "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                        "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                     ],
                     envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                     cwd: terrain_dir,
@@ -83,6 +86,22 @@ pub(crate) fn expected_execute_request_example_biome(
 ) -> pb::Execute {
     let terrain_dir = TEST_TERRAIN_DIR.to_string();
     let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
+    let commands = if is_constructor {
+        expected_constructor_background_example_biome(Path::new(TEST_TERRAIN_DIR))
+    } else {
+        expected_destructor_background_example_biome(Path::new(TEST_TERRAIN_DIR))
+    };
+    let commands = commands
+        .into_iter()
+        .map(|cmd| {
+            let mut command = cmd;
+            command.set_envs(Some(expected_env_vars_example_biome(Path::new(
+                TEST_TERRAIN_DIR,
+            ))));
+            command.into()
+        })
+        .collect();
+
     pb::Execute {
         session_id,
         terrain_name: TEST_TERRAIN_NAME.to_string(),
@@ -91,15 +110,7 @@ pub(crate) fn expected_execute_request_example_biome(
         toml_path,
         is_constructor,
         timestamp: TEST_TIMESTAMP.to_string(),
-        commands: vec![pb::Command {
-            exe: "/bin/bash".to_string(),
-            args: vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-            envs: expected_env_vars_example_biome(Path::new(&terrain_dir)),
-            cwd: terrain_dir,
-        }],
+        commands,
     }
 }
 

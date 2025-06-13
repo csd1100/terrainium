@@ -56,8 +56,13 @@ pub(crate) fn execute_request(
     is_constructor: bool,
     timestamp: String,
 ) -> Result<Option<pb::Execute>> {
-    let commands: Vec<pb::Command> = environment
-        .constructors()
+    let commands = if is_constructor {
+        environment.constructors()
+    } else {
+        environment.destructors()
+    };
+
+    let commands: Vec<pb::Command> = commands
         .to_proto_commands(environment.envs())
         .context("failed to convert commands")?;
 

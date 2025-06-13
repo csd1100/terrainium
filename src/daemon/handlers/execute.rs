@@ -688,7 +688,7 @@ mod tests {
                         "/bin/bash".to_string(),
                         vec![
                             "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                            "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
                         Some(expected_envs_with_activate_example_biome(
                             is_auto_apply,
@@ -779,7 +779,7 @@ mod tests {
                         "/bin/bash".to_string(),
                         vec![
                             "-c".to_string(),
-                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                            "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
                         Some(expected_envs_with_activate_example_biome(
                             is_auto_apply,
@@ -813,7 +813,7 @@ mod tests {
 
         assert_eq!(
             error,
-            r#"command: `/bin/bash -c $PWD/tests/scripts/print_num_for_10_sec in Some("/tmp/terrain_dir")` exited with code Some(1)"#
+            r#"command: `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec in Some("/tmp/terrain_dir")` exited with code Some(1)"#
         );
 
         let actual_state: TerrainState =

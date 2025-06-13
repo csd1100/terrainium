@@ -109,7 +109,7 @@ pub(crate) fn expected_constructor_background_example_biome(terrain_dir: &Path) 
         "/bin/bash".to_string(),
         vec![
             "-c".to_string(),
-            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
         ],
         None,
         Some(terrain_dir.to_path_buf()),
@@ -138,7 +138,7 @@ pub(crate) fn expected_destructor_background_example_biome(terrain_dir: &Path) -
         "/bin/bash".to_string(),
         vec![
             "-c".to_string(),
-            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+            "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec".to_string(),
         ],
         None,
         Some(terrain_dir.to_path_buf()),
