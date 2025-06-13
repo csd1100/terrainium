@@ -69,3 +69,255 @@ fn status(
         identifier: Some(identifier),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::client::test_utils::assertions::client::ExpectClient;
+    use crate::client::test_utils::constants::{
+        TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
+    };
+    use crate::client::types::config::Config;
+    use crate::client::types::context::Context;
+    use crate::client::types::proto::{ProtoRequest, ProtoResponse};
+    use crate::client::types::terrain::Terrain;
+    use crate::common::constants::EXAMPLE_BIOME;
+    use crate::common::execute::MockExecutor;
+    use crate::common::types::pb;
+    use std::path::{Path, PathBuf};
+    use tempfile::tempdir;
+
+    enum RequestFor {
+        SessionId(String),
+        Recent(u32),
+        None,
+    }
+
+    fn expected_status_request(
+        request_for: RequestFor,
+        current_session_id: String,
+    ) -> pb::StatusRequest {
+        pb::StatusRequest {
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            identifier: {
+                let id = match request_for {
+                    RequestFor::SessionId(session_id) => {
+                        pb::status_request::Identifier::SessionId(session_id)
+                    }
+                    RequestFor::Recent(r) => pb::status_request::Identifier::Recent(r),
+                    RequestFor::None => {
+                        if current_session_id.is_empty() {
+                            pb::status_request::Identifier::Recent(0)
+                        } else {
+                            pb::status_request::Identifier::SessionId(current_session_id)
+                        }
+                    }
+                };
+                Some(id)
+            },
+        }
+    }
+
+    fn expected_status_response(session_id: String, terrain_dir: &Path) -> pb::StatusResponse {
+        pb::StatusResponse {
+            session_id,
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: EXAMPLE_BIOME.to_string(),
+            terrain_dir: terrain_dir.to_string_lossy().to_string(),
+            toml_path: terrain_dir
+                .join("terrain.toml")
+                .to_string_lossy()
+                .to_string(),
+            is_background: false,
+            start_timestamp: TEST_TIMESTAMP.to_string(),
+            end_timestamp: TEST_TIMESTAMP.to_string(),
+            constructors: Default::default(),
+            destructors: Default::default(),
+        }
+    }
+
+    #[tokio::test]
+    async fn returns_status_for_current() {
+        let session_id = TEST_SESSION_ID.to_string();
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id.clone());
+
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::None,
+            session_id.clone(),
+        )))
+        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+            session_id,
+            terrain_dir.path(),
+        ))))
+        .successfully();
+
+        super::handle(context, Terrain::example(), false, None, None, Some(client))
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_status_for_specified_session_id() {
+        let session_id = "some-session-id".to_string();
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id.clone());
+
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::SessionId(session_id.clone()),
+            "".to_string(),
+        )))
+        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+            session_id.clone(),
+            terrain_dir.path(),
+        ))))
+        .successfully();
+
+        super::handle(
+            context,
+            Terrain::example(),
+            false,
+            Some(session_id),
+            None,
+            Some(client),
+        )
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_status_for_specified_recent() {
+        let session_id = TEST_SESSION_ID.to_string();
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        );
+
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::Recent(1),
+            "".to_string(),
+        )))
+        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+            session_id,
+            terrain_dir.path(),
+        ))))
+        .successfully();
+
+        super::handle(
+            context,
+            Terrain::example(),
+            false,
+            None,
+            Some(1),
+            Some(client),
+        )
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_status_for_no_recent_no_session_id() {
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        );
+
+        let session_id = TEST_SESSION_ID.to_string();
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::None,
+            "".to_string(),
+        )))
+        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+            session_id,
+            terrain_dir.path(),
+        ))))
+        .successfully();
+
+        super::handle(context, Terrain::example(), false, None, None, Some(client))
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_no_error_for_json() {
+        let session_id = TEST_SESSION_ID.to_string();
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id.clone());
+
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::None,
+            session_id.clone(),
+        )))
+        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
+            session_id,
+            terrain_dir.path(),
+        ))))
+        .successfully();
+
+        super::handle(context, Terrain::example(), true, None, None, Some(client))
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_error_for_invalid_response() {
+        let session_id = TEST_SESSION_ID.to_string();
+        let terrain_dir = tempdir().unwrap();
+
+        let context = Context::build(
+            terrain_dir.path().to_path_buf(),
+            PathBuf::new(),
+            terrain_dir.path().join("terrain.toml"),
+            Config::default(),
+            MockExecutor::default(),
+        )
+        .set_session_id(session_id.clone());
+
+        let client = ExpectClient::to_send(ProtoRequest::Status(expected_status_request(
+            RequestFor::None,
+            session_id.clone(),
+        )))
+        .with_expected_response(ProtoResponse::Success)
+        .successfully();
+
+        let error = super::handle(context, Terrain::example(), true, None, None, Some(client))
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(error, "invalid status response from daemon");
+    }
+}
