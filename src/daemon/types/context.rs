@@ -12,8 +12,13 @@ pub struct DaemonContext {
 }
 
 impl DaemonContext {
-    pub async fn new(executor: Arc<Executor>, config: DaemonConfig, is_root: bool) -> Self {
-        let state_manager = StateManager::init(config.history_size()).await;
+    pub async fn new(
+        executor: Arc<Executor>,
+        config: DaemonConfig,
+        state_directory: &str,
+        is_root: bool,
+    ) -> Self {
+        let state_manager = StateManager::init(state_directory, config.history_size()).await;
         DaemonContext {
             is_root,
             is_root_allowed: config.is_root_allowed(),
@@ -24,6 +29,10 @@ impl DaemonContext {
 
     pub fn state_manager(&self) -> Arc<StateManager> {
         self.state_manager.clone()
+    }
+
+    pub fn state_directory(&self) -> &str {
+        self.state_manager.state_directory()
     }
 
     pub fn executor(&self) -> Arc<Executor> {

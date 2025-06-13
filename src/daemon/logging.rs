@@ -1,16 +1,18 @@
-use crate::common::constants::TERRAINIUMD_TMP_DIR;
 use tracing::metadata::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, Layer, Registry};
 
-pub fn init_logging(filter: LevelFilter) -> (impl SubscriberExt, (WorkerGuard, WorkerGuard)) {
+pub fn init_logging(
+    state_directory: &str,
+    filter: LevelFilter,
+) -> (impl SubscriberExt, (WorkerGuard, WorkerGuard)) {
     let appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("terrainiumd")
         .filename_suffix("log")
-        .build(TERRAINIUMD_TMP_DIR)
+        .build(state_directory)
         .expect("log file appender to be configured");
     let (non_blocking_file, file_guard) = tracing_appender::non_blocking(appender);
     let (non_blocking_stdout, out_guard) = tracing_appender::non_blocking(std::io::stdout());

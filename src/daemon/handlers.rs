@@ -22,7 +22,7 @@ pub(crate) trait RequestHandler {
     async fn handle(request: Any, context: Arc<DaemonContext>) -> Any;
 }
 
-pub async fn handle_request(mut daemon_socket: DaemonSocket, context: Arc<DaemonContext>) {
+pub async fn handle_request(context: Arc<DaemonContext>, mut daemon_socket: DaemonSocket) {
     trace!("handling requests on socket");
 
     let data: Result<Any> = daemon_socket

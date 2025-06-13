@@ -89,6 +89,7 @@ pub(crate) async fn spawn_commands(
             .enumerate()
             .map(|(index, cmd)| {
                 CommandState::from(
+                    context.state_directory(),
                     &terrain_name,
                     &session_id,
                     is_constructor,

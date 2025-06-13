@@ -51,6 +51,7 @@ async fn get_daemon_context() -> DaemonContext {
     let context = DaemonContext::new(
         executor.clone(),
         get_daemon_config(),
+        TERRAINIUMD_TMP_DIR,
         is_user_root(executor),
     )
     .await;
@@ -65,7 +66,8 @@ async fn start() -> Result<()> {
 
     let args = DaemonArgs::parse();
 
-    let (subscriber, (_file_guard, _out_guard)) = init_logging(LevelFilter::from(args.log_level));
+    let (subscriber, (_file_guard, _out_guard)) =
+        init_logging(TERRAINIUMD_TMP_DIR, LevelFilter::from(args.log_level));
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
     if args.create_config {
@@ -87,7 +89,7 @@ async fn start() -> Result<()> {
         let context = context.clone();
         trace!("received socket connection");
         let _ = tokio::spawn(async move {
-            handle_request(DaemonSocket::new(socket), context).await;
+            handle_request(context, DaemonSocket::new(socket)).await;
         })
         .await;
     }

@@ -13,13 +13,17 @@ pub struct State {
 }
 
 impl State {
-    pub async fn new(history: StoredHistory, state: TerrainState) -> Result<Self> {
+    pub async fn new(
+        state_directory: &str,
+        history: StoredHistory,
+        state: TerrainState,
+    ) -> Result<Self> {
         debug!(
             terrain_name = state.terrain_name(),
             session_id = state.session_id(),
             "creating new state",
         );
-        let mut file = StateFile::create(&state.state_file())
+        let mut file = StateFile::create(&state.state_file(state_directory))
             .await
             .context("failed to create state file")?;
         file.write_state(history, &state)

@@ -15,6 +15,7 @@ pub type StoredHistory = Arc<RwLock<History>>;
 
 #[derive(Default, Clone, Debug)]
 pub struct StateManager {
+    state_directory: String,
     states: Arc<RwLock<HashMap<String, StoredState>>>,
     histories: Arc<RwLock<HashMap<String, StoredHistory>>>,
     history_size: usize,
@@ -26,15 +27,20 @@ fn state_key(terrain_name: &str, session_id: &str) -> String {
 
 impl StateManager {
     #[instrument]
-    pub async fn init(history_size: usize) -> Self {
+    pub async fn init(state_directory: &str, history_size: usize) -> Self {
         trace!("initializing state manager");
         let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
         let histories = Arc::new(RwLock::new(HashMap::<String, StoredHistory>::new()));
         Self {
+            state_directory: state_directory.to_string(),
             states,
             histories,
             history_size,
         }
+    }
+
+    pub fn state_directory(&self) -> &str {
+        &self.state_directory
     }
 
     #[instrument(skip(self))]
@@ -48,7 +54,7 @@ impl StateManager {
             drop(history);
             debug!("creating history");
             let history = Arc::new(RwLock::new(
-                History::read(terrain_name, self.history_size).await?,
+                History::read(&self.state_directory, terrain_name, self.history_size).await?,
             ));
             let mut histories = self.histories.write().await;
             histories.insert(terrain_name.to_string(), history.clone());
@@ -72,7 +78,7 @@ impl StateManager {
             .context(format!("failed to create history file {terrain_name}"))?;
 
         let state = Arc::new(RwLock::new(
-            State::new(history, terrain_state)
+            State::new(&self.state_directory, history, terrain_state)
                 .await
                 .context("failed to create state")?,
         ));
@@ -102,7 +108,8 @@ impl StateManager {
         );
 
         let state_file =
-            TerrainState::get_state_dir(terrain_name, session_id).join(TERRAIN_STATE_FILE_NAME);
+            TerrainState::get_state_dir(&self.state_directory, terrain_name, session_id)
+                .join(TERRAIN_STATE_FILE_NAME);
 
         let state = Arc::new(RwLock::new(
             State::read(&state_file)
@@ -183,7 +190,8 @@ impl StateManager {
             drop(states);
 
             let state_file =
-                TerrainState::get_state_dir(terrain_name, session_id).join(TERRAIN_STATE_FILE_NAME);
+                TerrainState::get_state_dir(&self.state_directory, terrain_name, session_id)
+                    .join(TERRAIN_STATE_FILE_NAME);
 
             if state_file.exists() {
                 debug!("refreshing state");

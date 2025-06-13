@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use tracing::{debug, instrument, trace};
 
 fn get_log_path(
+    state_directory: &str,
     terrain_name: &str,
     identifier: &str,
     is_constructor: bool,
@@ -26,7 +27,7 @@ fn get_log_path(
         "destructor"
     };
     format!(
-        "{TERRAINIUMD_TMP_DIR}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
+        "{state_directory}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
     )
 }
 
@@ -99,11 +100,8 @@ pub struct TerrainState {
 }
 
 impl TerrainState {
-    pub fn get_state_dir(terrain_name: &str, session_id: &str) -> PathBuf {
-        PathBuf::from(format!(
-            "{TERRAINIUMD_TMP_DIR}/{}/{}",
-            terrain_name, session_id
-        ))
+    pub fn get_state_dir(state_directory: &str, terrain_name: &str, session_id: &str) -> PathBuf {
+        PathBuf::from(format!("{state_directory}/{terrain_name}/{session_id}"))
     }
 
     pub fn session_id(&self) -> &str {
@@ -114,12 +112,13 @@ impl TerrainState {
         self.terrain_name.as_str()
     }
 
-    pub fn state_dir(&self) -> PathBuf {
-        Self::get_state_dir(self.terrain_name(), self.session_id())
+    pub fn state_dir(&self, state_directory: &str) -> PathBuf {
+        Self::get_state_dir(state_directory, self.terrain_name(), self.session_id())
     }
 
-    pub fn state_file(&self) -> PathBuf {
-        self.state_dir().join(TERRAIN_STATE_FILE_NAME)
+    pub fn state_file(&self, state_directory: &str) -> PathBuf {
+        self.state_dir(state_directory)
+            .join(TERRAIN_STATE_FILE_NAME)
     }
 
     pub fn log_paths(&self, is_constructor: bool, timestamp: &str) -> Vec<String> {
@@ -264,6 +263,7 @@ pub struct CommandState {
 
 impl CommandState {
     pub(crate) fn from(
+        state_directory: &str,
         terrain_name: &str,
         session_id: &str,
         is_constructor: bool,
@@ -274,6 +274,7 @@ impl CommandState {
         Self {
             command: command.into(),
             log_path: get_log_path(
+                state_directory,
                 terrain_name,
                 session_id,
                 is_constructor,
@@ -370,6 +371,7 @@ impl From<pb::Activate> for TerrainState {
                 .enumerate()
                 .map(|(index, command)| {
                     CommandState::from(
+                        TERRAINIUMD_TMP_DIR,
                         &terrain_name,
                         &session_id,
                         true,
@@ -419,6 +421,7 @@ impl From<pb::Execute> for TerrainState {
             .map(|(index, command)| CommandState {
                 command: command.into(),
                 log_path: get_log_path(
+                    TERRAINIUMD_TMP_DIR,
                     &terrain_name,
                     &identifier,
                     is_constructor,
