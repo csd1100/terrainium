@@ -79,8 +79,8 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
     use crate::common::types::pb;
-    use crate::common::types::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 

@@ -154,11 +154,11 @@ mod tests {
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::TERRAIN_TOML;
     use crate::common::execute::MockExecutor;
-    use crate::common::types::test_utils::{
+    use crate::common::test_utils::{
         expected_activate_request_example_biome, expected_activate_request_none,
         expected_envs_with_activate_example_biome, expected_envs_with_activate_none,
     };
-    use crate::common::types::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
+    use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use std::path::PathBuf;
 
     #[tokio::test]

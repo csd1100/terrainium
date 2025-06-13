@@ -1,8 +1,8 @@
 use crate::client::types::commands::Commands;
 use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
+use crate::common::test_utils::{TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
 use crate::common::types::command::Command;
 use crate::common::types::pb;
-use crate::common::types::test_utils::{TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
 use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;

@@ -93,6 +93,30 @@ impl AssertExecutor {
         self
     }
 
+    pub fn async_spawn_with_log(mut self, command: ExpectedCommand, log_path: String) -> Self {
+        let ExpectedCommand {
+            command,
+            exit_code,
+            should_error,
+            output,
+        } = command;
+
+        self.executor
+            .expect_async_spawn_with_log()
+            .with(eq(command), eq(log_path))
+            .return_once(move |_, _| {
+                if should_error {
+                    bail!("{}", output)
+                } else {
+                    let ec = ExitStatus::from_raw(exit_code);
+                    let some = ec.code();
+                    println!("{:?}", some);
+                    Ok(ec)
+                }
+            });
+        self
+    }
+
     pub fn successfully(self) -> MockExecutor {
         self.executor
     }

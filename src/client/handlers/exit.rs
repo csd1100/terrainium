@@ -98,10 +98,10 @@ mod tests {
         EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME, TERRAIN_TOML,
     };
     use crate::common::execute::MockExecutor;
-    use crate::common::types::pb;
-    use crate::common::types::test_utils::{
+    use crate::common::test_utils::{
         TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
     };
+    use crate::common::types::pb;
     use serial_test::serial;
     use std::path::PathBuf;
 

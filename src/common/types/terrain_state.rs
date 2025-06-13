@@ -85,7 +85,7 @@ fn command_states_to_display(command_states: &BTreeMap<String, Vec<CommandState>
         .collect()
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct TerrainState {
     session_id: String,
     terrain_name: String,
@@ -596,5 +596,56 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
             log_path,
             status,
         })
+    }
+}
+
+#[cfg(test)]
+pub mod test_utils {
+    use super::*;
+    use crate::client::test_utils::expected_constructor_background_example_biome;
+    use crate::client::types::terrain::AutoApply;
+    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML};
+    use crate::common::test_utils::{
+        expected_envs_with_activate_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+        TEST_TIMESTAMP, TEST_TIMESTAMP_NUMERIC,
+    };
+    use std::path::Path;
+
+    pub fn terrain_state_after_activate(
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        let terrain_dir = TEST_TERRAIN_DIR.to_string();
+        let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
+
+        let mut command_states = vec![];
+        expected_constructor_background_example_biome(Path::new(&terrain_dir))
+            .into_iter()
+            .enumerate()
+            .for_each(|(idx, mut command)| {
+                command.set_envs(Some(expected_envs_with_activate_example_biome(is_auto_apply, auto_apply)));
+                command_states.push(CommandState {
+                    command,
+                    log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/{session_id}/constructor.{idx}.{TEST_TIMESTAMP_NUMERIC}.log"),
+                    status: CommandStatus::Starting,
+                });
+            });
+
+        let mut constructors = BTreeMap::new();
+        constructors.insert(TEST_TIMESTAMP.to_string(), command_states);
+
+        TerrainState {
+            session_id,
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: EXAMPLE_BIOME.to_string(),
+            toml_path: toml_path.clone(),
+            terrain_dir: terrain_dir.clone(),
+            is_background: true,
+            start_timestamp: TEST_TIMESTAMP.to_string(),
+            end_timestamp: "".to_string(),
+            constructors,
+            destructors: Default::default(),
+        }
     }
 }

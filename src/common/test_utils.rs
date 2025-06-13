@@ -9,7 +9,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 pub const TEST_TERRAIN_NAME: &str = "terrainium";
-pub const TEST_TIMESTAMP: &str = "timestamp";
+pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
+pub const TEST_TIMESTAMP_NUMERIC: &str = "19700101000000";
 pub const TEST_SESSION_ID: &str = "session_id";
 pub const TEST_FPATH: &str = "/usr/share/zsh/completions";
 pub const TEST_TERRAIN_DIR: &str = "/tmp/terrain_dir";

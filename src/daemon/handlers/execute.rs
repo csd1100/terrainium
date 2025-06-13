@@ -210,7 +210,7 @@ async fn spawn_command(
         .await?;
     drop(state_mut);
 
-    let res = executor.async_spawn_with_output(command, &log_path).await;
+    let res = executor.async_spawn_with_log(command, &log_path).await;
 
     let mut state_mut = stored_state.write().await;
     match res {
@@ -287,3 +287,26 @@ async fn spawn_command(
 
     Ok(())
 }
+// let executor = AssertExecutor::with(MockExecutor::default())
+// .async_spawn_with_log(
+// ExpectedCommand {
+// command: Command::new(
+// "/bin/bash".to_string(),
+// vec![
+//     "-c".to_string(),
+//     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+// ],
+// None,
+// Some(PathBuf::from(TEST_TERRAIN_DIR)),
+// ),
+// exit_code: 0,
+// should_error: false,
+// output: "".to_string(),
+// },
+// format!(
+//     "{}/constructor.0.timestamp.log",
+//     terrain_state_dir.display()
+// ),
+// )
+// .successfully();
+//

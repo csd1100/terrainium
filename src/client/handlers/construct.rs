@@ -28,8 +28,8 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{TERRAIN_SESSION_ID, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::TEST_TERRAIN_DIR;
     use crate::common::types::pb;
-    use crate::common::types::test_utils::TEST_TERRAIN_DIR;
     use std::path::PathBuf;
 
     pub(crate) fn expected_construct_request_example_biome(

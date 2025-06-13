@@ -12,7 +12,7 @@ pub fn remove_non_numeric(string: &str) -> String {
 
 pub fn timestamp() -> String {
     if cfg!(test) {
-        "timestamp".to_string()
+        "1970-01-01_00:00:00".to_string()
     } else if let Ok(now) = time::OffsetDateTime::now_local() {
         now.format(
             &time::format_description::parse("[year]-[month]-[day]_[hour]:[minute]:[second]")

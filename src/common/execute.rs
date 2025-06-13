@@ -12,7 +12,7 @@ pub trait Execute {
         &self,
         command: Command,
     ) -> impl std::future::Future<Output = Result<Output>> + Send;
-    fn async_spawn_with_output(
+    fn async_spawn_with_log(
         &self,
         command: Command,
         log_path: &str,
@@ -45,11 +45,7 @@ impl Execute for Executor {
         command.output().await.context("failed to get output")
     }
 
-    async fn async_spawn_with_output(
-        &self,
-        command: Command,
-        log_path: &str,
-    ) -> Result<ExitStatus> {
+    async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus> {
         info!("running async process with wait for '{command}', with logs in file: {log_path}",);
         trace!("running async process with wait {command:?}");
 
@@ -92,7 +88,7 @@ mock! {
         fn get_output(&self, command: Command) -> Result<Output>;
         fn wait(&self, command: Command) -> Result<ExitStatus>;
         async fn async_get_output(&self, command: Command) -> Result<Output>;
-        async fn async_spawn_with_output(&self, command: Command, log_path: &str) -> Result<ExitStatus>;
+        async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus>;
         async fn async_spawn(&self, command: Command) -> Result<ExitStatus>;
     }
 }

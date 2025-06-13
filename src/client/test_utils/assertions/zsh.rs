@@ -1,7 +1,7 @@
 use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
 use crate::common::execute::MockExecutor;
+use crate::common::test_utils::TEST_FPATH;
 use crate::common::types::command::Command;
-use crate::common::types::test_utils::TEST_FPATH;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
