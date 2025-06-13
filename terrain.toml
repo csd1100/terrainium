@@ -3,7 +3,7 @@ name = "terrainium"
 default_biome = "test"
 
 [auto_apply]
-enabled = false
+enabled = true
 background = true
 replace = true
 
