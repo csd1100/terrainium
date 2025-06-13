@@ -321,7 +321,7 @@ impl Zsh {
         if output.status.into_raw() != 0 {
             bail!(
                 "compiling script failed with exit code {:?}\n error: {}",
-                output.status.into_raw(),
+                output.status.code(),
                 std::str::from_utf8(&output.stderr).expect("failed to convert STDERR to string")
             );
         }
@@ -372,7 +372,7 @@ mod tests {
             .expect_err("error to be thrown");
 
         assert_eq!(
-            "compiling script failed with exit code 1\n error: some error while compiling",
+            "compiling script failed with exit code Some(1)\n error: some error while compiling",
             err.to_string()
         );
     }

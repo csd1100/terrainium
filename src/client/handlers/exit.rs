@@ -87,19 +87,19 @@ fn deactivate(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::{
-        expected_execute_request_example_biome, restore_env_var, set_env_var,
-    };
+    use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{
         EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME, TERRAIN_TOML,
+        TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
+        expected_execute_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_DIR,
+        TEST_TERRAIN_NAME,
     };
     use crate::common::types::pb;
     use serial_test::serial;

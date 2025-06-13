@@ -647,7 +647,7 @@ mod tests {
         .unwrap_err()
         .to_string();
 
-        assert!(err.contains("spawned shell exited with code:"));
+        assert_eq!(err, "spawned shell exited with code: Some(1)");
     }
 
     #[tokio::test]

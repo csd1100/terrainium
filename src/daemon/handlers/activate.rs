@@ -82,6 +82,7 @@ mod tests {
     };
     use crate::common::types::terrain_state::test_utils::terrain_state_after_activate;
     use crate::common::types::terrain_state::TerrainState;
+    use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::types::config::DaemonConfig;
     use crate::daemon::types::context::DaemonContext;
     use std::fs;
@@ -126,6 +127,55 @@ mod tests {
 
         let history_contents = fs::read_to_string(&history).unwrap();
         assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&terrain_state).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_state_history_rotates() {
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_string_lossy().to_string();
+        let terrain_state_dir = state_directory
+            .path()
+            .join(TEST_TERRAIN_NAME)
+            .join(TEST_SESSION_ID);
+        let terrain_state = terrain_state_dir.join(TERRAIN_STATE_FILE_NAME);
+
+        let history = state_directory
+            .path()
+            .join(TEST_TERRAIN_NAME)
+            .join(TERRAIN_HISTORY_FILE_NAME);
+
+        let context = Arc::new(
+            DaemonContext::new(
+                Arc::new(MockExecutor::default()),
+                DaemonConfig::default(),
+                &state_dir_path,
+                false,
+            )
+            .await,
+        );
+
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let expected_request =
+            expected_activate_request_example_biome(true, is_auto_apply, &auto_apply);
+
+        let mut history_file = create_file(&history).await.unwrap();
+        write_to_file(&mut history_file, format!("{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\n{TEST_SESSION_ID}-4\n{TEST_SESSION_ID}-5")).await.unwrap();
+
+        super::activate(expected_request, context).await.unwrap();
+
+        assert!(terrain_state.exists());
+
+        let history_contents = fs::read_to_string(&history).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\n{TEST_SESSION_ID}-4"));
 
         let actual_state: TerrainState =
             serde_json::from_str(&fs::read_to_string(&terrain_state).unwrap()).unwrap();

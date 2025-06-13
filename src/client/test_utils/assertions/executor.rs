@@ -54,7 +54,8 @@ impl AssertExecutor {
             .return_once(move |_| {
                 if error {
                     Ok(Output {
-                        status: ExitStatus::from_raw(exit_code),
+                        // ExitStatus.code() returns status >> 8 so doing expected << 8
+                        status: ExitStatus::from_raw(exit_code << 8),
                         stdout: vec![],
                         stderr: Vec::from(output.as_bytes()),
                     })
@@ -84,7 +85,7 @@ impl AssertExecutor {
                 if should_error {
                     bail!("{}", output)
                 } else {
-                    let ec = ExitStatus::from_raw(exit_code);
+                    let ec = ExitStatus::from_raw(exit_code << 8);
                     let some = ec.code();
                     println!("{:?}", some);
                     Ok(ec)
@@ -108,7 +109,7 @@ impl AssertExecutor {
                 if should_error {
                     bail!("{}", output)
                 } else {
-                    let ec = ExitStatus::from_raw(exit_code);
+                    let ec = ExitStatus::from_raw(exit_code << 8);
                     let some = ec.code();
                     println!("{:?}", some);
                     Ok(ec)

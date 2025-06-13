@@ -1,4 +1,6 @@
-use crate::common::constants::{TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME};
+use crate::common::constants::{
+    CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME,
+};
 use crate::common::types::command::Command;
 use crate::common::types::pb;
 use crate::common::types::styles::{
@@ -22,9 +24,9 @@ fn get_log_path(
     numeric_timestamp: &str,
 ) -> String {
     let operation = if is_constructor {
-        "constructor"
+        CONSTRUCTORS
     } else {
-        "destructor"
+        DESTRUCTORS
     };
     format!(
         "{state_directory}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
@@ -602,38 +604,81 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
 #[cfg(test)]
 pub mod test_utils {
     use super::*;
-    use crate::client::test_utils::expected_constructor_background_example_biome;
+    use crate::client::test_utils::{
+        expected_constructor_background_example_biome,
+        expected_destructor_background_example_biome, expected_env_vars_example_biome,
+    };
     use crate::client::types::terrain::AutoApply;
-    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML};
+    use crate::common::constants::{
+        CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP,
+    };
     use crate::common::test_utils::{
         expected_envs_with_activate_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
-        TEST_TIMESTAMP, TEST_TIMESTAMP_NUMERIC,
+        TEST_TIMESTAMP_NUMERIC,
     };
     use std::path::Path;
 
-    pub fn terrain_state_after_activate(
+    fn get_commands(
+        state_dir: &str,
+        session_id: &str,
+        terrain_dir: &str,
+        envs: BTreeMap<String, String>,
+        timestamp: &str,
+        is_constructor: bool,
+        status: CommandStatus,
+    ) -> Vec<CommandState> {
+        let timestamp = remove_non_numeric(timestamp);
+        let mut command_states = vec![];
+        let commands = if is_constructor {
+            expected_constructor_background_example_biome(Path::new(terrain_dir))
+        } else {
+            expected_destructor_background_example_biome(Path::new(terrain_dir))
+        };
+
+        commands
+            .into_iter()
+            .enumerate()
+            .for_each(|(idx, mut command)| {
+                command.set_envs(Some(envs.clone()));
+                command_states.push(CommandState {
+                    command,
+                    log_path: format!(
+                        "{state_dir}/{TEST_TERRAIN_NAME}/{session_id}/{}.{idx}.{timestamp}.log",
+                        if is_constructor {
+                            CONSTRUCTORS
+                        } else {
+                            DESTRUCTORS
+                        }
+                    ),
+                    status: status.clone(),
+                });
+            });
+        command_states
+    }
+
+    fn active_terrain_state_example_biome_with_status(
+        state_dir: &str,
         session_id: String,
         is_auto_apply: bool,
         auto_apply: &AutoApply,
+        status: CommandStatus,
     ) -> TerrainState {
         let terrain_dir = TEST_TERRAIN_DIR.to_string();
         let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
 
-        let mut command_states = vec![];
-        expected_constructor_background_example_biome(Path::new(&terrain_dir))
-            .into_iter()
-            .enumerate()
-            .for_each(|(idx, mut command)| {
-                command.set_envs(Some(expected_envs_with_activate_example_biome(is_auto_apply, auto_apply)));
-                command_states.push(CommandState {
-                    command,
-                    log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/{session_id}/constructor.{idx}.{TEST_TIMESTAMP_NUMERIC}.log"),
-                    status: CommandStatus::Starting,
-                });
-            });
-
         let mut constructors = BTreeMap::new();
-        constructors.insert(TEST_TIMESTAMP.to_string(), command_states);
+        constructors.insert(
+            TEST_TIMESTAMP.to_string(),
+            get_commands(
+                state_dir,
+                &session_id,
+                &terrain_dir,
+                expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
+                TEST_TIMESTAMP_NUMERIC,
+                true,
+                status,
+            ),
+        );
 
         TerrainState {
             session_id,
@@ -646,6 +691,159 @@ pub mod test_utils {
             end_timestamp: "".to_string(),
             constructors,
             destructors: Default::default(),
+        }
+    }
+
+    pub fn terrain_state_after_activate(
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        active_terrain_state_example_biome_with_status(
+            TERRAINIUMD_TMP_DIR,
+            session_id,
+            is_auto_apply,
+            auto_apply,
+            CommandStatus::Starting,
+        )
+    }
+
+    pub fn terrain_state_after_construct(
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        active_terrain_state_example_biome_with_status(
+            TERRAINIUMD_TMP_DIR,
+            session_id,
+            is_auto_apply,
+            auto_apply,
+            CommandStatus::Succeeded,
+        )
+    }
+
+    pub fn terrain_state_after_construct_failed(
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        active_terrain_state_example_biome_with_status(
+            TERRAINIUMD_TMP_DIR,
+            session_id,
+            is_auto_apply,
+            auto_apply,
+            CommandStatus::Failed(Some(1)),
+        )
+    }
+
+    pub fn terrain_state_after_deactivate(
+        state_dir: &str,
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        let mut destructors = BTreeMap::new();
+        destructors.insert(
+            TEST_TIMESTAMP.to_string(),
+            get_commands(
+                state_dir,
+                &session_id,
+                TEST_TERRAIN_DIR,
+                expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
+                TEST_TIMESTAMP,
+                false,
+                CommandStatus::Succeeded,
+            ),
+        );
+
+        let mut state = terrain_state_after_construct(session_id, is_auto_apply, auto_apply);
+        state.end_timestamp = TEST_TIMESTAMP.to_string();
+        state.destructors = destructors;
+        state
+    }
+
+    pub fn terrain_state_after_added_command(
+        state_dir: &str,
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+        is_constructor: bool,
+        new_timestamp: String,
+    ) -> TerrainState {
+        let mut state = terrain_state_after_construct(session_id, is_auto_apply, auto_apply);
+        let map = if is_constructor {
+            &mut state.constructors
+        } else {
+            &mut state.destructors
+        };
+        map.insert(
+            new_timestamp.clone(),
+            get_commands(
+                state_dir,
+                &state.session_id,
+                TEST_TERRAIN_DIR,
+                expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
+                &new_timestamp,
+                is_constructor,
+                CommandStatus::Starting,
+            ),
+        );
+        state
+    }
+
+    pub fn terrain_state_execute_no_session(
+        is_constructor: bool,
+        status: CommandStatus,
+    ) -> TerrainState {
+        let terrain_dir = TEST_TERRAIN_DIR.to_string();
+        let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
+
+        let commands = if is_constructor {
+            expected_constructor_background_example_biome(Path::new(&terrain_dir))
+        } else {
+            expected_destructor_background_example_biome(Path::new(&terrain_dir))
+        };
+
+        let mut command_states = vec![];
+        commands
+            .into_iter()
+            .enumerate()
+            .for_each(|(idx, mut command)| {
+                command.set_envs(Some(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR))));
+                command_states.push(CommandState {
+                    command,
+                    log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/19700101000000/{}.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", if is_constructor {
+                        CONSTRUCTORS
+                    } else {
+                        DESTRUCTORS
+                    }),
+                    status: status.clone(),
+                });
+            });
+
+        let mut commands = BTreeMap::new();
+        commands.insert(TEST_TIMESTAMP.to_string(), command_states);
+
+        let mut constructors = Default::default();
+        let mut destructors = Default::default();
+
+        if is_constructor {
+            constructors = commands;
+        } else {
+            destructors = commands;
+        }
+
+        TerrainState {
+            session_id: TEST_TIMESTAMP_NUMERIC.to_string(),
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: EXAMPLE_BIOME.to_string(),
+            toml_path: toml_path.clone(),
+            terrain_dir: terrain_dir.clone(),
+            is_background: false,
+            start_timestamp: "".to_string(),
+            end_timestamp: "".to_string(),
+            constructors,
+            destructors,
         }
     }
 }

@@ -287,26 +287,547 @@ async fn spawn_command(
 
     Ok(())
 }
-// let executor = AssertExecutor::with(MockExecutor::default())
-// .async_spawn_with_log(
-// ExpectedCommand {
-// command: Command::new(
-// "/bin/bash".to_string(),
-// vec![
-//     "-c".to_string(),
-//     "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-// ],
-// None,
-// Some(PathBuf::from(TEST_TERRAIN_DIR)),
-// ),
-// exit_code: 0,
-// should_error: false,
-// output: "".to_string(),
-// },
-// format!(
-//     "{}/constructor.0.timestamp.log",
-//     terrain_state_dir.display()
-// ),
-// )
-// .successfully();
-//
+
+#[cfg(test)]
+mod tests {
+    use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
+    use crate::client::types::terrain::AutoApply;
+    use crate::common::constants::{
+        TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TEST_TIMESTAMP,
+    };
+    use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::{
+        expected_envs_with_activate_example_biome, expected_execute_request_example_biome,
+        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+    };
+    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TIMESTAMP_NUMERIC};
+    use crate::common::types::command::Command;
+    use crate::common::types::terrain_state::test_utils::{
+        terrain_state_after_activate, terrain_state_after_added_command,
+        terrain_state_after_construct, terrain_state_after_construct_failed,
+        terrain_state_after_deactivate, terrain_state_execute_no_session,
+    };
+    use crate::common::types::terrain_state::{CommandStatus, TerrainState};
+    use crate::common::utils::{create_file, write_to_file};
+    use crate::daemon::handlers::execute::{spawn_commands, CommandInfo};
+    use crate::daemon::types::config::DaemonConfig;
+    use crate::daemon::types::context::DaemonContext;
+    use crate::daemon::types::history::History;
+    use crate::daemon::types::state::State;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use tempfile::tempdir;
+    use tokio::sync::RwLock;
+
+    #[tokio::test]
+    async fn create_state_for_construct_without_session() {
+        let state_directory = tempdir().unwrap();
+
+        let request = expected_execute_request_example_biome(None, true);
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/{TEST_TIMESTAMP_NUMERIC}/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        assert!(terrain_state_file.exists());
+        let actual_state: TerrainState =
+            serde_json::from_reader(fs::File::open(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_execute_no_session(true, CommandStatus::Starting)
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(
+            history_contents,
+            format!("{TEST_TIMESTAMP_NUMERIC}\n\n\n\n")
+        );
+    }
+
+    #[tokio::test]
+    async fn add_construct_with_new_timestamp() {
+        let state_directory = tempdir().unwrap();
+        let new_timestamp = "1970-01-01_00:00:01".to_string();
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let mut request =
+            expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
+        request.timestamp = new_timestamp.clone();
+
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        // setup previous state with constructors already added
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        let old_state =
+            terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
+
+        let mut state_file = create_file(&terrain_state_file).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_added_command(
+                state_directory.path().to_str().unwrap(),
+                TEST_SESSION_ID.to_string(),
+                is_auto_apply,
+                &auto_apply,
+                true,
+                new_timestamp
+            )
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+
+    #[tokio::test]
+    async fn does_not_add_construct_with_same_timestamp() {
+        let state_directory = tempdir().unwrap();
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        let request =
+            expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
+
+        // setup previous state with constructors already added
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        let old_state =
+            terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
+
+        let mut state_file = create_file(&terrain_state_file).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply)
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+
+    #[tokio::test]
+    async fn create_state_for_destruct_without_session() {
+        let state_directory = tempdir().unwrap();
+
+        let request = expected_execute_request_example_biome(None, false);
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/19700101000000/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        assert!(terrain_state_file.exists());
+        let actual_state: TerrainState =
+            serde_json::from_reader(fs::File::open(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_execute_no_session(false, CommandStatus::Starting)
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(
+            history_contents,
+            format!("{TEST_TIMESTAMP_NUMERIC}\n\n\n\n")
+        );
+    }
+
+    #[tokio::test]
+    async fn add_destruct_with_new_timestamp() {
+        let state_directory = tempdir().unwrap();
+        let new_timestamp = "1970-01-01_00:00:01".to_string();
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let mut request =
+            expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), false);
+        request.timestamp = new_timestamp.clone();
+
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        // setup previous state with constructors already added
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        let old_state =
+            terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
+
+        let mut state_file = create_file(&terrain_state_file).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_added_command(
+                state_directory.path().to_str().unwrap(),
+                TEST_SESSION_ID.to_string(),
+                is_auto_apply,
+                &auto_apply,
+                false,
+                new_timestamp,
+            )
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+
+    #[tokio::test]
+    async fn does_not_add_destruct_with_same_timestamp() {
+        let state_directory = tempdir().unwrap();
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        let request =
+            expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), false);
+
+        // setup previous state with constructors already added
+        let terrain_state_file = state_directory.path().join(format!(
+            "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
+        ));
+        let old_state = terrain_state_after_deactivate(
+            state_directory.path().to_str().unwrap(),
+            TEST_SESSION_ID.to_string(),
+            is_auto_apply,
+            &auto_apply,
+        );
+
+        let mut state_file = create_file(&terrain_state_file).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        spawn_commands(request, Arc::new(context)).await.unwrap();
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&terrain_state_file).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_deactivate(
+                state_directory.path().to_str().unwrap(),
+                TEST_SESSION_ID.to_string(),
+                is_auto_apply,
+                &auto_apply
+            )
+        );
+
+        let history_file = state_directory
+            .path()
+            .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
+        assert!(history_file.exists());
+        let history_contents = fs::read_to_string(&history_file).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+
+    #[tokio::test]
+    async fn throws_error_when_terrain_state_does_not_exist() {
+        let state_directory = tempdir().unwrap();
+
+        let request =
+            expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
+        let context = DaemonContext::new(
+            Arc::new(MockExecutor::new()),
+            DaemonConfig::default(),
+            state_directory.path().to_str().unwrap(),
+            false,
+        )
+        .await;
+
+        let error = spawn_commands(request, Arc::new(context))
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(error, "failed to add commands to state manager");
+    }
+
+    #[tokio::test]
+    async fn executes_command_and_updates_status_success() {
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
+
+        let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
+        let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
+        let state_path = session_dir_path.join(TERRAIN_STATE_FILE_NAME);
+        let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
+
+        fs::create_dir_all(&session_dir_path).unwrap();
+
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let old_state =
+            terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
+
+        let mut state_file = create_file(&state_path).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let mut history_file = create_file(&history_path).await.unwrap();
+        write_to_file(&mut history_file, format!("{TEST_SESSION_ID}\n\n\n\n"))
+            .await
+            .unwrap();
+
+        let state = State::read(&state_path).await.unwrap();
+        let history = History::read(state_dir_path.to_str().unwrap(), TEST_TERRAIN_NAME, 5)
+            .await
+            .unwrap();
+
+        let (command, log_path) = old_state
+            .get_constructors(TEST_TIMESTAMP)
+            .unwrap()
+            .remove(0)
+            .command_and_log_path();
+
+        let executor = AssertExecutor::with(MockExecutor::default())
+            .async_spawn_with_log(
+                ExpectedCommand {
+                    command: Command::new(
+                        "/bin/bash".to_string(),
+                        vec![
+                            "-c".to_string(),
+                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                        ],
+                        Some(expected_envs_with_activate_example_biome(
+                            is_auto_apply,
+                            &auto_apply,
+                        )),
+                        Some(PathBuf::from(TEST_TERRAIN_DIR)),
+                    ),
+                    exit_code: 0,
+                    should_error: false,
+                    output: "".to_string(),
+                },
+                log_path.clone(),
+            )
+            .successfully();
+
+        super::spawn_command(
+            Arc::new(executor),
+            Arc::new(RwLock::new(history)),
+            Arc::new(RwLock::new(state)),
+            CommandInfo {
+                index: 0,
+                command,
+                is_constructor: true,
+                timestamp: TEST_TIMESTAMP.to_string(),
+                log_path,
+            },
+        )
+        .await
+        .unwrap();
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply)
+        );
+
+        let history_contents = fs::read_to_string(&history_path).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+
+    #[tokio::test]
+    async fn executes_command_and_updates_status_error() {
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
+
+        let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
+        let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
+        let state_path = session_dir_path.join(TERRAIN_STATE_FILE_NAME);
+        let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
+
+        fs::create_dir_all(&session_dir_path).unwrap();
+
+        let is_auto_apply = true;
+        let auto_apply = AutoApply::all();
+
+        let old_state =
+            terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
+
+        let mut state_file = create_file(&state_path).await.unwrap();
+        write_to_file(
+            &mut state_file,
+            serde_json::to_string_pretty(&old_state).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let mut history_file = create_file(&history_path).await.unwrap();
+        write_to_file(&mut history_file, format!("{TEST_SESSION_ID}\n\n\n\n"))
+            .await
+            .unwrap();
+
+        let state = State::read(&state_path).await.unwrap();
+        let history = History::read(state_dir_path.to_str().unwrap(), TEST_TERRAIN_NAME, 5)
+            .await
+            .unwrap();
+
+        let (command, log_path) = old_state
+            .get_constructors(TEST_TIMESTAMP)
+            .unwrap()
+            .remove(0)
+            .command_and_log_path();
+
+        let executor = AssertExecutor::with(MockExecutor::default())
+            .async_spawn_with_log(
+                ExpectedCommand {
+                    command: Command::new(
+                        "/bin/bash".to_string(),
+                        vec![
+                            "-c".to_string(),
+                            "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                        ],
+                        Some(expected_envs_with_activate_example_biome(
+                            is_auto_apply,
+                            &auto_apply,
+                        )),
+                        Some(PathBuf::from(TEST_TERRAIN_DIR)),
+                    ),
+                    exit_code: 1,
+                    should_error: false,
+                    output: "".to_string(),
+                },
+                log_path.clone(),
+            )
+            .successfully();
+
+        let error = super::spawn_command(
+            Arc::new(executor),
+            Arc::new(RwLock::new(history)),
+            Arc::new(RwLock::new(state)),
+            CommandInfo {
+                index: 0,
+                command,
+                is_constructor: true,
+                timestamp: TEST_TIMESTAMP.to_string(),
+                log_path,
+            },
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert_eq!(
+            error,
+            r#"command: `/bin/bash -c $PWD/tests/scripts/print_num_for_10_sec in Some("/tmp/terrain_dir")` exited with code Some(1)"#
+        );
+
+        let actual_state: TerrainState =
+            serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).unwrap();
+        assert_eq!(
+            actual_state,
+            terrain_state_after_construct_failed(
+                TEST_SESSION_ID.to_string(),
+                is_auto_apply,
+                &auto_apply
+            )
+        );
+
+        let history_contents = fs::read_to_string(&history_path).unwrap();
+        assert_eq!(history_contents, format!("{TEST_SESSION_ID}\n\n\n\n"));
+    }
+}

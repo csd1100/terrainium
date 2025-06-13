@@ -77,9 +77,9 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML};
+    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
+    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;

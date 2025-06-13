@@ -20,7 +20,6 @@ pub async fn handle(
 mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::expected_execute_request_example_biome;
     use crate::client::types::client::MockClient;
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
@@ -28,6 +27,7 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{TERRAIN_SESSION_ID, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::expected_execute_request_example_biome;
     use crate::common::test_utils::TEST_TERRAIN_DIR;
     use crate::common::types::pb;
     use std::path::PathBuf;

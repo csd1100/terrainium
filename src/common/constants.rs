@@ -51,3 +51,4 @@ pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const NONE: &str = "none";
 pub const TRUE: &str = "true";
 pub const JSON: &str = "json";
+pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";

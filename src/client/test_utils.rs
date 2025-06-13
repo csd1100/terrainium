@@ -1,8 +1,6 @@
 use crate::client::types::commands::Commands;
-use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
-use crate::common::test_utils::{TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
+use crate::common::constants::{EXAMPLE_BIOME, NONE};
 use crate::common::types::command::Command;
-use crate::common::types::pb;
 use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;
@@ -159,30 +157,4 @@ pub(crate) fn expected_destructors_example_biome(terrain_dir: &Path) -> Commands
         expected_destructor_foreground_example_biome(terrain_dir),
         expected_destructor_background_example_biome(terrain_dir),
     )
-}
-
-pub(crate) fn expected_execute_request_example_biome(
-    session_id: Option<String>,
-    is_constructor: bool,
-) -> pb::Execute {
-    let terrain_dir = TEST_TERRAIN_DIR.to_string();
-    let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
-    pb::Execute {
-        session_id,
-        terrain_name: TEST_TERRAIN_NAME.to_string(),
-        biome_name: EXAMPLE_BIOME.to_string(),
-        terrain_dir: terrain_dir.clone(),
-        toml_path,
-        is_constructor,
-        timestamp: TEST_TIMESTAMP.to_string(),
-        commands: vec![pb::Command {
-            exe: "/bin/bash".to_string(),
-            args: vec![
-                "-c".to_string(),
-                "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
-            ],
-            envs: expected_env_vars_example_biome(Path::new(&terrain_dir)),
-            cwd: terrain_dir,
-        }],
-    }
 }
