@@ -73,16 +73,14 @@ fn status(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::constants::{
-        TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
-    };
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::EXAMPLE_BIOME;
+    use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
+    use crate::common::types::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
@@ -123,10 +121,7 @@ mod tests {
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             biome_name: EXAMPLE_BIOME.to_string(),
             terrain_dir: terrain_dir.to_string_lossy().to_string(),
-            toml_path: terrain_dir
-                .join("terrain.toml")
-                .to_string_lossy()
-                .to_string(),
+            toml_path: terrain_dir.join(TERRAIN_TOML).to_string_lossy().to_string(),
             is_background: false,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
@@ -143,7 +138,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         )
@@ -172,7 +167,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         )
@@ -208,7 +203,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         );
@@ -242,7 +237,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         );
@@ -271,7 +266,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         )
@@ -300,7 +295,7 @@ mod tests {
         let context = Context::build(
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            terrain_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::default(),
         )

@@ -340,6 +340,7 @@ mod tests {
     use std::fs::{create_dir_all, exists, write};
     use std::path::PathBuf;
     use std::sync::Arc;
+    use tempfile::tempdir;
 
     #[should_panic(
         expected = "expected to generate environment from terrain for biome \"invalid_biome_name\""
@@ -378,7 +379,7 @@ mod tests {
 
     #[test]
     fn update_rc_path() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempdir().unwrap();
         write(temp_dir.path().join(".zshrc"), "").unwrap();
         Zsh::update_rc(Some(temp_dir.path().join(".zshrc"))).unwrap();
 
@@ -392,7 +393,7 @@ mod tests {
 
     #[test]
     fn shell_integration() {
-        let home_dir = tempfile::tempdir().unwrap();
+        let home_dir = tempdir().unwrap();
 
         let zsh_integration_script_location =
             home_dir.path().join(".config/terrainium/shell_integration");
@@ -421,7 +422,7 @@ mod tests {
 
     #[test]
     fn shell_integration_replace() {
-        let home_dir = tempfile::tempdir().unwrap();
+        let home_dir = tempdir().unwrap();
 
         let zsh_integration_script_location =
             home_dir.path().join(".config/terrainium/shell_integration");

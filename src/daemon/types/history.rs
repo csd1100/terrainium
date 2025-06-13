@@ -1,3 +1,4 @@
+use crate::common::constants::TERRAIN_HISTORY_FILE_NAME;
 use crate::common::types::pb::status_request::Identifier;
 use crate::common::utils;
 use anyhow::{bail, Result};
@@ -14,7 +15,9 @@ pub struct History {
 
 impl History {
     pub fn get_path(state_directory: &str, terrain_name: &str) -> PathBuf {
-        PathBuf::from(&format!("{state_directory}/{terrain_name}/history"))
+        PathBuf::from(&format!(
+            "{state_directory}/{terrain_name}/{TERRAIN_HISTORY_FILE_NAME}"
+        ))
     }
 
     pub(crate) async fn read(

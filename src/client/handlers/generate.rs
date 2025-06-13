@@ -20,7 +20,7 @@ mod tests {
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use anyhow::Result;
     use tempfile::tempdir;
@@ -38,7 +38,7 @@ mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -65,7 +65,7 @@ mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );

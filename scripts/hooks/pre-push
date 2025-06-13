@@ -3,9 +3,7 @@ set -e
 
 printf "\nChecking formatting using rustfmt\n"
 cargo fmt --check
-printf "\nChecking linting using clippy\n"
+printf "\nLinting using clippy\n"
 cargo clippy -- -D warnings
-printf "\nRunning cargo check\n"
-cargo check
 printf "\nRunning tests\n"
 cargo test

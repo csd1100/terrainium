@@ -63,7 +63,7 @@ pub(crate) mod tests {
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
-    use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::types::command::Command;
     use anyhow::Result;
     use fs::{copy, create_dir_all};
@@ -82,7 +82,7 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
@@ -108,12 +108,12 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let script_dir = central_dir.path().join("scripts");
@@ -138,7 +138,7 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
@@ -164,12 +164,12 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
 
-        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
@@ -197,7 +197,7 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
@@ -223,12 +223,12 @@ pub(crate) mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();

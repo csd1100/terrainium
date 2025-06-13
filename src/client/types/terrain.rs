@@ -513,7 +513,7 @@ pub mod tests {
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
-    use crate::common::constants::NONE;
+    use crate::common::constants::{NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::{Command, CommandsType};
     use serial_test::serial;
@@ -1235,14 +1235,14 @@ pub mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::new(),
         );

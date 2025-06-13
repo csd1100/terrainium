@@ -26,34 +26,35 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::TERRAIN_SESSION_ID;
+    use crate::common::constants::{TERRAIN_SESSION_ID, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
-    use std::path::{Path, PathBuf};
-    use tempfile::tempdir;
+    use crate::common::types::test_utils::TEST_TERRAIN_DIR;
+    use std::path::PathBuf;
 
     pub(crate) fn expected_request_destruct_example_biome(
         session_id: Option<String>,
-        terrain_dir: &Path,
     ) -> pb::Execute {
-        expected_execute_request_example_biome(session_id, terrain_dir, false)
+        expected_execute_request_example_biome(session_id, false)
     }
 
     #[tokio::test]
     async fn test_construct_sends_request() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::new(),
         );
 
         let client = ExpectClient::to_send(ProtoRequest::Execute(
-            expected_request_destruct_example_biome(session_id, terrain_dir.path()),
+            expected_request_destruct_example_biome(session_id),
         ))
         .successfully();
 
@@ -64,11 +65,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_construct_does_not_send_request_if_no_background() {
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::new(),
         );
@@ -87,11 +90,13 @@ mod tests {
     async fn test_construct_request_returns_error() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::new(),
         );
@@ -99,7 +104,7 @@ mod tests {
         let expected_error = "failed to parse execute request".to_string();
 
         let client = ExpectClient::to_send(ProtoRequest::Execute(
-            expected_request_destruct_example_biome(session_id, terrain_dir.path()),
+            expected_request_destruct_example_biome(session_id),
         ))
         .with_returning_error(expected_error.clone());
 

@@ -1,8 +1,8 @@
-use crate::client::test_utils::constants::{TEST_TERRAIN_NAME, TEST_TIMESTAMP};
 use crate::client::types::commands::Commands;
-use crate::common::constants::{EXAMPLE_BIOME, NONE};
+use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
 use crate::common::types::command::Command;
 use crate::common::types::pb;
+use crate::common::types::test_utils::{TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP};
 use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;
@@ -163,18 +163,16 @@ pub(crate) fn expected_destructors_example_biome(terrain_dir: &Path) -> Commands
 
 pub(crate) fn expected_execute_request_example_biome(
     session_id: Option<String>,
-    terrain_dir: &Path,
     is_constructor: bool,
 ) -> pb::Execute {
+    let terrain_dir = TEST_TERRAIN_DIR.to_string();
+    let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
     pb::Execute {
         session_id,
         terrain_name: TEST_TERRAIN_NAME.to_string(),
         biome_name: EXAMPLE_BIOME.to_string(),
-        terrain_dir: terrain_dir.to_string_lossy().to_string(),
-        toml_path: terrain_dir
-            .join("terrain.toml")
-            .to_string_lossy()
-            .to_string(),
+        terrain_dir: terrain_dir.clone(),
+        toml_path,
         is_constructor,
         timestamp: TEST_TIMESTAMP.to_string(),
         commands: vec![pb::Command {
@@ -183,8 +181,8 @@ pub(crate) fn expected_execute_request_example_biome(
                 "-c".to_string(),
                 "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
             ],
-            envs: expected_env_vars_example_biome(terrain_dir),
-            cwd: terrain_dir.to_string_lossy().to_string(),
+            envs: expected_env_vars_example_biome(Path::new(&terrain_dir)),
+            cwd: terrain_dir,
         }],
     }
 }

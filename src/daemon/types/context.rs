@@ -1,3 +1,4 @@
+#[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;

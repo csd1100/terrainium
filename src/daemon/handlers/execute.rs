@@ -1,4 +1,6 @@
-use crate::common::execute::{Execute, Executor};
+use crate::common::execute::Execute;
+#[mockall_double::double]
+use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;

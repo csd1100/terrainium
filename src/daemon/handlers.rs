@@ -61,3 +61,9 @@ pub fn error_response(err: anyhow::Error) -> Response {
         payload: Some(Error(error)),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn test_handle_request() {}
+}

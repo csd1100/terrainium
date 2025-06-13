@@ -71,3 +71,33 @@ async fn create_state(request: Activate, context: &DaemonContext) -> Result<()> 
     context.state_manager().create_state(state).await?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+
+    // #[tokio::test]
+    // async fn test_create_state_and_execute_command() {
+    //     let state_directory = tempdir().unwrap();
+    //     let state_dir_path = state_directory.path().to_string_lossy().to_string();
+    //
+    //     let context = Arc::new(DaemonContext::new(
+    //         Arc::new(MockExecutor::default()),
+    //         DaemonConfig::default(),
+    //         &state_dir_path,
+    //         false,
+    //     ));
+    //
+    //     // let expected_request = expected_activate_request_example_biome()
+    //
+    //     let terrain_state = state_directory
+    //         .path()
+    //         .join(TEST_TERRAIN_NAME)
+    //         .join(TEST_SESSION_ID)
+    //         .join(TERRAIN_STATE_FILE_NAME);
+    //
+    //     let history = state_directory
+    //         .path()
+    //         .join(TEST_TERRAIN_NAME)
+    //         .join(TERRAIN_HISTORY_FILE_NAME);
+    // }
+}

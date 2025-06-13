@@ -50,7 +50,7 @@ pub mod tests {
     };
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
-    use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use anyhow::Result;
@@ -72,7 +72,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -101,7 +101,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -130,7 +130,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -156,7 +156,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -180,12 +180,12 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::new(),
         );
 
-        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         fs::write(terrain_toml_path, "")?;
 
@@ -214,7 +214,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -237,12 +237,12 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::new(),
         );
 
-        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
 
         fs::write(terrain_toml_path, "")?;
 
@@ -267,7 +267,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -292,7 +292,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         //setup edit mock
-        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
@@ -317,7 +317,7 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -343,7 +343,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         //setup edit mock
-        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
         let terrain_dir_path = terrain_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
@@ -368,7 +368,7 @@ pub mod tests {
         let context: Context = Context::build(
             terrain_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
+            central_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );

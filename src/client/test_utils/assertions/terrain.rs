@@ -1,3 +1,4 @@
+use crate::common::constants::TERRAIN_TOML;
 use std::fs::read_to_string;
 use std::path::Path;
 
@@ -51,7 +52,7 @@ impl<'a> AssertTerrain<'a> {
         } else {
             self.current_dir
         }
-        .join("terrain.toml");
+        .join(TERRAIN_TOML);
 
         assert!(toml.exists(), "failed to find terrain.toml");
         assert_eq!(
@@ -83,7 +84,7 @@ impl<'a> AssertTerrain<'a> {
         } else {
             self.current_dir
         }
-        .join("terrain.toml");
+        .join(TERRAIN_TOML);
 
         assert!(toml.exists(), "failed to find terrain.toml");
 
@@ -125,7 +126,7 @@ impl<'a> AssertTerrain<'a> {
         } else {
             self.current_dir
         }
-        .join("terrain.toml");
+        .join(TERRAIN_TOML);
 
         assert!(toml.exists(), "failed to find terrain.toml");
 

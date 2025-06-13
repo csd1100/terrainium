@@ -87,9 +87,6 @@ fn deactivate(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::constants::{
-        TEST_SESSION_ID, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
-    };
     use crate::client::test_utils::{
         expected_execute_request_example_biome, restore_env_var, set_env_var,
     };
@@ -98,25 +95,26 @@ mod tests {
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{
-        EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME,
+        EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME, TERRAIN_TOML,
     };
     use crate::common::execute::MockExecutor;
     use crate::common::types::pb;
+    use crate::common::types::test_utils::{
+        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP,
+    };
     use serial_test::serial;
-    use std::path::{Path, PathBuf};
-    use tempfile::tempdir;
+    use std::path::PathBuf;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
         "no active terrain found, use 'terrainium enter' command to activate a terrain.";
 
-    fn expected_request_example_biome(session_id: String, terrain_dir: &Path) -> pb::Deactivate {
+    fn expected_request_example_biome(session_id: String) -> pb::Deactivate {
         pb::Deactivate {
             session_id: session_id.clone(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
             destructors: Some(expected_execute_request_example_biome(
                 Some(session_id),
-                terrain_dir,
                 false,
             )),
         }
@@ -183,17 +181,18 @@ mod tests {
             Some(EXAMPLE_BIOME.to_string()),
         );
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::to_send(ProtoRequest::Deactivate(
-            expected_request_example_biome(session_id.clone(), terrain_dir.path()),
+            expected_request_example_biome(session_id.clone()),
         ))
         .successfully();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::default(),
         )
@@ -213,7 +212,8 @@ mod tests {
         let selected_biome =
             set_env_var(TERRAIN_SELECTED_BIOME.to_string(), Some(NONE.to_string()));
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
@@ -221,9 +221,9 @@ mod tests {
         .successfully();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::default(),
         )
@@ -249,7 +249,8 @@ mod tests {
             Some((&AutoApply::enabled()).into()),
         );
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
@@ -257,9 +258,9 @@ mod tests {
         .successfully();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::default(),
         )
@@ -272,6 +273,7 @@ mod tests {
         restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
         restore_env_var(TERRAIN_AUTO_APPLY.to_string(), auto_apply);
     }
+
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_replace_but_not_background() {
@@ -285,7 +287,8 @@ mod tests {
             Some((&AutoApply::replace()).into()),
         );
 
-        let terrain_dir = tempdir().unwrap();
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
@@ -293,9 +296,9 @@ mod tests {
         .successfully();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
+            terrain_dir,
             PathBuf::new(),
-            terrain_dir.path().join("terrain.toml"),
+            toml_path,
             Config::default(),
             MockExecutor::default(),
         )

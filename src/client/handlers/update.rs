@@ -87,7 +87,7 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use std::fs::{copy, create_dir_all, read_to_string};
     use std::path::{Path, PathBuf};
@@ -99,7 +99,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
@@ -116,7 +116,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -156,7 +156,7 @@ mod tests {
     fn set_default_biome_invalid() {
         let current_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy(WITHOUT_DEFAULT_BIOME_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
@@ -168,7 +168,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::new(),
         );
@@ -212,7 +212,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -231,7 +231,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -288,7 +288,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -306,7 +306,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -350,7 +350,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -368,7 +368,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -411,7 +411,7 @@ mod tests {
     fn update_biome_invalid() {
         let current_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -424,7 +424,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             MockExecutor::new(),
         );
@@ -467,7 +467,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -485,7 +485,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -530,7 +530,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -548,7 +548,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );
@@ -587,7 +587,7 @@ mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         copy(WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML, &terrain_toml)
             .expect("test terrain to be copied to test dir");
@@ -605,7 +605,7 @@ mod tests {
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
+            current_dir.path().join(TERRAIN_TOML),
             Config::default(),
             executor,
         );

@@ -1,7 +1,7 @@
 use crate::client::shell::{Shell, Zsh};
 use crate::client::types::config::Config;
 use crate::common::constants::{
-    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_SESSION_ID,
+    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML,
 };
 #[mockall_double::double]
 use crate::common::execute::Executor;
@@ -22,7 +22,6 @@ pub struct Context {
     shell: Zsh,
 }
 
-const TERRAIN_TOML: &str = "terrain.toml";
 const TERRAINS_DIR_NAME: &str = "terrains";
 const SCRIPTS_DIR_NAME: &str = "scripts";
 
@@ -216,6 +215,7 @@ impl Context {
 pub(crate) mod tests {
     use super::Context;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::common::constants::TERRAIN_TOML;
     use crate::common::execute::MockExecutor;
     use anyhow::Result;
     use home::home_dir;
@@ -248,7 +248,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+        assert_eq!(terrain_dir.path().join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
@@ -277,7 +277,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
+        assert_eq!(central_dir.join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
@@ -286,7 +286,7 @@ pub(crate) mod tests {
     fn create_in_terrain_throws_error_if_already_present_in_terrain() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        write(terrain_dir.path().join("terrain.toml"), "")?;
+        write(terrain_dir.path().join(TERRAIN_TOML), "")?;
 
         let err = Context::create(
             home_dir.path().to_path_buf(),
@@ -309,7 +309,7 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
 
         create_dir_all(&central_dir)?;
-        write(central_dir.join("terrain.toml"), "")?;
+        write(central_dir.join(TERRAIN_TOML), "")?;
 
         let err = Context::create(
             home_dir.path().to_path_buf(),
@@ -329,7 +329,7 @@ pub(crate) mod tests {
     fn create_in_central_throws_error_if_already_present_in_terrain() -> Result<()> {
         let home_dir = tempdir()?;
         let terrain_dir = tempdir()?;
-        write(terrain_dir.path().join("terrain.toml"), "")?;
+        write(terrain_dir.path().join(TERRAIN_TOML), "")?;
 
         let err = Context::create(
             home_dir.path().to_path_buf(),
@@ -351,7 +351,7 @@ pub(crate) mod tests {
         let terrain_dir = tempdir()?;
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         create_dir_all(&central_dir)?;
-        write(central_dir.join("terrain.toml"), "")?;
+        write(central_dir.join(TERRAIN_TOML), "")?;
 
         let err = Context::create(
             home_dir.path().to_path_buf(),
@@ -373,7 +373,7 @@ pub(crate) mod tests {
         let terrain_dir = tempdir()?;
 
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
-        write(terrain_dir.path().join("terrain.toml"), "")?;
+        write(terrain_dir.path().join(TERRAIN_TOML), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
@@ -392,7 +392,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+        assert_eq!(terrain_dir.path().join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
@@ -405,7 +405,7 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
 
         create_dir_all(&central_dir)?;
-        write(central_dir.join("terrain.toml"), "")?;
+        write(central_dir.join(TERRAIN_TOML), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
@@ -423,7 +423,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
+        assert_eq!(central_dir.join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
@@ -437,7 +437,7 @@ pub(crate) mod tests {
         create_dir_all(&cwd)?;
 
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
-        write(terrain_dir.path().join("terrain.toml"), "")?;
+        write(terrain_dir.path().join(TERRAIN_TOML), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
@@ -452,7 +452,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(terrain_dir.path().join("terrain.toml"), context.toml_path());
+        assert_eq!(terrain_dir.path().join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
@@ -467,7 +467,7 @@ pub(crate) mod tests {
 
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         create_dir_all(&central_dir)?;
-        write(central_dir.join("terrain.toml"), "")?;
+        write(central_dir.join(TERRAIN_TOML), "")?;
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
@@ -482,7 +482,7 @@ pub(crate) mod tests {
 
         assert_eq!(terrain_dir.path(), context.terrain_dir());
         assert_eq!(central_dir, context.central_dir());
-        assert_eq!(central_dir.join("terrain.toml"), context.toml_path());
+        assert_eq!(central_dir.join(TERRAIN_TOML), context.toml_path());
 
         Ok(())
     }
