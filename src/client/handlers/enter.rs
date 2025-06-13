@@ -148,19 +148,59 @@ mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::expected_env_vars_none;
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::common::constants::TERRAIN_TOML;
+    use crate::common::constants::{
+        FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
+        TERRAIN_INIT_SCRIPT, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
+    };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        expected_activate_request_example_biome, expected_activate_request_none,
-        expected_envs_with_activate_example_biome, expected_envs_with_activate_none,
+        expected_activate_request_example_biome, expected_envs_with_activate_example_biome,
+        TEST_FPATH, TEST_TERRAIN_NAME,
     };
     use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
-    use std::path::PathBuf;
+    use crate::common::types::pb;
+    use std::collections::BTreeMap;
+    use std::path::{Path, PathBuf};
 
+    fn expected_envs_with_activate_none(
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> BTreeMap<String, String> {
+        let script = format!("{TEST_CENTRAL_DIR}/scripts/terrain-none.zwc");
+
+        let mut envs = expected_env_vars_none(Path::new(TEST_TERRAIN_DIR));
+        envs.insert(FPATH.to_string(), format!("{}:{}", script, TEST_FPATH));
+        envs.insert(TERRAIN_INIT_FN.to_string(), "terrain-none.zsh".to_string());
+        envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
+        envs.insert(TERRAIN_DIR.to_string(), TEST_TERRAIN_DIR.to_string());
+        envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+        envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
+        if is_auto_apply {
+            envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.into());
+        }
+        envs
+    }
+
+    fn expected_activate_request_none(is_background: bool) -> pb::Activate {
+        let terrain_dir = TEST_TERRAIN_DIR.to_string();
+        let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
+
+        pb::Activate {
+            session_id: TEST_SESSION_ID.to_string(),
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: NONE.to_string(),
+            terrain_dir: terrain_dir.clone(),
+            toml_path: toml_path.clone(),
+            start_timestamp: TEST_TIMESTAMP.to_string(),
+            is_background,
+            constructors: None,
+        }
+    }
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_all() {
         let is_background = true;

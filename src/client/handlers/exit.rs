@@ -97,28 +97,14 @@ mod tests {
         TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::{
-        expected_execute_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_DIR,
-        TEST_TERRAIN_NAME,
-    };
+    use crate::common::test_utils;
+    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use serial_test::serial;
     use std::path::PathBuf;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
         "no active terrain found, use 'terrainium enter' command to activate a terrain.";
-
-    fn expected_request_example_biome(session_id: String) -> pb::Deactivate {
-        pb::Deactivate {
-            session_id: session_id.clone(),
-            terrain_name: TEST_TERRAIN_NAME.to_string(),
-            end_timestamp: TEST_TIMESTAMP.to_string(),
-            destructors: Some(expected_execute_request_example_biome(
-                Some(session_id),
-                false,
-            )),
-        }
-    }
 
     fn expected_request_none(session_id: String) -> pb::Deactivate {
         pb::Deactivate {
@@ -185,7 +171,7 @@ mod tests {
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::to_send(ProtoRequest::Deactivate(
-            expected_request_example_biome(session_id.clone()),
+            test_utils::expected_deactivate_request_example_biome(session_id.clone()),
         ))
         .successfully();
 

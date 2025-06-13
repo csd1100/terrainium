@@ -736,11 +736,12 @@ pub mod test_utils {
         )
     }
 
-    pub fn terrain_state_after_deactivate(
+    fn terrain_state_after_deactivate(
         state_dir: &str,
         session_id: String,
         is_auto_apply: bool,
         auto_apply: &AutoApply,
+        status: CommandStatus,
     ) -> TerrainState {
         let mut destructors = BTreeMap::new();
         destructors.insert(
@@ -752,7 +753,7 @@ pub mod test_utils {
                 expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
                 TEST_TIMESTAMP,
                 false,
-                CommandStatus::Succeeded,
+                status,
             ),
         );
 
@@ -760,6 +761,36 @@ pub mod test_utils {
         state.end_timestamp = TEST_TIMESTAMP.to_string();
         state.destructors = destructors;
         state
+    }
+
+    pub fn terrain_state_after_deactivate_before_complete(
+        state_dir: &str,
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        terrain_state_after_deactivate(
+            state_dir,
+            session_id,
+            is_auto_apply,
+            auto_apply,
+            CommandStatus::Starting,
+        )
+    }
+
+    pub fn terrain_state_after_deactivate_after_succeeded(
+        state_dir: &str,
+        session_id: String,
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> TerrainState {
+        terrain_state_after_deactivate(
+            state_dir,
+            session_id,
+            is_auto_apply,
+            auto_apply,
+            CommandStatus::Succeeded,
+        )
     }
 
     pub fn terrain_state_after_added_command(

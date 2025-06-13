@@ -305,7 +305,7 @@ mod tests {
     use crate::common::types::terrain_state::test_utils::{
         terrain_state_after_activate, terrain_state_after_added_command,
         terrain_state_after_construct, terrain_state_after_construct_failed,
-        terrain_state_after_deactivate, terrain_state_execute_no_session,
+        terrain_state_after_deactivate_after_succeeded, terrain_state_execute_no_session,
     };
     use crate::common::types::terrain_state::{CommandStatus, TerrainState};
     use crate::common::utils::{create_file, write_to_file};
@@ -580,7 +580,7 @@ mod tests {
         let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
-        let old_state = terrain_state_after_deactivate(
+        let old_state = terrain_state_after_deactivate_after_succeeded(
             state_directory.path().to_str().unwrap(),
             TEST_SESSION_ID.to_string(),
             is_auto_apply,
@@ -601,7 +601,7 @@ mod tests {
             serde_json::from_str(&fs::read_to_string(&terrain_state_file).unwrap()).unwrap();
         assert_eq!(
             actual_state,
-            terrain_state_after_deactivate(
+            terrain_state_after_deactivate_after_succeeded(
                 state_directory.path().to_str().unwrap(),
                 TEST_SESSION_ID.to_string(),
                 is_auto_apply,

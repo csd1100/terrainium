@@ -85,10 +85,7 @@ impl AssertExecutor {
                 if should_error {
                     bail!("{}", output)
                 } else {
-                    let ec = ExitStatus::from_raw(exit_code << 8);
-                    let some = ec.code();
-                    println!("{:?}", some);
-                    Ok(ec)
+                    Ok(ExitStatus::from_raw(exit_code << 8))
                 }
             });
         self
@@ -109,10 +106,7 @@ impl AssertExecutor {
                 if should_error {
                     bail!("{}", output)
                 } else {
-                    let ec = ExitStatus::from_raw(exit_code << 8);
-                    let some = ec.code();
-                    println!("{:?}", some);
-                    Ok(ec)
+                    Ok(ExitStatus::from_raw(exit_code << 8))
                 }
             });
         self
