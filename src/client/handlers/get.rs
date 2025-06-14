@@ -487,10 +487,10 @@ Environment Variables:
 
         let expected = r#"Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo entering terrain
-        /bin/echo entering biome example_biome
+        `/bin/echo entering terrain` in terrain directory
+        `/bin/echo entering biome example_biome` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -523,10 +523,10 @@ Environment Variables:
 
         let expected = r#"Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo exiting terrain
-        /bin/echo exiting biome example_biome
+        `/bin/echo exiting terrain` in terrain directory
+        `/bin/echo exiting biome example_biome` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -571,16 +571,16 @@ Environment Variables:
     TERRAIN_SELECTED_BIOME="example_biome"
 Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo entering terrain
-        /bin/echo entering biome example_biome
+        `/bin/echo entering terrain` in terrain directory
+        `/bin/echo entering biome example_biome` in terrain directory
 Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo exiting terrain
-        /bin/echo exiting biome example_biome
+        `/bin/echo exiting terrain` in terrain directory
+        `/bin/echo exiting biome example_biome` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -619,16 +619,16 @@ Environment Variables:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo entering terrain
-        /bin/echo entering biome example_biome
+        `/bin/echo entering terrain` in terrain directory
+        `/bin/echo entering biome example_biome` in terrain directory
 Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
-        /bin/echo exiting terrain
-        /bin/echo exiting biome example_biome
+        `/bin/echo exiting terrain` in terrain directory
+        `/bin/echo exiting biome example_biome` in terrain directory
 "#;
 
         assert_eq!(output, expected);

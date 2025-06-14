@@ -20,9 +20,7 @@ fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
 
 fn get_commands(commands: &Commands) -> String {
     let cmds = |c: &Vec<Command>| -> String {
-        c.iter()
-            .map(|cmd| format!("{: <8}{} {}\n", "", cmd.exe(), cmd.args().join(" ")))
-            .collect()
+        c.iter().map(|cmd| format!("{: <8}{}\n", "", cmd)).collect()
     };
     // adds 4 spaces behind
     let mut result = format!("{: <4}background:\n", "");

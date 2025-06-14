@@ -195,7 +195,7 @@ async fn spawn_command(
         is_constructor = is_constructor,
         timestamp = timestamp,
         index = index,
-        "running command ({cmd_str})"
+        "running command {cmd_str}"
     );
 
     let mut state_mut = stored_state.write().await;
@@ -231,7 +231,7 @@ async fn spawn_command(
                     is_constructor = is_constructor,
                     timestamp = timestamp,
                     index = index,
-                    "command ({cmd_str}) completed successfully"
+                    "command {cmd_str} completed successfully"
                 );
             } else {
                 state_mut
@@ -245,7 +245,7 @@ async fn spawn_command(
                     .await?;
 
                 let error = format!(
-                    "command: ({cmd_str}) exited with code {:?}",
+                    "command: {cmd_str} exited with code {:?}",
                     exit_status.code()
                 );
                 error!(
@@ -270,7 +270,7 @@ async fn spawn_command(
                 )
                 .await?;
             let error = format!(
-                "failed to spawn command: ({cmd_str}) with an error: {:#?}",
+                "failed to spawn command: {cmd_str} with an error: {:#?}",
                 err
             );
             error!(
@@ -813,7 +813,7 @@ mod tests {
 
         assert_eq!(
             error,
-            r#"command: (/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec in '/tmp/terrain_dir') exited with code Some(1)"#
+            r#"command: `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in '/tmp/terrain_dir' exited with code Some(1)"#
         );
 
         let actual_state: TerrainState =

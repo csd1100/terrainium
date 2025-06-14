@@ -123,7 +123,7 @@ impl Display for Command {
             format!("'{cwd}'")
         };
 
-        write!(f, "{} {} in {}", self.exe, self.args.join(" "), cwd)
+        write!(f, "`{} {}` in {}", self.exe, self.args.join(" "), cwd)
     }
 }
 
