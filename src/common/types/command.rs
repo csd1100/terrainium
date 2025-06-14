@@ -110,7 +110,20 @@ impl Serialize for Command {
 
 impl Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {} in {:?}", self.exe, self.args.join(" "), self.cwd)
+        let cwd = self
+            .cwd
+            .clone()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let cwd = if cwd.is_empty() {
+            String::from("terrain directory")
+        } else {
+            format!("'{cwd}'")
+        };
+
+        write!(f, "{} {} in {}", self.exe, self.args.join(" "), cwd)
     }
 }
 

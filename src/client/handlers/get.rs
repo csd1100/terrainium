@@ -1,19 +1,8 @@
 use crate::client::args::GetArgs;
 use crate::client::types::context::Context;
-use crate::client::types::environment::{render, Environment};
+use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
-use crate::common::constants::{
-    DOES_NOT_EXIST, GET_ALIASES_TEMPLATE_NAME, GET_CONSTRUCTORS_TEMPLATE_NAME,
-    GET_DESTRUCTORS_TEMPLATE_NAME, GET_ENVS_TEMPLATE_NAME, GET_MAIN_TEMPLATE_NAME,
-};
 use anyhow::{Context as AnyhowContext, Result};
-use std::collections::BTreeMap;
-
-const GET_MAIN_TEMPLATE: &str = include_str!("../../../templates/get.hbs");
-const GET_ENVS_TEMPLATE: &str = include_str!("../../../templates/get_env.hbs");
-const GET_ALIASES_TEMPLATE: &str = include_str!("../../../templates/get_aliases.hbs");
-const GET_CONSTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/get_constructors.hbs");
-const GET_DESTRUCTORS_TEMPLATE: &str = include_str!("../../../templates/get_destructors.hbs");
 
 pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<()> {
     let output = get(context, terrain, get_args)?;
@@ -25,146 +14,39 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
     let environment = Environment::from(&terrain, get_args.biome.clone(), context.terrain_dir())
         .context("failed to generate environment")?;
 
-    let mut result = String::new();
-
     if get_args.empty() {
-        result += &all(&environment)?;
-        return Ok(result);
+        return Ok(format!("{environment}"));
     }
 
     if get_args.auto_apply {
         if context.config().auto_apply() {
-            result = terrain.auto_apply().into();
-            return Ok(result);
+            return Ok(terrain.auto_apply().into());
         }
-        result = (&AutoApply::default()).into();
-        return Ok(result);
+        return Ok((&AutoApply::default()).into());
     }
 
+    let mut result = String::new();
     if get_args.aliases {
-        result += &all_aliases(&environment)?;
+        result += &environment.merged().aliases_str(None);
     } else if !get_args.alias.is_empty() {
-        result += &alias(&get_args, &environment)?;
+        result += &environment.merged().aliases_str(Some(&get_args.alias));
     }
 
     if get_args.envs {
-        result += &all_envs(&environment)?;
+        result += &environment.merged().envs_str(None);
     } else if !get_args.env.is_empty() {
-        result += &env(&get_args, &environment)?;
+        result += &environment.merged().envs_str(Some(&get_args.env));
     }
 
     if get_args.constructors {
-        result += &constructors(&environment)?;
+        result += &environment.merged().constructors_str();
     }
 
     if get_args.destructors {
-        result += &destructors(&environment)?;
+        result += &environment.merged().destructors_str();
     }
 
     Ok(result)
-}
-
-fn destructors(environment: &Environment) -> Result<String> {
-    let destructors = environment.destructors();
-    Ok(render(
-        GET_DESTRUCTORS_TEMPLATE_NAME.to_string(),
-        templates(),
-        destructors,
-    )
-    .expect("failed to render envs in get template"))
-}
-
-fn constructors(environment: &Environment) -> Result<String> {
-    let constructors = environment.constructors();
-    Ok(render(
-        GET_CONSTRUCTORS_TEMPLATE_NAME.to_string(),
-        templates(),
-        constructors,
-    )
-    .expect("failed to render envs in get template"))
-}
-
-fn get_filtered<'a>(
-    map: &'a BTreeMap<String, String>,
-    filter: &'a [String],
-) -> BTreeMap<&'a str, &'a str> {
-    let mut result = BTreeMap::<&str, &str>::new();
-    filter.iter().for_each(|key| {
-        if let Some(value) = map.get(key) {
-            result.insert(key, value);
-        } else {
-            result.insert(key, DOES_NOT_EXIST);
-        }
-    });
-    result
-}
-
-fn env(get_args: &GetArgs, environment: &Environment) -> Result<String> {
-    let envs = environment.envs();
-    Ok(render(
-        GET_ENVS_TEMPLATE_NAME.to_string(),
-        templates(),
-        get_filtered(&envs, &get_args.env),
-    )
-    .expect("failed to render envs in get template"))
-}
-
-fn alias(get_args: &GetArgs, environment: &Environment) -> Result<String> {
-    let aliases = environment.aliases();
-    Ok(render(
-        GET_ALIASES_TEMPLATE_NAME.to_string(),
-        templates(),
-        get_filtered(&aliases, &get_args.alias),
-    )
-    .expect("failed to render aliases in get template"))
-}
-
-fn all_envs(environment: &Environment) -> Result<String> {
-    let envs = environment.envs();
-    Ok(
-        render(GET_ENVS_TEMPLATE_NAME.to_string(), templates(), envs)
-            .expect("failed to render envs in get template"),
-    )
-}
-
-fn all_aliases(environment: &Environment) -> Result<String> {
-    let aliases = environment.aliases();
-    Ok(
-        render(GET_ALIASES_TEMPLATE_NAME.to_string(), templates(), aliases)
-            .expect("failed to render aliases in get template"),
-    )
-}
-
-fn all(environment: &Environment) -> Result<String> {
-    let res = environment
-        .to_rendered(GET_MAIN_TEMPLATE_NAME.to_string(), templates())
-        .expect("get output to be rendered");
-    Ok(res)
-}
-
-fn templates() -> BTreeMap<String, String> {
-    let mut templates: BTreeMap<String, String> = BTreeMap::new();
-    templates.insert(
-        GET_MAIN_TEMPLATE_NAME.to_string(),
-        GET_MAIN_TEMPLATE.to_string(),
-    );
-    templates.insert(
-        GET_ENVS_TEMPLATE_NAME.to_string(),
-        GET_ENVS_TEMPLATE.to_string(),
-    );
-    templates.insert(
-        GET_ALIASES_TEMPLATE_NAME.to_string(),
-        GET_ALIASES_TEMPLATE.to_string(),
-    );
-    templates.insert(
-        GET_CONSTRUCTORS_TEMPLATE_NAME.to_string(),
-        GET_CONSTRUCTORS_TEMPLATE.to_string(),
-    );
-    templates.insert(
-        GET_DESTRUCTORS_TEMPLATE_NAME.to_string(),
-        GET_DESTRUCTORS_TEMPLATE.to_string(),
-    );
-    templates
 }
 
 #[cfg(test)]
@@ -605,10 +487,10 @@ Environment Variables:
 
         let expected = r#"Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo entering terrain 
-        /bin/echo entering biome example_biome 
+        /bin/echo entering terrain
+        /bin/echo entering biome example_biome
 "#;
 
         assert_eq!(output, expected);
@@ -641,10 +523,10 @@ Environment Variables:
 
         let expected = r#"Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo exiting terrain 
-        /bin/echo exiting biome example_biome 
+        /bin/echo exiting terrain
+        /bin/echo exiting biome example_biome
 "#;
 
         assert_eq!(output, expected);
@@ -689,16 +571,16 @@ Environment Variables:
     TERRAIN_SELECTED_BIOME="example_biome"
 Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo entering terrain 
-        /bin/echo entering biome example_biome 
+        /bin/echo entering terrain
+        /bin/echo entering biome example_biome
 Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo exiting terrain 
-        /bin/echo exiting biome example_biome 
+        /bin/echo exiting terrain
+        /bin/echo exiting biome example_biome
 "#;
 
         assert_eq!(output, expected);
@@ -737,16 +619,16 @@ Environment Variables:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Constructors:
     background:
-        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo entering terrain 
-        /bin/echo entering biome example_biome 
+        /bin/echo entering terrain
+        /bin/echo entering biome example_biome
 Destructors:
     background:
-        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec
     foreground:
-        /bin/echo exiting terrain 
-        /bin/echo exiting biome example_biome 
+        /bin/echo exiting terrain
+        /bin/echo exiting biome example_biome
 "#;
 
         assert_eq!(output, expected);
