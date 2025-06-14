@@ -310,7 +310,8 @@ impl Display for CommandState {
             value(self.command.exe()),
             value(&self.command.args().join(" ")),
             colored("", AnsiColor::BrightYellow),
-            value(&format!("{:?}", self.command.cwd())),
+            // cwd will be always present
+            value(self.command.cwd().clone().unwrap().to_str().unwrap()),
             colored("", AnsiColor::BrightWhite),
             sub_value(&self.log_path),
             self.status
