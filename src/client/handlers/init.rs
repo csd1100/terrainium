@@ -30,7 +30,7 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
         .context("failed to write terrain in toml file")?;
 
     if edit {
-        edit::run_editor(toml_path, context.terrain_dir())?;
+        edit::run_editor(context.executor(), toml_path, context.terrain_dir())?;
         // get updated terrain after edit
         (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
     }
@@ -42,19 +42,21 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::client::shell::Zsh;
-    use crate::client::types::context::Context;
-    use crate::client::utils::{
-        AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML,
-        WITH_EXAMPLE_TERRAIN_TOML,
+    use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::constants::{
+        IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML, WITH_EXAMPLE_TERRAIN_TOML,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::client::types::config::Config;
+    use crate::client::types::context::Context;
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
+    use crate::common::execute::MockExecutor;
+    use crate::common::types::command::Command;
     use anyhow::Result;
     use serial_test::serial;
-    use std::os::unix::prelude::ExitStatusExt;
+    use std::fs;
     use std::path::PathBuf;
-    use std::process::ExitStatus;
-    use std::{env, fs};
     use tempfile::tempdir;
 
     #[test]
@@ -63,15 +65,16 @@ pub mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         // execute
@@ -80,7 +83,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -91,15 +94,16 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         // execute
@@ -108,7 +112,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -119,15 +123,16 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         super::handle(context, false, false)
@@ -144,15 +149,16 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         fs::remove_dir(&central_dir).expect("temp directory to be removed");
@@ -174,11 +180,12 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             PathBuf::new(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            MockExecutor::new(),
         );
 
-        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
 
         fs::write(terrain_toml_path, "")?;
 
@@ -199,24 +206,25 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         super::handle(context, true, false)?;
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }
@@ -229,11 +237,12 @@ pub mod tests {
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            MockExecutor::new(),
         );
 
-        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
 
         fs::write(terrain_toml_path, "")?;
 
@@ -250,24 +259,25 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         super::handle(context, true, false)?;
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         Ok(())
     }
@@ -275,44 +285,41 @@ pub mod tests {
     #[serial]
     #[test]
     fn init_creates_and_edits_terrain_toml_in_current_dir() -> Result<()> {
-        let editor = env::var("EDITOR")?;
+        let editor = std::env::var("EDITOR")?;
 
         // setup
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
         //setup edit mock
-        let terrain_toml_path: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
-        edit_run
-            .expect_wait()
-            .with()
-            .times(1)
-            .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
-        edit_mock
-            .expect()
-            .withf(move |exe, args, envs, cwd| {
-                *exe == editor
-                    && *args == vec![terrain_toml_path.to_string_lossy()]
-                    && envs.is_some()
-                    && *cwd == terrain_dir
-            })
-            .times(1)
-            .return_once(|_, _, _, _| edit_run);
+        let expected = ExpectedCommand {
+            command: Command::new(
+                editor,
+                vec![terrain_toml_path.to_string_lossy().to_string()],
+                None,
+                Some(terrain_dir.clone()),
+            ),
+            exit_code: 0,
+            should_error: false,
+            output: String::new(),
+        };
+
+        let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(executor, current_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         // execute
@@ -321,7 +328,7 @@ pub mod tests {
         // assertions
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }
@@ -329,53 +336,50 @@ pub mod tests {
     #[serial]
     #[test]
     fn init_creates_and_edits_terrain_toml_in_central_dir() -> Result<()> {
-        let editor = env::var("EDITOR")?;
+        let editor = std::env::var("EDITOR")?;
 
         // setup
-        let current_dir = tempdir()?;
+        let terrain_dir = tempdir()?;
         let central_dir = tempdir()?;
 
         //setup edit mock
-        let terrain_toml_path: PathBuf = central_dir.path().join("terrain.toml");
-        let terrain_dir_path = current_dir.path().to_path_buf();
+        let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
+        let terrain_dir_path = terrain_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
-        edit_run
-            .expect_wait()
-            .with()
-            .times(1)
-            .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
-        edit_mock
-            .expect()
-            .withf(move |exe, args, envs, cwd| {
-                *exe == editor
-                    && envs.is_some()
-                    && *cwd == terrain_dir_path
-                    && *args == vec![terrain_toml_path.to_string_lossy()]
-            })
-            .times(1)
-            .return_once(|_, _, _, _| edit_run);
+        let expected = ExpectedCommand {
+            command: Command::new(
+                editor,
+                vec![terrain_toml_path.to_string_lossy().to_string()],
+                None,
+                Some(terrain_dir_path.clone()),
+            ),
+            exit_code: 0,
+            should_error: false,
+            output: String::new(),
+        };
+
+        let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(executor, terrain_dir.path().to_path_buf())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
-            current_dir.path().into(),
+            terrain_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
         // execute
         super::handle(context, false, true)?;
 
         // assertions
-        AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
+        AssertTerrain::with_dirs(terrain_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EMPTY_TERRAIN_TOML)
-            .script_was_created_for("none");
+            .script_was_created_for(NONE);
 
         Ok(())
     }

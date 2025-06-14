@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package terrainium.v1;
+
+import "terrainium/v1/command.proto";
+
+message Deactivate {
+  string session_id = 1;
+  string terrain_name = 2;
+  string end_timestamp = 3;
+  Execute destructors = 4;
+}

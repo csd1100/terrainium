@@ -10,18 +10,20 @@ Environment Variables:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 

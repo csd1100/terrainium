@@ -1,4 +1,4 @@
-use crate::client::args::{option_string_from, GetArgs};
+use crate::client::args::GetArgs;
 use crate::client::types::context::Context;
 use crate::client::types::environment::{render, Environment};
 use crate::client::types::terrain::{AutoApply, Terrain};
@@ -22,9 +22,7 @@ pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<(
 }
 
 fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> {
-    let selected_biome = option_string_from(&get_args.biome);
-
-    let environment = Environment::from(&terrain, selected_biome, context.terrain_dir())
+    let environment = Environment::from(&terrain, get_args.biome.clone(), context.terrain_dir())
         .context("failed to generate environment")?;
 
     let mut result = String::new();
@@ -36,10 +34,10 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
 
     if get_args.auto_apply {
         if context.config().auto_apply() {
-            result = terrain.auto_apply().clone().into();
+            result = terrain.auto_apply().into();
             return Ok(result);
         }
-        result = AutoApply::default().into();
+        result = (&AutoApply::default()).into();
         return Ok(result);
     }
 
@@ -86,40 +84,37 @@ fn constructors(environment: &Environment) -> Result<String> {
     .expect("failed to render envs in get template"))
 }
 
-fn env(get_args: &GetArgs, environment: &Environment) -> Result<String> {
-    let envs = environment.envs();
-    let mut requested = BTreeMap::<String, String>::new();
-
-    get_args.env.clone().iter().for_each(|env| {
-        if let Some(value) = envs.get(env) {
-            requested.insert(env.to_string(), value.to_string());
+fn get_filtered<'a>(
+    map: &'a BTreeMap<String, String>,
+    filter: &'a [String],
+) -> BTreeMap<&'a str, &'a str> {
+    let mut result = BTreeMap::<&str, &str>::new();
+    filter.iter().for_each(|key| {
+        if let Some(value) = map.get(key) {
+            result.insert(key, value);
         } else {
-            requested.insert(env.to_string(), DOES_NOT_EXIST.to_string());
+            result.insert(key, DOES_NOT_EXIST);
         }
     });
+    result
+}
 
-    Ok(
-        render(GET_ENVS_TEMPLATE_NAME.to_string(), templates(), requested)
-            .expect("failed to render envs in get template"),
+fn env(get_args: &GetArgs, environment: &Environment) -> Result<String> {
+    let envs = environment.envs();
+    Ok(render(
+        GET_ENVS_TEMPLATE_NAME.to_string(),
+        templates(),
+        get_filtered(&envs, &get_args.env),
     )
+    .expect("failed to render envs in get template"))
 }
 
 fn alias(get_args: &GetArgs, environment: &Environment) -> Result<String> {
     let aliases = environment.aliases();
-    let mut requested = BTreeMap::<String, String>::new();
-
-    get_args.alias.clone().iter().for_each(|alias| {
-        if let Some(value) = aliases.get(alias) {
-            requested.insert(alias.to_string(), value.to_string());
-        } else {
-            requested.insert(alias.to_string(), DOES_NOT_EXIST.to_string());
-        }
-    });
-
     Ok(render(
         GET_ALIASES_TEMPLATE_NAME.to_string(),
         templates(),
-        requested,
+        get_filtered(&aliases, &get_args.alias),
     )
     .expect("failed to render aliases in get template"))
 }
@@ -175,30 +170,29 @@ fn templates() -> BTreeMap<String, String> {
 #[cfg(test)]
 mod tests {
     use crate::client::args::{BiomeArg, GetArgs};
-    use crate::client::shell::Zsh;
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::set_auto_apply;
     use crate::client::types::terrain::Terrain;
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::constants::EXAMPLE_BIOME;
+    use crate::common::execute::MockExecutor;
     use anyhow::Result;
-    use serial_test::serial;
     use std::fs::read_to_string;
     use std::path::PathBuf;
     use std::str::FromStr;
 
-    #[serial]
     #[test]
     fn get_all_for_default_biome() -> Result<()> {
         let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -224,11 +218,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -254,11 +249,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::from_str("example_biome")?),
+            biome: BiomeArg::from_str(EXAMPLE_BIOME)?,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -284,11 +280,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -315,11 +312,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some("example_biome".to_string())),
+            biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: true,
             envs: false,
             alias: vec![],
@@ -346,11 +344,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::None,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -374,11 +373,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -396,6 +396,8 @@ mod tests {
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -409,11 +411,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: Some(BiomeArg::Some("example_biome".to_string())),
+            biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: false,
             envs: true,
             alias: vec![],
@@ -431,6 +434,8 @@ mod tests {
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -444,11 +449,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -459,7 +465,10 @@ mod tests {
         };
 
         let output = super::get(context, Terrain::default(), args).expect("to not throw an error");
-        let expected = "";
+        let expected = r#"Environment Variables:
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="none"
+"#;
 
         assert_eq!(output, expected);
 
@@ -472,11 +481,12 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: true,
             alias: vec![],
@@ -497,6 +507,8 @@ Environment Variables:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -510,11 +522,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -541,11 +554,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -572,11 +586,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -590,7 +605,7 @@ Environment Variables:
 
         let expected = r#"Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
@@ -607,11 +622,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec![],
@@ -625,7 +641,7 @@ Environment Variables:
 
         let expected = r#"Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -642,11 +658,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: true,
             alias: vec![],
@@ -668,15 +685,17 @@ Environment Variables:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -693,11 +712,12 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: false,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -717,13 +737,13 @@ Environment Variables:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Constructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo entering terrain 
         /bin/echo entering biome example_biome 
 Destructors:
     background:
-        /bin/bash -c $PWD/tests/scripts/print_num_for_10_sec 
+        /bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec 
     foreground:
         /bin/echo exiting terrain 
         /bin/echo exiting biome example_biome 
@@ -740,11 +760,12 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -774,11 +795,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec!["tenter".to_string(), "non_existent".to_string()],
@@ -799,6 +821,8 @@ Environment Variables:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -812,11 +836,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],
@@ -827,7 +852,7 @@ Environment Variables:
         };
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "enable");
+        set_auto_apply(&mut terrain, "enabled");
 
         let output = super::get(context, terrain, args).expect("to not throw an error");
         let expected = "enabled";
@@ -843,11 +868,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -861,7 +887,7 @@ Environment Variables:
         set_auto_apply(&mut terrain, "replace");
 
         let output = super::get(context, terrain, args).expect("to not throw an error");
-        let expected = "replaced";
+        let expected = "replace";
 
         assert_eq!(output, expected);
 
@@ -874,11 +900,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -905,11 +932,12 @@ Environment Variables:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Zsh::build(MockCommandToRun::default()),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: false,
             envs: true,
             alias: vec![],
@@ -932,16 +960,16 @@ Environment Variables:
 
     #[test]
     fn get_auto_apply_globally_off() -> Result<()> {
-        let context = Context::build_with_config(
+        let context = Context::build(
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
             Config::auto_apply_off(),
-            Zsh::build(MockCommandToRun::default()),
+            MockExecutor::new(),
         );
 
         let args = GetArgs {
-            biome: None,
+            biome: BiomeArg::Default,
             aliases: true,
             envs: false,
             alias: vec![],

@@ -3,5 +3,8 @@ Auto Apply:
     enabled: false
     replace: false
     background: false
+Environment Variables:
+    TERRAIN_DIR=""
+    TERRAIN_SELECTED_BIOME="none"
 Constructors:
 Destructors:

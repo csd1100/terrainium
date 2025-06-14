@@ -1,31 +1,25 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Terrain",
   "type": "object",
-  "required": [
-    "auto_apply",
-    "biomes",
-    "name",
-    "terrain"
-  ],
   "properties": {
     "schema": {
-      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json",
-      "type": "string"
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
     },
     "name": {
       "type": "string"
     },
     "auto_apply": {
-      "$ref": "#/definitions/AutoApply"
+      "$ref": "#/$defs/AutoApply"
     },
     "terrain": {
-      "$ref": "#/definitions/Biome"
+      "$ref": "#/$defs/Biome"
     },
     "biomes": {
       "type": "object",
       "additionalProperties": {
-        "$ref": "#/definitions/Biome"
+        "$ref": "#/$defs/Biome"
       }
     },
     "default_biome": {
@@ -35,14 +29,15 @@
       ]
     }
   },
-  "definitions": {
+  "required": [
+    "name",
+    "auto_apply",
+    "terrain",
+    "biomes"
+  ],
+  "$defs": {
     "AutoApply": {
       "type": "object",
-      "required": [
-        "background",
-        "enabled",
-        "replace"
-      ],
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -53,16 +48,15 @@
         "replace": {
           "type": "boolean"
         }
-      }
+      },
+      "required": [
+        "enabled",
+        "background",
+        "replace"
+      ]
     },
     "Biome": {
       "type": "object",
-      "required": [
-        "aliases",
-        "constructors",
-        "destructors",
-        "envs"
-      ],
       "properties": {
         "envs": {
           "type": "object",
@@ -77,40 +71,42 @@
           }
         },
         "constructors": {
-          "$ref": "#/definitions/Commands"
+          "$ref": "#/$defs/Commands"
         },
         "destructors": {
-          "$ref": "#/definitions/Commands"
+          "$ref": "#/$defs/Commands"
         }
-      }
+      },
+      "required": [
+        "envs",
+        "aliases",
+        "constructors",
+        "destructors"
+      ]
     },
     "Commands": {
       "type": "object",
-      "required": [
-        "background",
-        "foreground"
-      ],
       "properties": {
         "foreground": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Command"
+            "$ref": "#/$defs/Command"
           }
         },
         "background": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Command"
+            "$ref": "#/$defs/Command"
           }
         }
-      }
+      },
+      "required": [
+        "foreground",
+        "background"
+      ]
     },
     "Command": {
       "type": "object",
-      "required": [
-        "args",
-        "exe"
-      ],
       "properties": {
         "exe": {
           "type": "string"
@@ -127,7 +123,11 @@
             "null"
           ]
         }
-      }
+      },
+      "required": [
+        "exe",
+        "args"
+      ]
     }
   }
 }

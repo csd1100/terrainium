@@ -2,16 +2,15 @@ use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
+use crate::common::constants::JSON;
 use crate::common::types::pb;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::cmp::PartialEq;
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashSet};
-use std::env;
 use std::fmt::Display;
-use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
@@ -53,29 +52,105 @@ impl Display for OperationType {
     }
 }
 
+fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("PATH") {
+        for p in path.split(':') {
+            let p_str = format!("{p}/{exe}");
+            if std::fs::metadata(&p_str).is_ok() {
+                return Some(PathBuf::from(p_str));
+            }
+        }
+    }
+    None
+}
+
+fn is_executable(path: &Path) -> bool {
+    let md = std::fs::metadata(path);
+    if md.is_err() {
+        return false;
+    }
+    let permissions = md.unwrap().permissions();
+    let mode = permissions.mode();
+
+    mode & 0o111 != 0
+}
+
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct Command {
+#[derive(Debug, PartialEq, Clone, Hash, Eq, Deserialize)]
+pub struct Command {
     exe: String,
     args: Vec<String>,
+    // do not serialize envs for terrain.toml
+    #[cfg_attr(feature = "terrain-schema", schemars(skip))]
+    #[serde(skip_serializing)]
+    envs: Option<BTreeMap<String, String>>,
     cwd: Option<PathBuf>,
 }
 
+impl Serialize for Command {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let type_name = std::any::type_name::<S>();
+        let is_json = type_name.contains(JSON);
+
+        let mut command = serializer.serialize_struct("Command", if is_json { 4 } else { 3 })?;
+        command.serialize_field("exe", &self.exe)?;
+        command.serialize_field("args", &self.args)?;
+        // do serialize envs for command state but do not serialize for toml
+        // as for terrain.toml we have common env vars specified
+        if is_json {
+            command.serialize_field("envs", &self.envs)?;
+        }
+        command.serialize_field("cwd", &self.cwd)?;
+        command.end()
+    }
+}
+
+impl Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} in {:?}", self.exe, self.args.join(" "), self.cwd)
+    }
+}
+
 impl Command {
-    pub(crate) fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {
-        Command { exe, args, cwd }
+    pub fn new(
+        exe: String,
+        args: Vec<String>,
+        envs: Option<BTreeMap<String, String>>,
+        cwd: Option<PathBuf>,
+    ) -> Self {
+        Command {
+            exe,
+            args,
+            envs,
+            cwd,
+        }
     }
 
-    pub(crate) fn exe(&self) -> &str {
+    pub fn exe(&self) -> &str {
         &self.exe
     }
 
-    pub(crate) fn args(&self) -> &[String] {
+    pub fn args(&self) -> &[String] {
         &self.args
     }
 
-    pub(crate) fn cwd(&self) -> Option<PathBuf> {
-        self.cwd.clone()
+    pub fn cwd(&self) -> &Option<PathBuf> {
+        &self.cwd
+    }
+
+    pub fn set_args(&mut self, args: Vec<String>) {
+        self.args = args;
+    }
+
+    pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
+        self.envs = envs;
+    }
+
+    pub fn set_cwd(&mut self, cwd: Option<PathBuf>) {
+        self.cwd = cwd;
     }
 
     pub(crate) fn substitute_cwd(
@@ -144,7 +219,7 @@ impl Command {
         if trimmed.contains(" ") {
             result.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!("exe '{}' contains whitespaces.", &self.exe,),
+                message: format!("exe '{}' contains whitespaces.", &self.exe),
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                 fix_action: ValidationFixAction::None,
             });
@@ -274,45 +349,96 @@ impl Command {
     }
 }
 
-fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
-    if let Ok(path) = env::var("PATH") {
-        for p in path.split(':') {
-            let p_str = format!("{p}/{exe}");
-            if fs::metadata(&p_str).is_ok() {
-                return Some(PathBuf::from(p_str));
-            }
-        }
+impl From<Command> for std::process::Command {
+    fn from(value: Command) -> std::process::Command {
+        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
+        let envs = if let Some(mut envs) = value.envs {
+            vars.append(&mut envs);
+            vars
+        } else {
+            vars
+        };
+        let mut command = std::process::Command::new(value.exe);
+        command
+            .args(value.args)
+            .envs(envs)
+            .current_dir(value.cwd.expect("cwd to be present"));
+        command
     }
-    None
 }
 
-fn is_executable(path: &Path) -> bool {
-    let md = fs::metadata(path);
-    if md.is_err() {
-        return false;
+impl From<Command> for tokio::process::Command {
+    fn from(value: Command) -> tokio::process::Command {
+        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
+        let envs = if let Some(mut envs) = value.envs {
+            vars.append(&mut envs);
+            vars
+        } else {
+            vars
+        };
+        let mut command = tokio::process::Command::new(value.exe);
+        command
+            .args(value.args)
+            .envs(envs)
+            .current_dir(value.cwd.expect("cwd to be present"));
+        command
     }
-    let permissions = md.unwrap().permissions();
-    let mode = permissions.mode();
-
-    mode & 0o111 != 0
 }
 
-impl TryFrom<Command> for pb::Command {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Command) -> Result<Self> {
-        if value.cwd.is_none() {
-            return Err(anyhow!(
-                "'cwd' is required for command exe:'{}', args: '{}'",
-                value.exe,
-                value.args.join(" ")
-            ));
+impl From<Command> for pb::Command {
+    fn from(value: Command) -> Self {
+        let Command {
+            exe,
+            args,
+            envs,
+            cwd,
+        } = value;
+        Self {
+            exe,
+            args,
+            envs: envs.unwrap_or_default(),
+            cwd: cwd.unwrap().to_string_lossy().to_string(),
         }
-        Ok(pb::Command {
+    }
+}
+
+impl From<pb::Command> for Command {
+    fn from(value: pb::Command) -> Self {
+        Self {
             exe: value.exe,
             args: value.args,
-            envs: BTreeMap::default(),
-            cwd: value.cwd.unwrap().to_string_lossy().to_string(),
-        })
+            envs: Some(value.envs),
+            cwd: Some(PathBuf::from(value.cwd)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn does_not_serialize_envs_to_toml() {
+        let mut envs = BTreeMap::<String, String>::new();
+        envs.insert("TEST".to_string(), "value".to_string());
+
+        let command = Command::new("test".to_string(), vec![], Some(envs), None);
+
+        assert_eq!(
+            "exe = \"test\"\nargs = []\n",
+            toml::to_string(&command).unwrap()
+        );
+    }
+
+    #[test]
+    fn does_serialize_envs_to_json() {
+        let mut envs = BTreeMap::<String, String>::new();
+        envs.insert("TEST".to_string(), "value".to_string());
+
+        let command = Command::new("test".to_string(), vec![], Some(envs), None);
+
+        assert_eq!(
+            r#"{"exe":"test","args":[],"envs":{"TEST":"value"},"cwd":null}"#,
+            serde_json::to_string(&command).unwrap()
+        );
     }
 }

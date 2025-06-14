@@ -1,12 +1,12 @@
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
 use std::env::current_dir;
-use terrainium::client::args::{ClientArgs, GetArgs, UpdateArgs, Verbs};
+use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
 use terrainium::client::handlers::{
-    construct, destruct, edit, enter, exit, generate, get, init, update,
+    construct, destruct, edit, enter, exit, generate, get, init, status, update,
 };
 use terrainium::client::logging::init_logging;
 use terrainium::client::shell::{Shell, Zsh};
@@ -14,26 +14,17 @@ use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
-use tracing::metadata::LevelFilter;
-use tracing::Level;
+use terrainium::common::execute::Executor;
+use terrainium::common::types::styles::warning;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = ClientArgs::parse();
-
-    // need to keep _out_guard in scope till program exits for logger to work
-    let (subscriber, _out_guard) = if matches!(args.command, Some(Verbs::Validate)) {
-        // if validate show debug level logs
-        init_logging(LevelFilter::from(Level::DEBUG))
-    } else {
-        init_logging(LevelFilter::from(args.options.log_level))
-    };
-
-    if !matches!(args.command, Some(Verbs::Get { debug: false, .. })) {
-        // do not print any logs for get command as output will be used by scripts
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("unable to set global subscriber");
+    if cfg!(debug_assertions) {
+        println!("{}: you are running debug build of terrainium, which might cause some unwanted behavior.",warning("WARNING"));
     }
+
+    let args = ClientArgs::parse();
+    let _out_guard = init_logging(&args);
 
     match args.command {
         None => {
@@ -42,9 +33,7 @@ async fn main() -> Result<()> {
             } else if args.options.create_config {
                 Config::create_file().context("failed to create config file")?;
             } else {
-                return Err(anyhow!(
-                    "must pass argument or command, run with --help for more information."
-                ));
+                bail!("must pass argument or command, run with --help for more information.");
             }
         }
         Some(verbs) => {
@@ -57,27 +46,30 @@ async fn main() -> Result<()> {
                 edit,
             } = verbs
             {
-                let context = Context::create(home_dir, current_dir, central)?;
+                let context = Context::create(home_dir, current_dir, Executor, central)?;
                 return init::handle(context, example, edit)
                     .context("failed to initialize new terrain");
             }
 
-            let context = Context::get(home_dir, current_dir)?;
+            let context = Context::get(home_dir, current_dir, Executor)?;
+
+            if let Verbs::Edit = verbs {
+                return edit::handle(context).context("failed to edit the terrain");
+            }
+
             let (terrain, terrain_toml) = Terrain::get_validated_and_fixed_terrain(&context)?;
 
             match verbs {
-                Verbs::Init { .. } => {
+                Verbs::Init { .. } | Verbs::Edit => {
                     // no need to do anything as it is handled above
                 }
-
-                Verbs::Edit => edit::handle(context).context("failed to edit the terrain")?,
 
                 Verbs::Generate => generate::handle(context, terrain)
                     .context("failed to generate scripts for the terrain")?,
 
                 Verbs::Validate => {
                     // create environments to run environment validations inside `Environment::from`
-                    Environment::from(&terrain, None, context.terrain_dir())?;
+                    Environment::from(&terrain, BiomeArg::None, context.terrain_dir())?;
                     let res: Result<Vec<Environment>> = terrain
                         .biomes()
                         .iter()
@@ -85,7 +77,7 @@ async fn main() -> Result<()> {
                             // create environments to run environment validations
                             Environment::from(
                                 &terrain,
-                                Some(biome_name.to_string()),
+                                BiomeArg::Some(biome_name.to_string()),
                                 context.terrain_dir(),
                             )
                         })
@@ -95,7 +87,6 @@ async fn main() -> Result<()> {
                 }
 
                 Verbs::Get {
-                    debug: _debug,
                     biome,
                     aliases,
                     envs,
@@ -104,6 +95,7 @@ async fn main() -> Result<()> {
                     constructors,
                     destructors,
                     auto_apply,
+                    ..
                 } => get::handle(
                     context,
                     terrain,
@@ -155,13 +147,20 @@ async fn main() -> Result<()> {
                 Verbs::Enter { biome, auto_apply } => {
                     enter::handle(context, biome, terrain, auto_apply, None)
                         .await
-                        .context("failed to run enter the terrain")?
+                        .context("failed to enter the terrain")?
                 }
 
                 Verbs::Exit => exit::handle(context, terrain, None)
                     .await
                     .context("failed to exit the terrain")?,
 
+                Verbs::Status {
+                    json,
+                    recent,
+                    session_id,
+                } => status::handle(context, terrain, json, session_id, recent, None)
+                    .await
+                    .context("failed to get the terrain status")?,
                 #[cfg(feature = "terrain-schema")]
                 Verbs::Schema => schema::handle().context("failed to generate schema")?,
             }

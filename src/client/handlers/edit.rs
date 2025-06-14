@@ -1,17 +1,23 @@
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-#[mockall_double::double]
-use crate::common::execute::CommandToRun;
 use crate::common::execute::Execute;
+#[mockall_double::double]
+use crate::common::execute::Executor;
+use crate::common::types::command::Command;
 use anyhow::{Context as AnyhowContext, Result};
 use std::path::Path;
-use tracing::{event, Level};
+use std::sync::Arc;
+use tracing::info;
 
 const EDITOR: &str = "EDITOR";
 
 pub fn handle(context: Context) -> Result<()> {
-    run_editor(context.toml_path(), context.terrain_dir())?;
+    run_editor(
+        context.executor(),
+        context.toml_path(),
+        context.terrain_dir(),
+    )?;
 
     let (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context)?;
     context.shell().generate_scripts(&context, terrain)?;
@@ -19,26 +25,28 @@ pub fn handle(context: Context) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
+pub(crate) fn run_editor(
+    executor: &Arc<Executor>,
+    toml_path: &Path,
+    terrain_dir: &Path,
+) -> Result<()> {
     let editor = std::env::var(EDITOR).unwrap_or_else(|_| {
-        event!(
-            Level::INFO,
-            "the environment variable EDITOR not set. using 'vi' as text editor"
-        );
+        info!("the environment variable EDITOR not set. using 'vi' as text editor");
         "vi".to_string()
     });
 
-    let edit = CommandToRun::new(
+    let command = Command::new(
         editor,
         vec![toml_path
             .to_string_lossy()
             .parse()
             .context(format!("failed to convert path {:?} to string", toml_path))?],
-        Some(std::env::vars().collect()),
-        terrain_dir,
+        None,
+        Some(terrain_dir.to_path_buf()),
     );
 
-    edit.wait()
+    executor
+        .wait(command)
         .context(format!("failed to edit file {:?}", toml_path))?;
 
     Ok(())
@@ -46,20 +54,22 @@ pub(crate) fn run_editor(toml_path: &Path, terrain_dir: &Path) -> Result<()> {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::client::shell::Zsh;
-    use crate::client::types::context::Context;
-    use crate::client::utils::{
-        restore_env_var, set_env_var, AssertTerrain, ExpectShell, IN_CENTRAL_DIR, IN_CURRENT_DIR,
-        WITH_EXAMPLE_TERRAIN_TOML,
+    use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
+    use crate::client::test_utils::assertions::terrain::AssertTerrain;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::constants::{
+        IN_CENTRAL_DIR, IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::client::test_utils::{restore_env_var, set_env_var};
+    use crate::client::types::config::Config;
+    use crate::client::types::context::Context;
+    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
+    use crate::common::types::command::Command;
     use anyhow::Result;
     use fs::{copy, create_dir_all};
     use serial_test::serial;
     use std::fs;
-    use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
-    use std::process::ExitStatus;
     use tempfile::tempdir;
 
     pub(crate) const EDITOR: &str = "EDITOR";
@@ -72,41 +82,38 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
-        edit_run
-            .expect_wait()
-            .with()
-            .times(1)
-            .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
-        edit_mock
-            .expect()
-            .withf(move |exe, args, envs, cwd| {
-                exe == &"vim".to_string()
-                    && *args == vec![terrain_toml.to_string_lossy()]
-                    && envs.is_some()
-                    && *cwd == terrain_dir
-            })
-            .times(1)
-            .return_once(|_, _, _, _| edit_run);
+        let expected = ExpectedCommand {
+            command: Command::new(
+                "vim".to_string(),
+                vec![terrain_toml.to_string_lossy().to_string()],
+                None,
+                Some(terrain_dir.clone()),
+            ),
+            exit_code: 0,
+            should_error: false,
+            output: String::new(),
+        };
+
+        let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when edit
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let script_dir = central_dir.path().join("scripts");
@@ -116,8 +123,8 @@ pub(crate) mod tests {
 
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -131,41 +138,38 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
-        edit_run
-            .expect_wait()
-            .with()
-            .times(1)
-            .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
-        edit_mock
-            .expect()
-            .withf(move |exe, args, envs, cwd| {
-                exe == &"vim".to_string()
-                    && *args == vec![terrain_toml.to_string_lossy()]
-                    && envs.is_some()
-                    && *cwd == terrain_dir
-            })
-            .times(1)
-            .return_once(|_, _, _, _| edit_run);
+        let expected = ExpectedCommand {
+            command: Command::new(
+                "vim".to_string(),
+                vec![terrain_toml.to_string_lossy().to_string()],
+                None,
+                Some(terrain_dir.clone()),
+            ),
+            exit_code: 0,
+            should_error: false,
+            output: String::new(),
+        };
 
-        // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = AssertExecutor::to().wait_for(expected);
+
+        // setup mock to assert scripts are compiled when edit
+        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            central_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            central_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
-        let terrain_toml: PathBuf = central_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
@@ -177,8 +181,8 @@ pub(crate) mod tests {
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CENTRAL_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())
@@ -193,41 +197,38 @@ pub(crate) mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         let terrain_dir = current_dir.path().to_path_buf();
 
-        let mut edit_run = MockCommandToRun::default();
-        edit_run
-            .expect_wait()
-            .with()
-            .times(1)
-            .return_once(|| Ok(ExitStatus::from_raw(0)));
-        let edit_mock = MockCommandToRun::new_context();
-        edit_mock
-            .expect()
-            .withf(move |exe, args, envs, cwd| {
-                exe == &"vi".to_string()
-                    && *args == vec![terrain_toml.to_string_lossy()]
-                    && envs.is_some()
-                    && *cwd == terrain_dir
-            })
-            .times(1)
-            .return_once(|_, _, _, _| edit_run);
+        let expected = ExpectedCommand {
+            command: Command::new(
+                "vi".to_string(),
+                vec![terrain_toml.to_string_lossy().to_string()],
+                None,
+                Some(terrain_dir.clone()),
+            ),
+            exit_code: 0,
+            should_error: false,
+            output: String::new(),
+        };
 
-        // setup mock to assert scripts are compiled when init
-        let expected_shell_operation = ExpectShell::to()
-            .compile_terrain_script_for("example_biome", central_dir.path())
-            .compile_terrain_script_for("none", central_dir.path())
+        let executor = AssertExecutor::to().wait_for(expected);
+
+        // setup mock to assert scripts are compiled when edit
+        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+            .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
+            .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
         let context: Context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operation),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
         );
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
@@ -239,8 +240,8 @@ pub(crate) mod tests {
         // assert example_biome script is created
         AssertTerrain::with_dirs(current_dir.path(), central_dir.path())
             .was_initialized(IN_CURRENT_DIR, WITH_EXAMPLE_TERRAIN_TOML)
-            .script_was_created_for("none")
-            .script_was_created_for("example_biome");
+            .script_was_created_for(NONE)
+            .script_was_created_for(EXAMPLE_BIOME);
 
         restore_env_var(EDITOR.to_string(), editor);
         Ok(())

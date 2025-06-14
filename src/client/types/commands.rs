@@ -1,10 +1,11 @@
-use crate::client::types::command::{Command, CommandsType, OperationType};
 use crate::client::validation::ValidationResults;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
+use crate::common::types::command::{Command, CommandsType, OperationType};
+use crate::common::types::pb;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 
@@ -51,6 +52,20 @@ impl Commands {
 
     pub(crate) fn background_mut(&mut self) -> &mut Vec<Command> {
         self.background.as_mut()
+    }
+
+    pub(crate) fn to_proto_commands(
+        &self,
+        envs: BTreeMap<String, String>,
+    ) -> Result<Vec<pb::Command>> {
+        self.background()
+            .iter()
+            .map(|c| {
+                let mut cmd: pb::Command = c.clone().into();
+                cmd.envs = envs.clone();
+                Ok(cmd)
+            })
+            .collect()
     }
 
     pub(crate) fn validate_commands<'a>(

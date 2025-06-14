@@ -1,783 +1,742 @@
-use crate::client::args::{option_string_from, BiomeArg};
-use crate::client::handlers::background;
+use crate::client::args::BiomeArg;
+use crate::client::handlers::background::execute_request;
 use crate::client::shell::Shell;
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
+use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED};
-use anyhow::{Context as AnyhowContext, Result};
+use crate::common::constants::{
+    DEBUG_PATH, PATH, TERRAINIUMD_SOCKET, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED,
+    TERRAIN_SESSION_ID, TRUE,
+};
+use crate::common::types::pb;
+use crate::common::utils::timestamp;
+use anyhow::{bail, Context as AnyhowContext, Result};
+use std::path::PathBuf;
+use uuid::Uuid;
 
 pub async fn handle(
     context: Context,
-    biome_arg: Option<BiomeArg>,
+    biome: BiomeArg,
     terrain: Terrain,
-    auto_apply: bool,
+    is_auto_apply: bool,
     client: Option<Client>,
 ) -> Result<()> {
-    let biome = option_string_from(&biome_arg);
-    let (selected_name, _) = terrain.select_biome(&biome)?;
-    let environment = Environment::from(&terrain, biome, context.terrain_dir())
+    let context = if cfg!(test) {
+        // tests should have already set session id
+        if context.session_id().is_none() {
+            bail!("session_id is expected when running tests");
+        }
+        context
+    } else {
+        // uuid is randomly generated
+        context.set_session_id(Uuid::new_v4().to_string())
+    };
+
+    let mut environment = Environment::from(&terrain, biome, context.terrain_dir())
         .context("failed to generate environment")?;
 
-    let mut envs = environment.envs();
-    envs.insert(TERRAIN_ENABLED.to_string(), "true".to_string());
-    envs.append(&mut context.terrainium_envs().clone());
-
-    let mut zsh_envs = context
+    let zsh_envs = context
         .shell()
-        .generate_envs(&context, selected_name.to_string())?;
-    envs.append(&mut zsh_envs);
+        .generate_envs(&context, environment.selected_biome())?;
+    environment.append_envs(zsh_envs);
 
-    if auto_apply {
-        envs.insert(
+    environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+    environment.insert_env(
+        TERRAIN_SESSION_ID.to_string(),
+        context
+            .session_id()
+            .expect("session id to be set")
+            .to_string(),
+    );
+    if is_auto_apply {
+        environment.insert_env(
             TERRAIN_AUTO_APPLY.to_string(),
-            terrain.auto_apply().clone().into(),
+            environment.auto_apply().into(),
         );
     }
 
-    if auto_apply && !terrain.auto_apply().is_background() {
-        context
-            .shell()
-            .spawn(envs)
-            .await
-            .context("failed to enter terrain environment")?;
+    let is_background = !is_auto_apply || environment.auto_apply().is_background();
+
+    let mut shell_envs = environment.envs();
+    if cfg!(debug_assertions) && shell_envs.get(TERRAINIUM_DEV).is_some_and(|v| v == "true") {
+        let path = std::env::var(PATH).context("expected environment variable PATH")?;
+        let debug_path = context.terrain_dir().join(DEBUG_PATH);
+        let path = format!("{}:{path}", debug_path.display());
+        shell_envs.insert(PATH.to_string(), path);
+    }
+
+    let result = tokio::join!(
+        context.shell().spawn(shell_envs),
+        send_activate_request(client, &context, environment, is_background)
+    );
+
+    if let Err(e) = result.0 {
+        bail!("failed to spawn shell while entering terrain environment: {e}");
     } else {
-        let result = tokio::join!(
-            context.shell().spawn(envs.clone()),
-            background::handle(
-                &context,
-                CONSTRUCTORS,
-                terrain,
-                biome_arg,
-                Some(envs),
-                client
-            ),
-        );
-
-        if let Err(e) = result.0 {
-            anyhow::bail!(
-                "failed to spawn background processes while entering terrain environment: {e}",
-            );
+        let exit = result.0?;
+        if !exit.success() {
+            bail!("spawned shell exited with code: {:?}", exit.code());
         }
-
-        if let Err(e) = result.1 {
-            anyhow::bail!("failed to spawn shell while entering terrain environment: {e}");
-        }
+    }
+    if let Err(e) = result.1 {
+        bail!("failed to spawn background processes while entering terrain environment: {e}");
     }
 
     Ok(())
 }
 
+async fn send_activate_request(
+    client: Option<Client>,
+    context: &Context,
+    environment: Environment,
+    is_background: bool,
+) -> Result<()> {
+    let mut client = if let Some(client) = client {
+        client
+    } else {
+        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+    };
+
+    client
+        .request(ProtoRequest::Activate(activate_request(
+            context,
+            environment,
+            is_background,
+        )?))
+        .await?;
+
+    Ok(())
+}
+
+fn activate_request(
+    context: &Context,
+    environment: Environment,
+    is_background: bool,
+) -> Result<pb::Activate> {
+    let timestamp = timestamp();
+
+    let terrain_name = environment.name().to_owned();
+    let biome_name = environment.selected_biome().to_owned();
+
+    let constructors = if is_background {
+        execute_request(context, environment, true, timestamp.clone())
+            .context("failed to create constructors request")?
+    } else {
+        None
+    };
+
+    Ok(pb::Activate {
+        session_id: context
+            .session_id()
+            .expect("session id to be set")
+            .to_string(),
+        terrain_name,
+        biome_name,
+        terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
+        toml_path: context.toml_path().display().to_string(),
+        start_timestamp: timestamp,
+        is_background,
+        constructors,
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::client::shell::Zsh;
+    use crate::client::args::BiomeArg;
+    use crate::client::test_utils::assertions::client::ExpectClient;
+    use crate::client::test_utils::assertions::zsh::ExpectZSH;
+    use crate::client::test_utils::expected_env_vars_none;
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
-    use crate::client::types::terrain::tests::set_auto_apply;
-    use crate::client::types::terrain::Terrain;
-    use crate::client::utils::{AssertExecuteRequest, ExpectShell, RunCommand};
+    use crate::client::types::proto::ProtoRequest;
+    use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{
-        CONSTRUCTORS, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+        FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
+        TERRAIN_INIT_SCRIPT, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
     };
-    use crate::common::types::pb::ExecuteResponse;
-    use prost_types::Any;
-    use tempfile::tempdir;
-    use tokio::fs::copy;
+    use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::{
+        expected_activate_request_example_biome, expected_envs_with_activate_example_biome,
+        TEST_FPATH, TEST_TERRAIN_NAME,
+    };
+    use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
+    use crate::common::types::pb;
+    use std::collections::BTreeMap;
+    use std::path::{Path, PathBuf};
 
+    fn expected_envs_with_activate_none(
+        is_auto_apply: bool,
+        auto_apply: &AutoApply,
+    ) -> BTreeMap<String, String> {
+        let script = format!("{TEST_CENTRAL_DIR}/scripts/terrain-none.zwc");
+
+        let mut envs = expected_env_vars_none(Path::new(TEST_TERRAIN_DIR));
+        envs.insert(FPATH.to_string(), format!("{}:{}", script, TEST_FPATH));
+        envs.insert(TERRAIN_INIT_FN.to_string(), "terrain-none.zsh".to_string());
+        envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
+        envs.insert(TERRAIN_DIR.to_string(), TEST_TERRAIN_DIR.to_string());
+        envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+        envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
+        if is_auto_apply {
+            envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.into());
+        }
+        envs
+    }
+
+    fn expected_activate_request_none(is_background: bool) -> pb::Activate {
+        let terrain_dir = TEST_TERRAIN_DIR.to_string();
+        let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
+
+        pb::Activate {
+            session_id: TEST_SESSION_ID.to_string(),
+            terrain_name: TEST_TERRAIN_NAME.to_string(),
+            biome_name: NONE.to_string(),
+            terrain_dir: terrain_dir.clone(),
+            toml_path: toml_path.clone(),
+            start_timestamp: TEST_TIMESTAMP.to_string(),
+            is_background,
+            constructors: None,
+        }
+    }
     #[tokio::test]
-    async fn enter_default() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_auto_apply_all() {
+        let is_background = true;
+        let auto_apply = AutoApply::all();
+        let is_auto_apply = true;
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        copy("./tests/data/terrain.example.toml", context.toml_path())
-            .await
-            .expect("to copy test terrain.toml");
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
 
-        let toml_path = current_dir.path().join("terrain.toml");
-        let expected_request = AssertExecuteRequest::with()
-            .terrain_name("terrainium")
-            .biome_name("example_biome")
-            .toml_path(toml_path.to_str().unwrap())
-            .operation(CONSTRUCTORS)
-            .is_activated_as(true)
-            .with_expected_reply(
-                Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .sent();
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
 
         super::handle(
             context,
-            None,
-            Terrain::example(),
-            false,
-            Some(expected_request),
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
         )
         .await
-        .expect("no error to be thrown");
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_auto_apply_without_background() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_auto_apply_background() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = true;
+        let auto_apply = AutoApply::background();
+        let is_auto_apply = true;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_env(TERRAIN_AUTO_APPLY, "enabled")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
-
-        copy(
-            "./tests/data/terrain.example.auto_apply.enabled.toml",
-            context.toml_path(),
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
         )
-        .await
-        .expect("to copy test terrain.toml");
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        let expected_request = AssertExecuteRequest::not_sent();
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "enable");
+        terrain.set_auto_apply(auto_apply);
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_auto_apply_with_replace() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_auto_apply_replace() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = false;
+        let auto_apply = AutoApply::replace();
+        let is_auto_apply = true;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "replaced")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
-
-        copy(
-            "./tests/data/terrain.example.auto_apply.replace.toml",
-            context.toml_path(),
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
         )
-        .await
-        .expect("to copy test terrain.toml");
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        let expected_request = AssertExecuteRequest::not_sent();
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "replace");
+        terrain.set_auto_apply(auto_apply);
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_auto_apply_with_background() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_auto_apply_enabled() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = false;
+        let auto_apply = AutoApply::enabled();
+        let is_auto_apply = true;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "background")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
+
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
-
-        copy(
-            "./tests/data/terrain.example.auto_apply.background.toml",
-            context.toml_path(),
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
         )
-        .await
-        .expect("to copy test terrain.toml");
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        let toml_path = current_dir.path().join("terrain.toml");
-
-        let expected_request = AssertExecuteRequest::with()
-            .terrain_name("terrainium")
-            .biome_name("example_biome")
-            .toml_path(toml_path.to_str().unwrap())
-            .operation(CONSTRUCTORS)
-            .is_activated_as(true)
-            .with_expected_reply(
-                Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "background")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .sent();
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "background");
+        terrain.set_auto_apply(auto_apply);
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_auto_apply_with_all() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_auto_apply_off() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = false;
+        let auto_apply = AutoApply::default();
+        let is_auto_apply = true;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "all")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
+
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
-
-        copy(
-            "./tests/data/terrain.example.auto_apply.all.toml",
-            context.toml_path(),
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
         )
-        .await
-        .expect("to copy test terrain.toml");
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        let toml_path = current_dir.path().join("terrain.toml");
-
-        let expected_request = AssertExecuteRequest::with()
-            .terrain_name("terrainium")
-            .biome_name("example_biome")
-            .toml_path(toml_path.to_str().unwrap())
-            .operation(CONSTRUCTORS)
-            .is_activated_as(true)
-            .with_expected_reply(
-                Any::from_msg(&ExecuteResponse {}).expect("to be converted to any"),
-            )
-            .with_command(
-                RunCommand::with_exe("/bin/bash")
-                    .with_arg("-c")
-                    .with_arg("$PWD/tests/scripts/print_num_for_10_sec")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "all")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath),
-            )
-            .sent();
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
 
         let mut terrain = Terrain::example();
-        set_auto_apply(&mut terrain, "all");
+        terrain.set_auto_apply(auto_apply);
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_with_no_background_commands_empty() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_example_biome() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir.path().join("scripts").join("terrain-none.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = true;
+        let auto_apply = AutoApply::default();
+        let is_auto_apply = false;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "none")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "all")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-none.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "none")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        copy(
-            "./tests/data/terrain.empty.auto_apply.all.toml",
-            context.toml_path(),
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
         )
         .await
-        .expect("to copy test terrain.toml");
-
-        let expected_request = AssertExecuteRequest::not_sent();
-
-        let mut terrain = Terrain::default();
-        set_auto_apply(&mut terrain, "all");
-
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        .unwrap();
     }
 
     #[tokio::test]
-    async fn enter_with_no_background_commands_example() {
-        let current_dir = tempdir().expect("Couldn't create temp dir");
-        let central_dir = tempdir().expect("Couldn't create temp dir");
+    async fn spawns_shell_and_sends_activate_request_none() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let compiled_script = central_dir
-            .path()
-            .join("scripts")
-            .join("terrain-example_biome.zwc");
-        const EXISTING_FPATH: &str = "/some/path:/some/path2";
-        let fpath = format!("{}:{EXISTING_FPATH}", compiled_script.display());
+        let is_background = true;
+        let auto_apply = AutoApply::all();
+        let is_auto_apply = true;
 
-        let expected_shell_operations = ExpectShell::to()
-            .execute(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-c")
-                    .with_arg("/bin/echo -n $FPATH")
-                    .with_cwd(current_dir.path())
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_expected_output(EXISTING_FPATH)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
-            )
-            .and()
-            .spawn_command(
-                RunCommand::with_exe("/bin/zsh")
-                    .with_arg("-i")
-                    .with_arg("-s")
-                    .with_cwd(current_dir.path())
-                    .with_env(TERRAIN_AUTO_APPLY, "background")
-                    .with_env("EDITOR", "nvim")
-                    .with_env("NULL_POINTER", "${NULL}")
-                    .with_env("PAGER", "less")
-                    .with_env("ENV_VAR", "overridden_env_val")
-                    .with_env(
-                        "NESTED_POINTER",
-                        "overridden_env_val-overridden_env_val-${NULL}",
-                    )
-                    .with_env("POINTER_ENV_VAR", "overridden_env_val")
-                    .with_env(TERRAIN_DIR, current_dir.path().to_str().unwrap())
-                    .with_env(TERRAIN_INIT_FN, "terrain-example_biome.zsh")
-                    .with_env(TERRAIN_ENABLED, "true")
-                    .with_env(TERRAIN_SESSION_ID, "some")
-                    .with_env(TERRAIN_SELECTED_BIOME, "example_biome")
-                    .with_env(TERRAIN_INIT_SCRIPT, compiled_script.to_str().unwrap())
-                    .with_env(FPATH, &fpath)
-                    .with_expected_error(false)
-                    .with_expected_exit_code(0),
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_none(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
             )
             .successfully();
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(expected_shell_operations),
-        );
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
 
-        copy(
-            "./tests/data/terrain.example.without.background.auto_apply.background.toml",
-            context.toml_path(),
+        let client = ExpectClient::to_send(ProtoRequest::Activate(expected_activate_request_none(
+            is_background,
+        )))
+        .successfully();
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        super::handle(
+            context,
+            BiomeArg::None,
+            terrain,
+            is_auto_apply,
+            Some(client),
         )
         .await
-        .expect("to copy test terrain.toml");
+        .unwrap();
+    }
 
-        let expected_request = AssertExecuteRequest::not_sent();
+    #[tokio::test]
+    async fn spawns_shell_and_sends_activate_request_none_no_auto_apply() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let (terrain, _) = Terrain::get_validated_and_fixed_terrain(&context).unwrap();
+        let is_background = true;
+        let auto_apply = AutoApply::all();
+        let is_auto_apply = false;
 
-        super::handle(context, None, terrain, true, Some(expected_request))
-            .await
-            .expect("no error to be thrown");
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_none(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
+            )
+            .successfully();
+
+        let context = Context::build(
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
+
+        let client = ExpectClient::to_send(ProtoRequest::Activate(expected_activate_request_none(
+            is_background,
+        )))
+        .successfully();
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        super::handle(
+            context,
+            BiomeArg::None,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn spawns_shell_error() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+
+        let is_background = true;
+        let auto_apply = AutoApply::default();
+        let is_auto_apply = false;
+
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                -99,
+                true,
+                "error while spawning shell".to_string(),
+            )
+            .successfully();
+
+        let context = Context::build(
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
+
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        let err = super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert_eq!(
+            err,
+            "failed to spawn shell while entering terrain environment: failed to run zsh"
+        );
+    }
+
+    #[tokio::test]
+    async fn spawns_shell_non_zero_exit() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let toml_path = terrain_dir.join(TERRAIN_TOML);
+
+        let is_background = true;
+        let auto_apply = AutoApply::default();
+        let is_auto_apply = false;
+
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                1,
+                false,
+                "".to_string(),
+            )
+            .successfully();
+
+        let context = Context::build(
+            terrain_dir,
+            central_dir,
+            toml_path,
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
+
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .successfully();
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        let err = super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert_eq!(err, "spawned shell exited with code: Some(1)");
+    }
+
+    #[tokio::test]
+    async fn send_request_error() {
+        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
+        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+
+        let is_background = true;
+        let auto_apply = AutoApply::default();
+        let is_auto_apply = false;
+
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+            .get_fpath()
+            .spawn_shell(
+                expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
+                0,
+                false,
+                "".to_string(),
+            )
+            .successfully();
+
+        let context = Context::build(
+            terrain_dir.clone(),
+            central_dir.clone(),
+            terrain_dir.as_path().join(TERRAIN_TOML),
+            Config::default(),
+            executor,
+        )
+        .set_session_id(TEST_SESSION_ID.to_string());
+
+        let client = ExpectClient::to_send(ProtoRequest::Activate(
+            expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
+        ))
+        .with_returning_error("failed to parse the request".to_string());
+
+        let mut terrain = Terrain::example();
+        terrain.set_auto_apply(auto_apply);
+
+        let err = super::handle(
+            context,
+            BiomeArg::Default,
+            terrain,
+            is_auto_apply,
+            Some(client),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert_eq!(err, "failed to spawn background processes while entering terrain environment: failed to parse the request");
     }
 }

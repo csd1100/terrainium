@@ -1,17 +1,17 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Config",
   "type": "object",
-  "required": [
-    "auto_apply"
-  ],
   "properties": {
     "schema": {
-      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrainium-conf-schema.json",
-      "type": "string"
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrainium-conf-schema.json"
     },
     "auto_apply": {
       "type": "boolean"
     }
-  }
+  },
+  "required": [
+    "auto_apply"
+  ]
 }

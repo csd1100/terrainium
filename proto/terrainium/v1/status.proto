@@ -2,49 +2,44 @@ syntax = "proto3";
 
 package terrainium.v1;
 
+import "terrainium/v1/command.proto";
+
 message StatusRequest {
-  oneof operation {
-    bool list_background = 1;
-    uint32 background_pid = 2;
+  oneof identifier {
+    string session_id = 1;
+    uint32 recent = 2;
   }
+  string terrain_name = 3;
 }
 
 message StatusResponse {
-  oneof response {
-    Status status = 1;
-    ProcessStatus ps = 2;
+  string session_id = 1;
+  string terrain_name = 2;
+  string biome_name = 3;
+  string terrain_dir = 4;
+  string toml_path = 5;
+  bool is_background = 6;
+  string start_timestamp = 7;
+  string end_timestamp = 8;
+  map<string, CommandStates> constructors = 11;
+  map<string, CommandStates> destructors = 12;
+
+  message CommandStates {
+    repeated CommandState command_states = 1;
   }
 
-  message Status {
-    string session_id = 1;
-    string terrain_name = 2;
-    string biome_name = 3;
-    string toml_path = 4;
-    TerrainStatus status = 5;
-    map<uint32, ProcessStatus> ps = 6;
-  }
+  message CommandState {
+    Command command = 1;
+    string log_path = 2;
+    CommandStatus status = 3;
+    int32 exit_code = 4;
 
-  enum TerrainStatus {
-    TERRAIN_STATUS_UNSPECIFIED = 0;
-    TERRAIN_STATUS_ACTIVE = 1;
-    TERRAIN_STATUS_INACTIVE = 2;
-  }
-
-  message ProcessStatus {
-    uint32 pid = 1;
-    string uuid = 2;
-    string command = 3;
-    repeated string args = 4;
-    Status status = 5;
-    string stdout_file_path = 6;
-    string stderr_file_path = 7;
-    int32 exit_code = 8;
-
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      STATUS_RUNNING = 1;
-      STATUS_STOPPED = 2;
-      STATUS_ERROR = 3;
+    enum CommandStatus {
+      COMMAND_STATUS_UNSPECIFIED = 0;
+      COMMAND_STATUS_STARTING = 1;
+      COMMAND_STATUS_RUNNING = 2;
+      COMMAND_STATUS_FAILED = 3;
+      COMMAND_STATUS_SUCCEEDED = 4;
     }
   }
 }

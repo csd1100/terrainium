@@ -1,12 +1,12 @@
 use crate::common::constants::{CONFIG_LOCATION, TERRAINIUM_CONF};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use tracing::{event, Level};
+use tracing::{error, info};
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -39,17 +39,17 @@ impl Default for Config {
 impl Config {
     pub fn from_file() -> Result<Self> {
         let path = get_config_path().context("failed to get config path")?;
-        event!(Level::INFO, "reading terrainium config from {:?}", path);
+        info!("reading terrainium config from {path:?}");
         if path.exists() {
             return if let Ok(toml_str) = read_to_string(&path) {
                 toml::from_str(&toml_str).context("invalid config")
             } else {
-                event!(Level::WARN, "could not read config");
-                Err(anyhow!("failed to read config"))
+                error!("could not read config");
+                bail!("failed to read config")
             };
         }
-        event!(Level::INFO, "terrainium config does not exist");
-        Err(anyhow!("config file {:?} does not exist", path.display()))
+        info!("terrainium config does not exist");
+        bail!("config file {path:?} does not exist")
     }
 
     pub(crate) fn auto_apply(&self) -> bool {
@@ -59,10 +59,10 @@ impl Config {
     pub fn create_file() -> Result<()> {
         let path = get_config_path().context("failed to get config path")?;
         if path.exists() {
-            event!(Level::INFO, "config file already exists at path {:?}", path);
+            info!("config file already exists at path {path:?}");
             return Ok(());
         }
-        event!(Level::INFO, "creating config file at path {:?}", path);
+        info!("creating config file at path {path:?}");
         let config = toml::to_string_pretty(&Self::default())
             .expect("default configuration should be parsed");
         write(path, config).context("failed to write configuration file")

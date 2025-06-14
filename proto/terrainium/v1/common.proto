@@ -2,6 +2,15 @@ syntax = "proto3";
 
 package terrainium.v1;
 
-message Error {
-  string error_message = 1;
+import "terrainium/v1/status.proto";
+
+message Response {
+  oneof payload {
+    string error = 1;
+    Body body = 2;
+  }
+}
+
+message Body {
+  optional StatusResponse message = 1;
 }

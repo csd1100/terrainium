@@ -2,7 +2,7 @@ version: v1
 name: "github.com/csd1100/terrainium"
 lint:
   use:
-    - DEFAULT
+    - STANDARD
   enum_zero_value_suffix: _UNSPECIFIED
   service_suffix: Service
 breaking:

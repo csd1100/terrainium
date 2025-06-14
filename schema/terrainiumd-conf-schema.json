@@ -1,17 +1,23 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DaemonConfig",
   "type": "object",
-  "required": [
-    "is_root_allowed"
-  ],
   "properties": {
     "schema": {
-      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrainiumd-conf-schema.json",
-      "type": "string"
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrainiumd-conf-schema.json"
     },
     "is_root_allowed": {
       "type": "boolean"
+    },
+    "history_size": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
     }
-  }
+  },
+  "required": [
+    "is_root_allowed",
+    "history_size"
+  ]
 }

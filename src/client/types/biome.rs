@@ -1,7 +1,7 @@
-use crate::client::types::command::{Command, OperationType};
 use crate::client::types::commands::Commands;
 use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
 use crate::common::constants::{ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, ENVS, FOREGROUND};
+use crate::common::types::command::{Command, OperationType};
 use anyhow::{Context, Result};
 use regex::Regex;
 #[cfg(feature = "terrain-schema")]
@@ -19,6 +19,8 @@ fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Biome {
+    #[serde(skip)]
+    name: String,
     envs: BTreeMap<String, String>,
     aliases: BTreeMap<String, String>,
     constructors: Commands,
@@ -27,12 +29,14 @@ pub struct Biome {
 
 impl Biome {
     pub fn new(
+        name: String,
         envs: BTreeMap<String, String>,
         aliases: BTreeMap<String, String>,
         constructors: Commands,
         destructors: Commands,
     ) -> Self {
         Biome {
+            name,
             envs,
             aliases,
             constructors,
@@ -55,43 +59,8 @@ impl Biome {
         new_biome
     }
 
-    fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
-        validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
-    }
-
-    fn validate_aliases<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
-        validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
-    }
-
-    fn validate_constructors<'a>(
-        &'a self,
-        biome_name: &'a str,
-        terrain_dir: &'a Path,
-    ) -> ValidationResults<'a> {
-        self.constructors
-            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
-    }
-
-    fn validate_destructors<'a>(
-        &'a self,
-        biome_name: &'a str,
-        terrain_dir: &'a Path,
-    ) -> ValidationResults<'a> {
-        self.destructors
-            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
-    }
-
-    pub(crate) fn validate<'a>(
-        &'a self,
-        biome_name: &'a str,
-        terrain_dir: &'a Path,
-    ) -> ValidationResults<'a> {
-        let mut result = ValidationResults::new(false, HashSet::new());
-        result.append(self.validate_envs(biome_name));
-        result.append(self.validate_aliases(biome_name));
-        result.append(self.validate_constructors(biome_name, terrain_dir));
-        result.append(self.validate_destructors(biome_name, terrain_dir));
-        result
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
     }
 
     pub(crate) fn aliases(&self) -> &BTreeMap<String, String> {
@@ -110,88 +79,32 @@ impl Biome {
         &self.destructors
     }
 
-    pub(crate) fn merge(&self, another: &Biome) -> Biome {
-        Biome::new(
-            self.append_envs(another),
-            self.append_aliases(another),
-            self.append_constructors(another),
-            self.append_destructors(another),
-        )
-    }
-
-    pub(crate) fn append_destructors(&self, another: &Biome) -> Commands {
-        let mut destructors = self.destructors.clone();
-        let mut another_destructors = another.destructors.clone();
-
-        destructors.append(&mut another_destructors);
-        destructors
-    }
-
-    pub(crate) fn append_constructors(&self, another: &Biome) -> Commands {
-        let mut constructors = self.constructors.clone();
-        let mut another_constructors = another.constructors.clone();
-
-        constructors.append(&mut another_constructors);
-        constructors
-    }
-
-    pub(crate) fn append_aliases(&self, another: &Biome) -> BTreeMap<String, String> {
-        let mut aliases = self.aliases.clone();
-        let mut another_aliases = another.aliases.clone();
-
-        aliases.append(&mut another_aliases);
-        aliases
-    }
-
-    pub(crate) fn append_envs(&self, another: &Biome) -> BTreeMap<String, String> {
-        let mut envs = self.envs.clone();
-        let mut another_envs = another.envs.clone();
-
-        envs.append(&mut another_envs);
-        envs
+    pub(crate) fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     pub(crate) fn set_envs(&mut self, envs: BTreeMap<String, String>) {
         self.envs = envs;
     }
 
-    pub(crate) fn fix_env(&mut self, key: &str, fixed: &str) {
-        let value = self.envs.remove(key).unwrap();
-        self.envs.insert(fixed.to_string(), value);
-    }
-
-    pub(crate) fn fix_env_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
-        replace_key(&mut biome_toml[ENVS], key, fixed);
-    }
-
-    pub(crate) fn fix_alias(&mut self, key: &str, fixed: &str) {
-        let value = self.aliases.remove(key).unwrap();
-        self.aliases.insert(fixed.to_string(), value);
-    }
-
-    pub(crate) fn fix_alias_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
-        replace_key(&mut biome_toml[ALIASES], key, fixed);
-    }
-
-    pub(crate) fn fix_command_toml(
-        biome_toml: &mut Item,
-        operation_type: &str,
-        command_type: &str,
-        idx: usize,
-        fixed: &str,
-    ) {
-        assert_eq!(
-            biome_toml[operation_type][command_type][idx]["exe"]
-                .as_str()
-                .unwrap()
-                .trim(),
-            fixed
-        );
-        biome_toml[operation_type][command_type][idx]["exe"] = value(fixed);
+    pub(crate) fn insert_env(&mut self, key: String, value: String) {
+        self.envs.insert(key, value);
     }
 
     pub(crate) fn insert_foreground_constructor(&mut self, idx: usize, command: Command) {
         self.constructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn insert_background_constructor(&mut self, idx: usize, command: Command) {
+        self.constructors.background_mut().insert(idx, command);
+    }
+
+    pub(crate) fn insert_foreground_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.foreground_mut().insert(idx, command);
+    }
+
+    pub(crate) fn insert_background_destructor(&mut self, idx: usize, command: Command) {
+        self.destructors.background_mut().insert(idx, command);
     }
 
     pub(crate) fn remove_foreground_constructor(&mut self, command: &Command) -> Option<usize> {
@@ -206,10 +119,6 @@ impl Biome {
         idx
     }
 
-    pub(crate) fn insert_background_constructor(&mut self, idx: usize, command: Command) {
-        self.constructors.background_mut().insert(idx, command);
-    }
-
     pub(crate) fn remove_background_constructor(&mut self, command: &Command) -> Option<usize> {
         let idx = self
             .constructors
@@ -220,10 +129,6 @@ impl Biome {
             self.constructors.background_mut().remove(idx);
         }
         idx
-    }
-
-    pub(crate) fn insert_foreground_destructor(&mut self, idx: usize, command: Command) {
-        self.destructors.foreground_mut().insert(idx, command);
     }
 
     pub(crate) fn remove_foreground_destructor(&mut self, command: &Command) -> Option<usize> {
@@ -237,11 +142,6 @@ impl Biome {
         }
         idx
     }
-
-    pub(crate) fn insert_background_destructor(&mut self, idx: usize, command: Command) {
-        self.destructors.background_mut().insert(idx, command);
-    }
-
     pub(crate) fn remove_background_destructor(&mut self, command: &Command) -> Option<usize> {
         let idx = self
             .destructors
@@ -252,6 +152,52 @@ impl Biome {
             self.destructors.background_mut().remove(idx);
         }
         idx
+    }
+
+    pub(crate) fn append_envs(&mut self, envs: BTreeMap<String, String>) {
+        self.envs.extend(envs);
+    }
+
+    pub(crate) fn merge(&self, another: &Biome) -> Biome {
+        Biome::new(
+            another.name(),
+            self.merge_envs(another),
+            self.merge_aliases(another),
+            self.merge_constructors(another),
+            self.merge_destructors(another),
+        )
+    }
+
+    pub(crate) fn merge_destructors(&self, another: &Biome) -> Commands {
+        let mut destructors = self.destructors.clone();
+        let mut another_destructors = another.destructors.clone();
+
+        destructors.append(&mut another_destructors);
+        destructors
+    }
+
+    pub(crate) fn merge_constructors(&self, another: &Biome) -> Commands {
+        let mut constructors = self.constructors.clone();
+        let mut another_constructors = another.constructors.clone();
+
+        constructors.append(&mut another_constructors);
+        constructors
+    }
+
+    pub(crate) fn merge_aliases(&self, another: &Biome) -> BTreeMap<String, String> {
+        let mut aliases = self.aliases.clone();
+        let mut another_aliases = another.aliases.clone();
+
+        aliases.append(&mut another_aliases);
+        aliases
+    }
+
+    pub(crate) fn merge_envs(&self, another: &Biome) -> BTreeMap<String, String> {
+        let mut envs = self.envs.clone();
+        let mut another_envs = another.envs.clone();
+
+        envs.append(&mut another_envs);
+        envs
     }
 
     pub(crate) fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
@@ -321,63 +267,160 @@ impl Biome {
             .context("failed to substitute cwd for destructors")
     }
 
-    pub fn example() -> Self {
-        let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert("EDITOR".to_string(), "vim".to_string());
-        envs.insert("ENV_VAR".to_string(), "env_val".to_string());
-        envs.insert(
-            "NESTED_POINTER".to_string(),
-            "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}".to_string(),
-        );
-        envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-        envs.insert("PAGER".to_string(), "less".to_string());
-        envs.insert("POINTER_ENV_VAR".to_string(), "${ENV_VAR}".to_string());
-
-        let mut aliases: BTreeMap<String, String> = BTreeMap::new();
-        aliases.insert("tenter".to_string(), "terrainium enter".to_string());
-        aliases.insert("texit".to_string(), "terrainium exit".to_string());
-
-        let constructors: Commands = Commands::new(
-            vec![Command::new(
-                "/bin/echo".to_string(),
-                vec!["entering terrain".to_string()],
-                None,
-            )],
-            vec![],
-        );
-
-        let destructors: Commands = Commands::new(
-            vec![Command::new(
-                "/bin/echo".to_string(),
-                vec!["exiting terrain".to_string()],
-                None,
-            )],
-            vec![],
-        );
-        Biome::new(envs, aliases, constructors, destructors)
+    pub(crate) fn validate<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        let mut result = ValidationResults::new(false, HashSet::new());
+        result.append(self.validate_envs(biome_name));
+        result.append(self.validate_aliases(biome_name));
+        result.append(self.validate_constructors(biome_name, terrain_dir));
+        result.append(self.validate_destructors(biome_name, terrain_dir));
+        result
     }
+
+    fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+        validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
+    }
+
+    fn validate_aliases<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+        validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
+    }
+
+    fn validate_constructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        self.constructors
+            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
+    }
+
+    fn validate_destructors<'a>(
+        &'a self,
+        biome_name: &'a str,
+        terrain_dir: &'a Path,
+    ) -> ValidationResults<'a> {
+        self.destructors
+            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
+    }
+
+    pub(crate) fn replace_env_key(&mut self, key: &str, fixed: &str) {
+        let value = self.envs.remove(key).unwrap();
+        self.envs.insert(fixed.to_string(), value);
+    }
+
+    pub(crate) fn replace_env_key_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
+        replace_key(&mut biome_toml[ENVS], key, fixed);
+    }
+
+    pub(crate) fn replace_alias_key(&mut self, key: &str, fixed: &str) {
+        let value = self.aliases.remove(key).unwrap();
+        self.aliases.insert(fixed.to_string(), value);
+    }
+
+    pub(crate) fn replace_alias_key_toml(biome_toml: &mut Item, key: &str, fixed: &str) {
+        replace_key(&mut biome_toml[ALIASES], key, fixed);
+    }
+
+    pub(crate) fn replace_command_exe_toml(
+        biome_toml: &mut Item,
+        operation_type: &str,
+        command_type: &str,
+        idx: usize,
+        fixed: &str,
+    ) {
+        assert_eq!(
+            biome_toml[operation_type][command_type][idx]["exe"]
+                .as_str()
+                .unwrap()
+                .trim(),
+            fixed
+        );
+        biome_toml[operation_type][command_type][idx]["exe"] = value(fixed);
+    }
+
+    pub fn example(name: String) -> Self {
+        Biome::new(
+            name,
+            example_envs(),
+            example_aliases(),
+            example_constructors(),
+            example_destructors(),
+        )
+    }
+}
+
+pub(crate) fn example_envs() -> BTreeMap<String, String> {
+    let mut envs: BTreeMap<String, String> = BTreeMap::new();
+    envs.insert("EDITOR".to_string(), "vim".to_string());
+    envs.insert("ENV_VAR".to_string(), "env_val".to_string());
+    envs.insert(
+        "NESTED_POINTER".to_string(),
+        "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}".to_string(),
+    );
+    envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
+    envs.insert("PAGER".to_string(), "less".to_string());
+    envs.insert("POINTER_ENV_VAR".to_string(), "${ENV_VAR}".to_string());
+    envs
+}
+
+pub(crate) fn example_aliases() -> BTreeMap<String, String> {
+    let mut aliases: BTreeMap<String, String> = BTreeMap::new();
+    aliases.insert("tenter".to_string(), "terrainium enter".to_string());
+    aliases.insert("texit".to_string(), "terrainium exit".to_string());
+    aliases
+}
+
+pub(crate) fn example_constructors() -> Commands {
+    Commands::new(
+        vec![Command::new(
+            "/bin/echo".to_string(),
+            vec!["entering terrain".to_string()],
+            None,
+            None,
+        )],
+        vec![],
+    )
+}
+
+pub(crate) fn example_destructors() -> Commands {
+    Commands::new(
+        vec![Command::new(
+            "/bin/echo".to_string(),
+            vec!["exiting terrain".to_string()],
+            None,
+            None,
+        )],
+        vec![],
+    )
 }
 
 #[cfg(test)]
 impl Biome {
-    pub(crate) fn add_env(&mut self, env: &str, val: &str) {
-        self.envs.insert(env.to_string(), val.to_string());
+    pub(crate) fn add_envs(&mut self, envs: Vec<(&str, &str)>) {
+        envs.into_iter().for_each(|(k, v)| {
+            self.envs.insert(k.to_string(), v.to_string());
+        })
     }
 
-    pub(crate) fn add_bg_constructors(&mut self, command: Command) {
-        self.constructors.background_mut().push(command);
+    pub(crate) fn add_bg_constructors(&mut self, commands: Vec<Command>) {
+        self.constructors.background_mut().extend(commands);
     }
 
-    pub(crate) fn add_bg_destructors(&mut self, command: Command) {
-        self.destructors.background_mut().push(command);
+    pub(crate) fn add_bg_destructors(&mut self, commands: Vec<Command>) {
+        self.destructors.background_mut().extend(commands);
     }
 
-    pub(crate) fn add_fg_constructors(&mut self, command: Command) {
-        self.constructors.foreground_mut().push(command.clone());
+    #[allow(dead_code)]
+    pub(crate) fn add_fg_constructors(&mut self, commands: Vec<Command>) {
+        self.constructors.foreground_mut().extend(commands);
     }
 
-    pub(crate) fn add_fg_destructors(&mut self, command: Command) {
-        self.destructors.foreground_mut().push(command);
+    #[allow(dead_code)]
+    pub(crate) fn add_fg_destructors(&mut self, commands: Vec<Command>) {
+        self.destructors.foreground_mut().extend(commands);
     }
 
     pub(crate) fn set_constructors(&mut self, constructors: Commands) {

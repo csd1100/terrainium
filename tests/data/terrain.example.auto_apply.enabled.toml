@@ -46,7 +46,7 @@ args = ["entering biome example_biome"]
 
 [[biomes.example_biome.constructors.background]]
 exe = "/bin/bash"
-args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
+args = ["-c", "${PWD}/tests/scripts/print_num_for_10_sec"]
 
 [[biomes.example_biome.destructors.foreground]]
 exe = "/bin/echo"
@@ -54,4 +54,4 @@ args = ["exiting biome example_biome"]
 
 [[biomes.example_biome.destructors.background]]
 exe = "/bin/bash"
-args = ["-c", "$PWD/tests/scripts/print_num_for_10_sec"]
+args = ["-c", "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec"]

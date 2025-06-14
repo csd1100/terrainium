@@ -1,22 +1,25 @@
+use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
-use crate::client::types::command::Command;
 use crate::client::types::commands::Commands;
 use crate::client::types::context::Context;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResults,
 };
 use crate::common::constants::{
-    BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, FOREGROUND, TERRAIN,
+    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
+    BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
-use anyhow::{anyhow, Context as AnyhowContext, Result};
+use crate::common::types::command::Command;
+use anyhow::{bail, Context as AnyhowContext, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
+use std::str::FromStr;
 use toml_edit::DocumentMut;
-use tracing::{event, Level};
+use tracing::info;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -88,18 +91,18 @@ impl AutoApply {
     }
 }
 
-impl From<AutoApply> for String {
-    fn from(value: AutoApply) -> Self {
+impl From<&AutoApply> for String {
+    fn from(value: &AutoApply) -> Self {
         if value.is_all() {
-            "all"
+            AUTO_APPLY_ALL
         } else if value.is_enabled() {
-            "enabled"
+            AUTO_APPLY_ENABLED
         } else if value.is_replace() {
-            "replaced"
+            AUTO_APPLY_REPLACE
         } else if value.is_background() {
-            "background"
+            AUTO_APPLY_BACKGROUND
         } else {
-            "off"
+            AUTO_APPLY_OFF
         }
         .to_string()
     }
@@ -147,14 +150,14 @@ impl Terrain {
             .iter()
             .any(|r| r.level == ValidationMessageLevel::Error)
         {
-            return Err(anyhow!("failed to validate terrain"));
+            bail!("terrain had validation errors");
         }
 
         if !validation_results.is_fixable() {
             return Ok((unvalidated_terrain, terrain_toml));
         }
 
-        event!(Level::INFO, "updating the terrain with fixable values");
+        info!("updating the terrain with fixable values");
         let (fixed, fixed_toml) =
             Terrain::fix_invalid_values(&unvalidated_terrain, terrain_toml, validation_results);
         write(context.toml_path(), fixed_toml.to_string())
@@ -214,8 +217,8 @@ impl Terrain {
         self.auto_apply = auto_apply;
     }
 
-    pub fn merged(&self, selected_biome: &Option<String>) -> Result<Biome> {
-        let selected = self.select_biome(selected_biome)?.1;
+    pub fn merged(&self, selected_biome: &BiomeArg) -> Result<Biome> {
+        let selected = self.select_biome(selected_biome)?;
         if selected == &self.terrain {
             Ok(self.terrain.clone())
         } else {
@@ -223,20 +226,25 @@ impl Terrain {
         }
     }
 
-    pub(crate) fn select_biome(&self, selected: &Option<String>) -> Result<(String, &Biome)> {
-        let selected = match selected {
-            None => self.default_biome.clone(),
-            Some(selected) => Some(selected.clone()),
-        };
+    pub(crate) fn select_biome(&self, selected: &BiomeArg) -> Result<&Biome> {
         match selected {
-            None => Ok(("none".to_string(), &self.terrain)),
-            Some(selected) => {
-                if selected == "none" {
-                    Ok(("none".to_string(), &self.terrain))
-                } else if let Some(biome) = self.biomes.get(&selected) {
-                    Ok((selected, biome))
+            BiomeArg::None => Ok(&self.terrain),
+            BiomeArg::Default => {
+                if let Some(default_biome) = &self.default_biome {
+                    if let Some(default) = self.biomes.get(default_biome) {
+                        Ok(default)
+                    } else {
+                        bail!("the default biome {:?} does not exists", selected)
+                    }
                 } else {
-                    Err(anyhow!("the biome {:?} does not exists", selected))
+                    Ok(&self.terrain)
+                }
+            }
+            BiomeArg::Some(selected) => {
+                if let Some(biome) = self.biomes.get(selected) {
+                    Ok(biome)
+                } else {
+                    bail!("the biome {:?} does not exists", selected)
                 }
             }
         }
@@ -244,7 +252,7 @@ impl Terrain {
 
     pub fn validate<'a>(&'a self, terrain_dir: &'a Path) -> ValidationResults<'a> {
         // validate terrain
-        let mut results = self.terrain.validate("none", terrain_dir);
+        let mut results = self.terrain.validate(NONE, terrain_dir);
 
         // all biomes
         self.biomes.iter().for_each(|(biome_name, biome)| {
@@ -266,10 +274,13 @@ impl Terrain {
             .for_each(|r| match &r.fix_action {
                 ValidationFixAction::None => {}
                 ValidationFixAction::Trim { biome_name, target } => {
-                    let (_, selected) = fixed.select_biome(&Some(biome_name.to_string())).unwrap();
+                    let selected = fixed
+                        .select_biome(&BiomeArg::from_str(biome_name).unwrap())
+                        .unwrap();
+
                     let mut fixed_biome = selected.clone();
 
-                    let biome_toml = if *biome_name == "none" {
+                    let biome_toml = if *biome_name == NONE {
                         &mut toml[TERRAIN]
                     } else {
                         &mut toml[BIOMES][biome_name]
@@ -277,42 +288,30 @@ impl Terrain {
 
                     match target {
                         Target::Env(e) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {e}",
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {e}");
                             let trimmed = e.trim();
-                            fixed_biome.fix_env(e, trimmed);
-                            Biome::fix_env_toml(biome_toml, e, trimmed);
+                            fixed_biome.replace_env_key(e, trimmed);
+                            Biome::replace_env_key_toml(biome_toml, e, trimmed);
                         }
                         Target::Alias(a) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {a}",
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {a}");
                             let trimmed = a.trim();
-                            fixed_biome.fix_alias(a, trimmed);
-                            Biome::fix_alias_toml(biome_toml, a, trimmed);
+                            fixed_biome.replace_alias_key(a, trimmed);
+                            Biome::replace_alias_key_toml(biome_toml, a, trimmed);
                         }
                         Target::ForegroundConstructor(fc) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                fc.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", fc.exe());
                             let fixed = Command::new(
                                 fc.exe().trim().to_string(),
                                 fc.args().to_vec(),
-                                fc.cwd(),
+                                None,
+                                fc.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
                             fixed_biome.insert_foreground_constructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 FOREGROUND,
@@ -321,21 +320,17 @@ impl Terrain {
                             );
                         }
                         Target::BackgroundConstructor(bc) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                bc.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", bc.exe());
                             let fixed = Command::new(
                                 bc.exe().trim().to_string(),
                                 bc.args().to_vec(),
-                                bc.cwd(),
+                                None,
+                                bc.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_background_constructor(bc).unwrap();
                             fixed_biome.insert_background_constructor(idx, fixed);
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 BACKGROUND,
@@ -344,22 +339,18 @@ impl Terrain {
                             )
                         }
                         Target::ForegroundDestructor(fd) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                fd.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", fd.exe());
                             let fixed = Command::new(
                                 fd.exe().trim().to_string(),
                                 fd.args().to_vec(),
-                                fd.cwd(),
+                                None,
+                                fd.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
                             fixed_biome.insert_foreground_destructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 FOREGROUND,
@@ -368,22 +359,18 @@ impl Terrain {
                             );
                         }
                         Target::BackgroundDestructor(bd) => {
-                            event!(
-                                Level::INFO,
-                                target = r.r#for,
-                                "trimming whitespaces from {}",
-                                bd.exe()
-                            );
+                            info!(target = r.r#for, "trimming whitespaces from {}", bd.exe());
                             let fixed = Command::new(
                                 bd.exe().trim().to_string(),
                                 bd.args().to_vec(),
-                                bd.cwd(),
+                                None,
+                                bd.cwd().clone(),
                             );
 
                             let idx = fixed_biome.remove_background_destructor(bd).unwrap();
                             fixed_biome.insert_background_destructor(idx, fixed);
 
-                            Biome::fix_command_toml(
+                            Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 BACKGROUND,
@@ -399,7 +386,15 @@ impl Terrain {
     }
 
     pub fn from_toml(toml_str: String) -> Result<Self> {
-        toml::from_str(&toml_str).context("failed to parse terrain from toml")
+        let mut terrain: Self =
+            toml::from_str(&toml_str).context("failed to parse terrain from toml")?;
+
+        terrain.terrain.set_name(NONE.to_string());
+        terrain.biomes.iter_mut().for_each(|(name, biome)| {
+            biome.set_name(name.to_string());
+        });
+
+        Ok(terrain)
     }
 
     pub fn to_toml(&self, terrain_dir: &Path) -> Result<String> {
@@ -409,14 +404,14 @@ impl Terrain {
             .iter()
             .any(|r| r.level == ValidationMessageLevel::Error)
         {
-            return Err(anyhow!("failed to validate terrain before writing"));
+            bail!("failed to write terrain as it had validation errors");
         }
 
         toml::to_string(&self).context("failed to convert terrain to toml")
     }
 
     pub(crate) fn update(&mut self, biome_name: String, updated: Biome) {
-        if biome_name == "none" {
+        if biome_name == NONE {
             self.terrain = updated
         } else {
             self.biomes.insert(biome_name, updated);
@@ -424,7 +419,7 @@ impl Terrain {
     }
 
     pub fn example() -> Self {
-        let terrain = Biome::example();
+        let terrain = Biome::example(NONE.to_string());
 
         let mut biome_envs: BTreeMap<String, String> = BTreeMap::new();
         biome_envs.insert("EDITOR".to_string(), "nvim".to_string());
@@ -441,13 +436,15 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
                 None,
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
                 vec![
                     "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 None,
             )],
         );
@@ -457,18 +454,21 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
                 None,
+                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
                 vec![
                     "-c".to_string(),
-                    "$PWD/tests/scripts/print_num_for_10_sec".to_string(),
+                    "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
+                None,
                 None,
             )],
         );
 
         let example_biome = Biome::new(
+            EXAMPLE_BIOME.to_string(),
             biome_envs,
             biome_aliases,
             biome_constructors,
@@ -476,12 +476,12 @@ impl Terrain {
         );
 
         let mut biomes: BTreeMap<String, Biome> = BTreeMap::new();
-        biomes.insert(String::from("example_biome"), example_biome);
+        biomes.insert(EXAMPLE_BIOME.to_string(), example_biome);
 
         Terrain::new(
             terrain,
             biomes,
-            Some(String::from("example_biome")),
+            Some(EXAMPLE_BIOME.to_string()),
             AutoApply {
                 enabled: false,
                 background: false,
@@ -493,31 +493,29 @@ impl Terrain {
 
 impl Default for Terrain {
     fn default() -> Self {
-        Terrain::new(
-            Biome::default(),
-            BTreeMap::new(),
-            None,
-            AutoApply::default(),
-        )
+        let mut terrain = Biome::default();
+        terrain.set_name(NONE.to_string());
+        Terrain::new(terrain, BTreeMap::new(), None, AutoApply::default())
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::client::shell::Zsh;
+    use crate::client::test_utils::constants::{
+        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
+    };
+    use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
-    use crate::client::types::command::{Command, CommandsType};
     use crate::client::types::commands::Commands;
+    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::client::utils::{
-        restore_env_var, set_env_var, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
-        WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
-    };
     use crate::client::validation::{
         Target, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
-    use crate::common::execute::MockCommandToRun;
+    use crate::common::constants::{NONE, TERRAIN_TOML};
+    use crate::common::execute::MockExecutor;
+    use crate::common::types::command::{Command, CommandsType};
     use serial_test::serial;
     use std::collections::BTreeMap;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
@@ -548,11 +546,13 @@ pub mod tests {
             "/bin/echo".to_string(),
             vec!["entering biome ".to_string() + &name],
             None,
+            None,
         )];
         let biome_constructor_background: Vec<Command> = vec![];
         let biome_destructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome ".to_string() + &name],
+            None,
             None,
         )];
         let biome_destructor_background: Vec<Command> = vec![];
@@ -561,7 +561,9 @@ pub mod tests {
             Commands::new(biome_constructor_foreground, biome_constructor_background);
         let biome_destructor =
             Commands::new(biome_destructor_foreground, biome_destructor_background);
+
         Biome::new(
+            name,
             biome_envs,
             biome_aliases,
             biome_constructor,
@@ -633,7 +635,7 @@ pub mod tests {
 
         assert_eq!(messages.len(), 44);
 
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 assert!(messages.contains(&ValidationResult {
                     level: ValidationMessageLevel::Error,
@@ -797,137 +799,139 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let command_vec = vec![
             leading_space_command.clone(),
             trailing_space_command.clone(),
-            Command::new("".to_string(), vec![], None),
+            Command::new("".to_string(), vec![], None, None),
             Command::new(
                 "not_in_path".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with spaces".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_path_with_cwd".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./not_executable".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present".to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present_current_dir".to_string(),
                 vec![],
                 None,
+                None,
             ),
             Command::new(
                 absolute_exe_path.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_present.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_executable.to_string_lossy().to_string(),
                 vec![],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with_relative_arg_not_present".to_string(),
                 vec!["./not_present".to_string()],
+                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(paths_usr_bin.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_dir")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("${RELATIVE_DIR}")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("/absolute_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(absolute_exe_path.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
                 Some(PathBuf::from("./relative_path_with_cwd")),
+            ),
+            Command::new(
+                "sudo".to_string(),
+                vec!["whoami".to_string()],
+                None,
+                Some(test_dir.path().to_path_buf()),
             ),
         ];
         let commands = Commands::new(command_vec.clone(), command_vec.clone());
 
-        let sudo_command = Command::new(
-            "sudo".to_string(),
-            vec!["whoami".to_string()],
-            Some(test_dir.path().to_path_buf()),
-        );
-
         terrain
             .terrain_mut()
-            .add_env("RELATIVE_DIR", "relative_dir");
+            .add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         terrain.terrain_mut().set_constructors(commands.clone());
         terrain.terrain_mut().set_destructors(commands.clone());
-        terrain
-            .terrain_mut()
-            .add_fg_constructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_bg_constructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_fg_destructors(sudo_command.clone());
-        terrain
-            .terrain_mut()
-            .add_bg_destructors(sudo_command.clone());
 
-        biome.add_env("RELATIVE_DIR", "relative_dir");
+        biome.add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         biome.set_constructors(commands.clone());
         biome.set_destructors(commands.clone());
-        biome.add_fg_constructors(sudo_command.clone());
-        biome.add_bg_constructors(sudo_command.clone());
-        biome.add_fg_destructors(sudo_command.clone());
-        biome.add_bg_destructors(sudo_command);
-
         terrain.update("test_biome".to_string(), biome);
 
         let real_path = set_env_var(
@@ -942,7 +946,7 @@ pub mod tests {
         let messages = terrain.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 160);
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
                 .for_each(|operation_type| {
@@ -1105,11 +1109,13 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
+            None,
             Some(test_dir.path().to_path_buf()),
         );
 
@@ -1153,7 +1159,7 @@ pub mod tests {
         let messages = before.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 40);
-        ["none", "test_biome"].iter().for_each(|biome_name| {
+        [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 let fix_action = if identifier_type == &"env" {
                     ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }
@@ -1210,7 +1216,7 @@ pub mod tests {
         });
 
         let toml = terrain
-            .to_toml(&Path::new(""))
+            .to_toml(Path::new(""))
             .unwrap()
             .parse::<DocumentMut>()
             .unwrap();
@@ -1229,15 +1235,16 @@ pub mod tests {
         let current_dir = tempdir().expect("tempdir to be created");
         let central_dir = tempdir().expect("tempdir to be created");
 
-        let terrain_toml: PathBuf = current_dir.path().join("terrain.toml");
+        let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy(WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES, &terrain_toml)
             .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
             current_dir.path().into(),
             central_dir.path().into(),
-            current_dir.path().join("terrain.toml"),
-            Zsh::build(MockCommandToRun::default()),
+            current_dir.path().join(TERRAIN_TOML),
+            Config::default(),
+            MockExecutor::new(),
         );
 
         Terrain::get_validated_and_fixed_terrain(&context).expect("terrain to fixed");

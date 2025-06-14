@@ -1,11 +1,17 @@
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{validate_identifiers, IdentifierType};
-use anyhow::anyhow;
+use crate::common::constants::{
+    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
+    NONE,
+};
+use anyhow::bail;
 use clap::{Parser, Subcommand};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::Level;
+
+const DEFAULT_SELECTED: &str = "__default__";
 
 #[derive(Parser, Debug)]
 #[command(args_conflicts_with_subcommands = true)]
@@ -19,6 +25,9 @@ pub struct ClientArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
+    #[arg(long)]
+    pub create_config: bool,
+
     #[arg(long, group = "update-rc")]
     pub update_rc: bool,
 
@@ -27,9 +36,6 @@ pub struct Options {
 
     #[arg(short, long, default_value = "warn", global = true)]
     pub log_level: Level,
-
-    #[arg(long)]
-    pub create_config: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -47,6 +53,29 @@ pub enum Verbs {
 
     Edit,
 
+    Update {
+        #[arg(short, long, groups = ["update_biome" , "update"])]
+        set_default: Option<String>,
+
+        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
+
+        #[arg(short, long, group = "update_biome")]
+        new: Option<String>,
+
+        #[arg(short, long, group = "update")]
+        alias: Vec<Pair>,
+
+        #[arg(short, long, group = "update")]
+        env: Vec<Pair>,
+
+        #[arg(long)]
+        auto_apply: Option<AutoApply>,
+
+        #[arg(short = 'k', long)]
+        backup: bool,
+    },
+
     Generate,
 
     Validate,
@@ -55,8 +84,8 @@ pub enum Verbs {
         #[arg(long)]
         debug: bool,
 
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
 
         #[arg(long, group = "get_alias")]
         aliases: bool,
@@ -80,48 +109,34 @@ pub enum Verbs {
         auto_apply: bool,
     },
 
-    Update {
-        #[arg(short, long, groups = ["update_biome" , "update"])]
-        set_default: Option<String>,
-
-        #[arg(short, long, group = "update_biome")]
-        biome: Option<BiomeArg>,
-
-        #[arg(short, long, group = "update")]
-        alias: Vec<Pair>,
-
-        #[arg(short, long, group = "update")]
-        env: Vec<Pair>,
-
-        #[arg(short, long, group = "update_biome")]
-        new: Option<String>,
-
-        #[arg(long)]
-        auto_apply: Option<AutoApply>,
-
-        #[arg(short = 'k', long)]
-        backup: bool,
-    },
-
-    Construct {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
-    },
-
-    Destruct {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
-    },
-
     Enter {
-        #[arg(short, long)]
-        biome: Option<BiomeArg>,
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
 
         #[arg(long, hide = true)]
         auto_apply: bool,
     },
 
+    Construct {
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
+    },
+
+    Destruct {
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
+    },
+
     Exit,
+
+    Status {
+        #[arg(short, long)]
+        json: bool,
+        #[arg(short, long, group = "session")]
+        recent: Option<u32>,
+        #[arg(short, long, group = "session")]
+        session_id: Option<String>,
+    },
 
     #[cfg(feature = "terrain-schema")]
     Schema,
@@ -130,7 +145,7 @@ pub enum Verbs {
 #[derive(Debug, Clone)]
 pub enum BiomeArg {
     None,
-    Current,
+    Default,
     Some(String),
 }
 
@@ -138,9 +153,9 @@ impl FromStr for BiomeArg {
     type Err = anyhow::Error;
 
     fn from_str(arg: &str) -> anyhow::Result<Self, Self::Err> {
-        match arg {
-            "none" => Ok(BiomeArg::None),
-            "current" => Ok(BiomeArg::Current),
+        match arg.to_lowercase().as_str() {
+            NONE => Ok(BiomeArg::None),
+            DEFAULT_SELECTED => Ok(BiomeArg::Default),
             _ => Ok(BiomeArg::Some(arg.to_string())),
         }
     }
@@ -149,19 +164,15 @@ impl FromStr for BiomeArg {
 impl From<BiomeArg> for String {
     fn from(val: BiomeArg) -> Self {
         match val {
-            BiomeArg::None => "none".to_string(),
-            BiomeArg::Current => "current".to_string(),
+            BiomeArg::None => NONE.to_string(),
+            BiomeArg::Default => DEFAULT_SELECTED.to_string(),
             BiomeArg::Some(selected) => selected,
         }
     }
 }
 
-pub(crate) fn option_string_from(option_biome_arg: &Option<BiomeArg>) -> Option<String> {
-    option_biome_arg.clone().map(|selected| selected.into())
-}
-
 pub struct GetArgs {
-    pub biome: Option<BiomeArg>,
+    pub biome: BiomeArg,
     pub aliases: bool,
     pub envs: bool,
     pub alias: Vec<String>,
@@ -183,6 +194,16 @@ impl GetArgs {
     }
 }
 
+pub struct UpdateArgs {
+    pub set_default: Option<String>,
+    pub biome: BiomeArg,
+    pub alias: Vec<Pair>,
+    pub env: Vec<Pair>,
+    pub new: Option<String>,
+    pub backup: bool,
+    pub auto_apply: Option<AutoApply>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pair {
     pub key: String,
@@ -196,20 +217,16 @@ impl FromStr for Pair {
         let pair: Vec<&str> = pair.split("=").collect();
 
         if pair.len() != 2 {
-            return Err(anyhow!(
-                "pair of key values should be passed in format <KEY>=<VALUE>."
-            ));
+            bail!("pair of key values should be passed in format <KEY>=<VALUE>.");
         }
 
         let mut env = BTreeMap::new();
         env.insert(pair[0].to_string(), pair[1].to_string());
 
-        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, "none");
+        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, NONE);
         if !validation_results.results_ref().is_empty() {
             validation_results.print_validation_message();
-            return Err(anyhow!(
-                "env or alias is not valid, please make sure that it is valid."
-            ));
+            bail!("env or alias is not valid, please make sure that it is valid.");
         }
 
         Ok(Pair {
@@ -224,30 +241,21 @@ impl FromStr for AutoApply {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "enable" => Ok(AutoApply::enabled()),
-            "replace" => Ok(AutoApply::replace()),
-            "background" => Ok(AutoApply::background()),
-            "all" => Ok(AutoApply::all()),
-            "off" => Ok(AutoApply::default()),
-            _ => Err(anyhow!("failed to parse auto_apply argument from: {s}")),
+            AUTO_APPLY_ENABLED => Ok(AutoApply::enabled()),
+            AUTO_APPLY_REPLACE => Ok(AutoApply::replace()),
+            AUTO_APPLY_BACKGROUND => Ok(AutoApply::background()),
+            AUTO_APPLY_ALL => Ok(AutoApply::all()),
+            AUTO_APPLY_OFF => Ok(AutoApply::default()),
+            _ => bail!("failed to parse auto_apply argument from: {s}"),
         }
     }
-}
-
-pub struct UpdateArgs {
-    pub set_default: Option<String>,
-    pub biome: Option<BiomeArg>,
-    pub alias: Vec<Pair>,
-    pub env: Vec<Pair>,
-    pub new: Option<String>,
-    pub backup: bool,
-    pub auto_apply: Option<AutoApply>,
 }
 
 #[cfg(test)]
 mod tests {
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
+    use crate::common::constants::NONE;
     use std::str::FromStr;
 
     #[test]
@@ -305,7 +313,7 @@ mod tests {
     #[test]
     fn auto_apply_from_str() {
         assert_eq!(
-            AutoApply::from_str("enable").expect("to be parsed"),
+            AutoApply::from_str("enabled").expect("to be parsed"),
             AutoApply::enabled()
         );
         assert_eq!(
@@ -326,7 +334,7 @@ mod tests {
         );
 
         assert_eq!(
-            AutoApply::from_str("none").err().unwrap().to_string(),
+            AutoApply::from_str(NONE).err().unwrap().to_string(),
             "failed to parse auto_apply argument from: none"
         );
     }
