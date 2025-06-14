@@ -45,13 +45,17 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let context = Context::build(
+        let mut context = Context::build(
             terrain_dir,
             PathBuf::new(),
             toml_path,
             Config::default(),
             MockExecutor::new(),
         );
+
+        if let Some(session_id) = &session_id {
+            context = context.set_session_id(session_id.clone());
+        }
 
         let client = ExpectClient::to_send(ProtoRequest::Execute(
             expected_construct_request_example_biome(session_id),
@@ -93,13 +97,17 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let context = Context::build(
+        let mut context = Context::build(
             terrain_dir,
             PathBuf::new(),
             toml_path,
             Config::default(),
             MockExecutor::new(),
         );
+
+        if let Some(session_id) = &session_id {
+            context = context.set_session_id(session_id.clone());
+        }
 
         let expected_error = "failed to parse execute request".to_string();
 

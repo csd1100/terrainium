@@ -39,19 +39,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_construct_sends_request() {
+    async fn test_destruct_sends_request() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let context = Context::build(
+        let mut context = Context::build(
             terrain_dir,
             PathBuf::new(),
             toml_path,
             Config::default(),
             MockExecutor::new(),
         );
+
+        if let Some(session_id) = &session_id {
+            context = context.set_session_id(session_id.clone());
+        }
 
         let client = ExpectClient::to_send(ProtoRequest::Execute(
             expected_request_destruct_example_biome(session_id),
@@ -64,7 +68,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_construct_does_not_send_request_if_no_background() {
+    async fn test_destruct_does_not_send_request_if_no_background() {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
@@ -80,26 +84,30 @@ mod tests {
         let client = MockClient::default();
 
         // expect no error
-        // terrain has no background constructors
+        // terrain has no background destructors
         super::handle(context, BiomeArg::None, Terrain::example(), Some(client))
             .await
             .unwrap();
     }
 
     #[tokio::test]
-    async fn test_construct_request_returns_error() {
+    async fn test_destruct_request_returns_error() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let context = Context::build(
+        let mut context = Context::build(
             terrain_dir,
             PathBuf::new(),
             toml_path,
             Config::default(),
             MockExecutor::new(),
         );
+
+        if let Some(session_id) = &session_id {
+            context = context.set_session_id(session_id.clone());
+        }
 
         let expected_error = "failed to parse execute request".to_string();
 
