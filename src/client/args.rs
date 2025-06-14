@@ -25,6 +25,9 @@ pub struct ClientArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
+    #[arg(long)]
+    pub create_config: bool,
+
     #[arg(long, group = "update-rc")]
     pub update_rc: bool,
 
@@ -33,9 +36,6 @@ pub struct Options {
 
     #[arg(short, long, default_value = "warn", global = true)]
     pub log_level: Level,
-
-    #[arg(long)]
-    pub create_config: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -52,6 +52,29 @@ pub enum Verbs {
     },
 
     Edit,
+
+    Update {
+        #[arg(short, long, groups = ["update_biome" , "update"])]
+        set_default: Option<String>,
+
+        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+        biome: BiomeArg,
+
+        #[arg(short, long, group = "update_biome")]
+        new: Option<String>,
+
+        #[arg(short, long, group = "update")]
+        alias: Vec<Pair>,
+
+        #[arg(short, long, group = "update")]
+        env: Vec<Pair>,
+
+        #[arg(long)]
+        auto_apply: Option<AutoApply>,
+
+        #[arg(short = 'k', long)]
+        backup: bool,
+    },
 
     Generate,
 
@@ -86,27 +109,12 @@ pub enum Verbs {
         auto_apply: bool,
     },
 
-    Update {
-        #[arg(short, long, groups = ["update_biome" , "update"])]
-        set_default: Option<String>,
-
-        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+    Enter {
+        #[arg(short, long, default_value = DEFAULT_SELECTED)]
         biome: BiomeArg,
 
-        #[arg(short, long, group = "update")]
-        alias: Vec<Pair>,
-
-        #[arg(short, long, group = "update")]
-        env: Vec<Pair>,
-
-        #[arg(short, long, group = "update_biome")]
-        new: Option<String>,
-
-        #[arg(long)]
-        auto_apply: Option<AutoApply>,
-
-        #[arg(short = 'k', long)]
-        backup: bool,
+        #[arg(long, hide = true)]
+        auto_apply: bool,
     },
 
     Construct {
@@ -117,14 +125,6 @@ pub enum Verbs {
     Destruct {
         #[arg(short, long, default_value = DEFAULT_SELECTED)]
         biome: BiomeArg,
-    },
-
-    Enter {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
-        biome: BiomeArg,
-
-        #[arg(long, hide = true)]
-        auto_apply: bool,
     },
 
     Exit,
