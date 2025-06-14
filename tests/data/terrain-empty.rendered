@@ -7,4 +7,8 @@ Environment Variables:
     TERRAIN_DIR=""
     TERRAIN_SELECTED_BIOME="none"
 Constructors:
+    foreground:
+    background:
 Destructors:
+    foreground:
+    background:

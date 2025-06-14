@@ -1,6 +1,8 @@
 use crate::client::types::commands::Commands;
 use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
-use crate::common::constants::{ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, ENVS, FOREGROUND};
+use crate::common::constants::{
+    ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, DOES_NOT_EXIST, ENVS, FOREGROUND,
+};
 use crate::common::types::command::{Command, OperationType};
 use anyhow::{Context, Result};
 use regex::Regex;
@@ -14,6 +16,39 @@ use toml_edit::{value, Array, Item, Table};
 fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
     let value = table.as_table_mut().unwrap().remove(old_key);
     table[new_key] = value.unwrap();
+}
+
+fn get_commands(commands: &Commands) -> String {
+    let cmds = |c: &Vec<Command>| -> String {
+        c.iter().map(|cmd| format!("{: <8}{}\n", "", cmd)).collect()
+    };
+    // adds 4 spaces behind
+    let mut result = format!("{: <4}foreground:\n", "");
+    result += &cmds(commands.foreground());
+    result += &format!("{: <4}background:\n", "");
+    result += &cmds(commands.background());
+    result
+}
+
+fn get_pairs<S: Into<String> + std::fmt::Display>(map: &BTreeMap<S, S>) -> String {
+    map.iter()
+        .map(|(k, v)| format!("{: <4}{k}=\"{v}\"\n", ""))
+        .collect::<String>()
+}
+
+fn get_filtered<'a>(
+    map: &'a BTreeMap<String, String>,
+    filter: &'a [String],
+) -> BTreeMap<&'a str, &'a str> {
+    let mut result = BTreeMap::<&str, &str>::new();
+    filter.iter().for_each(|key| {
+        if let Some(value) = map.get(key) {
+            result.insert(key, value);
+        } else {
+            result.insert(key, DOES_NOT_EXIST);
+        }
+    });
+    result
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
@@ -67,16 +102,60 @@ impl Biome {
         &self.aliases
     }
 
+    pub(crate) fn aliases_str(&self, filter: Option<&[String]>) -> String {
+        let header = String::from("Aliases:");
+
+        let body = if let Some(filter) = filter {
+            get_pairs(&get_filtered(&self.aliases, filter))
+        } else {
+            get_pairs(&self.aliases)
+        };
+
+        if body.is_empty() {
+            return String::new();
+        }
+
+        format!("{header}\n{body}")
+    }
+
     pub(crate) fn envs(&self) -> &BTreeMap<String, String> {
         &self.envs
+    }
+
+    pub(crate) fn envs_str(&self, filter: Option<&[String]>) -> String {
+        let header = String::from("Environment Variables:");
+
+        let body = if let Some(filter) = filter {
+            get_pairs(&get_filtered(&self.envs, filter))
+        } else {
+            get_pairs(&self.envs)
+        };
+
+        if body.is_empty() {
+            return String::new();
+        }
+
+        format!("{header}\n{body}")
     }
 
     pub(crate) fn constructors(&self) -> &Commands {
         &self.constructors
     }
 
+    pub(crate) fn constructors_str(&self) -> String {
+        let header = String::from("Constructors:");
+        let body = get_commands(&self.constructors);
+        format!("{header}\n{body}")
+    }
+
     pub(crate) fn destructors(&self) -> &Commands {
         &self.destructors
+    }
+
+    pub(crate) fn destructors_str(&self) -> String {
+        let header = String::from("Destructors:");
+        let body = get_commands(&self.destructors);
+        format!("{header}\n{body}")
     }
 
     pub(crate) fn set_name(&mut self, name: String) {

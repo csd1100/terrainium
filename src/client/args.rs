@@ -84,28 +84,31 @@ pub enum Verbs {
         #[arg(long)]
         debug: bool,
 
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        #[arg(short, long, name = "json")]
+        json: bool,
+
+        #[arg(short, long, default_value = DEFAULT_SELECTED, conflicts_with = "json")]
         biome: BiomeArg,
 
-        #[arg(long, group = "get_alias")]
+        #[arg(long, group = "get_alias", conflicts_with = "json")]
         aliases: bool,
 
-        #[arg(long, group = "get_env")]
+        #[arg(long, group = "get_env", conflicts_with = "json")]
         envs: bool,
 
-        #[arg(short, group = "get_alias")]
+        #[arg(short, group = "get_alias", conflicts_with = "json")]
         alias: Vec<String>,
 
-        #[arg(short, group = "get_env")]
+        #[arg(short, group = "get_env", conflicts_with = "json")]
         env: Vec<String>,
 
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "json")]
         constructors: bool,
 
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "json")]
         destructors: bool,
 
-        #[arg(long)]
+        #[arg(long, conflicts_with = "json")]
         auto_apply: bool,
     },
 
@@ -172,6 +175,7 @@ impl From<BiomeArg> for String {
 }
 
 pub struct GetArgs {
+    pub json: bool,
     pub biome: BiomeArg,
     pub aliases: bool,
     pub envs: bool,

@@ -11,6 +11,7 @@ use anyhow::{bail, Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
+use std::fmt::{Display, Formatter};
 use std::path::Path;
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -78,16 +79,32 @@ impl Environment {
         self.merged.envs().clone()
     }
 
+    pub fn envs_ref(&self) -> &BTreeMap<String, String> {
+        self.merged.envs()
+    }
+
     pub fn aliases(&self) -> BTreeMap<String, String> {
         self.merged.aliases().clone()
+    }
+
+    pub fn aliases_ref(&self) -> &BTreeMap<String, String> {
+        self.merged.aliases()
     }
 
     pub fn constructors(&self) -> Commands {
         self.merged.constructors().clone()
     }
 
+    pub fn constructors_ref(&self) -> &Commands {
+        self.merged.constructors()
+    }
+
     pub fn destructors(&self) -> Commands {
         self.merged.destructors().clone()
+    }
+
+    pub fn destructors_ref(&self) -> &Commands {
+        self.merged.destructors()
     }
 
     pub(crate) fn insert_env(&mut self, key: String, value: String) {
@@ -155,6 +172,29 @@ impl Environment {
     #[cfg(test)]
     pub fn merged_mut(&mut self) -> &mut Biome {
         &mut self.merged
+    }
+}
+
+impl Display for Environment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"Default Biome: {}          Selected Biome: {}
+Auto Apply:
+    enabled: {}
+    replace: {}
+    background: {}
+{}{}{}{}"#,
+            self.default_biome.as_ref().unwrap_or(&"none".to_string()),
+            self.selected_biome,
+            self.auto_apply.is_enabled(),
+            self.auto_apply.get_replace(),
+            self.auto_apply.is_background(),
+            self.merged.envs_str(None),
+            self.merged.aliases_str(None),
+            self.merged.constructors_str(),
+            self.merged.destructors_str(),
+        )
     }
 }
 
@@ -528,35 +568,14 @@ mod tests {
     }
 
     #[test]
-    fn environment_to_get_template() {
+    fn environment_to_get() {
         let environment =
             Environment::from(&Terrain::example(), BiomeArg::Default, &PathBuf::new())
                 .expect("not to fail");
-
-        let base_template = fs::read_to_string("./templates/get.hbs").expect("to be read");
-        let envs_template = fs::read_to_string("./templates/get_env.hbs").expect("to be read");
-        let aliases_template =
-            fs::read_to_string("./templates/get_aliases.hbs").expect("to be read");
-        let constructors_template =
-            fs::read_to_string("./templates/get_constructors.hbs").expect("to be read");
-        let destructors_template =
-            fs::read_to_string("./templates/get_destructors.hbs").expect("to be read");
-
-        let mut templates: BTreeMap<String, String> = BTreeMap::new();
-        templates.insert("get".to_string(), base_template);
-        templates.insert("envs".to_string(), envs_template);
-        templates.insert("aliases".to_string(), aliases_template);
-        templates.insert("constructors".to_string(), constructors_template);
-        templates.insert("destructors".to_string(), destructors_template);
-
-        let rendered = environment
-            .to_rendered("get".to_string(), templates)
-            .expect("no error to be thrown");
-
         assert_eq!(
+            format!("{environment}"),
             fs::read_to_string("./tests/data/terrain-example_biome.rendered")
                 .expect("test data file to be read"),
-            rendered
         )
     }
 

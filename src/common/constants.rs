@@ -1,10 +1,3 @@
-pub(crate) const GET_MAIN_TEMPLATE_NAME: &str = "get";
-pub(crate) const GET_ENVS_TEMPLATE_NAME: &str = "envs";
-pub(crate) const GET_ALIASES_TEMPLATE_NAME: &str = "aliases";
-pub(crate) const GET_CONSTRUCTORS_TEMPLATE_NAME: &str = "constructors";
-pub(crate) const GET_DESTRUCTORS_TEMPLATE_NAME: &str = "destructors";
-pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
-
 pub const CONFIG_LOCATION: &str = ".config/terrainium";
 
 pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
@@ -46,6 +39,7 @@ pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 pub const FOREGROUND: &str = "foreground";
 pub const BACKGROUND: &str = "background";
+pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
 
 pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const NONE: &str = "none";

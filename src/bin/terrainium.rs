@@ -87,6 +87,7 @@ async fn main() -> Result<()> {
                 }
 
                 Verbs::Get {
+                    json,
                     biome,
                     aliases,
                     envs,
@@ -100,6 +101,7 @@ async fn main() -> Result<()> {
                     context,
                     terrain,
                     GetArgs {
+                        json,
                         biome,
                         aliases,
                         envs,

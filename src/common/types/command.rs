@@ -100,7 +100,8 @@ impl Serialize for Command {
         command.serialize_field("args", &self.args)?;
         // do serialize envs for command state but do not serialize for toml
         // as for terrain.toml we have common env vars specified
-        if is_json {
+        // only serialize if envs are set
+        if is_json && self.envs.is_some() {
             command.serialize_field("envs", &self.envs)?;
         }
         command.serialize_field("cwd", &self.cwd)?;
@@ -110,7 +111,20 @@ impl Serialize for Command {
 
 impl Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {} in {:?}", self.exe, self.args.join(" "), self.cwd)
+        let cwd = self
+            .cwd
+            .clone()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let cwd = if cwd.is_empty() {
+            String::from("terrain directory")
+        } else {
+            format!("'{cwd}'")
+        };
+
+        write!(f, "`{} {}` in {}", self.exe, self.args.join(" "), cwd)
     }
 }
 
