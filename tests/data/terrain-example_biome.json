@@ -1,0 +1,82 @@
+{
+  "name": "terrainium",
+  "default_biome": "example_biome",
+  "selected_biome": "example_biome",
+  "auto_apply": {
+    "enabled": false,
+    "background": false,
+    "replace": false
+  },
+  "merged": {
+    "envs": {
+      "EDITOR": "nvim",
+      "ENV_VAR": "overridden_env_val",
+      "NESTED_POINTER": "overridden_env_val-overridden_env_val-${NULL}",
+      "NULL_POINTER": "${NULL}",
+      "PAGER": "less",
+      "POINTER_ENV_VAR": "overridden_env_val",
+      "TERRAIN_DIR": "",
+      "TERRAIN_SELECTED_BIOME": "example_biome"
+    },
+    "aliases": {
+      "tenter": "terrainium enter --biome example_biome",
+      "texit": "terrainium exit"
+    },
+    "constructors": {
+      "foreground": [
+        {
+          "exe": "/bin/echo",
+          "args": [
+            "entering terrain"
+          ],
+          "cwd": ""
+        },
+        {
+          "exe": "/bin/echo",
+          "args": [
+            "entering biome example_biome"
+          ],
+          "cwd": ""
+        }
+      ],
+      "background": [
+        {
+          "exe": "/bin/bash",
+          "args": [
+            "-c",
+            "${PWD}/tests/scripts/print_num_for_10_sec"
+          ],
+          "cwd": ""
+        }
+      ]
+    },
+    "destructors": {
+      "foreground": [
+        {
+          "exe": "/bin/echo",
+          "args": [
+            "exiting terrain"
+          ],
+          "cwd": ""
+        },
+        {
+          "exe": "/bin/echo",
+          "args": [
+            "exiting biome example_biome"
+          ],
+          "cwd": ""
+        }
+      ],
+      "background": [
+        {
+          "exe": "/bin/bash",
+          "args": [
+            "-c",
+            "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec"
+          ],
+          "cwd": ""
+        }
+      ]
+    }
+  }
+}

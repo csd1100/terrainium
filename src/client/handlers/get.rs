@@ -15,6 +15,10 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
         .context("failed to generate environment")?;
 
     if get_args.empty() {
+        if get_args.json {
+            return serde_json::to_string_pretty(&environment)
+                .context("failed to convert environment to json");
+        }
         return Ok(format!("{environment}"));
     }
 
@@ -26,16 +30,17 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
     }
 
     let mut result = String::new();
-    if get_args.aliases {
-        result += &environment.merged().aliases_str(None);
-    } else if !get_args.alias.is_empty() {
-        result += &environment.merged().aliases_str(Some(&get_args.alias));
-    }
 
     if get_args.envs {
         result += &environment.merged().envs_str(None);
     } else if !get_args.env.is_empty() {
         result += &environment.merged().envs_str(Some(&get_args.env));
+    }
+
+    if get_args.aliases {
+        result += &environment.merged().aliases_str(None);
+    } else if !get_args.alias.is_empty() {
+        result += &environment.merged().aliases_str(Some(&get_args.alias));
     }
 
     if get_args.constructors {
@@ -74,6 +79,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -105,6 +111,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -136,6 +143,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::from_str(EXAMPLE_BIOME)?,
             aliases: false,
             envs: false,
@@ -157,6 +165,38 @@ mod tests {
     }
 
     #[test]
+    fn get_all_for_default_biome_json() -> Result<()> {
+        let context = Context::build(
+            PathBuf::new(),
+            PathBuf::new(),
+            PathBuf::new(),
+            Config::default(),
+            MockExecutor::new(),
+        );
+
+        let args = GetArgs {
+            json: true,
+            biome: BiomeArg::Default,
+            aliases: false,
+            envs: false,
+            alias: vec![],
+            env: vec![],
+            constructors: false,
+            destructors: false,
+            auto_apply: false,
+        };
+
+        let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
+
+        let expected = read_to_string("./tests/data/terrain-example_biome.json")
+            .expect("test data to be read");
+
+        assert_eq!(output, expected);
+
+        Ok(())
+    }
+
+    #[test]
     fn get_all_aliases_for_default_biome() -> Result<()> {
         let context = Context::build(
             PathBuf::new(),
@@ -167,6 +207,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: false,
@@ -199,6 +240,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: true,
             envs: false,
@@ -231,6 +273,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::None,
             aliases: true,
             envs: false,
@@ -260,6 +303,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -298,6 +342,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Some(EXAMPLE_BIOME.to_string()),
             aliases: false,
             envs: true,
@@ -336,6 +381,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -368,6 +414,7 @@ mod tests {
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: true,
@@ -379,10 +426,7 @@ mod tests {
         };
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
-        let expected = r#"Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
-Environment Variables:
+        let expected = r#"Environment Variables:
     EDITOR="nvim"
     ENV_VAR="overridden_env_val"
     NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
@@ -391,6 +435,9 @@ Environment Variables:
     POINTER_ENV_VAR="overridden_env_val"
     TERRAIN_DIR=""
     TERRAIN_SELECTED_BIOME="example_biome"
+Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
 "#;
 
         assert_eq!(output, expected);
@@ -409,6 +456,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -441,6 +489,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -473,6 +522,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -486,11 +536,11 @@ Environment Variables:
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
 
         let expected = r#"Constructors:
-    background:
-        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
         `/bin/echo entering terrain` in terrain directory
         `/bin/echo entering biome example_biome` in terrain directory
+    background:
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -509,6 +559,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -522,11 +573,11 @@ Environment Variables:
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
 
         let expected = r#"Destructors:
-    background:
-        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
         `/bin/echo exiting terrain` in terrain directory
         `/bin/echo exiting biome example_biome` in terrain directory
+    background:
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -545,6 +596,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: true,
@@ -557,10 +609,7 @@ Environment Variables:
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
 
-        let expected = r#"Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
-Environment Variables:
+        let expected = r#"Environment Variables:
     EDITOR="nvim"
     ENV_VAR="overridden_env_val"
     NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
@@ -569,18 +618,21 @@ Environment Variables:
     POINTER_ENV_VAR="overridden_env_val"
     TERRAIN_DIR=""
     TERRAIN_SELECTED_BIOME="example_biome"
+Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
 Constructors:
-    background:
-        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
         `/bin/echo entering terrain` in terrain directory
         `/bin/echo entering biome example_biome` in terrain directory
-Destructors:
     background:
-        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
+Destructors:
     foreground:
         `/bin/echo exiting terrain` in terrain directory
         `/bin/echo exiting biome example_biome` in terrain directory
+    background:
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -599,6 +651,7 @@ Destructors:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: false,
@@ -611,24 +664,24 @@ Destructors:
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
 
-        let expected = r#"Aliases:
-    non_existent="!!!DOES NOT EXIST!!!"
-    tenter="terrainium enter --biome example_biome"
-Environment Variables:
+        let expected = r#"Environment Variables:
     EDITOR="nvim"
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
+Aliases:
+    non_existent="!!!DOES NOT EXIST!!!"
+    tenter="terrainium enter --biome example_biome"
 Constructors:
-    background:
-        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
         `/bin/echo entering terrain` in terrain directory
         `/bin/echo entering biome example_biome` in terrain directory
-Destructors:
     background:
-        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
+Destructors:
     foreground:
         `/bin/echo exiting terrain` in terrain directory
         `/bin/echo exiting biome example_biome` in terrain directory
+    background:
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
 "#;
 
         assert_eq!(output, expected);
@@ -647,6 +700,7 @@ Destructors:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: false,
@@ -658,12 +712,12 @@ Destructors:
         };
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
-        let expected = r#"Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
-Environment Variables:
+        let expected = r#"Environment Variables:
     EDITOR="nvim"
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
+Aliases:
+    tenter="terrainium enter --biome example_biome"
+    texit="terrainium exit"
 "#;
 
         assert_eq!(output, expected);
@@ -682,6 +736,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -693,10 +748,7 @@ Environment Variables:
         };
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
-        let expected = r#"Aliases:
-    non_existent="!!!DOES NOT EXIST!!!"
-    tenter="terrainium enter --biome example_biome"
-Environment Variables:
+        let expected = r#"Environment Variables:
     EDITOR="nvim"
     ENV_VAR="overridden_env_val"
     NESTED_POINTER="overridden_env_val-overridden_env_val-${NULL}"
@@ -705,6 +757,9 @@ Environment Variables:
     POINTER_ENV_VAR="overridden_env_val"
     TERRAIN_DIR=""
     TERRAIN_SELECTED_BIOME="example_biome"
+Aliases:
+    non_existent="!!!DOES NOT EXIST!!!"
+    tenter="terrainium enter --biome example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -723,6 +778,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: false,
@@ -755,6 +811,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -787,6 +844,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -819,6 +877,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: false,
             envs: true,
@@ -851,6 +910,7 @@ Environment Variables:
         );
 
         let args = GetArgs {
+            json: false,
             biome: BiomeArg::Default,
             aliases: true,
             envs: false,

@@ -23,10 +23,10 @@ fn get_commands(commands: &Commands) -> String {
         c.iter().map(|cmd| format!("{: <8}{}\n", "", cmd)).collect()
     };
     // adds 4 spaces behind
-    let mut result = format!("{: <4}background:\n", "");
-    result += &cmds(commands.background());
-    result += &format!("{: <4}foreground:\n", "");
+    let mut result = format!("{: <4}foreground:\n", "");
     result += &cmds(commands.foreground());
+    result += &format!("{: <4}background:\n", "");
+    result += &cmds(commands.background());
     result
 }
 

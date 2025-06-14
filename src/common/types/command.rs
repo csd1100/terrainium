@@ -100,7 +100,8 @@ impl Serialize for Command {
         command.serialize_field("args", &self.args)?;
         // do serialize envs for command state but do not serialize for toml
         // as for terrain.toml we have common env vars specified
-        if is_json {
+        // only serialize if envs are set
+        if is_json && self.envs.is_some() {
             command.serialize_field("envs", &self.envs)?;
         }
         command.serialize_field("cwd", &self.cwd)?;

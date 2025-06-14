@@ -16,14 +16,14 @@ Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
 Constructors:
-    background:
-        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
     foreground:
         `/bin/echo entering terrain` in terrain directory
         `/bin/echo entering biome example_biome` in terrain directory
-Destructors:
     background:
-        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
+        `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` in terrain directory
+Destructors:
     foreground:
         `/bin/echo exiting terrain` in terrain directory
         `/bin/echo exiting biome example_biome` in terrain directory
+    background:
+        `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` in terrain directory
