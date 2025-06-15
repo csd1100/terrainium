@@ -448,7 +448,6 @@ pub mod tests {
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::client::validation::{
@@ -1184,7 +1183,6 @@ pub mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::new(),
         );
 

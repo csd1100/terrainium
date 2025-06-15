@@ -78,7 +78,6 @@ mod tests {
         WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_UPDATED_EXAMPLE_TOML,
     };
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
@@ -112,7 +111,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -164,7 +162,6 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -227,7 +224,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -302,7 +298,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -364,7 +359,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -420,7 +414,6 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -481,7 +474,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -544,7 +536,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -601,7 +592,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 

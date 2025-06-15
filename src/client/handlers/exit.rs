@@ -88,7 +88,6 @@ fn deactivate(
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::{restore_env_var, set_env_var};
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
@@ -122,7 +121,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::default(),
         );
 
@@ -143,7 +141,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(TEST_SESSION_ID.to_string());
@@ -179,7 +176,6 @@ mod tests {
             terrain_dir,
             PathBuf::new(),
             toml_path,
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id);
@@ -210,7 +206,6 @@ mod tests {
             terrain_dir,
             PathBuf::new(),
             toml_path,
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id);
@@ -247,7 +242,6 @@ mod tests {
             terrain_dir,
             PathBuf::new(),
             toml_path,
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id);
@@ -285,7 +279,6 @@ mod tests {
             terrain_dir,
             PathBuf::new(),
             toml_path,
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id);
@@ -309,7 +302,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id.clone());
