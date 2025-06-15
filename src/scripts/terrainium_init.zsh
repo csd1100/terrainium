@@ -8,7 +8,7 @@ function __terrainium_auto_apply() {
 
     if [ "$auto_apply" = "enabled" ] || [ "$auto_apply" = "background" ]; then
         terrainium enter --auto-apply
-    elif [ "$auto_apply" = "replaced" ] || [ "$auto_apply" = "all" ]; then
+    elif [ "$auto_apply" = "replace" ] || [ "$auto_apply" = "all" ]; then
         exec terrainium enter --auto-apply
     fi
 }
