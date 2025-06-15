@@ -34,20 +34,18 @@ pub fn handle(
             terrain.select_biome(&update_args.biome)?.name()
         };
 
+        let biome = if biome_name == NONE {
+            &mut terrain_toml[TERRAIN]
+        } else {
+            &mut terrain_toml[BIOMES][&biome_name]
+        };
+
         update_args.env.into_iter().for_each(|env| {
-            if biome_name == NONE {
-                terrain_toml[TERRAIN][ENVS][env.key] = value(env.value);
-            } else {
-                terrain_toml[BIOMES][&biome_name][ENVS][env.key] = value(env.value);
-            }
+            biome[ENVS][env.key] = value(env.value);
         });
 
         update_args.alias.into_iter().for_each(|alias| {
-            if biome_name == NONE {
-                terrain_toml[TERRAIN][ALIASES][alias.key] = value(alias.value);
-            } else {
-                terrain_toml[BIOMES][&biome_name][ALIASES][alias.key] = value(alias.value);
-            }
+            biome[ALIASES][alias.key] = value(alias.value);
         });
     }
 
