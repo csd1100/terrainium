@@ -1,16 +1,19 @@
 "$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
+name = "terrainium"
+auto_apply = "off"
 default_biome = "example_biome"
-
-[auto_apply]
-enabled = false
-background = false
-replace = false
 
 [terrain.envs]
 EDITOR = "vim"
+ENV_VAR = "env_val"
+NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}"
+NULL_POINTER = "${NULL}"
+PAGER = "less"
+POINTER_ENV_VAR = "${ENV_VAR}"
 
 [terrain.aliases]
 tenter = "terrainium enter"
+texit = "terrainium exit"
 
 [terrain.constructors]
 background = []
@@ -28,20 +31,23 @@ args = ["exiting terrain"]
 
 [biomes.example_biome.envs]
 EDITOR = "nvim"
+ENV_VAR = "overridden_env_val"
 
 [biomes.example_biome.aliases]
-tenter = "terrainium enter -b example_biome"
-
-[biomes.example_biome.constructors]
-background = []
+tenter = "terrainium enter --biome example_biome"
 
 [[biomes.example_biome.constructors.foreground]]
 exe = "/bin/echo"
 args = ["entering biome example_biome"]
 
-[biomes.example_biome.destructors]
-background = []
+[[biomes.example_biome.constructors.background]]
+exe = "/bin/bash"
+args = ["-c", "${PWD}/tests/scripts/print_num_for_10_sec"]
 
 [[biomes.example_biome.destructors.foreground]]
 exe = "/bin/echo"
 args = ["exiting biome example_biome"]
+
+[[biomes.example_biome.destructors.background]]
+exe = "/bin/bash"
+args = ["-c", "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec"]
