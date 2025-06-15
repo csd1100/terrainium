@@ -144,7 +144,7 @@ mod tests {
         fs::create_dir_all(&session_dir_path).unwrap();
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let old_state =
             terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
@@ -202,7 +202,7 @@ mod tests {
         fs::create_dir_all(&session_dir_path).unwrap();
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let old_state =
             terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);

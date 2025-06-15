@@ -180,16 +180,11 @@ impl Display for Environment {
         write!(
             f,
             r#"Default Biome: {}          Selected Biome: {}
-Auto Apply:
-    enabled: {}
-    replace: {}
-    background: {}
+Auto Apply: {}
 {}{}{}{}"#,
             self.default_biome.as_ref().unwrap_or(&"none".to_string()),
             self.selected_biome,
-            self.auto_apply.is_enabled(),
-            self.auto_apply.get_replace(),
-            self.auto_apply.is_background(),
+            self.auto_apply,
             self.merged.envs_str(None),
             self.merged.aliases_str(None),
             self.merged.constructors_str(),

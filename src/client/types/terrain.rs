@@ -15,6 +15,7 @@ use anyhow::{bail, Context as AnyhowContext, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::fs::{read_to_string, write};
 use std::path::Path;
 use std::str::FromStr;
@@ -23,88 +24,32 @@ use tracing::info;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct AutoApply {
-    enabled: bool,
-    background: bool,
-    replace: bool,
+#[serde(rename_all = "lowercase")]
+pub enum AutoApply {
+    All,
+    Background,
+    Replace,
+    Enabled,
+    #[default]
+    Off,
 }
 
 impl AutoApply {
-    pub fn get_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn get_background(&self) -> bool {
-        self.background
-    }
-
-    pub fn get_replace(&self) -> bool {
-        self.replace
-    }
-
-    pub fn enabled() -> Self {
-        Self {
-            enabled: true,
-            background: false,
-            replace: false,
-        }
-    }
-
-    pub fn background() -> Self {
-        Self {
-            enabled: true,
-            background: true,
-            replace: false,
-        }
-    }
-
-    pub fn replace() -> Self {
-        Self {
-            enabled: true,
-            background: false,
-            replace: true,
-        }
-    }
-
-    pub fn all() -> Self {
-        Self {
-            enabled: true,
-            background: true,
-            replace: true,
-        }
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.enabled && !self.background && !self.replace
-    }
-
-    pub fn is_background(&self) -> bool {
-        self.enabled && self.background
-    }
-
-    pub fn is_replace(&self) -> bool {
-        self.enabled && self.replace
-    }
-
-    pub fn is_all(&self) -> bool {
-        self.enabled && self.background && self.replace
+    pub fn is_background_enabled(&self) -> bool {
+        matches!(self, AutoApply::Background) || matches!(self, AutoApply::All)
     }
 }
 
-impl From<&AutoApply> for String {
-    fn from(value: &AutoApply) -> Self {
-        if value.is_all() {
-            AUTO_APPLY_ALL
-        } else if value.is_enabled() {
-            AUTO_APPLY_ENABLED
-        } else if value.is_replace() {
-            AUTO_APPLY_REPLACE
-        } else if value.is_background() {
-            AUTO_APPLY_BACKGROUND
-        } else {
-            AUTO_APPLY_OFF
-        }
-        .to_string()
+impl Display for AutoApply {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match &self {
+            AutoApply::All => AUTO_APPLY_ALL.to_string(),
+            AutoApply::Background => AUTO_APPLY_BACKGROUND.to_string(),
+            AutoApply::Replace => AUTO_APPLY_REPLACE.to_string(),
+            AutoApply::Enabled => AUTO_APPLY_ENABLED.to_string(),
+            AutoApply::Off => AUTO_APPLY_OFF.to_string(),
+        };
+        write!(f, "{value}")
     }
 }
 
@@ -482,11 +427,7 @@ impl Terrain {
             terrain,
             biomes,
             Some(EXAMPLE_BIOME.to_string()),
-            AutoApply {
-                enabled: false,
-                background: false,
-                replace: false,
-            },
+            AutoApply::Off,
         )
     }
 }

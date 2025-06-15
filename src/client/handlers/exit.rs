@@ -50,7 +50,7 @@ fn should_run_destructor() -> bool {
         Ok(auto_apply) => {
             let auto_apply = AutoApply::from_str(&auto_apply)
                 .expect("expect auto-apply to be converted from string");
-            auto_apply.is_background() || auto_apply.is_all()
+            auto_apply.is_background_enabled()
         }
         Err(_) => true,
     }
@@ -232,7 +232,7 @@ mod tests {
         );
         let auto_apply = set_env_var(
             TERRAIN_AUTO_APPLY.to_string(),
-            Some((&AutoApply::enabled()).into()),
+            Some(AutoApply::Enabled.to_string()),
         );
 
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
@@ -270,7 +270,7 @@ mod tests {
         );
         let auto_apply = set_env_var(
             TERRAIN_AUTO_APPLY.to_string(),
-            Some((&AutoApply::replace()).into()),
+            Some(AutoApply::Replace.to_string()),
         );
 
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);

@@ -37,22 +37,13 @@
   ],
   "$defs": {
     "AutoApply": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "background": {
-          "type": "boolean"
-        },
-        "replace": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "enabled",
+      "type": "string",
+      "enum": [
+        "all",
         "background",
-        "replace"
+        "replace",
+        "enabled",
+        "off"
       ]
     },
     "Biome": {
