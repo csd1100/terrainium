@@ -73,7 +73,6 @@ fn status(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
     use crate::client::types::terrain::Terrain;
@@ -109,7 +108,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id.clone());
@@ -137,7 +135,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id.clone());
@@ -174,7 +171,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         );
 
@@ -207,7 +203,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         );
 
@@ -235,7 +230,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id.clone());
@@ -263,7 +257,6 @@ mod tests {
             terrain_dir.path().to_path_buf(),
             PathBuf::new(),
             terrain_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::default(),
         )
         .set_session_id(session_id.clone());

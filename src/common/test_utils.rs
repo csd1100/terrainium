@@ -35,7 +35,7 @@ pub fn expected_envs_with_activate_example_biome(
     envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
     envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
     if is_auto_apply {
-        envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.into());
+        envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.to_string());
     }
     envs
 }

@@ -362,7 +362,7 @@ mod tests {
         let state_directory = tempdir().unwrap();
         let new_timestamp = "1970-01-01_00:00:01".to_string();
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let mut request =
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
@@ -419,7 +419,7 @@ mod tests {
     async fn does_not_add_construct_with_same_timestamp() {
         let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
             Arc::new(MockExecutor::new()),
@@ -506,7 +506,7 @@ mod tests {
         let state_directory = tempdir().unwrap();
         let new_timestamp = "1970-01-01_00:00:01".to_string();
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let mut request =
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), false);
@@ -563,7 +563,7 @@ mod tests {
     async fn does_not_add_destruct_with_same_timestamp() {
         let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
             Arc::new(MockExecutor::new()),
@@ -652,7 +652,7 @@ mod tests {
         fs::create_dir_all(&session_dir_path).unwrap();
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let old_state =
             terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);
@@ -743,7 +743,7 @@ mod tests {
         fs::create_dir_all(&session_dir_path).unwrap();
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let old_state =
             terrain_state_after_activate(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply);

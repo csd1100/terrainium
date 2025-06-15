@@ -245,11 +245,11 @@ impl FromStr for AutoApply {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            AUTO_APPLY_ENABLED => Ok(AutoApply::enabled()),
-            AUTO_APPLY_REPLACE => Ok(AutoApply::replace()),
-            AUTO_APPLY_BACKGROUND => Ok(AutoApply::background()),
-            AUTO_APPLY_ALL => Ok(AutoApply::all()),
-            AUTO_APPLY_OFF => Ok(AutoApply::default()),
+            AUTO_APPLY_ENABLED => Ok(AutoApply::Enabled),
+            AUTO_APPLY_REPLACE => Ok(AutoApply::Replace),
+            AUTO_APPLY_BACKGROUND => Ok(AutoApply::Background),
+            AUTO_APPLY_ALL => Ok(AutoApply::All),
+            AUTO_APPLY_OFF => Ok(AutoApply::Off),
             _ => bail!("failed to parse auto_apply argument from: {s}"),
         }
     }
@@ -318,19 +318,19 @@ mod tests {
     fn auto_apply_from_str() {
         assert_eq!(
             AutoApply::from_str("enabled").expect("to be parsed"),
-            AutoApply::enabled()
+            AutoApply::Enabled
         );
         assert_eq!(
             AutoApply::from_str("all").expect("to be parsed"),
-            AutoApply::all()
+            AutoApply::All
         );
         assert_eq!(
             AutoApply::from_str("replace").expect("to be parsed"),
-            AutoApply::replace()
+            AutoApply::Replace
         );
         assert_eq!(
             AutoApply::from_str("background").expect("to be parsed"),
-            AutoApply::background()
+            AutoApply::Background
         );
         assert_eq!(
             AutoApply::from_str("off").expect("to be parsed"),

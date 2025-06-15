@@ -115,7 +115,7 @@ mod tests {
         );
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let expected_request =
             expected_activate_request_example_biome(true, is_auto_apply, &auto_apply);
@@ -162,7 +162,7 @@ mod tests {
         );
 
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let expected_request =
             expected_activate_request_example_biome(true, is_auto_apply, &auto_apply);

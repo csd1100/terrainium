@@ -1,8 +1,5 @@
 Default Biome: none          Selected Biome: none
-Auto Apply:
-    enabled: false
-    replace: false
-    background: false
+Auto Apply: off
 Environment Variables:
     TERRAIN_DIR=""
     TERRAIN_SELECTED_BIOME="none"

@@ -21,7 +21,6 @@ mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::types::client::MockClient;
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::Terrain;
@@ -45,13 +44,8 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let mut context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
-            Config::default(),
-            MockExecutor::new(),
-        );
+        let mut context =
+            Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
 
         if let Some(session_id) = &session_id {
             context = context.set_session_id(session_id.clone());
@@ -72,13 +66,7 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
-            Config::default(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
 
         // client without any expectation
         let client = MockClient::default();
@@ -97,13 +85,8 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let mut context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
-            Config::default(),
-            MockExecutor::new(),
-        );
+        let mut context =
+            Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
 
         if let Some(session_id) = &session_id {
             context = context.set_session_id(session_id.clone());

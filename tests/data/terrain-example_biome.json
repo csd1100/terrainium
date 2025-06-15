@@ -2,11 +2,7 @@
   "name": "terrainium",
   "default_biome": "example_biome",
   "selected_biome": "example_biome",
-  "auto_apply": {
-    "enabled": false,
-    "background": false,
-    "replace": false
-  },
+  "auto_apply": "off",
   "merged": {
     "envs": {
       "EDITOR": "nvim",

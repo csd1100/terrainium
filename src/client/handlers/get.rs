@@ -24,9 +24,9 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
 
     if get_args.auto_apply {
         if context.config().auto_apply() {
-            return Ok(terrain.auto_apply().into());
+            return Ok(terrain.auto_apply().to_string());
         }
-        return Ok((&AutoApply::default()).into());
+        return Ok(AutoApply::default().to_string());
     }
 
     let mut result = String::new();
@@ -74,7 +74,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -106,7 +105,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -138,7 +136,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -170,7 +167,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -202,7 +198,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -235,7 +230,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -268,7 +262,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -298,7 +291,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -337,7 +329,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -376,7 +367,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -409,7 +399,6 @@ mod tests {
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -451,7 +440,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -484,7 +472,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -517,7 +504,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -554,7 +540,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -591,7 +576,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -646,7 +630,6 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -695,7 +678,6 @@ Destructors:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -731,7 +713,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -773,7 +754,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -806,7 +786,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -839,7 +818,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -872,7 +850,6 @@ Aliases:
             PathBuf::new(),
             PathBuf::new(),
             PathBuf::new(),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -901,13 +878,7 @@ Aliases:
 
     #[test]
     fn get_auto_apply_globally_off() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            Config::auto_apply_off(),
-            MockExecutor::new(),
-        );
+        let context = Context::build_with_config(Config::auto_apply_off());
 
         let args = GetArgs {
             json: false,

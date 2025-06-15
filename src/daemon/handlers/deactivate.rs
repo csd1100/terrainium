@@ -87,7 +87,7 @@ mod tests {
     async fn test_deactivate() {
         let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
-        let auto_apply = AutoApply::all();
+        let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
             Arc::new(MockExecutor::new()),

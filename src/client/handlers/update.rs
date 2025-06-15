@@ -3,10 +3,7 @@ use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{
-    ALIASES, AUTO_APPLY, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_REPLACE, BIOMES,
-    DEFAULT_BIOME, ENVS, NONE, TERRAIN,
-};
+use crate::common::constants::{ALIASES, AUTO_APPLY, BIOMES, DEFAULT_BIOME, ENVS, NONE, TERRAIN};
 use anyhow::{bail, Context as AnyhowContext, Result};
 use std::fs::{copy, write};
 use toml_edit::{value, DocumentMut};
@@ -18,9 +15,7 @@ pub fn handle(
     update_args: UpdateArgs,
 ) -> Result<()> {
     if let Some(auto_apply) = update_args.auto_apply {
-        terrain_toml[AUTO_APPLY][AUTO_APPLY_ENABLED] = value(auto_apply.get_enabled());
-        terrain_toml[AUTO_APPLY][AUTO_APPLY_BACKGROUND] = value(auto_apply.get_background());
-        terrain_toml[AUTO_APPLY][AUTO_APPLY_REPLACE] = value(auto_apply.get_replace());
+        terrain_toml[AUTO_APPLY] = value(auto_apply.to_string());
     }
 
     if let Some(new_default) = update_args.set_default {
@@ -83,7 +78,6 @@ mod tests {
         WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_UPDATED_EXAMPLE_TOML,
     };
-    use crate::client::types::config::Config;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
@@ -117,7 +111,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -169,7 +162,6 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -232,7 +224,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -307,7 +298,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -369,7 +359,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -425,7 +414,6 @@ mod tests {
             current_dir.path().into(),
             PathBuf::new(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             MockExecutor::new(),
         );
 
@@ -486,7 +474,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -549,7 +536,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
@@ -566,7 +552,7 @@ mod tests {
                 env: vec![],
                 new: None,
                 backup: true,
-                auto_apply: Some(AutoApply::enabled()),
+                auto_apply: Some(AutoApply::Enabled),
             },
         )
         .expect("no error to be thrown");
@@ -606,7 +592,6 @@ mod tests {
             current_dir.path().into(),
             central_dir.path().into(),
             current_dir.path().join(TERRAIN_TOML),
-            Config::default(),
             executor,
         );
 
