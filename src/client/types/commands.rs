@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
-use crate::common::types::command::{Command, CommandsType, OperationType};
+use crate::common::types::command::{Command, CommandIdentifier, CommandsType, OperationType};
 use crate::common::types::pb;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
@@ -78,18 +78,22 @@ impl Commands {
 
         self.foreground.iter().for_each(|c| {
             result.append(c.validate_command(
-                biome_name,
-                operation_type.clone(),
-                CommandsType::Foreground,
+                CommandIdentifier {
+                    biome_name,
+                    operation_type: &operation_type,
+                    commands_type: &CommandsType::Foreground,
+                },
                 terrain_dir,
             ))
         });
 
         self.background.iter().for_each(|c| {
             result.append(c.validate_command(
-                biome_name,
-                operation_type.clone(),
-                CommandsType::Background,
+                CommandIdentifier {
+                    biome_name,
+                    operation_type: &operation_type,
+                    commands_type: &CommandsType::Background,
+                },
                 terrain_dir,
             ))
         });

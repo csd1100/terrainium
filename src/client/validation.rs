@@ -205,6 +205,7 @@ pub(crate) fn validate_identifiers<'a>(
 
     let starting_with_num = Regex::new(r"^[0-9]").unwrap();
     let invalid_identifier = Regex::new(r"[^a-zA-Z0-9_]").unwrap();
+    let for_str = format!("{biome_name}({data_type})");
 
     data.iter().for_each(|(k, _v)| {
         let mut k = k.as_str();
@@ -214,55 +215,56 @@ pub(crate) fn validate_identifiers<'a>(
                 level: ValidationMessageLevel::Error,
                 message:
                 "empty identifier is not allowed".to_string(),
-                r#for: format!("{biome_name}({data_type})"),
+                r#for: for_str.clone(),
                 fix_action: ValidationFixAction::None,
             });
-        } else {
-            if k.starts_with(" ") || k.ends_with(" ") {
-                fixable = true;
-                messages.insert(ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message: format!(
-                        "trimming spaces from identifier: '{k}'"
-                    ),
-                    r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_identifier(&data_type, k) },
-                });
-            }
+            return;
+        }
 
-            // trim leading and trailing spaces for further validation
-            k = k.trim();
+        if k.starts_with(" ") || k.ends_with(" ") {
+            fixable = true;
+            messages.insert(ValidationResult {
+                level: ValidationMessageLevel::Warn,
+                message: format!(
+                    "trimming spaces from identifier: '{k}'"
+                ),
+                r#for: for_str.clone(),
+                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_identifier(&data_type, k) },
+            });
+        }
 
-            if k.contains(" ") {
-                messages.insert(ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: format!(
-                        "identifier '{k}' is invalid as it contains spaces",
-                    ),
-                    r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None,
-                });
-            }
+        // trim leading and trailing spaces for further validation
+        k = k.trim();
 
-            if starting_with_num.is_match(k) {
-                messages.insert(ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: format!(
-                        "identifier '{k}' cannot start with number",
-                    ),
-                    r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None,
-                });
-            }
+        if k.contains(" ") {
+            messages.insert(ValidationResult {
+                level: ValidationMessageLevel::Error,
+                message: format!(
+                    "identifier '{k}' is invalid as it contains spaces",
+                ),
+                r#for: for_str.clone(),
+                fix_action: ValidationFixAction::None,
+            });
+        }
 
-            if invalid_identifier.is_match(k) {
-                messages.insert(ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: format!("identifier '{k}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters."),
-                    r#for: format!("{biome_name}({data_type})"),
-                    fix_action: ValidationFixAction::None,
-                });
-            }
+        if starting_with_num.is_match(k) {
+            messages.insert(ValidationResult {
+                level: ValidationMessageLevel::Error,
+                message: format!(
+                    "identifier '{k}' cannot start with number",
+                ),
+                r#for: for_str.clone(),
+                fix_action: ValidationFixAction::None,
+            });
+        }
+
+        if invalid_identifier.is_match(k) {
+            messages.insert(ValidationResult {
+                level: ValidationMessageLevel::Error,
+                message: format!("identifier '{k}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters."),
+                r#for: for_str.clone(),
+                fix_action: ValidationFixAction::None,
+            });
         }
     });
     ValidationResults::new(fixable, messages)
