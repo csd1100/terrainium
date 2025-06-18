@@ -80,7 +80,7 @@ impl Commands {
             result.append(c.validate_command(
                 biome_name,
                 operation_type.clone(),
-                CommandsType::Foreground,
+                &CommandsType::Foreground,
                 terrain_dir,
             ))
         });
@@ -89,7 +89,7 @@ impl Commands {
             result.append(c.validate_command(
                 biome_name,
                 operation_type.clone(),
-                CommandsType::Background,
+                &CommandsType::Background,
                 terrain_dir,
             ))
         });
