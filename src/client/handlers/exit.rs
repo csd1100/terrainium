@@ -167,7 +167,7 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(
+        let client = ExpectClient::send(ProtoRequest::Deactivate(
             test_utils::expected_deactivate_request_example_biome(session_id.clone()),
         ))
         .successfully();
@@ -197,7 +197,7 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
+        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
         )))
         .successfully();
@@ -233,7 +233,7 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
+        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
         )))
         .successfully();
@@ -270,7 +270,7 @@ mod tests {
         let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
+        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
             session_id.clone(),
         )))
         .successfully();
@@ -307,7 +307,7 @@ mod tests {
         .set_session_id(session_id.clone());
 
         let client =
-            ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(session_id)))
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(session_id)))
                 .with_returning_error("failed to parse the request".to_string());
 
         let actual_error = super::handle(context, Terrain::example(), Some(client))

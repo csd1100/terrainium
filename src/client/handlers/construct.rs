@@ -51,7 +51,7 @@ mod tests {
             context = context.set_session_id(session_id.clone());
         }
 
-        let client = ExpectClient::to_send(ProtoRequest::Execute(
+        let client = ExpectClient::send(ProtoRequest::Execute(
             expected_construct_request_example_biome(session_id),
         ))
         .successfully();
@@ -94,7 +94,7 @@ mod tests {
 
         let expected_error = "failed to parse execute request".to_string();
 
-        let client = ExpectClient::to_send(ProtoRequest::Execute(
+        let client = ExpectClient::send(ProtoRequest::Execute(
             expected_construct_request_example_biome(session_id),
         ))
         .with_returning_error(expected_error.clone());

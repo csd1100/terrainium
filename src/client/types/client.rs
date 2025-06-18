@@ -22,7 +22,7 @@ impl Socket for Client {
         &mut self.stream
     }
 
-    async fn is_ready(&mut self) -> Result<bool> {
+    async fn ready(&mut self) -> Result<bool> {
         socket_is_ready(self).await
     }
 
@@ -98,7 +98,7 @@ mock! {
 
     impl Socket for Client {
         fn stream(&mut self) -> &mut UnixStream;
-        async fn is_ready(&mut self) -> Result<bool>;
+        async fn ready(&mut self) -> Result<bool>;
         async fn read(&mut self) -> Result<Any>;
         async fn write_and_stop(&mut self, payload: Any) -> Result<()>;
         async fn stop_write(&mut self) -> Result<()>;

@@ -6,7 +6,7 @@ use tokio::net::UnixStream;
 
 pub trait Socket {
     fn stream(&mut self) -> &mut UnixStream;
-    fn is_ready(&mut self) -> impl std::future::Future<Output = Result<bool>> + Send;
+    fn ready(&mut self) -> impl std::future::Future<Output = Result<bool>> + Send;
     fn read(&mut self) -> impl std::future::Future<Output = Result<Any>> + Send;
     fn write_and_stop(
         &mut self,
@@ -25,7 +25,7 @@ pub async fn socket_is_ready(socket: &mut impl Socket) -> Result<bool> {
 
 pub async fn socket_read(socket: &mut impl Socket) -> Result<Any> {
     socket
-        .is_ready()
+        .ready()
         .await
         .context("failed to check if stream is ready")?;
 
@@ -36,7 +36,7 @@ pub async fn socket_read(socket: &mut impl Socket) -> Result<Any> {
 
 pub async fn socket_write_and_stop(socket: &mut impl Socket, payload: Any) -> Result<()> {
     socket
-        .is_ready()
+        .ready()
         .await
         .context("failed to check if stream is ready")?;
 

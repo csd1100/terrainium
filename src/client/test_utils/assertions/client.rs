@@ -9,7 +9,7 @@ pub struct ExpectClient {
 }
 
 impl ExpectClient {
-    pub fn to_send(request: ProtoRequest) -> Self {
+    pub fn send(request: ProtoRequest) -> Self {
         Self {
             request,
             expected_response: ProtoResponse::Success,

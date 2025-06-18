@@ -224,7 +224,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -266,7 +266,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -308,7 +308,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -350,7 +350,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -392,7 +392,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -434,7 +434,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -476,7 +476,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(expected_activate_request_none(
+        let client = ExpectClient::send(ProtoRequest::Activate(expected_activate_request_none(
             is_background,
         )))
         .successfully();
@@ -518,7 +518,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(expected_activate_request_none(
+        let client = ExpectClient::send(ProtoRequest::Activate(expected_activate_request_none(
             is_background,
         )))
         .successfully();
@@ -560,7 +560,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -608,7 +608,7 @@ mod tests {
         let context = Context::build(terrain_dir, central_dir, toml_path, executor)
             .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .successfully();
@@ -657,7 +657,7 @@ mod tests {
         )
         .set_session_id(TEST_SESSION_ID.to_string());
 
-        let client = ExpectClient::to_send(ProtoRequest::Activate(
+        let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
         .with_returning_error("failed to parse the request".to_string());
