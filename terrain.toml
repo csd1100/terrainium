@@ -62,4 +62,4 @@ args = ["'exiting test biome'"]
 [[biomes.test.destructors.background]]
 exe = "/bin/zsh"
 args = ["-c", "./print_num_for_10_sec"]
-cwd = "${TESTS_DIR}"
+cwd = "./tests/scripts"
