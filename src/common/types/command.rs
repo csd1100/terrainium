@@ -411,7 +411,7 @@ impl Command {
                 &mut results,
             );
         } else {
-            let res = is_exe_in_path(&self.exe).unwrap_or_default();
+            let res = is_exe_in_path(trimmed).unwrap_or_default();
             self.validate_path_exe(
                 &res,
                 true,

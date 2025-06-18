@@ -460,7 +460,7 @@ pub mod tests {
     use std::collections::BTreeMap;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
     use std::os::unix::fs::{symlink, PermissionsExt};
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::tempdir;
     use toml_edit::DocumentMut;
@@ -927,7 +927,7 @@ pub mod tests {
 
         let messages = terrain.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 176);
+        assert_eq!(messages.len(), 160);
         [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["constructor", "destructor"]
                 .iter()
@@ -1159,7 +1159,7 @@ pub mod tests {
         );
         let messages = before.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 40);
+        assert_eq!(messages.len(), 24);
         [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 let fix_action = if identifier_type == &"env" {
@@ -1217,7 +1217,7 @@ pub mod tests {
         });
 
         let toml = terrain
-            .to_toml(Path::new(""))
+            .to_toml(test_dir.path())
             .unwrap()
             .parse::<DocumentMut>()
             .unwrap();
