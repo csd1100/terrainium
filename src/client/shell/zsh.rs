@@ -428,8 +428,7 @@ mod tests {
             home_dir.path().join(".config/terrainium/shell_integration");
         create_dir_all(&zsh_integration_script_location).unwrap();
 
-        let zsh_integration_script =
-            zsh_integration_script_location.join("terrainium_init.zsh");
+        let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
 
         let mut zsh_integration_script_backup = zsh_integration_script.clone();
         zsh_integration_script_backup.set_extension("zsh.bkp");

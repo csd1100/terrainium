@@ -133,8 +133,8 @@ impl Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cwd = self
             .cwd
-            .clone()
-            .unwrap_or_default()
+            .as_ref()
+            .unwrap_or(&Default::default())
             .to_string_lossy()
             .to_string();
 
@@ -161,6 +161,11 @@ impl Command {
             envs,
             cwd,
         }
+    }
+
+    pub fn trim_exe(mut self) -> Self {
+        self.exe = self.exe.trim().to_string();
+        self
     }
 
     pub fn exe(&self) -> &str {

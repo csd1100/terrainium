@@ -246,82 +246,70 @@ impl Terrain {
                         }
                         Target::ForegroundConstructor(fc) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", fc.exe());
-                            let fixed = Command::new(
-                                fc.exe().trim().to_string(),
-                                fc.args().to_vec(),
-                                None,
-                                fc.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
-                            fixed_biome.insert_foreground_constructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_foreground_constructor(fc).unwrap();
+
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 FOREGROUND,
                                 idx,
-                                fc.exe().trim(),
+                                fixed.exe(),
                             );
+
+                            fixed_biome.insert_foreground_constructor(idx, fixed);
                         }
                         Target::BackgroundConstructor(bc) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", bc.exe());
-                            let fixed = Command::new(
-                                bc.exe().trim().to_string(),
-                                bc.args().to_vec(),
-                                None,
-                                bc.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_background_constructor(bc).unwrap();
-                            fixed_biome.insert_background_constructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_background_constructor(bc).unwrap();
+                            let fixed = command.trim_exe();
+
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 BACKGROUND,
                                 idx,
-                                bc.exe().trim(),
-                            )
+                                fixed.exe(),
+                            );
+
+                            fixed_biome.insert_background_constructor(idx, fixed);
                         }
                         Target::ForegroundDestructor(fd) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", fd.exe());
-                            let fixed = Command::new(
-                                fd.exe().trim().to_string(),
-                                fd.args().to_vec(),
-                                None,
-                                fd.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
-                            fixed_biome.insert_foreground_destructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_foreground_destructor(fd).unwrap();
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 FOREGROUND,
                                 idx,
-                                fd.exe().trim(),
+                                fixed.exe(),
                             );
+
+                            fixed_biome.insert_foreground_destructor(idx, fixed);
                         }
                         Target::BackgroundDestructor(bd) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", bd.exe());
-                            let fixed = Command::new(
-                                bd.exe().trim().to_string(),
-                                bd.args().to_vec(),
-                                None,
-                                bd.cwd().clone(),
-                            );
-
-                            let idx = fixed_biome.remove_background_destructor(bd).unwrap();
-                            fixed_biome.insert_background_destructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_background_destructor(bd).unwrap();
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 BACKGROUND,
                                 idx,
-                                bd.exe().trim(),
-                            )
+                                fixed.exe(),
+                            );
+                            fixed_biome.insert_background_destructor(idx, fixed);
                         }
                     }
                     fixed.update(biome_name.to_string(), fixed_biome);
