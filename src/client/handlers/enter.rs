@@ -211,7 +211,7 @@ mod tests {
         let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -253,7 +253,7 @@ mod tests {
         let auto_apply = AutoApply::Background;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -295,7 +295,7 @@ mod tests {
         let auto_apply = AutoApply::Replace;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -337,7 +337,7 @@ mod tests {
         let auto_apply = AutoApply::Enabled;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -379,7 +379,7 @@ mod tests {
         let auto_apply = AutoApply::default();
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -421,7 +421,7 @@ mod tests {
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -463,7 +463,7 @@ mod tests {
         let auto_apply = AutoApply::All;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_none(is_auto_apply, &auto_apply),
@@ -505,7 +505,7 @@ mod tests {
         let auto_apply = AutoApply::All;
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_none(is_auto_apply, &auto_apply),
@@ -547,7 +547,7 @@ mod tests {
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -595,7 +595,7 @@ mod tests {
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -639,7 +639,7 @@ mod tests {
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir.clone())
+        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),

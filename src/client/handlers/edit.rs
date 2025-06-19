@@ -82,14 +82,14 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        let terrain_dir = current_dir.path().to_path_buf();
+        let terrain_dir = current_dir.path();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 "vim".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir.clone()),
+                Some(terrain_dir.into()),
             ),
             exit_code: 0,
             should_error: false,
@@ -99,7 +99,7 @@ pub(crate) mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when edit
-        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+        let executor = ExpectZSH::with(executor, terrain_dir)
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -137,14 +137,14 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
-        let terrain_dir = current_dir.path().to_path_buf();
+        let terrain_dir = current_dir.path();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 "vim".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir.clone()),
+                Some(terrain_dir.into()),
             ),
             exit_code: 0,
             should_error: false,
@@ -154,7 +154,7 @@ pub(crate) mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when edit
-        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+        let executor = ExpectZSH::with(executor, terrain_dir)
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -195,14 +195,14 @@ pub(crate) mod tests {
         let central_dir = tempdir()?;
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        let terrain_dir = current_dir.path().to_path_buf();
+        let terrain_dir = current_dir.path();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 "vi".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir.clone()),
+                Some(terrain_dir.into()),
             ),
             exit_code: 0,
             should_error: false,
@@ -212,7 +212,7 @@ pub(crate) mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when edit
-        let executor = ExpectZSH::with(executor, terrain_dir.clone())
+        let executor = ExpectZSH::with(executor, terrain_dir)
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();

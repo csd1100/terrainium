@@ -100,7 +100,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -212,7 +212,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for("example_biome2", central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
@@ -287,7 +287,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -348,7 +348,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -463,7 +463,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -525,7 +525,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -581,7 +581,7 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();

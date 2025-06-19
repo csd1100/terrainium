@@ -13,8 +13,11 @@ pub struct ExpectZSH {
 }
 
 impl ExpectZSH {
-    pub fn with(executor: MockExecutor, cwd: PathBuf) -> Self {
-        Self { executor, cwd }
+    pub fn with(executor: MockExecutor, cwd: &Path) -> Self {
+        Self {
+            executor,
+            cwd: cwd.into(),
+        }
     }
 
     fn compile_script(

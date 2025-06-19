@@ -64,7 +64,7 @@ pub mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -92,7 +92,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -120,7 +120,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -145,7 +145,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -200,7 +200,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -251,7 +251,7 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
@@ -301,7 +301,7 @@ pub mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(executor, current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(executor, current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
@@ -351,7 +351,7 @@ pub mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(executor, terrain_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(executor, terrain_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
