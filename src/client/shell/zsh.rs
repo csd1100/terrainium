@@ -67,8 +67,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
             .context("failed to read shell-integration script")?
             != INIT_SCRIPT
         {
-            let mut backup = init_script_location.clone();
-            backup.set_extension("zsh.bkp");
+            let backup = init_script_location.with_extension("zsh.bkp");
 
             fs::copy(&init_script_location, backup)
                 .context("failed to backup shell-integration script")?;
@@ -82,8 +81,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
                 .context("failed to create updated shell-integration script file")?;
         }
 
-        let mut compiled_path = init_script_location.clone();
-        compiled_path.set_extension("zsh.zwc");
+        let compiled_path = init_script_location.with_extension("zsh.zwc");
 
         self.compile_script(&init_script_location, &compiled_path)
     }
@@ -401,9 +399,7 @@ mod tests {
         create_dir_all(&zsh_integration_script_location).unwrap();
 
         let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
-
-        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
-        compiled_zsh_integration_script.set_extension("zsh.zwc");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zsh.zwc");
 
         let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path())
             .compile_script_successfully_for(
@@ -429,12 +425,8 @@ mod tests {
         create_dir_all(&zsh_integration_script_location).unwrap();
 
         let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
-
-        let mut zsh_integration_script_backup = zsh_integration_script.clone();
-        zsh_integration_script_backup.set_extension("zsh.bkp");
-
-        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
-        compiled_zsh_integration_script.set_extension("zsh.zwc");
+        let zsh_integration_script_backup = zsh_integration_script.with_extension("zsh.bkp");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zsh.zwc");
 
         write(
             home_dir
