@@ -63,7 +63,7 @@ pub(crate) fn execute_request(
     };
 
     let commands: Vec<pb::Command> = commands
-        .to_proto_commands(environment.envs())
+        .to_proto_commands()
         .context("failed to convert commands")?;
 
     if commands.is_empty() {
@@ -78,6 +78,7 @@ pub(crate) fn execute_request(
         toml_path: context.toml_path().to_string_lossy().to_string(),
         is_constructor,
         timestamp,
+        envs: environment.envs(),
         commands,
     }))
 }

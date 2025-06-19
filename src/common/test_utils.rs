@@ -64,13 +64,13 @@ pub fn expected_activate_request_example_biome(
                 toml_path,
                 is_constructor: true,
                 timestamp: TEST_TIMESTAMP.to_string(),
+                envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                 commands: vec![pb::Command {
                     exe: "/bin/bash".to_string(),
                     args: vec![
                         "-c".to_string(),
                         "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                     ],
-                    envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                     cwd: terrain_dir,
                 }],
             })
@@ -91,16 +91,7 @@ pub(crate) fn expected_execute_request_example_biome(
     } else {
         expected_destructor_background_example_biome(Path::new(TEST_TERRAIN_DIR))
     };
-    let commands = commands
-        .into_iter()
-        .map(|cmd| {
-            let mut command = cmd;
-            command.set_envs(Some(expected_env_vars_example_biome(Path::new(
-                TEST_TERRAIN_DIR,
-            ))));
-            command.into()
-        })
-        .collect();
+    let commands = commands.into_iter().map(|cmd| cmd.into()).collect();
 
     pb::Execute {
         session_id,
@@ -110,6 +101,7 @@ pub(crate) fn expected_execute_request_example_biome(
         toml_path,
         is_constructor,
         timestamp: TEST_TIMESTAMP.to_string(),
+        envs: expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
         commands,
     }
 }

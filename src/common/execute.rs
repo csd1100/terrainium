@@ -2,7 +2,9 @@ use crate::common::types::command::Command;
 use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
+use std::collections::BTreeMap;
 use std::process::{ExitStatus, Output};
+use std::sync::Arc;
 use tracing::{info, trace};
 
 pub trait Execute {
@@ -15,6 +17,7 @@ pub trait Execute {
     fn async_spawn_with_log(
         &self,
         command: Command,
+        envs: Arc<BTreeMap<String, String>>,
         log_path: &str,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
     fn async_spawn(
@@ -45,9 +48,14 @@ impl Execute for Executor {
         command.output().await.context("failed to get output")
     }
 
-    async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus> {
+    async fn async_spawn_with_log(
+        &self,
+        command: Command,
+        envs: Arc<BTreeMap<String, String>>,
+        log_path: &str,
+    ) -> Result<ExitStatus> {
         info!("running async process with wait for '{command}', with logs in file: {log_path}",);
-        trace!("running async process with wait {command:?}");
+        trace!("running async process with wait {command} and envs: {envs:?}");
 
         let log_file = tokio::fs::File::options()
             .create(true)
@@ -66,6 +74,7 @@ impl Execute for Executor {
         let stderr: std::fs::File = log_file.into_std().await;
 
         let mut command: tokio::process::Command = command.into();
+        command.envs(envs.as_ref());
         command.stdout(stdout);
         command.stderr(stderr);
         let mut child = command.spawn().context("failed to run command")?;
@@ -88,7 +97,9 @@ mock! {
         fn get_output(&self, command: Command) -> Result<Output>;
         fn wait(&self, command: Command) -> Result<ExitStatus>;
         async fn async_get_output(&self, command: Command) -> Result<Output>;
-        async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus>;
+        async fn async_spawn_with_log(&self, command: Command,
+            envs: Arc<BTreeMap<String, String>>,
+            log_path: &str) -> Result<ExitStatus>;
         async fn async_spawn(&self, command: Command) -> Result<ExitStatus>;
     }
 }

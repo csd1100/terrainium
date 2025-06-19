@@ -21,8 +21,9 @@ message StatusResponse {
   bool is_background = 6;
   string start_timestamp = 7;
   string end_timestamp = 8;
-  map<string, CommandStates> constructors = 11;
-  map<string, CommandStates> destructors = 12;
+  map<string, string> envs = 9;
+  map<string, CommandStates> constructors = 21;
+  map<string, CommandStates> destructors = 22;
 
   message CommandStates {
     repeated CommandState command_states = 1;

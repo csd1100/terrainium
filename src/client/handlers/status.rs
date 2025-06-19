@@ -73,6 +73,7 @@ fn status(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
+    use crate::client::test_utils::expected_env_vars_example_biome;
     use crate::client::types::context::Context;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
     use crate::client::types::terrain::Terrain;
@@ -94,6 +95,7 @@ mod tests {
             is_background: false,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
+            envs: expected_env_vars_example_biome(terrain_dir),
             constructors: Default::default(),
             destructors: Default::default(),
         }

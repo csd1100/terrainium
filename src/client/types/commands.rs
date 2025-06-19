@@ -54,17 +54,10 @@ impl Commands {
         self.background.as_mut()
     }
 
-    pub(crate) fn to_proto_commands(
-        &self,
-        envs: BTreeMap<String, String>,
-    ) -> Result<Vec<pb::Command>> {
+    pub(crate) fn to_proto_commands(&self) -> Result<Vec<pb::Command>> {
         self.background()
             .iter()
-            .map(|c| {
-                let mut cmd: pb::Command = c.clone().into();
-                cmd.envs = envs.clone();
-                Ok(cmd)
-            })
+            .map(|c| Ok(c.clone().into()))
             .collect()
     }
 

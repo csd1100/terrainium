@@ -97,6 +97,7 @@ pub struct TerrainState {
     is_background: bool,
     start_timestamp: String,
     end_timestamp: String,
+    envs: BTreeMap<String, String>,
     constructors: BTreeMap<String, Vec<CommandState>>,
     destructors: BTreeMap<String, Vec<CommandState>>,
 }
@@ -135,6 +136,10 @@ impl TerrainState {
             .iter()
             .map(|cst| cst.log_path.clone())
             .collect()
+    }
+
+    pub fn envs(&self) -> BTreeMap<String, String> {
+        self.envs.clone()
     }
 
     pub fn get_constructors(&self, timestamp: &str) -> Result<Vec<CommandState>> {
@@ -366,8 +371,11 @@ impl From<pb::Activate> for TerrainState {
             constructors,
         } = value;
 
+        let envs: BTreeMap<String, String>;
+
         let mut constructors_state = BTreeMap::<String, Vec<CommandState>>::new();
         if let Some(constructors) = constructors {
+            envs = constructors.envs;
             let command_states: Vec<CommandState> = constructors
                 .commands
                 .into_iter()
@@ -385,6 +393,8 @@ impl From<pb::Activate> for TerrainState {
                 })
                 .collect();
             constructors_state.insert(constructors.timestamp, command_states);
+        } else {
+            envs = BTreeMap::new();
         }
         Self {
             session_id,
@@ -395,6 +405,7 @@ impl From<pb::Activate> for TerrainState {
             is_background,
             start_timestamp,
             end_timestamp: "".to_string(),
+            envs,
             constructors: constructors_state,
             destructors: Default::default(),
         }
@@ -411,6 +422,7 @@ impl From<pb::Execute> for TerrainState {
             toml_path,
             is_constructor,
             timestamp,
+            envs,
             commands,
         } = value;
 
@@ -451,6 +463,7 @@ impl From<pb::Execute> for TerrainState {
             is_background: false,
             start_timestamp: "".to_string(),
             end_timestamp: "".to_string(),
+            envs,
             constructors,
             destructors,
         }
@@ -469,6 +482,7 @@ impl TryFrom<Box<pb::StatusResponse>> for TerrainState {
             is_background,
             start_timestamp,
             end_timestamp,
+            envs,
             constructors,
             destructors,
         } = *value;
@@ -485,6 +499,7 @@ impl TryFrom<Box<pb::StatusResponse>> for TerrainState {
             is_background,
             start_timestamp,
             end_timestamp,
+            envs,
             constructors: constructors_state,
             destructors: destructors_state,
         })
@@ -502,6 +517,7 @@ impl From<TerrainState> for pb::StatusResponse {
             is_background,
             start_timestamp,
             end_timestamp,
+            envs,
             constructors,
             destructors,
         } = value;
@@ -515,6 +531,7 @@ impl From<TerrainState> for pb::StatusResponse {
             is_background,
             start_timestamp,
             end_timestamp,
+            envs,
             constructors: command_states_to_proto(constructors),
             destructors: command_states_to_proto(destructors),
         }
@@ -623,7 +640,6 @@ pub mod test_utils {
         state_dir: &str,
         session_id: &str,
         terrain_dir: &str,
-        envs: BTreeMap<String, String>,
         timestamp: &str,
         is_constructor: bool,
         status: CommandStatus,
@@ -640,7 +656,7 @@ pub mod test_utils {
             .into_iter()
             .enumerate()
             .for_each(|(idx, mut command)| {
-                command.set_envs(Some(envs.clone()));
+                command.set_envs(None);
                 command_states.push(CommandState {
                     command,
                     log_path: format!(
@@ -674,7 +690,6 @@ pub mod test_utils {
                 state_dir,
                 &session_id,
                 &terrain_dir,
-                expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                 TEST_TIMESTAMP_NUMERIC,
                 true,
                 status,
@@ -690,6 +705,7 @@ pub mod test_utils {
             is_background: true,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: "".to_string(),
+            envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
             constructors,
             destructors: Default::default(),
         }
@@ -751,7 +767,6 @@ pub mod test_utils {
                 state_dir,
                 &session_id,
                 TEST_TERRAIN_DIR,
-                expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
                 TEST_TIMESTAMP,
                 false,
                 status,
@@ -814,7 +829,6 @@ pub mod test_utils {
                 state_dir,
                 &state.session_id,
                 TEST_TERRAIN_DIR,
-                expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
                 &new_timestamp,
                 is_constructor,
                 CommandStatus::Starting,
@@ -841,7 +855,7 @@ pub mod test_utils {
             .into_iter()
             .enumerate()
             .for_each(|(idx, mut command)| {
-                command.set_envs(Some(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR))));
+                command.set_envs(None);
                 command_states.push(CommandState {
                     command,
                     log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/19700101000000/{}.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", if is_constructor {
@@ -874,6 +888,7 @@ pub mod test_utils {
             is_background: false,
             start_timestamp: "".to_string(),
             end_timestamp: "".to_string(),
+            envs: expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
             constructors,
             destructors,
         }

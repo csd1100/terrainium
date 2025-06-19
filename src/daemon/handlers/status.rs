@@ -100,10 +100,8 @@ mod tests {
             .into_iter()
             .enumerate()
             .for_each(|(idx, cmd)| {
-                let mut command = cmd;
-                command.set_envs(Some(expected_envs_with_activate_example_biome(is_auto_apply, auto_apply)));
                 command_states.push(CommandState {
-                    command: Some(command.into()),
+                    command: Some(cmd.into()),
                     log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log"),
                     // status: 1 i.e. starting
                     status: 1,
@@ -126,6 +124,7 @@ mod tests {
             is_background: true,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: "".to_string(),
+            envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
             constructors,
             destructors: Default::default(),
         }

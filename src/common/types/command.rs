@@ -482,16 +482,10 @@ impl From<Command> for tokio::process::Command {
 
 impl From<Command> for pb::Command {
     fn from(value: Command) -> Self {
-        let Command {
-            exe,
-            args,
-            envs,
-            cwd,
-        } = value;
+        let Command { exe, args, cwd, .. } = value;
         Self {
             exe,
             args,
-            envs: envs.unwrap_or_default(),
             cwd: cwd.unwrap().to_string_lossy().to_string(),
         }
     }
@@ -502,7 +496,7 @@ impl From<pb::Command> for Command {
         Self {
             exe: value.exe,
             args: value.args,
-            envs: Some(value.envs),
+            envs: None,
             cwd: Some(PathBuf::from(value.cwd)),
         }
     }
