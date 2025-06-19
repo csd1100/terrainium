@@ -308,7 +308,7 @@ mod tests {
 
         let client =
             ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(session_id)))
-                .with_returning_error("failed to parse the request".to_string());
+                .with_returning_error("failed to parse the request");
 
         let actual_error = super::handle(context, Terrain::example(), Some(client))
             .await

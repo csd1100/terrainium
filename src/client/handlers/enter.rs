@@ -660,7 +660,7 @@ mod tests {
         let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),
         ))
-        .with_returning_error("failed to parse the request".to_string());
+        .with_returning_error("failed to parse the request");
 
         let mut terrain = Terrain::example();
         terrain.set_auto_apply(auto_apply);

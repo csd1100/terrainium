@@ -92,12 +92,12 @@ mod tests {
             context = context.set_session_id(session_id.clone());
         }
 
-        let expected_error = "failed to parse execute request".to_string();
+        let expected_error = "failed to parse execute request";
 
         let client = ExpectClient::send(ProtoRequest::Execute(
             expected_construct_request_example_biome(session_id),
         ))
-        .with_returning_error(expected_error.clone());
+        .with_returning_error(expected_error);
 
         let actual_error =
             super::handle(context, BiomeArg::Default, Terrain::example(), Some(client))

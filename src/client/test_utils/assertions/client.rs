@@ -34,9 +34,10 @@ impl ExpectClient {
         client
     }
 
-    pub fn with_returning_error(self, error: String) -> MockClient {
+    pub fn with_returning_error(self, error: &str) -> MockClient {
         let ExpectClient { request, .. } = self;
         let mut client = MockClient::default();
+        let error = error.to_string();
         client
             .expect_request()
             .with(eq(request))
