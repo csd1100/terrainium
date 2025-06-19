@@ -1,10 +1,13 @@
 pub const CONFIG_LOCATION: &str = ".config/terrainium";
 
+pub const TERRAINIUMD: &str = "terrainiumd";
 pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
 pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
 pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
 pub const TERRAIN_STATE_FILE_NAME: &str = "state.json";
 pub const TERRAIN_HISTORY_FILE_NAME: &str = "history";
+pub const TERRAINIUMD_DARWIN_SERVICE_FILE: &str =
+    "Library/LaunchAgents/com.csd1100.terrainium.plist";
 
 pub const PATH: &str = "PATH";
 pub const FPATH: &str = "FPATH";

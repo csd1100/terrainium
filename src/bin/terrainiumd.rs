@@ -1,14 +1,17 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use home::home_dir;
 use std::path::PathBuf;
 use std::sync::Arc;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
 use terrainium::common::types::styles::{error, warning};
-use terrainium::daemon::args::DaemonArgs;
+use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
+use terrainium::daemon::service::darwin::DarwinService;
+use terrainium::daemon::service::{Service, ServiceProvider};
 use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
@@ -66,11 +69,13 @@ async fn start() -> Result<()> {
 
     let args = DaemonArgs::parse();
 
-    let (subscriber, (_file_guard, _out_guard)) =
-        init_logging(TERRAINIUMD_TMP_DIR, LevelFilter::from(args.log_level));
+    let (subscriber, (_file_guard, _out_guard)) = init_logging(
+        TERRAINIUMD_TMP_DIR,
+        LevelFilter::from(args.options.log_level),
+    );
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
-    if args.create_config {
+    if args.options.create_config {
         return DaemonConfig::create_file().context("failed to create terrainiumd config");
     }
 
@@ -80,18 +85,33 @@ async fn start() -> Result<()> {
         bail!("exiting as service was started as root without being configured.");
     }
 
-    let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)
-        .await
-        .context("to create start the terrainium daemon")?;
-    let listener = daemon.listener();
+    match args.verbs {
+        Some(verbs) => {
+            let service = ServiceProvider::get().context("failed to get service provider")?;
+            match verbs {
+                Verbs::InstallService { daemon_path } => {
+                    service
+                        .install(daemon_path)
+                        .await
+                        .context("failed to install service")?;
+                }
+            }
+        }
+        None => {
+            let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.options.force)
+                .await
+                .context("to create start the terrainium daemon")?;
+            let listener = daemon.listener();
 
-    while let Some(socket) = listener.next().await.transpose()? {
-        let context = context.clone();
-        trace!("received socket connection");
-        let _ = tokio::spawn(async move {
-            handle_request(context, DaemonSocket::new(socket)).await;
-        })
-        .await;
+            while let Some(socket) = listener.next().await.transpose()? {
+                let context = context.clone();
+                trace!("received socket connection");
+                let _ = tokio::spawn(async move {
+                    handle_request(context, DaemonSocket::new(socket)).await;
+                })
+                .await;
+            }
+        }
     }
 
     Ok(())
