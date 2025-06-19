@@ -316,7 +316,12 @@ impl Display for CommandState {
             value(&self.command.args().join(" ")),
             colored("", AnsiColor::BrightYellow),
             // cwd will be always present
-            value(self.command.cwd().clone().unwrap().to_str().unwrap()),
+            value(
+                self.command
+                    .cwd()
+                    .as_ref()
+                    .map_or("", |wd| wd.to_str().unwrap())
+            ),
             colored("", AnsiColor::BrightWhite),
             sub_value(&self.log_path),
             self.status
@@ -700,8 +705,8 @@ pub mod test_utils {
             session_id,
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             biome_name: EXAMPLE_BIOME.to_string(),
-            toml_path: toml_path.clone(),
-            terrain_dir: terrain_dir.clone(),
+            toml_path,
+            terrain_dir,
             is_background: true,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: "".to_string(),
@@ -883,8 +888,8 @@ pub mod test_utils {
             session_id: TEST_TIMESTAMP_NUMERIC.to_string(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             biome_name: EXAMPLE_BIOME.to_string(),
-            toml_path: toml_path.clone(),
-            terrain_dir: terrain_dir.clone(),
+            toml_path,
+            terrain_dir,
             is_background: false,
             start_timestamp: "".to_string(),
             end_timestamp: "".to_string(),

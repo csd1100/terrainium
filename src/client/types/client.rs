@@ -49,7 +49,7 @@ impl Client {
             bail!("Daemon path: {path:?} should be absolute");
         }
 
-        let stream = UnixStream::connect(path.clone())
+        let stream = UnixStream::connect(path)
             .await
             .context("failed to connect to the daemon")?;
 

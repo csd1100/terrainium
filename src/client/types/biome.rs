@@ -348,7 +348,11 @@ impl Biome {
                 let envs_to_substitute = Self::get_envs_to_substitute(value);
                 (
                     key.clone(),
-                    Self::recursive_substitute_envs(biome_envs, value.clone(), envs_to_substitute),
+                    Self::recursive_substitute_envs(
+                        biome_envs,
+                        value.to_owned(),
+                        envs_to_substitute,
+                    ),
                 )
             })
             .collect();

@@ -83,7 +83,6 @@ pub(crate) async fn spawn_commands(
         // if session_id is present check if CommandStatus is present for current
         // timestamp else add new entry
         let session_id = request.session_id.unwrap();
-        let timestamp = request.timestamp;
         let numeric_timestamp = remove_non_numeric(&timestamp);
         let terrain_name = request.terrain_name;
 

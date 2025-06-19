@@ -212,7 +212,7 @@ impl Terrain {
         mut toml: DocumentMut,
         validation_results: ValidationResults,
     ) -> (Self, DocumentMut) {
-        let mut fixed = terrain.clone();
+        let mut fixed = terrain.to_owned();
         validation_results
             .results()
             .iter()
@@ -223,7 +223,7 @@ impl Terrain {
                         .select_biome(&BiomeArg::from_str(biome_name).unwrap())
                         .unwrap();
 
-                    let mut fixed_biome = selected.clone();
+                    let mut fixed_biome = selected.to_owned();
 
                     let biome_toml = if *biome_name == NONE {
                         &mut toml[TERRAIN]
@@ -727,15 +727,13 @@ pub mod tests {
         ]
         .iter()
         .for_each(|command| {
-            let mut path = paths_bin.clone();
-            path.push(command);
+            let path = paths_bin.join(command);
             create_file_with_all_executable_permission(&path);
         });
         ["with_relative_path_in_arg", "with_relative_not_present"]
             .iter()
             .for_each(|command| {
-                let mut path = paths_usr_bin.clone();
-                path.push(command);
+                let path = paths_usr_bin.join(command);
                 create_file_with_all_executable_permission(&path);
             });
 
@@ -891,7 +889,7 @@ pub mod tests {
                 Some(symlink_cwd.clone()),
             ),
         ];
-        let commands = Commands::new(command_vec.clone(), command_vec.clone());
+        let commands = Commands::new(command_vec.clone(), command_vec);
 
         terrain
             .terrain_mut()
@@ -901,12 +899,12 @@ pub mod tests {
 
         biome.add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         biome.set_constructors(commands.clone());
-        biome.set_destructors(commands.clone());
+        biome.set_destructors(commands);
         terrain.update("test_biome".to_string(), biome);
 
         let real_path = set_env_var(
-            "PATH".to_string(),
-            Some(format!(
+            "PATH",
+            Some(&format!(
                 "{}:{}",
                 paths_bin.display(),
                 paths_usr_bin.display()
@@ -1072,7 +1070,7 @@ pub mod tests {
                 })
         });
 
-        restore_env_var("PATH".to_string(), real_path);
+        restore_env_var("PATH", real_path);
     }
 
     #[serial]
@@ -1120,7 +1118,7 @@ pub mod tests {
             leading_space_command.clone(),
             trailing_space_command.clone(),
         ];
-        let commands = Commands::new(command_vec.clone(), command_vec.clone());
+        let commands = Commands::new(command_vec.clone(), command_vec);
 
         let mut terrain = Terrain::default();
         let mut biome = Biome::default();
@@ -1138,8 +1136,8 @@ pub mod tests {
         let before = terrain.clone();
 
         let real_path = set_env_var(
-            "PATH".to_string(),
-            Some(format!(
+            "PATH",
+            Some(&format!(
                 "{}:{}",
                 paths_root.path().display(),
                 paths_bin.display(),
@@ -1216,7 +1214,7 @@ pub mod tests {
 
         assert!(fixed_result.results().is_empty());
 
-        restore_env_var("PATH".to_string(), real_path);
+        restore_env_var("PATH", real_path);
     }
 
     #[test]

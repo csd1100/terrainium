@@ -107,13 +107,12 @@ pub(crate) fn expected_execute_request_example_biome(
 }
 
 pub fn expected_deactivate_request_example_biome(session_id: &str) -> pb::Deactivate {
-    let session_id = session_id.to_string();
     pb::Deactivate {
-        session_id: session_id.clone(),
+        session_id: session_id.to_string(),
         terrain_name: TEST_TERRAIN_NAME.to_string(),
         end_timestamp: TEST_TIMESTAMP.to_string(),
         destructors: Some(expected_execute_request_example_biome(
-            Some(session_id),
+            Some(session_id.to_string()),
             false,
         )),
     }

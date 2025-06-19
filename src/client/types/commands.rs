@@ -57,7 +57,7 @@ impl Commands {
     pub(crate) fn to_proto_commands(&self) -> Result<Vec<pb::Command>> {
         self.background()
             .iter()
-            .map(|c| Ok(c.clone().into()))
+            .map(|c| Ok(c.to_owned().into()))
             .collect()
     }
 

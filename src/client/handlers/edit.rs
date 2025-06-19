@@ -76,7 +76,7 @@ pub(crate) mod tests {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_current_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
+        let editor = set_env_var(EDITOR, Some("vim"));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -120,14 +120,14 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR.to_string(), editor);
+        restore_env_var(EDITOR, editor);
         Ok(())
     }
 
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_central_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
+        let editor = set_env_var(EDITOR, Some("vim"));
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -173,14 +173,14 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR.to_string(), editor);
+        restore_env_var(EDITOR, editor);
         Ok(())
     }
 
     #[serial]
     #[test]
     fn edit_opens_default_editor_if_env_not_set_and_generates_scripts() -> Result<()> {
-        let editor = set_env_var(EDITOR.to_string(), Some("vim".to_string()));
+        let editor = set_env_var(EDITOR, Some("vim"));
         std::env::remove_var(EDITOR);
 
         let current_dir = tempdir()?;
@@ -227,7 +227,7 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR.to_string(), editor);
+        restore_env_var(EDITOR, editor);
         Ok(())
     }
 }

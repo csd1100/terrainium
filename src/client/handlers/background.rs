@@ -71,7 +71,7 @@ pub(crate) fn execute_request(
     }
 
     Ok(Some(pb::Execute {
-        session_id: context.session_id().to_owned(),
+        session_id: context.session_id(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
         terrain_dir: context.terrain_dir().to_string_lossy().to_string(),

@@ -316,18 +316,19 @@ impl Command {
         terrain_dir: &Path,
     ) -> Option<(String, ValidationMessageLevel)> {
         let cwd = self.cwd.clone().unwrap();
-        let (path, exists) = if cwd.is_absolute() && !cwd.exists() {
-            (cwd, false)
+        let (cwd, exists) = if cwd.is_absolute() {
+            let exists = cwd.exists();
+            (cwd, exists)
         } else {
-            let cwd = terrain_dir.join(cwd.clone());
+            let cwd = terrain_dir.join(cwd);
             let exists = cwd.exists();
             (cwd, exists)
         };
 
         if !exists {
-            self.validate_absent_cwd_for_envs(operation_type, commands_type, path)
+            self.validate_absent_cwd_for_envs(operation_type, commands_type, cwd)
         } else {
-            self.validate_present_path(path)
+            self.validate_present_path(cwd)
         }
     }
 
@@ -404,7 +405,7 @@ impl Command {
                 &mut results,
             );
         } else if trimmed.starts_with("./") || trimmed.starts_with("../") {
-            let wd = self.cwd.clone().unwrap_or(terrain_dir.to_path_buf());
+            let wd = self.cwd.as_ref().map_or(terrain_dir, |wd| wd);
             let exe_path = wd.join(trimmed);
 
             self.validate_path_exe(

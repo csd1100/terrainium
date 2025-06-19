@@ -46,10 +46,7 @@ pub async fn handle(
     environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
     environment.insert_env(
         TERRAIN_SESSION_ID.to_string(),
-        context
-            .session_id()
-            .expect("session id to be set")
-            .to_string(),
+        context.session_id().expect("session id to be set"),
     );
     if is_auto_apply {
         environment.insert_env(
@@ -130,10 +127,7 @@ fn activate_request(
     };
 
     Ok(pb::Activate {
-        session_id: context
-            .session_id()
-            .expect("session id to be set")
-            .to_string(),
+        session_id: context.session_id().expect("session id to be set"),
         terrain_name,
         biome_name,
         terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
