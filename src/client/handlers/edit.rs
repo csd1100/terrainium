@@ -104,12 +104,8 @@ pub(crate) mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
@@ -159,12 +155,8 @@ pub(crate) mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
@@ -217,12 +209,8 @@ pub(crate) mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
         copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");

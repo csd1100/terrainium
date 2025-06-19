@@ -1241,9 +1241,9 @@ pub mod tests {
             .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            central_dir.path(),
+            false,
             MockExecutor::new(),
         );
 

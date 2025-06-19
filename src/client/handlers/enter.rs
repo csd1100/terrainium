@@ -165,7 +165,7 @@ mod tests {
     use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use crate::common::types::pb;
     use std::collections::BTreeMap;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     fn expected_envs_with_activate_none(
         is_auto_apply: bool,
@@ -187,31 +187,28 @@ mod tests {
     }
 
     fn expected_activate_request_none(is_background: bool) -> pb::Activate {
-        let terrain_dir = TEST_TERRAIN_DIR.to_string();
-        let toml_path = format!("{terrain_dir}/{TERRAIN_TOML}");
-
         pb::Activate {
             session_id: TEST_SESSION_ID.to_string(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             biome_name: NONE.to_string(),
-            terrain_dir: terrain_dir.clone(),
-            toml_path: toml_path.clone(),
+            terrain_dir: TEST_TERRAIN_DIR.to_string(),
+            toml_path: format!("{TEST_TERRAIN_DIR}/{TERRAIN_TOML}"),
             start_timestamp: TEST_TIMESTAMP.to_string(),
             is_background,
             constructors: None,
         }
     }
+
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_all() {
         let is_background = true;
         let auto_apply = AutoApply::All;
         let is_auto_apply = true;
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -221,7 +218,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -245,15 +242,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_background() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::Background;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -263,7 +259,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -287,15 +283,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_replace() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = false;
         let auto_apply = AutoApply::Replace;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -305,7 +300,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -329,15 +324,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_enabled() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = false;
         let auto_apply = AutoApply::Enabled;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -347,7 +341,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -371,15 +365,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_auto_apply_off() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = false;
         let auto_apply = AutoApply::default();
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -389,7 +382,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -413,15 +406,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_example_biome() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -431,7 +423,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -455,15 +447,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_none() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::All;
         let is_auto_apply = true;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_none(is_auto_apply, &auto_apply),
@@ -473,7 +464,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(expected_activate_request_none(
@@ -497,15 +488,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_and_sends_activate_request_none_no_auto_apply() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::All;
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_none(is_auto_apply, &auto_apply),
@@ -515,7 +505,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(expected_activate_request_none(
@@ -539,15 +529,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_error() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -557,7 +546,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -587,15 +576,14 @@ mod tests {
 
     #[tokio::test]
     async fn spawns_shell_non_zero_exit() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -605,7 +593,7 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(terrain_dir, central_dir, toml_path, executor)
+        let context = Context::build(terrain_dir, central_dir, false, executor)
             .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
@@ -632,14 +620,14 @@ mod tests {
 
     #[tokio::test]
     async fn send_request_error() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let central_dir = PathBuf::from(TEST_CENTRAL_DIR);
+        let terrain_dir = Path::new(TEST_TERRAIN_DIR);
+        let central_dir = Path::new(TEST_CENTRAL_DIR);
 
         let is_background = true;
         let auto_apply = AutoApply::default();
         let is_auto_apply = false;
 
-        let executor = ExpectZSH::with(MockExecutor::default(), &terrain_dir)
+        let executor = ExpectZSH::with(MockExecutor::default(), terrain_dir)
             .get_fpath()
             .spawn_shell(
                 expected_envs_with_activate_example_biome(is_auto_apply, &auto_apply),
@@ -649,13 +637,8 @@ mod tests {
             )
             .successfully();
 
-        let context = Context::build(
-            terrain_dir.clone(),
-            central_dir.clone(),
-            terrain_dir.as_path().join(TERRAIN_TOML),
-            executor,
-        )
-        .set_session_id(TEST_SESSION_ID);
+        let context = Context::build(terrain_dir, central_dir, false, executor)
+            .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Activate(
             expected_activate_request_example_biome(is_background, is_auto_apply, &auto_apply),

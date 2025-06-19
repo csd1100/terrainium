@@ -24,12 +24,12 @@ mod tests {
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{TERRAIN_SESSION_ID, TERRAIN_TOML};
+    use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::expected_execute_request_example_biome;
     use crate::common::test_utils::TEST_TERRAIN_DIR;
     use crate::common::types::pb;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     pub(crate) fn expected_request_destruct_example_biome(
         session_id: Option<String>,
@@ -41,11 +41,12 @@ mod tests {
     async fn test_destruct_sends_request() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let mut context =
-            Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
+        let mut context = Context::build(
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
+            MockExecutor::new(),
+        );
 
         if let Some(session_id) = &session_id {
             context = context.set_session_id(session_id);
@@ -63,10 +64,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_destruct_does_not_send_request_if_no_background() {
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let context = Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
+        let context = Context::build(
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
+            MockExecutor::new(),
+        );
 
         // client without any expectation
         let client = MockClient::default();
@@ -82,11 +85,12 @@ mod tests {
     async fn test_destruct_request_returns_error() {
         let session_id = std::env::var(TERRAIN_SESSION_ID).ok();
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let mut context =
-            Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
+        let mut context = Context::build(
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
+            MockExecutor::new(),
+        );
 
         if let Some(session_id) = &session_id {
             context = context.set_session_id(session_id);

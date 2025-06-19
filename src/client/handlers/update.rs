@@ -105,12 +105,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -157,9 +152,9 @@ mod tests {
             .unwrap();
 
         let context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -218,12 +213,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -292,12 +282,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -353,12 +338,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -409,9 +389,9 @@ mod tests {
             .unwrap();
 
         let context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -468,12 +448,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -530,12 +505,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -586,12 +556,7 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 

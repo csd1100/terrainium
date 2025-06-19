@@ -55,7 +55,7 @@ pub mod tests {
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
     #[test]
@@ -68,12 +68,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         // execute
         super::handle(context, false, false)?;
@@ -96,12 +92,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         // execute
         super::handle(context, false, false)?;
@@ -124,12 +116,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, false, false)
             .expect("no error to be thrown when directory is not present");
@@ -149,12 +137,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         fs::remove_dir(&central_dir).expect("temp directory to be removed");
 
@@ -173,9 +157,9 @@ pub mod tests {
         let current_dir = tempdir()?;
 
         let context: Context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -205,12 +189,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         super::handle(context, true, false)?;
 
@@ -228,9 +208,9 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            central_dir.path(),
+            true,
             MockExecutor::new(),
         );
 
@@ -256,12 +236,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, true, false)?;
 
@@ -305,12 +281,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         // execute
         super::handle(context, false, true)?;
@@ -355,12 +327,8 @@ pub mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            terrain_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(terrain_dir.path(), central_dir.path(), true, executor);
 
         // execute
         super::handle(context, false, true)?;

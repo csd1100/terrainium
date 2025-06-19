@@ -82,7 +82,7 @@ mod tests {
     use crate::common::test_utils;
     use crate::common::test_utils::{RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use tempfile::tempdir;
 
     fn expected_status_response(session_id: String, terrain_dir: &Path) -> pb::StatusResponse {
@@ -107,9 +107,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
         .set_session_id(&session_id);
@@ -135,9 +135,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
         .set_session_id(&session_id);
@@ -170,9 +170,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         );
 
@@ -203,9 +203,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         );
 
@@ -231,9 +231,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
         .set_session_id(&session_id);
@@ -259,9 +259,9 @@ mod tests {
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
-            terrain_dir.path().to_path_buf(),
-            PathBuf::new(),
-            terrain_dir.path().join(TERRAIN_TOML),
+            terrain_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
         .set_session_id(&session_id);

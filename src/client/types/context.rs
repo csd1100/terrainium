@@ -172,20 +172,25 @@ impl Context {
 
     #[cfg(test)]
     pub(crate) fn build(
-        terrain_dir: PathBuf,
-        central_dir: PathBuf,
-        toml_path: PathBuf,
+        terrain_dir: &Path,
+        central_dir: &Path,
+        is_central: bool,
         executor: Executor,
     ) -> Self {
         let executor = Arc::new(executor);
+        let toml_path = if is_central {
+            central_dir.join(TERRAIN_TOML)
+        } else {
+            terrain_dir.join(TERRAIN_TOML)
+        };
         Context {
             session_id: None,
-            terrain_dir: terrain_dir.clone(),
-            central_dir,
+            terrain_dir: terrain_dir.to_path_buf(),
+            central_dir: central_dir.to_path_buf(),
             toml_path,
             config: Config::default(),
             executor: executor.clone(),
-            shell: Zsh::get(terrain_dir.as_path(), executor),
+            shell: Zsh::get(terrain_dir, executor),
         }
     }
 

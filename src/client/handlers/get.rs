@@ -65,17 +65,12 @@ mod tests {
     use crate::common::execute::MockExecutor;
     use anyhow::Result;
     use std::fs::read_to_string;
-    use std::path::PathBuf;
+    use std::path::Path;
     use std::str::FromStr;
 
     #[test]
     fn get_all_for_default_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -101,12 +96,7 @@ mod tests {
 
     #[test]
     fn get_all_for_empty_terrain() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -132,12 +122,7 @@ mod tests {
 
     #[test]
     fn get_all_for_selected_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -163,12 +148,7 @@ mod tests {
 
     #[test]
     fn get_all_for_default_biome_json() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: true,
@@ -194,12 +174,7 @@ mod tests {
 
     #[test]
     fn get_all_aliases_for_default_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -226,12 +201,7 @@ mod tests {
 
     #[test]
     fn get_all_aliases_for_selected_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -258,12 +228,7 @@ mod tests {
 
     #[test]
     fn get_all_aliases_for_empty() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -287,12 +252,7 @@ mod tests {
 
     #[test]
     fn get_all_envs_for_default_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -325,12 +285,7 @@ mod tests {
 
     #[test]
     fn get_all_envs_for_selected_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -363,12 +318,7 @@ mod tests {
 
     #[test]
     fn get_all_envs_for_empty() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -395,12 +345,7 @@ mod tests {
 
     #[test]
     fn get_all_envs_and_aliases_for_default_biome() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -436,12 +381,7 @@ Aliases:
 
     #[test]
     fn get_env() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -468,12 +408,7 @@ Aliases:
 
     #[test]
     fn get_alias() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -500,12 +435,7 @@ Aliases:
 
     #[test]
     fn get_constructors() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -536,12 +466,7 @@ Aliases:
 
     #[test]
     fn get_destructors() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -572,12 +497,7 @@ Aliases:
 
     #[test]
     fn get_all_envs_aliases_constructors_destructors() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -626,12 +546,7 @@ Destructors:
 
     #[test]
     fn get_env_alias_constructors_destructors() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -674,12 +589,7 @@ Destructors:
 
     #[test]
     fn get_env_and_all_alias() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -709,12 +619,7 @@ Aliases:
 
     #[test]
     fn get_alias_and_all_envs() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -750,12 +655,7 @@ Aliases:
 
     #[test]
     fn get_auto_apply() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -782,12 +682,7 @@ Aliases:
 
     #[test]
     fn get_auto_apply_replace() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -814,12 +709,7 @@ Aliases:
 
     #[test]
     fn get_auto_apply_background() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,
@@ -846,12 +736,7 @@ Aliases:
 
     #[test]
     fn get_auto_apply_off() -> Result<()> {
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::new(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::new());
 
         let args = GetArgs {
             json: false,

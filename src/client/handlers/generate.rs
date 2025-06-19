@@ -19,7 +19,7 @@ mod tests {
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
+    use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockExecutor;
     use anyhow::Result;
     use tempfile::tempdir;
@@ -34,12 +34,8 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, Terrain::example()).expect("no error to be thrown");
 
@@ -60,12 +56,8 @@ mod tests {
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, Terrain::example()).expect("no error to be thrown");
 
