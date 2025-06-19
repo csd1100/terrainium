@@ -55,7 +55,7 @@ pub mod tests {
     use anyhow::Result;
     use serial_test::serial;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
     #[test]
@@ -64,16 +64,12 @@ pub mod tests {
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         // execute
         super::handle(context, false, false)?;
@@ -92,16 +88,12 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         // execute
         super::handle(context, false, false)?;
@@ -120,16 +112,12 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, false, false)
             .expect("no error to be thrown when directory is not present");
@@ -145,16 +133,12 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         fs::remove_dir(&central_dir).expect("temp directory to be removed");
 
@@ -173,9 +157,9 @@ pub mod tests {
         let current_dir = tempdir()?;
 
         let context: Context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -200,17 +184,13 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         super::handle(context, true, false)?;
 
@@ -228,9 +208,9 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            central_dir.path(),
+            true,
             MockExecutor::new(),
         );
 
@@ -251,17 +231,13 @@ pub mod tests {
         let central_dir = tempdir()?;
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         super::handle(context, true, false)?;
 
@@ -284,14 +260,13 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir.clone()),
+                Some(current_dir.path().to_path_buf()),
             ),
             exit_code: 0,
             should_error: false,
@@ -301,16 +276,12 @@ pub mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(executor, current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(executor, current_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         // execute
         super::handle(context, false, true)?;
@@ -334,14 +305,13 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
-        let terrain_dir_path = terrain_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir_path.clone()),
+                Some(terrain_dir.path().to_path_buf()),
             ),
             exit_code: 0,
             should_error: false,
@@ -351,16 +321,12 @@ pub mod tests {
         let executor = AssertExecutor::to().wait_for(expected);
 
         // setup mock to assert scripts are compiled when init
-        let executor = ExpectZSH::with(executor, terrain_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(executor, terrain_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context: Context = Context::build(
-            terrain_dir.path().into(),
-            central_dir.path().into(),
-            central_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context: Context =
+            Context::build(terrain_dir.path(), central_dir.path(), true, executor);
 
         // execute
         super::handle(context, false, true)?;

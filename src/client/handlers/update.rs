@@ -34,20 +34,18 @@ pub fn handle(
             terrain.select_biome(&update_args.biome)?.name()
         };
 
+        let biome = if biome_name == NONE {
+            &mut terrain_toml[TERRAIN]
+        } else {
+            &mut terrain_toml[BIOMES][&biome_name]
+        };
+
         update_args.env.into_iter().for_each(|env| {
-            if biome_name == NONE {
-                terrain_toml[TERRAIN][ENVS][env.key] = value(env.value);
-            } else {
-                terrain_toml[BIOMES][&biome_name][ENVS][env.key] = value(env.value);
-            }
+            biome[ENVS][env.key] = value(env.value);
         });
 
         update_args.alias.into_iter().for_each(|alias| {
-            if biome_name == NONE {
-                terrain_toml[TERRAIN][ALIASES][alias.key] = value(alias.value);
-            } else {
-                terrain_toml[BIOMES][&biome_name][ALIASES][alias.key] = value(alias.value);
-            }
+            biome[ALIASES][alias.key] = value(alias.value);
         });
     }
 
@@ -102,17 +100,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -159,9 +152,9 @@ mod tests {
             .unwrap();
 
         let context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -214,18 +207,13 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for("example_biome2", central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -289,17 +277,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -350,17 +333,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -411,9 +389,9 @@ mod tests {
             .unwrap();
 
         let context = Context::build(
-            current_dir.path().into(),
-            PathBuf::new(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            Path::new(""),
+            false,
             MockExecutor::new(),
         );
 
@@ -465,17 +443,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -527,17 +500,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 
@@ -583,17 +551,12 @@ mod tests {
             .parse::<DocumentMut>()
             .unwrap();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), current_dir.path())
             .compile_terrain_script_for(EXAMPLE_BIOME, central_dir.path())
             .compile_terrain_script_for(NONE, central_dir.path())
             .successfully();
 
-        let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
-            executor,
-        );
+        let context = Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         create_dir_all(context.scripts_dir()).expect("test scripts dir to be created");
 

@@ -60,11 +60,11 @@ impl History {
                     );
                 }
 
-                let session_id = self.history[recent as usize].clone();
+                let session_id = self.history[recent as usize].as_str();
                 if session_id.is_empty() {
                     bail!("no session id found at index {recent}")
                 }
-                Ok(session_id)
+                Ok(session_id.to_owned())
             }
         }
     }

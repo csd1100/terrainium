@@ -9,7 +9,7 @@ pub struct ExpectClient {
 }
 
 impl ExpectClient {
-    pub fn to_send(request: ProtoRequest) -> Self {
+    pub fn send(request: ProtoRequest) -> Self {
         Self {
             request,
             expected_response: ProtoResponse::Success,
@@ -34,9 +34,10 @@ impl ExpectClient {
         client
     }
 
-    pub fn with_returning_error(self, error: String) -> MockClient {
+    pub fn with_returning_error(self, error: &str) -> MockClient {
         let ExpectClient { request, .. } = self;
         let mut client = MockClient::default();
+        let error = error.to_string();
         client
             .expect_request()
             .with(eq(request))

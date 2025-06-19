@@ -12,6 +12,7 @@ use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::state_manager::{StoredHistory, StoredState};
 use anyhow::{bail, Context, Result};
 use prost_types::Any;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tracing::{debug, error, trace};
 
@@ -47,6 +48,7 @@ impl RequestHandler for ExecuteHandler {
 struct CommandInfo {
     index: usize,
     command: Command,
+    envs: Arc<BTreeMap<String, String>>,
     is_constructor: bool,
     timestamp: String,
     log_path: String,
@@ -81,7 +83,6 @@ pub(crate) async fn spawn_commands(
         // if session_id is present check if CommandStatus is present for current
         // timestamp else add new entry
         let session_id = request.session_id.unwrap();
-        let timestamp = request.timestamp;
         let numeric_timestamp = remove_non_numeric(&timestamp);
         let terrain_name = request.terrain_name;
 
@@ -123,6 +124,7 @@ pub(crate) async fn spawn_commands(
         .await
         .context("failed to retrieve state from state manager")?;
 
+    let envs = Arc::new(stored_state.clone().read().await.envs());
     let commands = stored_state
         .clone()
         .read()
@@ -143,6 +145,7 @@ pub(crate) async fn spawn_commands(
             let stored_state = stored_state.clone();
             let timestamp = timestamp.clone();
             let executor = context.executor();
+            let envs = envs.clone();
             let (command, log_path) = cmd_state.command_and_log_path();
             tokio::spawn(async move {
                 let res = spawn_command(
@@ -152,6 +155,7 @@ pub(crate) async fn spawn_commands(
                     CommandInfo {
                         index,
                         command,
+                        envs,
                         is_constructor,
                         timestamp,
                         log_path,
@@ -177,6 +181,7 @@ async fn spawn_command(
     let CommandInfo {
         index,
         command,
+        envs,
         is_constructor,
         timestamp,
         log_path,
@@ -210,7 +215,9 @@ async fn spawn_command(
         .await?;
     drop(state_mut);
 
-    let res = executor.async_spawn_with_log(command, &log_path).await;
+    let res = executor
+        .async_spawn_with_log(command, envs, &log_path)
+        .await;
 
     let mut state_mut = stored_state.write().await;
     match res {
@@ -291,14 +298,14 @@ async fn spawn_command(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
+    use crate::client::test_utils::expected_env_vars_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
         TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        expected_envs_with_activate_example_biome, expected_execute_request_example_biome,
-        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+        expected_execute_request_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
     };
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TIMESTAMP_NUMERIC};
     use crate::common::types::command::Command;
@@ -315,7 +322,7 @@ mod tests {
     use crate::daemon::types::history::History;
     use crate::daemon::types::state::State;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use tempfile::tempdir;
     use tokio::sync::RwLock;
@@ -681,6 +688,8 @@ mod tests {
             .remove(0)
             .command_and_log_path();
 
+        let envs = Arc::new(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)));
+
         let executor = AssertExecutor::with(MockExecutor::default())
             .async_spawn_with_log(
                 ExpectedCommand {
@@ -690,16 +699,14 @@ mod tests {
                             "-c".to_string(),
                             "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
-                        Some(expected_envs_with_activate_example_biome(
-                            is_auto_apply,
-                            &auto_apply,
-                        )),
+                        None,
                         Some(PathBuf::from(TEST_TERRAIN_DIR)),
                     ),
                     exit_code: 0,
                     should_error: false,
                     output: "".to_string(),
                 },
+                envs.clone(),
                 log_path.clone(),
             )
             .successfully();
@@ -711,6 +718,7 @@ mod tests {
             CommandInfo {
                 index: 0,
                 command,
+                envs,
                 is_constructor: true,
                 timestamp: TEST_TIMESTAMP.to_string(),
                 log_path,
@@ -772,6 +780,8 @@ mod tests {
             .remove(0)
             .command_and_log_path();
 
+        let envs = Arc::new(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)));
+
         let executor = AssertExecutor::with(MockExecutor::default())
             .async_spawn_with_log(
                 ExpectedCommand {
@@ -781,16 +791,14 @@ mod tests {
                             "-c".to_string(),
                             "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
-                        Some(expected_envs_with_activate_example_biome(
-                            is_auto_apply,
-                            &auto_apply,
-                        )),
+                        None,
                         Some(PathBuf::from(TEST_TERRAIN_DIR)),
                     ),
                     exit_code: 1,
                     should_error: false,
                     output: "".to_string(),
                 },
+                envs.clone(),
                 log_path.clone(),
             )
             .successfully();
@@ -802,6 +810,7 @@ mod tests {
             CommandInfo {
                 index: 0,
                 command,
+                envs,
                 is_constructor: true,
                 timestamp: TEST_TIMESTAMP.to_string(),
                 log_path,

@@ -212,7 +212,7 @@ impl Terrain {
         mut toml: DocumentMut,
         validation_results: ValidationResults,
     ) -> (Self, DocumentMut) {
-        let mut fixed = terrain.clone();
+        let mut fixed = terrain.to_owned();
         validation_results
             .results()
             .iter()
@@ -223,7 +223,7 @@ impl Terrain {
                         .select_biome(&BiomeArg::from_str(biome_name).unwrap())
                         .unwrap();
 
-                    let mut fixed_biome = selected.clone();
+                    let mut fixed_biome = selected.to_owned();
 
                     let biome_toml = if *biome_name == NONE {
                         &mut toml[TERRAIN]
@@ -246,82 +246,70 @@ impl Terrain {
                         }
                         Target::ForegroundConstructor(fc) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", fc.exe());
-                            let fixed = Command::new(
-                                fc.exe().trim().to_string(),
-                                fc.args().to_vec(),
-                                None,
-                                fc.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_foreground_constructor(fc).unwrap();
-                            fixed_biome.insert_foreground_constructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_foreground_constructor(fc).unwrap();
+
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 FOREGROUND,
                                 idx,
-                                fc.exe().trim(),
+                                fixed.exe(),
                             );
+
+                            fixed_biome.insert_foreground_constructor(idx, fixed);
                         }
                         Target::BackgroundConstructor(bc) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", bc.exe());
-                            let fixed = Command::new(
-                                bc.exe().trim().to_string(),
-                                bc.args().to_vec(),
-                                None,
-                                bc.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_background_constructor(bc).unwrap();
-                            fixed_biome.insert_background_constructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_background_constructor(bc).unwrap();
+                            let fixed = command.trim_exe();
+
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 CONSTRUCTORS,
                                 BACKGROUND,
                                 idx,
-                                bc.exe().trim(),
-                            )
+                                fixed.exe(),
+                            );
+
+                            fixed_biome.insert_background_constructor(idx, fixed);
                         }
                         Target::ForegroundDestructor(fd) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", fd.exe());
-                            let fixed = Command::new(
-                                fd.exe().trim().to_string(),
-                                fd.args().to_vec(),
-                                None,
-                                fd.cwd().clone(),
-                            );
 
-                            let idx = fixed_biome.remove_foreground_destructor(fd).unwrap();
-                            fixed_biome.insert_foreground_destructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_foreground_destructor(fd).unwrap();
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 FOREGROUND,
                                 idx,
-                                fd.exe().trim(),
+                                fixed.exe(),
                             );
+
+                            fixed_biome.insert_foreground_destructor(idx, fixed);
                         }
                         Target::BackgroundDestructor(bd) => {
                             info!(target = r.r#for, "trimming whitespaces from {}", bd.exe());
-                            let fixed = Command::new(
-                                bd.exe().trim().to_string(),
-                                bd.args().to_vec(),
-                                None,
-                                bd.cwd().clone(),
-                            );
-
-                            let idx = fixed_biome.remove_background_destructor(bd).unwrap();
-                            fixed_biome.insert_background_destructor(idx, fixed);
+                            let (idx, command) =
+                                fixed_biome.remove_background_destructor(bd).unwrap();
+                            let fixed = command.trim_exe();
 
                             Biome::replace_command_exe_toml(
                                 biome_toml,
                                 DESTRUCTORS,
                                 BACKGROUND,
                                 idx,
-                                bd.exe().trim(),
-                            )
+                                fixed.exe(),
+                            );
+                            fixed_biome.insert_background_destructor(idx, fixed);
                         }
                     }
                     fixed.update(biome_name.to_string(), fixed_biome);
@@ -459,8 +447,8 @@ pub mod tests {
     use serial_test::serial;
     use std::collections::BTreeMap;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
-    use std::os::unix::fs::PermissionsExt;
-    use std::path::{Path, PathBuf};
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::tempdir;
     use toml_edit::DocumentMut;
@@ -692,6 +680,9 @@ pub mod tests {
         let relative_dir = test_dir.path().join("relative_dir");
         create_dir_all(&relative_dir).unwrap();
 
+        let symlink_cwd = test_dir.path().join("symlink_cwd");
+        symlink(&relative_dir, &symlink_cwd).unwrap();
+
         let paths_root = tempdir().unwrap();
         let paths_bin = paths_root.path().join("bin");
         let paths_usr_bin = paths_root.path().join("usr").join("bin");
@@ -701,6 +692,15 @@ pub mod tests {
 
         let relative_file = test_dir.path().join("relative_path_with_cwd");
         create_file_with_all_executable_permission(&relative_file);
+
+        let symlink_exe = test_dir.path().join("symlink_exe");
+        symlink(&relative_file, &symlink_exe).unwrap();
+
+        let symlink_symlink_exe = test_dir.path().join("symlink_symlink_exe");
+        symlink(&symlink_exe, &symlink_symlink_exe).unwrap();
+
+        let symlink_file = test_dir.path().join("symlink_file");
+        symlink(&relative_file, &symlink_file).unwrap();
 
         let absolute_exe_path = test_dir.path().join("absolute_path");
         create_file_with_all_executable_permission(&absolute_exe_path);
@@ -713,6 +713,12 @@ pub mod tests {
         let not_executable = test_dir.path().join("not_executable");
         write(&not_executable, "").unwrap();
 
+        let symlink_not_executable = test_dir.path().join("symlink_not_executable");
+        symlink(&not_executable, &symlink_not_executable).unwrap();
+
+        let symlink_symlink_not_executable = test_dir.path().join("symlink_symlink_not_executable");
+        symlink(&symlink_not_executable, &symlink_symlink_not_executable).unwrap();
+
         [
             "sudo",
             "with_leading_spaces",
@@ -721,15 +727,13 @@ pub mod tests {
         ]
         .iter()
         .for_each(|command| {
-            let mut path = paths_bin.clone();
-            path.push(command);
+            let path = paths_bin.join(command);
             create_file_with_all_executable_permission(&path);
         });
         ["with_relative_path_in_arg", "with_relative_not_present"]
             .iter()
             .for_each(|command| {
-                let mut path = paths_usr_bin.clone();
-                path.push(command);
+                let path = paths_usr_bin.join(command);
                 create_file_with_all_executable_permission(&path);
             });
 
@@ -813,6 +817,18 @@ pub mod tests {
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
+                symlink_symlink_exe.to_string_lossy().to_string(),
+                vec![],
+                None,
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
+                "./symlink_symlink_not_executable".to_string(),
+                vec![],
+                None,
+                Some(test_dir.path().to_path_buf()),
+            ),
+            Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
                 None,
@@ -860,8 +876,20 @@ pub mod tests {
                 None,
                 Some(test_dir.path().to_path_buf()),
             ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
+                Some(symlink_file.clone()),
+            ),
+            Command::new(
+                "valid_command".to_string(),
+                vec!["some_args1".to_string(), "some_args2".to_string()],
+                None,
+                Some(symlink_cwd.clone()),
+            ),
         ];
-        let commands = Commands::new(command_vec.clone(), command_vec.clone());
+        let commands = Commands::new(command_vec.clone(), command_vec);
 
         terrain
             .terrain_mut()
@@ -871,12 +899,12 @@ pub mod tests {
 
         biome.add_envs(vec![("RELATIVE_DIR", "relative_dir")]);
         biome.set_constructors(commands.clone());
-        biome.set_destructors(commands.clone());
+        biome.set_destructors(commands);
         terrain.update("test_biome".to_string(), biome);
 
         let real_path = set_env_var(
-            "PATH".to_string(),
-            Some(format!(
+            "PATH",
+            Some(&format!(
                 "{}:{}",
                 paths_bin.display(),
                 paths_usr_bin.display()
@@ -910,14 +938,14 @@ pub mod tests {
                             }), "failed to validate whitespace not being present in exe for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Error,
                                 message: format!("exe 'not_in_path' is not present in PATH variable. make sure it is present before {commands_type} {operation_type} is to be run."),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in path for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Error,
                                 message: format!(
                                     "cwd: '{}' does not exists for command exe: 'valid_command' args: 'some_args1 some_args2'.",
                                     test_dir.path().join("./relative_dir_does_not_exist").display(),
@@ -927,28 +955,40 @@ pub mod tests {
                             }), "failed to validate relative cwd does not exist for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Error,
                                 message: "cwd: '/absolute_dir_does_not_exist' does not exists for command exe: 'valid_command' args: 'some_args1 some_args2'.".to_string(),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate absolute cwd does not exist for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Error,
                                 message: format!(
                                     "cwd: '{}' is not a directory for command exe: 'valid_command' args: 'some_args1 some_args2'.",
                                     absolute_exe_path.display(),
                                 ),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
-                            }));
+                            }), "failed to validate absolute cwd does not exist for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: "cwd: './relative_path_with_cwd' is not a directory for command exe: 'valid_command' args: 'some_args1 some_args2'.".to_string(),
+                                level: ValidationMessageLevel::Error,
+                                message: format!("cwd: '{}' is not a directory for command exe: 'valid_command' args: 'some_args1 some_args2'.",
+                                                 test_dir.path().join("./relative_path_with_cwd").display()),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
-                            }));
+                            }), "failed to validate cwd not a directory exist for {biome_name}({operation_type}:{commands_type})");
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Error,
+                                message: format!(
+                                    "cwd: '{}' is a symlink but does not resolve to directory ({}) for command exe: 'valid_command' args: 'some_args1 some_args2'.",
+                                    symlink_file.display(),
+                                    relative_file.display(),
+                                ),
+                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate symlink cwd file for {biome_name}({operation_type}:{commands_type})");
 
                             let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
                             assert!(messages.contains(&ValidationResult {
@@ -967,29 +1007,36 @@ pub mod tests {
                             }), "failed to validate exe trailing for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
+                                level: ValidationMessageLevel::Error,
                                 message: format!("exe './not_executable' does not have permissions to execute. make sure it has correct permissions before {commands_type} {operation_type} is to be run."),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe not having execute permission for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe './relative_not_present' is not present in dir: {:?}. make sure it is present before {commands_type} {operation_type} is to be run.", test_dir.path()),
+                                level: ValidationMessageLevel::Error,
+                                message: format!("exe './symlink_symlink_not_executable' does not have permissions to execute. make sure it has correct permissions before {commands_type} {operation_type} is to be run."),
+                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
+                                fix_action: ValidationFixAction::None,
+                            }), "failed to validate symlink exe not having execute permission for {biome_name}({operation_type}:{commands_type})");
+
+                            assert!(messages.contains(&ValidationResult {
+                                level: ValidationMessageLevel::Error,
+                                message: format!("exe './relative_not_present' does not exists. make sure it is present before {commands_type} {operation_type} is to be run."),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in present in relative path for {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe './relative_not_present_current_dir' is not present in dir: {:?}. make sure it is present before {commands_type} {operation_type} is to be run.", test_dir.path()),
+                                level: ValidationMessageLevel::Error,
+                                message: format!("exe './relative_not_present_current_dir' does not exists. make sure it is present before {commands_type} {operation_type} is to be run."),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe being not in present in relative path for terrain directory {biome_name}({operation_type}:{commands_type})");
 
                             assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe '{:?}' does not exists. make sure it is present before {commands_type} {operation_type} is to be run.", absolute_path_not_present),
+                                level: ValidationMessageLevel::Error,
+                                message: format!("exe '{}' does not exists. make sure it is present before {commands_type} {operation_type} is to be run.", absolute_path_not_present.display()),
                                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                                 fix_action: ValidationFixAction::None,
                             }), "failed to validate exe absolute path not being present for {biome_name}({operation_type}:{commands_type})");
@@ -1023,7 +1070,7 @@ pub mod tests {
                 })
         });
 
-        restore_env_var("PATH".to_string(), real_path);
+        restore_env_var("PATH", real_path);
     }
 
     #[serial]
@@ -1071,7 +1118,7 @@ pub mod tests {
             leading_space_command.clone(),
             trailing_space_command.clone(),
         ];
-        let commands = Commands::new(command_vec.clone(), command_vec.clone());
+        let commands = Commands::new(command_vec.clone(), command_vec);
 
         let mut terrain = Terrain::default();
         let mut biome = Biome::default();
@@ -1089,8 +1136,8 @@ pub mod tests {
         let before = terrain.clone();
 
         let real_path = set_env_var(
-            "PATH".to_string(),
-            Some(format!(
+            "PATH",
+            Some(&format!(
                 "{}:{}",
                 paths_root.path().display(),
                 paths_bin.display(),
@@ -1098,7 +1145,7 @@ pub mod tests {
         );
         let messages = before.validate(test_dir.path()).results();
 
-        assert_eq!(messages.len(), 40);
+        assert_eq!(messages.len(), 24);
         [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 let fix_action = if identifier_type == &"env" {
@@ -1156,7 +1203,7 @@ pub mod tests {
         });
 
         let toml = terrain
-            .to_toml(Path::new(""))
+            .to_toml(test_dir.path())
             .unwrap()
             .parse::<DocumentMut>()
             .unwrap();
@@ -1167,7 +1214,7 @@ pub mod tests {
 
         assert!(fixed_result.results().is_empty());
 
-        restore_env_var("PATH".to_string(), real_path);
+        restore_env_var("PATH", real_path);
     }
 
     #[test]
@@ -1180,9 +1227,9 @@ pub mod tests {
             .expect("test terrain to be copied to test dir");
 
         let context = Context::build(
-            current_dir.path().into(),
-            central_dir.path().into(),
-            current_dir.path().join(TERRAIN_TOML),
+            current_dir.path(),
+            central_dir.path(),
+            false,
             MockExecutor::new(),
         );
 

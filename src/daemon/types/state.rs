@@ -2,6 +2,7 @@ use crate::common::types::terrain_state::{CommandState, CommandStatus, TerrainSt
 use crate::common::utils;
 use crate::daemon::types::state_manager::StoredHistory;
 use anyhow::{bail, Context, Result};
+use std::collections::BTreeMap;
 use std::path::Path;
 use tokio::fs::File;
 use tracing::{debug, instrument};
@@ -110,6 +111,10 @@ impl State {
         } else {
             self.state.get_destructors(timestamp)
         }
+    }
+
+    pub fn envs(&self) -> BTreeMap<String, String> {
+        self.state.envs()
     }
 
     pub fn state(&self) -> TerrainState {

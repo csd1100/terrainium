@@ -2,8 +2,10 @@ use crate::common::execute::MockExecutor;
 use crate::common::types::command::Command;
 use anyhow::bail;
 use mockall::predicate::eq;
+use std::collections::BTreeMap;
 use std::os::unix::prelude::ExitStatusExt;
 use std::process::{ExitStatus, Output};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct ExpectedCommand {
@@ -91,7 +93,12 @@ impl AssertExecutor {
         self
     }
 
-    pub fn async_spawn_with_log(mut self, command: ExpectedCommand, log_path: String) -> Self {
+    pub fn async_spawn_with_log(
+        mut self,
+        command: ExpectedCommand,
+        envs: Arc<BTreeMap<String, String>>,
+        log_path: String,
+    ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
@@ -101,8 +108,8 @@ impl AssertExecutor {
 
         self.executor
             .expect_async_spawn_with_log()
-            .with(eq(command), eq(log_path))
-            .return_once(move |_, _| {
+            .with(eq(command), eq(envs), eq(log_path))
+            .return_once(move |_, _, _| {
                 if should_error {
                     bail!("{}", output)
                 } else {

@@ -13,8 +13,11 @@ pub struct ExpectZSH {
 }
 
 impl ExpectZSH {
-    pub fn with(executor: MockExecutor, cwd: PathBuf) -> Self {
-        Self { executor, cwd }
+    pub fn with(executor: MockExecutor, cwd: &Path) -> Self {
+        Self {
+            executor,
+            cwd: cwd.into(),
+        }
     }
 
     fn compile_script(
@@ -90,7 +93,7 @@ impl ExpectZSH {
                     "/bin/zsh".to_string(),
                     vec!["-c".to_string(), "/bin/echo -n $FPATH".to_string()],
                     None,
-                    Some(cwd.clone().to_path_buf()),
+                    Some(cwd.to_path_buf()),
                 ),
                 exit_code: 0,
                 should_error: false,
@@ -114,7 +117,7 @@ impl ExpectZSH {
                     "/bin/zsh".to_string(),
                     vec!["-i".to_string(), "-s".to_string()],
                     Some(envs),
-                    Some(cwd.clone().to_path_buf()),
+                    Some(cwd.to_path_buf()),
                 ),
                 exit_code,
                 should_error,

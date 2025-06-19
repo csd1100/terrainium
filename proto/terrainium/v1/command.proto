@@ -5,7 +5,6 @@ package terrainium.v1;
 message Command {
   string exe = 1;
   repeated string args = 2;
-  map<string, string> envs = 3;
   string cwd = 4;
 }
 
@@ -17,5 +16,6 @@ message Execute {
   string toml_path = 5;
   bool is_constructor = 6;
   string timestamp = 7;
-  repeated Command commands = 8;
+  map<string, string> envs = 8;
+  repeated Command commands = 9;
 }

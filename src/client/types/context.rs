@@ -165,27 +165,32 @@ impl Context {
         &self.config
     }
 
-    pub fn set_session_id(mut self, session_id: String) -> Self {
-        self.session_id = Some(session_id);
+    pub fn set_session_id(mut self, session_id: &str) -> Self {
+        self.session_id = Some(session_id.to_string());
         self
     }
 
     #[cfg(test)]
     pub(crate) fn build(
-        terrain_dir: PathBuf,
-        central_dir: PathBuf,
-        toml_path: PathBuf,
+        terrain_dir: &Path,
+        central_dir: &Path,
+        is_central: bool,
         executor: Executor,
     ) -> Self {
         let executor = Arc::new(executor);
+        let toml_path = if is_central {
+            central_dir.join(TERRAIN_TOML)
+        } else {
+            terrain_dir.join(TERRAIN_TOML)
+        };
         Context {
             session_id: None,
-            terrain_dir: terrain_dir.clone(),
-            central_dir,
+            terrain_dir: terrain_dir.to_path_buf(),
+            central_dir: central_dir.to_path_buf(),
             toml_path,
             config: Config::default(),
             executor: executor.clone(),
-            shell: Zsh::get(terrain_dir.as_path(), executor),
+            shell: Zsh::get(terrain_dir, executor),
         }
     }
 
@@ -245,10 +250,10 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
 
@@ -274,10 +279,10 @@ pub(crate) mod tests {
         let central_dir = get_central_dir_location(home_dir.path(), terrain_dir.path());
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
 
@@ -390,10 +395,10 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
 
@@ -422,10 +427,10 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
         let context = Context::get(
@@ -454,10 +459,10 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
 
@@ -484,10 +489,10 @@ pub(crate) mod tests {
 
         let shell_integration_dir = get_shell_integration_dir(home_dir.path());
 
-        let executor = ExpectZSH::with(MockExecutor::new(), current_dir()?)
+        let executor = ExpectZSH::with(MockExecutor::new(), &current_dir()?)
             .compile_script_successfully_for(
                 &shell_integration_dir.join("terrainium_init.zsh"),
-                &shell_integration_dir.join("terrainium_init.zsh.zwc"),
+                &shell_integration_dir.join("terrainium_init.zwc"),
             )
             .successfully();
 

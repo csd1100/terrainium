@@ -64,13 +64,13 @@ pub fn expected_activate_request_example_biome(
                 toml_path,
                 is_constructor: true,
                 timestamp: TEST_TIMESTAMP.to_string(),
+                envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                 commands: vec![pb::Command {
                     exe: "/bin/bash".to_string(),
                     args: vec![
                         "-c".to_string(),
                         "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                     ],
-                    envs: expected_envs_with_activate_example_biome(is_auto_apply, auto_apply),
                     cwd: terrain_dir,
                 }],
             })
@@ -91,16 +91,7 @@ pub(crate) fn expected_execute_request_example_biome(
     } else {
         expected_destructor_background_example_biome(Path::new(TEST_TERRAIN_DIR))
     };
-    let commands = commands
-        .into_iter()
-        .map(|cmd| {
-            let mut command = cmd;
-            command.set_envs(Some(expected_env_vars_example_biome(Path::new(
-                TEST_TERRAIN_DIR,
-            ))));
-            command.into()
-        })
-        .collect();
+    let commands = commands.into_iter().map(|cmd| cmd.into()).collect();
 
     pb::Execute {
         session_id,
@@ -110,17 +101,18 @@ pub(crate) fn expected_execute_request_example_biome(
         toml_path,
         is_constructor,
         timestamp: TEST_TIMESTAMP.to_string(),
+        envs: expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
         commands,
     }
 }
 
-pub fn expected_deactivate_request_example_biome(session_id: String) -> pb::Deactivate {
+pub fn expected_deactivate_request_example_biome(session_id: &str) -> pb::Deactivate {
     pb::Deactivate {
-        session_id: session_id.clone(),
+        session_id: session_id.to_string(),
         terrain_name: TEST_TERRAIN_NAME.to_string(),
         end_timestamp: TEST_TIMESTAMP.to_string(),
         destructors: Some(expected_execute_request_example_biome(
-            Some(session_id),
+            Some(session_id.to_string()),
             false,
         )),
     }
@@ -134,7 +126,7 @@ pub enum RequestFor {
 
 pub fn expected_status_request(
     request_for: RequestFor,
-    current_session_id: String,
+    current_session_id: &str,
 ) -> pb::StatusRequest {
     pb::StatusRequest {
         terrain_name: TEST_TERRAIN_NAME.to_string(),
@@ -148,7 +140,7 @@ pub fn expected_status_request(
                     if current_session_id.is_empty() {
                         pb::status_request::Identifier::Recent(0)
                     } else {
-                        pb::status_request::Identifier::SessionId(current_session_id)
+                        pb::status_request::Identifier::SessionId(current_session_id.to_string())
                     }
                 }
             };

@@ -92,22 +92,21 @@ mod tests {
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{
-        EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME, TERRAIN_TOML,
-        TEST_TIMESTAMP,
+        EXAMPLE_BIOME, NONE, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME, TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils;
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use serial_test::serial;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
         "no active terrain found, use 'terrainium enter' command to activate a terrain.";
 
-    fn expected_request_none(session_id: String) -> pb::Deactivate {
+    fn expected_request_none() -> pb::Deactivate {
         pb::Deactivate {
-            session_id: session_id.clone(),
+            session_id: TEST_SESSION_ID.to_string(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
             destructors: None,
@@ -117,12 +116,7 @@ mod tests {
     #[tokio::test]
     async fn should_throw_an_error_if_terrain_session_id_not_set() {
         // by default session id is not set for context created using build
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::default(),
-        );
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default());
 
         let actual_error = super::handle(context, Terrain::example(), None)
             .await
@@ -135,15 +129,10 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn should_throw_an_error_if_terrain_selected_biome_not_set() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME.to_string(), None);
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, None);
 
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::default(),
-        )
-        .set_session_id(TEST_SESSION_ID.to_string());
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default())
+            .set_session_id(TEST_SESSION_ID);
 
         let actual_error = super::handle(context, Terrain::example(), None)
             .await
@@ -152,163 +141,117 @@ mod tests {
 
         assert_eq!(actual_error, TERRAIN_NOT_ACTIVE_ERR);
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_example_biome() {
-        let session_id = TEST_SESSION_ID.to_string();
-        let selected_biome = set_env_var(
-            TERRAIN_SELECTED_BIOME.to_string(),
-            Some(EXAMPLE_BIOME.to_string()),
-        );
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(
-            test_utils::expected_deactivate_request_example_biome(session_id.clone()),
+        let client = ExpectClient::send(ProtoRequest::Deactivate(
+            test_utils::expected_deactivate_request_example_biome(TEST_SESSION_ID),
         ))
         .successfully();
 
         let context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_none() {
-        let session_id = "session_id".to_string();
-        let selected_biome =
-            set_env_var(TERRAIN_SELECTED_BIOME.to_string(), Some(NONE.to_string()));
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_enabled_but_not_background() {
-        let session_id = "session_id".to_string();
-        let selected_biome = set_env_var(
-            TERRAIN_SELECTED_BIOME.to_string(),
-            Some(EXAMPLE_BIOME.to_string()),
-        );
-        let auto_apply = set_env_var(
-            TERRAIN_AUTO_APPLY.to_string(),
-            Some(AutoApply::Enabled.to_string()),
-        );
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+        let auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Enabled.to_string()));
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
-        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), auto_apply);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_replace_but_not_background() {
-        let session_id = "session_id".to_string();
-        let selected_biome = set_env_var(
-            TERRAIN_SELECTED_BIOME.to_string(),
-            Some(EXAMPLE_BIOME.to_string()),
-        );
-        let auto_apply = set_env_var(
-            TERRAIN_AUTO_APPLY.to_string(),
-            Some(AutoApply::Replace.to_string()),
-        );
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+        let auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Replace.to_string()));
 
-        let terrain_dir = PathBuf::from(TEST_TERRAIN_DIR);
-        let toml_path = terrain_dir.join(TERRAIN_TOML);
-
-        let client = ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
-            terrain_dir,
-            PathBuf::new(),
-            toml_path,
+            Path::new(TEST_TERRAIN_DIR),
+            Path::new(""),
+            false,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
-        restore_env_var(TERRAIN_AUTO_APPLY.to_string(), auto_apply);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
     }
 
     #[serial]
     #[tokio::test]
     async fn should_throw_an_error_if_error_response() {
-        let selected_biome =
-            set_env_var(TERRAIN_SELECTED_BIOME.to_string(), Some(NONE.to_string()));
-        let session_id = TEST_SESSION_ID.to_string();
+        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
 
-        let context = Context::build(
-            PathBuf::new(),
-            PathBuf::new(),
-            PathBuf::new(),
-            MockExecutor::default(),
-        )
-        .set_session_id(session_id.clone());
+        let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default())
+            .set_session_id(TEST_SESSION_ID);
 
-        let client =
-            ExpectClient::to_send(ProtoRequest::Deactivate(expected_request_none(session_id)))
-                .with_returning_error("failed to parse the request".to_string());
+        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none()))
+            .with_returning_error("failed to parse the request");
 
         let actual_error = super::handle(context, Terrain::example(), Some(client))
             .await
@@ -317,6 +260,6 @@ mod tests {
 
         assert_eq!(actual_error, "failed to parse the request");
 
-        restore_env_var(TERRAIN_SELECTED_BIOME.to_string(), selected_biome);
+        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
     }
 }

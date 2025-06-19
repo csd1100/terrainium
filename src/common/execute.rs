@@ -2,7 +2,9 @@ use crate::common::types::command::Command;
 use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
+use std::collections::BTreeMap;
 use std::process::{ExitStatus, Output};
+use std::sync::Arc;
 use tracing::{info, trace};
 
 pub trait Execute {
@@ -15,6 +17,7 @@ pub trait Execute {
     fn async_spawn_with_log(
         &self,
         command: Command,
+        envs: Arc<BTreeMap<String, String>>,
         log_path: &str,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
     fn async_spawn(
@@ -45,9 +48,14 @@ impl Execute for Executor {
         command.output().await.context("failed to get output")
     }
 
-    async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus> {
+    async fn async_spawn_with_log(
+        &self,
+        command: Command,
+        envs: Arc<BTreeMap<String, String>>,
+        log_path: &str,
+    ) -> Result<ExitStatus> {
         info!("running async process with wait for '{command}', with logs in file: {log_path}",);
-        trace!("running async process with wait {command:?}");
+        trace!("running async process with wait {command} and envs: {envs:?}");
 
         let log_file = tokio::fs::File::options()
             .create(true)
@@ -66,6 +74,7 @@ impl Execute for Executor {
         let stderr: std::fs::File = log_file.into_std().await;
 
         let mut command: tokio::process::Command = command.into();
+        command.envs(envs.as_ref());
         command.stdout(stdout);
         command.stderr(stderr);
         let mut child = command.spawn().context("failed to run command")?;
@@ -88,7 +97,9 @@ mock! {
         fn get_output(&self, command: Command) -> Result<Output>;
         fn wait(&self, command: Command) -> Result<ExitStatus>;
         async fn async_get_output(&self, command: Command) -> Result<Output>;
-        async fn async_spawn_with_log(&self, command: Command, log_path: &str) -> Result<ExitStatus>;
+        async fn async_spawn_with_log(&self, command: Command,
+            envs: Arc<BTreeMap<String, String>>,
+            log_path: &str) -> Result<ExitStatus>;
         async fn async_spawn(&self, command: Command) -> Result<ExitStatus>;
     }
 }
@@ -103,8 +114,8 @@ pub(crate) mod tests {
 
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {
-        let test_var = "TEST_VAR".to_string();
-        let orig_env = test_utils::set_env_var(test_var.clone(), Some("TEST_VALUE".to_string()));
+        let test_var = "TEST_VAR";
+        let orig_env = test_utils::set_env_var(test_var, Some("TEST_VALUE"));
 
         let command = Command::new(
             "/bin/bash".to_string(),
@@ -120,21 +131,21 @@ pub(crate) mod tests {
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        test_utils::restore_env_var(test_var.clone(), orig_env);
+        test_utils::restore_env_var(test_var, orig_env);
 
         Ok(())
     }
 
     #[test]
     fn test_spawn_and_get_output_with_envs() -> Result<()> {
-        let test_var1: String = "TEST_VAR1".to_string();
-        let test_var2 = "TEST_VAR2".to_string();
+        let test_var1 = "TEST_VAR1";
+        let test_var2 = "TEST_VAR2";
 
-        let orig_env1 = test_utils::set_env_var(test_var1.clone(), Some("OLD_VALUE1".to_string()));
-        let orig_env2 = test_utils::set_env_var(test_var2.clone(), Some("OLD_VALUE2".to_string()));
+        let orig_env1 = test_utils::set_env_var(test_var1, Some("OLD_VALUE1"));
+        let orig_env2 = test_utils::set_env_var(test_var2, Some("OLD_VALUE2"));
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert(test_var1.clone(), "NEW_VALUE1".to_string());
+        envs.insert(test_var1.to_owned(), "NEW_VALUE1".to_string());
 
         let command = Command::new(
             "/bin/bash".to_string(),
@@ -161,10 +172,8 @@ pub(crate) mod tests {
 
     #[test]
     fn test_run_set_args_and_envs() -> Result<()> {
-        let test_var = "TEST_VAR".to_string();
-
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
-        envs.insert(test_var.clone(), "TEST_VALUE".to_string());
+        envs.insert("TEST_VAR".to_string(), "TEST_VALUE".to_string());
 
         let args: Vec<String> = vec!["-c".to_string(), "echo \"$TEST_VAR\"".to_string()];
 
@@ -190,11 +199,9 @@ pub(crate) mod tests {
     #[ignore]
     #[test]
     fn test_wait() -> Result<()> {
-        let script = "TEST_SCRIPT".to_string();
-
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(
-            script.clone(),
+            "TEST_SCRIPT".to_string(),
             "./tests/scripts/print_num_for_10_sec".to_string(),
         );
 

@@ -379,10 +379,7 @@ mod tests {
             Some(PathBuf::from("${TEST_DIR}/${SCRIPTS_DIR}")),
         )]);
 
-        let old_env = set_env_var(
-            "PROCESS_ENV_VAR".to_string(),
-            Some("PROCESS_ENV_VALUE".to_string()),
-        );
+        let old_env = set_env_var("PROCESS_ENV_VAR", Some("PROCESS_ENV_VALUE"));
 
         let actual = Environment::from(
             &terrain,
@@ -393,7 +390,7 @@ mod tests {
 
         assert_eq!(actual, expected);
 
-        restore_env_var("PROCESS_ENV_VAR".to_string(), old_env);
+        restore_env_var("PROCESS_ENV_VAR", old_env);
         Ok(())
     }
 

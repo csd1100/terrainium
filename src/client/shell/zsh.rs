@@ -67,8 +67,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
             .context("failed to read shell-integration script")?
             != INIT_SCRIPT
         {
-            let mut backup = init_script_location.clone();
-            backup.set_extension("zsh.bkp");
+            let backup = init_script_location.with_extension("zsh.bkp");
 
             fs::copy(&init_script_location, backup)
                 .context("failed to backup shell-integration script")?;
@@ -82,8 +81,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
                 .context("failed to create updated shell-integration script file")?;
         }
 
-        let mut compiled_path = init_script_location.clone();
-        compiled_path.set_extension("zsh.zwc");
+        let compiled_path = init_script_location.with_extension("zwc");
 
         self.compile_script(&init_script_location, &compiled_path)
     }
@@ -362,13 +360,14 @@ mod tests {
     #[test]
     fn compile_script_should_return_error_if_non_zero_exit_code() {
         let path_new = PathBuf::new();
+        let path_new = path_new.as_path();
 
-        let executor = ExpectZSH::with(MockExecutor::new(), path_new.clone())
-            .compile_script_with_non_zero_exit_code(&path_new, &path_new)
+        let executor = ExpectZSH::with(MockExecutor::new(), path_new)
+            .compile_script_with_non_zero_exit_code(path_new, path_new)
             .successfully();
 
-        let err = Zsh::get(&path_new, Arc::new(executor))
-            .compile_script(PathBuf::new().as_path(), PathBuf::new().as_path())
+        let err = Zsh::get(path_new, Arc::new(executor))
+            .compile_script(path_new, path_new)
             .expect_err("error to be thrown");
 
         assert_eq!(
@@ -399,13 +398,10 @@ mod tests {
             home_dir.path().join(".config/terrainium/shell_integration");
         create_dir_all(&zsh_integration_script_location).unwrap();
 
-        let mut zsh_integration_script = zsh_integration_script_location.clone();
-        zsh_integration_script.push("terrainium_init.zsh");
+        let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
 
-        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
-        compiled_zsh_integration_script.set_extension("zsh.zwc");
-
-        let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path())
             .compile_script_successfully_for(
                 &zsh_integration_script,
                 &compiled_zsh_integration_script,
@@ -428,14 +424,9 @@ mod tests {
             home_dir.path().join(".config/terrainium/shell_integration");
         create_dir_all(&zsh_integration_script_location).unwrap();
 
-        let mut zsh_integration_script = zsh_integration_script_location.clone();
-        zsh_integration_script.push("terrainium_init.zsh");
-
-        let mut zsh_integration_script_backup = zsh_integration_script.clone();
-        zsh_integration_script_backup.set_extension("zsh.bkp");
-
-        let mut compiled_zsh_integration_script = zsh_integration_script.clone();
-        compiled_zsh_integration_script.set_extension("zsh.zwc");
+        let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
+        let zsh_integration_script_backup = zsh_integration_script.with_extension("zsh.bkp");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
 
         write(
             home_dir
@@ -445,7 +436,7 @@ mod tests {
         )
         .expect("test shell integration to be written");
 
-        let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path().to_path_buf())
+        let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path())
             .compile_script_successfully_for(
                 &zsh_integration_script,
                 &compiled_zsh_integration_script,

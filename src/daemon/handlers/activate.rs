@@ -31,8 +31,8 @@ impl RequestHandler for ActivateHandler {
 }
 
 async fn activate(request: Activate, context: Arc<DaemonContext>) -> Result<Response> {
-    let terrain_name = request.terrain_name.clone();
-    let session_id = request.session_id.clone();
+    let terrain_name = request.terrain_name.to_string();
+    let session_id = request.session_id.to_string();
     trace!(
         terrain_name = terrain_name,
         session_id = session_id,

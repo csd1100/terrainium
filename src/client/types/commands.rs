@@ -54,24 +54,17 @@ impl Commands {
         self.background.as_mut()
     }
 
-    pub(crate) fn to_proto_commands(
-        &self,
-        envs: BTreeMap<String, String>,
-    ) -> Result<Vec<pb::Command>> {
+    pub(crate) fn to_proto_commands(&self) -> Result<Vec<pb::Command>> {
         self.background()
             .iter()
-            .map(|c| {
-                let mut cmd: pb::Command = c.clone().into();
-                cmd.envs = envs.clone();
-                Ok(cmd)
-            })
+            .map(|c| Ok(c.to_owned().into()))
             .collect()
     }
 
     pub(crate) fn validate_commands<'a>(
         &'a self,
         biome_name: &'a str,
-        operation_type: OperationType,
+        operation_type: &'a OperationType,
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         let mut result = ValidationResults::new(false, HashSet::new());
@@ -79,8 +72,8 @@ impl Commands {
         self.foreground.iter().for_each(|c| {
             result.append(c.validate_command(
                 biome_name,
-                operation_type.clone(),
-                CommandsType::Foreground,
+                operation_type,
+                &CommandsType::Foreground,
                 terrain_dir,
             ))
         });
@@ -88,8 +81,8 @@ impl Commands {
         self.background.iter().for_each(|c| {
             result.append(c.validate_command(
                 biome_name,
-                operation_type.clone(),
-                CommandsType::Background,
+                operation_type,
+                &CommandsType::Background,
                 terrain_dir,
             ))
         });

@@ -186,51 +186,70 @@ impl Biome {
         self.destructors.background_mut().insert(idx, command);
     }
 
-    pub(crate) fn remove_foreground_constructor(&mut self, command: &Command) -> Option<usize> {
+    pub(crate) fn remove_foreground_constructor(
+        &mut self,
+        command: &Command,
+    ) -> Option<(usize, Command)> {
         let idx = self
             .constructors
             .foreground()
             .iter()
             .position(|v| v == command);
-        if let Some(idx) = idx {
-            self.constructors.foreground_mut().remove(idx);
-        }
-        idx
+
+        idx?;
+
+        let idx = idx.unwrap();
+        let command = self.constructors.foreground_mut().remove(idx);
+        Some((idx, command))
     }
 
-    pub(crate) fn remove_background_constructor(&mut self, command: &Command) -> Option<usize> {
+    pub(crate) fn remove_background_constructor(
+        &mut self,
+        command: &Command,
+    ) -> Option<(usize, Command)> {
         let idx = self
             .constructors
             .background()
             .iter()
             .position(|v| v == command);
-        if let Some(idx) = idx {
-            self.constructors.background_mut().remove(idx);
-        }
-        idx
+
+        idx?;
+
+        let idx = idx.unwrap();
+        let command = self.constructors.background_mut().remove(idx);
+        Some((idx, command))
     }
 
-    pub(crate) fn remove_foreground_destructor(&mut self, command: &Command) -> Option<usize> {
+    pub(crate) fn remove_foreground_destructor(
+        &mut self,
+        command: &Command,
+    ) -> Option<(usize, Command)> {
         let idx = self
             .destructors
             .foreground()
             .iter()
             .position(|v| v == command);
-        if let Some(idx) = idx {
-            self.destructors.foreground_mut().remove(idx);
-        }
-        idx
+
+        idx?;
+
+        let idx = idx.unwrap();
+        let command = self.destructors.foreground_mut().remove(idx);
+        Some((idx, command))
     }
-    pub(crate) fn remove_background_destructor(&mut self, command: &Command) -> Option<usize> {
+
+    pub(crate) fn remove_background_destructor(
+        &mut self,
+        command: &Command,
+    ) -> Option<(usize, Command)> {
         let idx = self
             .destructors
             .background()
             .iter()
             .position(|v| v == command);
-        if let Some(idx) = idx {
-            self.destructors.background_mut().remove(idx);
-        }
-        idx
+        idx?;
+        let idx = idx.unwrap();
+        let command = self.destructors.background_mut().remove(idx);
+        Some((idx, command))
     }
 
     pub(crate) fn append_envs(&mut self, envs: BTreeMap<String, String>) {
@@ -329,7 +348,11 @@ impl Biome {
                 let envs_to_substitute = Self::get_envs_to_substitute(value);
                 (
                     key.clone(),
-                    Self::recursive_substitute_envs(biome_envs, value.clone(), envs_to_substitute),
+                    Self::recursive_substitute_envs(
+                        biome_envs,
+                        value.to_owned(),
+                        envs_to_substitute,
+                    ),
                 )
             })
             .collect();
@@ -373,7 +396,7 @@ impl Biome {
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         self.constructors
-            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
+            .validate_commands(biome_name, &OperationType::Constructor, terrain_dir)
     }
 
     fn validate_destructors<'a>(
@@ -382,7 +405,7 @@ impl Biome {
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         self.destructors
-            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
+            .validate_commands(biome_name, &OperationType::Destructor, terrain_dir)
     }
 
     pub(crate) fn replace_env_key(&mut self, key: &str, fixed: &str) {

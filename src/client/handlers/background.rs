@@ -63,7 +63,7 @@ pub(crate) fn execute_request(
     };
 
     let commands: Vec<pb::Command> = commands
-        .to_proto_commands(environment.envs())
+        .to_proto_commands()
         .context("failed to convert commands")?;
 
     if commands.is_empty() {
@@ -71,13 +71,14 @@ pub(crate) fn execute_request(
     }
 
     Ok(Some(pb::Execute {
-        session_id: context.session_id().to_owned(),
+        session_id: context.session_id(),
         terrain_name: environment.name().to_string(),
         biome_name: environment.selected_biome().to_string(),
         terrain_dir: context.terrain_dir().to_string_lossy().to_string(),
         toml_path: context.toml_path().to_string_lossy().to_string(),
         is_constructor,
         timestamp,
+        envs: environment.envs(),
         commands,
     }))
 }
