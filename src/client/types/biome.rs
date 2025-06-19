@@ -373,7 +373,7 @@ impl Biome {
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         self.constructors
-            .validate_commands(biome_name, OperationType::Constructor, terrain_dir)
+            .validate_commands(biome_name, &OperationType::Constructor, terrain_dir)
     }
 
     fn validate_destructors<'a>(
@@ -382,7 +382,7 @@ impl Biome {
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         self.destructors
-            .validate_commands(biome_name, OperationType::Destructor, terrain_dir)
+            .validate_commands(biome_name, &OperationType::Destructor, terrain_dir)
     }
 
     pub(crate) fn replace_env_key(&mut self, key: &str, fixed: &str) {

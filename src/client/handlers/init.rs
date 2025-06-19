@@ -260,14 +260,13 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        let terrain_dir = current_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir.clone()),
+                Some(current_dir.path().to_path_buf()),
             ),
             exit_code: 0,
             should_error: false,
@@ -306,14 +305,13 @@ pub mod tests {
 
         //setup edit mock
         let terrain_toml_path: PathBuf = central_dir.path().join(TERRAIN_TOML);
-        let terrain_dir_path = terrain_dir.path().to_path_buf();
 
         let expected = ExpectedCommand {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
                 None,
-                Some(terrain_dir_path.clone()),
+                Some(terrain_dir.path().to_path_buf()),
             ),
             exit_code: 0,
             should_error: false,

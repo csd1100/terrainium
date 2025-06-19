@@ -329,7 +329,7 @@ impl Command {
     pub(crate) fn validate_command<'a>(
         &'a self,
         biome_name: &'a str,
-        operation_type: OperationType,
+        operation_type: &'a OperationType,
         commands_type: &'a CommandsType,
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
@@ -355,7 +355,7 @@ impl Command {
                 level: ValidationMessageLevel::Warn,
                 message: format!("exe '{}' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run.", &self.exe),
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_command(commands_type, &operation_type, self) },
+                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_command(commands_type, operation_type, self) },
             });
         }
 
@@ -394,7 +394,7 @@ impl Command {
                 &exe_path,
                 false,
                 biome_name,
-                &operation_type,
+                operation_type,
                 commands_type,
                 &mut results,
             );
@@ -406,7 +406,7 @@ impl Command {
                 &exe_path,
                 false,
                 biome_name,
-                &operation_type,
+                operation_type,
                 commands_type,
                 &mut results,
             );
@@ -416,7 +416,7 @@ impl Command {
                 &res,
                 true,
                 biome_name,
-                &operation_type,
+                operation_type,
                 commands_type,
                 &mut results,
             );
@@ -426,7 +426,7 @@ impl Command {
             return ValidationResults::new(fixable, results);
         }
 
-        let message_and_level = self.validate_cwd(&operation_type, commands_type, terrain_dir);
+        let message_and_level = self.validate_cwd(operation_type, commands_type, terrain_dir);
 
         if message_and_level.is_none() {
             return ValidationResults::new(fixable, results);

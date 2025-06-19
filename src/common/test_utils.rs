@@ -127,7 +127,7 @@ pub enum RequestFor {
 
 pub fn expected_status_request(
     request_for: RequestFor,
-    current_session_id: String,
+    current_session_id: &str,
 ) -> pb::StatusRequest {
     pb::StatusRequest {
         terrain_name: TEST_TERRAIN_NAME.to_string(),
@@ -141,7 +141,7 @@ pub fn expected_status_request(
                     if current_session_id.is_empty() {
                         pb::status_request::Identifier::Recent(0)
                     } else {
-                        pb::status_request::Identifier::SessionId(current_session_id)
+                        pb::status_request::Identifier::SessionId(current_session_id.to_string())
                     }
                 }
             };

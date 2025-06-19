@@ -161,7 +161,7 @@ mod tests {
             .await
             .unwrap();
 
-        let request = expected_status_request(RequestFor::None, TEST_SESSION_ID.to_string());
+        let request = expected_status_request(RequestFor::None, TEST_SESSION_ID);
         let Payload::Body(response) = status(
             request,
             Arc::new(
@@ -222,7 +222,7 @@ mod tests {
         .await
         .unwrap();
 
-        let request = expected_status_request(RequestFor::Recent(1), TEST_SESSION_ID.to_string());
+        let request = expected_status_request(RequestFor::Recent(1), TEST_SESSION_ID);
         let Payload::Body(response) = status(
             request,
             Arc::new(
@@ -257,7 +257,7 @@ mod tests {
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         fs::create_dir_all(&terrain_dir_path).unwrap();
 
-        let request = expected_status_request(RequestFor::None, "some-session-id".to_string());
+        let request = expected_status_request(RequestFor::None, "some-session-id");
 
         let error = status(
             request,
@@ -292,7 +292,7 @@ mod tests {
             .await
             .unwrap();
 
-        let request = expected_status_request(RequestFor::Recent(2), "".to_string());
+        let request = expected_status_request(RequestFor::Recent(2), "");
 
         let error = status(
             request,
@@ -328,7 +328,7 @@ mod tests {
             .unwrap();
 
         // default size is 5
-        let request = expected_status_request(RequestFor::Recent(10), "".to_string());
+        let request = expected_status_request(RequestFor::Recent(10), "");
 
         let error = status(
             request,

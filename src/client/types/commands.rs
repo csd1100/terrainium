@@ -64,7 +64,7 @@ impl Commands {
     pub(crate) fn validate_commands<'a>(
         &'a self,
         biome_name: &'a str,
-        operation_type: OperationType,
+        operation_type: &'a OperationType,
         terrain_dir: &'a Path,
     ) -> ValidationResults<'a> {
         let mut result = ValidationResults::new(false, HashSet::new());
@@ -72,7 +72,7 @@ impl Commands {
         self.foreground.iter().for_each(|c| {
             result.append(c.validate_command(
                 biome_name,
-                operation_type.clone(),
+                operation_type,
                 &CommandsType::Foreground,
                 terrain_dir,
             ))
@@ -81,7 +81,7 @@ impl Commands {
         self.background.iter().for_each(|c| {
             result.append(c.validate_command(
                 biome_name,
-                operation_type.clone(),
+                operation_type,
                 &CommandsType::Background,
                 terrain_dir,
             ))

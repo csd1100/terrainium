@@ -104,9 +104,9 @@ mod tests {
     const TERRAIN_NOT_ACTIVE_ERR: &str =
         "no active terrain found, use 'terrainium enter' command to activate a terrain.";
 
-    fn expected_request_none(session_id: String) -> pb::Deactivate {
+    fn expected_request_none() -> pb::Deactivate {
         pb::Deactivate {
-            session_id: session_id.clone(),
+            session_id: TEST_SESSION_ID.to_string(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
             destructors: None,
@@ -175,14 +175,11 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn send_request_for_none() {
-        let session_id = "session_id".to_string();
         let selected_biome =
             set_env_var(TERRAIN_SELECTED_BIOME.to_string(), Some(NONE.to_string()));
 
-        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
             Path::new(TEST_TERRAIN_DIR),
@@ -190,7 +187,7 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -202,7 +199,6 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_enabled_but_not_background() {
-        let session_id = "session_id".to_string();
         let selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some(EXAMPLE_BIOME.to_string()),
@@ -212,10 +208,8 @@ mod tests {
             Some(AutoApply::Enabled.to_string()),
         );
 
-        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
             Path::new(TEST_TERRAIN_DIR),
@@ -223,7 +217,7 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -236,7 +230,6 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_replace_but_not_background() {
-        let session_id = "session_id".to_string();
         let selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some(EXAMPLE_BIOME.to_string()),
@@ -246,10 +239,8 @@ mod tests {
             Some(AutoApply::Replace.to_string()),
         );
 
-        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(
-            session_id.clone(),
-        )))
-        .successfully();
+        let client =
+            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
 
         let context = Context::build(
             Path::new(TEST_TERRAIN_DIR),
@@ -257,7 +248,7 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -272,14 +263,12 @@ mod tests {
     async fn should_throw_an_error_if_error_response() {
         let selected_biome =
             set_env_var(TERRAIN_SELECTED_BIOME.to_string(), Some(NONE.to_string()));
-        let session_id = TEST_SESSION_ID.to_string();
 
         let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default())
-            .set_session_id(&session_id);
+            .set_session_id(TEST_SESSION_ID);
 
-        let client =
-            ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(session_id)))
-                .with_returning_error("failed to parse the request");
+        let client = ExpectClient::send(ProtoRequest::Deactivate(expected_request_none()))
+            .with_returning_error("failed to parse the request");
 
         let actual_error = super::handle(context, Terrain::example(), Some(client))
             .await

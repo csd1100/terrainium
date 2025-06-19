@@ -85,9 +85,9 @@ mod tests {
     use std::path::Path;
     use tempfile::tempdir;
 
-    fn expected_status_response(session_id: String, terrain_dir: &Path) -> pb::StatusResponse {
+    fn expected_status_response(session_id: &str, terrain_dir: &Path) -> pb::StatusResponse {
         pb::StatusResponse {
-            session_id,
+            session_id: session_id.to_string(),
             terrain_name: TEST_TERRAIN_NAME.to_string(),
             biome_name: EXAMPLE_BIOME.to_string(),
             terrain_dir: terrain_dir.to_string_lossy().to_string(),
@@ -103,7 +103,7 @@ mod tests {
 
     #[tokio::test]
     async fn returns_status_for_current() {
-        let session_id = TEST_SESSION_ID.to_string();
+        let session_id = TEST_SESSION_ID;
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
@@ -112,11 +112,11 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
-            session_id.clone(),
+            session_id,
         )))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
             session_id,
@@ -131,7 +131,7 @@ mod tests {
 
     #[tokio::test]
     async fn returns_status_for_specified_session_id() {
-        let session_id = "some-session-id".to_string();
+        let session_id = "some-session-id";
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
@@ -140,14 +140,14 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
-            RequestFor::SessionId(session_id.clone()),
-            "".to_string(),
+            RequestFor::SessionId(session_id.to_string()),
+            "",
         )))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id.clone(),
+            session_id,
             terrain_dir.path(),
         ))))
         .successfully();
@@ -156,7 +156,7 @@ mod tests {
             context,
             Terrain::example(),
             false,
-            Some(session_id),
+            Some(session_id.to_string()),
             None,
             Some(client),
         )
@@ -166,7 +166,6 @@ mod tests {
 
     #[tokio::test]
     async fn returns_status_for_specified_recent() {
-        let session_id = TEST_SESSION_ID.to_string();
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
@@ -178,10 +177,10 @@ mod tests {
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::Recent(1),
-            "".to_string(),
+            "",
         )))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id,
+            TEST_SESSION_ID,
             terrain_dir.path(),
         ))))
         .successfully();
@@ -209,13 +208,12 @@ mod tests {
             MockExecutor::default(),
         );
 
-        let session_id = TEST_SESSION_ID.to_string();
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
-            "".to_string(),
+            "",
         )))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id,
+            TEST_SESSION_ID,
             terrain_dir.path(),
         ))))
         .successfully();
@@ -227,7 +225,6 @@ mod tests {
 
     #[tokio::test]
     async fn returns_no_error_for_json() {
-        let session_id = TEST_SESSION_ID.to_string();
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
@@ -236,14 +233,14 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
-            session_id.clone(),
+            TEST_SESSION_ID,
         )))
         .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id,
+            TEST_SESSION_ID,
             terrain_dir.path(),
         ))))
         .successfully();
@@ -255,7 +252,6 @@ mod tests {
 
     #[tokio::test]
     async fn returns_error_for_invalid_response() {
-        let session_id = TEST_SESSION_ID.to_string();
         let terrain_dir = tempdir().unwrap();
 
         let context = Context::build(
@@ -264,11 +260,11 @@ mod tests {
             false,
             MockExecutor::default(),
         )
-        .set_session_id(&session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
-            session_id.clone(),
+            TEST_SESSION_ID,
         )))
         .with_expected_response(ProtoResponse::Success)
         .successfully();
