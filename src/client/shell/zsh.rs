@@ -81,7 +81,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
                 .context("failed to create updated shell-integration script file")?;
         }
 
-        let compiled_path = init_script_location.with_extension("zsh.zwc");
+        let compiled_path = init_script_location.with_extension("zwc");
 
         self.compile_script(&init_script_location, &compiled_path)
     }
@@ -399,7 +399,7 @@ mod tests {
         create_dir_all(&zsh_integration_script_location).unwrap();
 
         let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
-        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zsh.zwc");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
 
         let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path())
             .compile_script_successfully_for(
@@ -426,7 +426,7 @@ mod tests {
 
         let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
         let zsh_integration_script_backup = zsh_integration_script.with_extension("zsh.bkp");
-        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zsh.zwc");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
 
         write(
             home_dir
