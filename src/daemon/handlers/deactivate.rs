@@ -112,7 +112,7 @@ mod tests {
         .await
         .unwrap();
 
-        let request = expected_deactivate_request_example_biome(TEST_SESSION_ID.to_string());
+        let request = expected_deactivate_request_example_biome(TEST_SESSION_ID);
 
         super::deactivate(request, Arc::new(context)).await;
 

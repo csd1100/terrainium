@@ -48,7 +48,7 @@ mod tests {
             Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
 
         if let Some(session_id) = &session_id {
-            context = context.set_session_id(session_id.clone());
+            context = context.set_session_id(session_id);
         }
 
         let client = ExpectClient::send(ProtoRequest::Execute(
@@ -89,7 +89,7 @@ mod tests {
             Context::build(terrain_dir, PathBuf::new(), toml_path, MockExecutor::new());
 
         if let Some(session_id) = &session_id {
-            context = context.set_session_id(session_id.clone());
+            context = context.set_session_id(session_id);
         }
 
         let expected_error = "failed to parse execute request";

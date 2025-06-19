@@ -165,8 +165,8 @@ impl Context {
         &self.config
     }
 
-    pub fn set_session_id(mut self, session_id: String) -> Self {
-        self.session_id = Some(session_id);
+    pub fn set_session_id(mut self, session_id: &str) -> Self {
+        self.session_id = Some(session_id.to_string());
         self
     }
 

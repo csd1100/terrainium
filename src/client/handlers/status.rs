@@ -112,7 +112,7 @@ mod tests {
             terrain_dir.path().join(TERRAIN_TOML),
             MockExecutor::default(),
         )
-        .set_session_id(session_id.clone());
+        .set_session_id(&session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
@@ -140,7 +140,7 @@ mod tests {
             terrain_dir.path().join(TERRAIN_TOML),
             MockExecutor::default(),
         )
-        .set_session_id(session_id.clone());
+        .set_session_id(&session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::SessionId(session_id.clone()),
@@ -236,7 +236,7 @@ mod tests {
             terrain_dir.path().join(TERRAIN_TOML),
             MockExecutor::default(),
         )
-        .set_session_id(session_id.clone());
+        .set_session_id(&session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
@@ -264,7 +264,7 @@ mod tests {
             terrain_dir.path().join(TERRAIN_TOML),
             MockExecutor::default(),
         )
-        .set_session_id(session_id.clone());
+        .set_session_id(&session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,

@@ -106,7 +106,8 @@ pub(crate) fn expected_execute_request_example_biome(
     }
 }
 
-pub fn expected_deactivate_request_example_biome(session_id: String) -> pb::Deactivate {
+pub fn expected_deactivate_request_example_biome(session_id: &str) -> pb::Deactivate {
+    let session_id = session_id.to_string();
     pb::Deactivate {
         session_id: session_id.clone(),
         terrain_name: TEST_TERRAIN_NAME.to_string(),

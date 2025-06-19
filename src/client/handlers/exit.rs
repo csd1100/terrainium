@@ -143,7 +143,7 @@ mod tests {
             PathBuf::new(),
             MockExecutor::default(),
         )
-        .set_session_id(TEST_SESSION_ID.to_string());
+        .set_session_id(TEST_SESSION_ID);
 
         let actual_error = super::handle(context, Terrain::example(), None)
             .await
@@ -158,7 +158,6 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn send_request_for_example_biome() {
-        let session_id = TEST_SESSION_ID.to_string();
         let selected_biome = set_env_var(
             TERRAIN_SELECTED_BIOME.to_string(),
             Some(EXAMPLE_BIOME.to_string()),
@@ -168,7 +167,7 @@ mod tests {
         let toml_path = terrain_dir.join(TERRAIN_TOML);
 
         let client = ExpectClient::send(ProtoRequest::Deactivate(
-            test_utils::expected_deactivate_request_example_biome(session_id.clone()),
+            test_utils::expected_deactivate_request_example_biome(TEST_SESSION_ID),
         ))
         .successfully();
 
@@ -178,7 +177,7 @@ mod tests {
             toml_path,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(TEST_SESSION_ID);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -208,7 +207,7 @@ mod tests {
             toml_path,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(&session_id);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -244,7 +243,7 @@ mod tests {
             toml_path,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(&session_id);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -281,7 +280,7 @@ mod tests {
             toml_path,
             MockExecutor::default(),
         )
-        .set_session_id(session_id);
+        .set_session_id(&session_id);
 
         super::handle(context, Terrain::example(), Some(client))
             .await
@@ -304,7 +303,7 @@ mod tests {
             PathBuf::new(),
             MockExecutor::default(),
         )
-        .set_session_id(session_id.clone());
+        .set_session_id(&session_id);
 
         let client =
             ExpectClient::send(ProtoRequest::Deactivate(expected_request_none(session_id)))
