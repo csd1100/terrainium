@@ -14,9 +14,9 @@ pub trait Service {
         daemon_path: Option<PathBuf>,
     ) -> impl std::future::Future<Output = Result<()>>;
     fn start(&self);
-    fn enable(&self, daemon_path: Option<PathBuf>) -> Result<()>;
+    fn enable(&self, _daemon_path: Option<PathBuf>) -> Result<()>;
     fn stop(&self);
-    fn disable(&self, daemon_path: Option<PathBuf>) -> Result<()>;
+    fn disable(&self, _daemon_path: Option<PathBuf>) -> Result<()>;
     fn remove(&self);
 }
 

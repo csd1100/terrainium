@@ -15,6 +15,7 @@ use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
 use std::path::PathBuf;
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn handle(
@@ -67,7 +68,7 @@ pub async fn handle(
     }
 
     let result = tokio::join!(
-        context.shell().spawn(shell_envs),
+        context.shell().spawn(Some(Arc::new(shell_envs))),
         send_activate_request(client, &context, environment, is_background)
     );
 

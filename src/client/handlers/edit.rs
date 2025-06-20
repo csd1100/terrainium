@@ -41,12 +41,11 @@ pub(crate) fn run_editor(
             .to_string_lossy()
             .parse()
             .context(format!("failed to convert path {:?} to string", toml_path))?],
-        None,
         Some(terrain_dir.to_path_buf()),
     );
 
     executor
-        .wait(command)
+        .wait(None, command)
         .context(format!("failed to edit file {:?}", toml_path))?;
 
     Ok(())
@@ -67,6 +66,7 @@ pub(crate) mod tests {
     use anyhow::Result;
     use fs::{copy, create_dir_all};
     use serial_test::serial;
+    use std::env::VarError;
     use std::fs;
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -76,7 +76,10 @@ pub(crate) mod tests {
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_current_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR, Some("vim"));
+        let editor: std::result::Result<String, VarError>;
+        unsafe {
+            editor = set_env_var(EDITOR, Some("vim"));
+        }
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -88,7 +91,6 @@ pub(crate) mod tests {
             command: Command::new(
                 "vim".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
-                None,
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
@@ -96,7 +98,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(expected);
+        let executor = AssertExecutor::to().wait_for(None, expected);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)
@@ -120,14 +122,19 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR, editor);
+        unsafe {
+            restore_env_var(EDITOR, editor);
+        }
         Ok(())
     }
 
     #[serial]
     #[test]
     fn edit_opens_editor_and_generates_scripts_central_dir() -> Result<()> {
-        let editor = set_env_var(EDITOR, Some("vim"));
+        let editor: std::result::Result<String, VarError>;
+        unsafe {
+            editor = set_env_var(EDITOR, Some("vim"));
+        }
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -139,7 +146,6 @@ pub(crate) mod tests {
             command: Command::new(
                 "vim".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
-                None,
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
@@ -147,7 +153,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(expected);
+        let executor = AssertExecutor::to().wait_for(None, expected);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)
@@ -173,15 +179,19 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR, editor);
+        unsafe {
+            restore_env_var(EDITOR, editor);
+        }
         Ok(())
     }
 
     #[serial]
     #[test]
     fn edit_opens_default_editor_if_env_not_set_and_generates_scripts() -> Result<()> {
-        let editor = set_env_var(EDITOR, Some("vim"));
-        std::env::remove_var(EDITOR);
+        let editor: std::result::Result<String, VarError>;
+        unsafe {
+            editor = set_env_var(EDITOR, None);
+        }
 
         let current_dir = tempdir()?;
         let central_dir = tempdir()?;
@@ -193,7 +203,6 @@ pub(crate) mod tests {
             command: Command::new(
                 "vi".to_string(),
                 vec![terrain_toml.to_string_lossy().to_string()],
-                None,
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
@@ -201,7 +210,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(expected);
+        let executor = AssertExecutor::to().wait_for(None, expected);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)
@@ -227,7 +236,9 @@ pub(crate) mod tests {
             .script_was_created_for(NONE)
             .script_was_created_for(EXAMPLE_BIOME);
 
-        restore_env_var(EDITOR, editor);
+        unsafe {
+            restore_env_var(EDITOR, editor);
+        }
         Ok(())
     }
 }

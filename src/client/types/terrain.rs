@@ -369,7 +369,6 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome".to_string()],
                 None,
-                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -377,7 +376,6 @@ impl Terrain {
                     "-c".to_string(),
                     "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
-                None,
                 None,
             )],
         );
@@ -387,7 +385,6 @@ impl Terrain {
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome".to_string()],
                 None,
-                None,
             )],
             vec![Command::new(
                 "/bin/bash".to_string(),
@@ -395,7 +392,6 @@ impl Terrain {
                     "-c".to_string(),
                     "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec".to_string(),
                 ],
-                None,
                 None,
             )],
         );
@@ -446,6 +442,7 @@ pub mod tests {
     use crate::common::types::command::{Command, CommandsType};
     use serial_test::serial;
     use std::collections::BTreeMap;
+    use std::env::VarError;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
     use std::os::unix::fs::{symlink, PermissionsExt};
     use std::path::PathBuf;
@@ -474,13 +471,11 @@ pub mod tests {
             "/bin/echo".to_string(),
             vec!["entering biome ".to_string() + &name],
             None,
-            None,
         )];
         let biome_constructor_background: Vec<Command> = vec![];
         let biome_destructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome ".to_string() + &name],
-            None,
             None,
         )];
         let biome_destructor_background: Vec<Command> = vec![];
@@ -743,149 +738,125 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
-            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
-            None,
             Some(test_dir.path().to_path_buf()),
         );
         let command_vec = vec![
             leading_space_command.clone(),
             trailing_space_command.clone(),
-            Command::new("".to_string(), vec![], None, None),
+            Command::new("".to_string(), vec![], None),
             Command::new(
                 "not_in_path".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with spaces".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_path_with_cwd".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./not_executable".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./relative_not_present_current_dir".to_string(),
                 vec![],
                 None,
-                None,
             ),
             Command::new(
                 absolute_exe_path.to_string_lossy().to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_present.to_string_lossy().to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 absolute_path_not_executable.to_string_lossy().to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "with_relative_arg_not_present".to_string(),
                 vec!["./not_present".to_string()],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 symlink_symlink_exe.to_string_lossy().to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "./symlink_symlink_not_executable".to_string(),
                 vec![],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(paths_usr_bin.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(PathBuf::from("./relative_dir")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(PathBuf::from("${RELATIVE_DIR}")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(PathBuf::from("./relative_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(PathBuf::from("/absolute_dir_does_not_exist")),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(absolute_exe_path.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(PathBuf::from("./relative_path_with_cwd")),
             ),
             Command::new(
                 "sudo".to_string(),
                 vec!["whoami".to_string()],
-                None,
                 Some(test_dir.path().to_path_buf()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(symlink_file.clone()),
             ),
             Command::new(
                 "valid_command".to_string(),
                 vec!["some_args1".to_string(), "some_args2".to_string()],
-                None,
                 Some(symlink_cwd.clone()),
             ),
         ];
@@ -902,14 +873,17 @@ pub mod tests {
         biome.set_destructors(commands);
         terrain.update("test_biome".to_string(), biome);
 
-        let real_path = set_env_var(
-            "PATH",
-            Some(&format!(
-                "{}:{}",
-                paths_bin.display(),
-                paths_usr_bin.display()
-            )),
-        );
+        let real_path: std::result::Result<String, VarError>;
+        unsafe {
+            real_path = set_env_var(
+                "PATH",
+                Some(&format!(
+                    "{}:{}",
+                    paths_bin.display(),
+                    paths_usr_bin.display()
+                )),
+            );
+        }
 
         let messages = terrain.validate(test_dir.path()).results();
 
@@ -1070,7 +1044,9 @@ pub mod tests {
                 })
         });
 
-        restore_env_var("PATH", real_path);
+        unsafe {
+            restore_env_var("PATH", real_path);
+        }
     }
 
     #[serial]
@@ -1096,13 +1072,11 @@ pub mod tests {
         let leading_space_command = Command::new(
             " with_leading_spaces".to_string(),
             vec![],
-            None,
             Some(test_dir.path().to_path_buf()),
         );
         let trailing_space_command = Command::new(
             "with_trailing_spaces ".to_string(),
             vec![],
-            None,
             Some(test_dir.path().to_path_buf()),
         );
 
@@ -1135,14 +1109,17 @@ pub mod tests {
 
         let before = terrain.clone();
 
-        let real_path = set_env_var(
-            "PATH",
-            Some(&format!(
-                "{}:{}",
-                paths_root.path().display(),
-                paths_bin.display(),
-            )),
-        );
+        let real_path: std::result::Result<String, VarError>;
+        unsafe {
+            real_path = set_env_var(
+                "PATH",
+                Some(&format!(
+                    "{}:{}",
+                    paths_root.path().display(),
+                    paths_bin.display(),
+                )),
+            );
+        }
         let messages = before.validate(test_dir.path()).results();
 
         assert_eq!(messages.len(), 24);
@@ -1214,7 +1191,9 @@ pub mod tests {
 
         assert!(fixed_result.results().is_empty());
 
-        restore_env_var("PATH", real_path);
+        unsafe {
+            restore_env_var("PATH", real_path);
+        }
     }
 
     #[test]

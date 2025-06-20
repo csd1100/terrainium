@@ -30,20 +30,28 @@ impl AssertExecutor {
         Self { executor }
     }
 
-    pub fn wait_for(mut self, command: ExpectedCommand) -> MockExecutor {
+    pub fn wait_for(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+    ) -> MockExecutor {
         let ExpectedCommand {
             command, exit_code, ..
         } = command;
 
         self.executor
             .expect_wait()
-            .with(eq(command))
-            .return_once(move |_| Ok(ExitStatus::from_raw(exit_code)));
+            .with(eq(envs), eq(command))
+            .return_once(move |_, _| Ok(ExitStatus::from_raw(exit_code)));
 
         self.executor
     }
 
-    pub fn get_output_for(mut self, command: ExpectedCommand) -> Self {
+    pub fn get_output_for(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+    ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
@@ -52,8 +60,8 @@ impl AssertExecutor {
         } = command;
         self.executor
             .expect_get_output()
-            .with(eq(command))
-            .return_once(move |_| {
+            .with(eq(envs), eq(command))
+            .return_once(move |_, _| {
                 if error {
                     Ok(Output {
                         // ExitStatus.code() returns status >> 8 so doing expected << 8
@@ -72,7 +80,11 @@ impl AssertExecutor {
         self
     }
 
-    pub fn async_spawn(mut self, command: ExpectedCommand) -> Self {
+    pub fn async_spawn(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+    ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
@@ -82,8 +94,8 @@ impl AssertExecutor {
 
         self.executor
             .expect_async_spawn()
-            .with(eq(command))
-            .return_once(move |_| {
+            .with(eq(envs), eq(command))
+            .return_once(move |_, _| {
                 if should_error {
                     bail!("{}", output)
                 } else {
@@ -96,7 +108,7 @@ impl AssertExecutor {
     pub fn async_spawn_with_log(
         mut self,
         command: ExpectedCommand,
-        envs: Arc<BTreeMap<String, String>>,
+        envs: Option<Arc<BTreeMap<String, String>>>,
         log_path: String,
     ) -> Self {
         let ExpectedCommand {
@@ -108,7 +120,7 @@ impl AssertExecutor {
 
         self.executor
             .expect_async_spawn_with_log()
-            .with(eq(command), eq(envs), eq(log_path))
+            .with(eq(log_path), eq(envs), eq(command))
             .return_once(move |_, _, _| {
                 if should_error {
                     bail!("{}", output)

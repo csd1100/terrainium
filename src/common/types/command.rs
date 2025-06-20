@@ -2,13 +2,11 @@ use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
-use crate::common::constants::JSON;
 use crate::common::types::pb;
 use anyhow::{Context, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
-use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::fs;
@@ -96,37 +94,11 @@ fn is_executable(path: &Path) -> bool {
 }
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Debug, PartialEq, Clone, Hash, Eq, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq, Serialize, Deserialize)]
 pub struct Command {
     exe: String,
     args: Vec<String>,
-    // do not serialize envs for terrain.toml
-    #[cfg_attr(feature = "terrain-schema", schemars(skip))]
-    #[serde(skip_serializing)]
-    envs: Option<BTreeMap<String, String>>,
     cwd: Option<PathBuf>,
-}
-
-impl Serialize for Command {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let type_name = std::any::type_name::<S>();
-        let is_json = type_name.contains(JSON);
-
-        let mut command = serializer.serialize_struct("Command", if is_json { 4 } else { 3 })?;
-        command.serialize_field("exe", &self.exe)?;
-        command.serialize_field("args", &self.args)?;
-        // do serialize envs for command state but do not serialize for toml
-        // as for terrain.toml we have common env vars specified
-        // only serialize if envs are set
-        if is_json && self.envs.is_some() {
-            command.serialize_field("envs", &self.envs)?;
-        }
-        command.serialize_field("cwd", &self.cwd)?;
-        command.end()
-    }
 }
 
 impl Display for Command {
@@ -149,18 +121,8 @@ impl Display for Command {
 }
 
 impl Command {
-    pub fn new(
-        exe: String,
-        args: Vec<String>,
-        envs: Option<BTreeMap<String, String>>,
-        cwd: Option<PathBuf>,
-    ) -> Self {
-        Command {
-            exe,
-            args,
-            envs,
-            cwd,
-        }
+    pub fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {
+        Command { exe, args, cwd }
     }
 
     pub fn trim_exe(mut self) -> Self {
@@ -182,10 +144,6 @@ impl Command {
 
     pub fn set_args(&mut self, args: Vec<String>) {
         self.args = args;
-    }
-
-    pub fn set_envs(&mut self, envs: Option<BTreeMap<String, String>>) {
-        self.envs = envs;
     }
 
     pub fn set_cwd(&mut self, cwd: Option<PathBuf>) {
@@ -452,17 +410,9 @@ impl Command {
 
 impl From<Command> for std::process::Command {
     fn from(value: Command) -> std::process::Command {
-        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
-        let envs = if let Some(mut envs) = value.envs {
-            vars.append(&mut envs);
-            vars
-        } else {
-            vars
-        };
         let mut command = std::process::Command::new(value.exe);
         command
             .args(value.args)
-            .envs(envs)
             .current_dir(value.cwd.expect("cwd to be present"));
         command
     }
@@ -470,17 +420,9 @@ impl From<Command> for std::process::Command {
 
 impl From<Command> for tokio::process::Command {
     fn from(value: Command) -> tokio::process::Command {
-        let mut vars: BTreeMap<String, String> = std::env::vars().collect();
-        let envs = if let Some(mut envs) = value.envs {
-            vars.append(&mut envs);
-            vars
-        } else {
-            vars
-        };
         let mut command = tokio::process::Command::new(value.exe);
         command
             .args(value.args)
-            .envs(envs)
             .current_dir(value.cwd.expect("cwd to be present"));
         command
     }
@@ -502,38 +444,7 @@ impl From<pb::Command> for Command {
         Self {
             exe: value.exe,
             args: value.args,
-            envs: None,
             cwd: Some(PathBuf::from(value.cwd)),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn does_not_serialize_envs_to_toml() {
-        let mut envs = BTreeMap::<String, String>::new();
-        envs.insert("TEST".to_string(), "value".to_string());
-
-        let command = Command::new("test".to_string(), vec![], Some(envs), None);
-
-        assert_eq!(
-            "exe = \"test\"\nargs = []\n",
-            toml::to_string(&command).unwrap()
-        );
-    }
-
-    #[test]
-    fn does_serialize_envs_to_json() {
-        let mut envs = BTreeMap::<String, String>::new();
-        envs.insert("TEST".to_string(), "value".to_string());
-
-        let command = Command::new("test".to_string(), vec![], Some(envs), None);
-
-        assert_eq!(
-            r#"{"exe":"test","args":[],"envs":{"TEST":"value"},"cwd":null}"#,
-            serde_json::to_string(&command).unwrap()
-        );
     }
 }

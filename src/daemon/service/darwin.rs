@@ -51,17 +51,15 @@ impl Service for DarwinService {
             <true/>
         </dict>
         <key>StandardOutPath</key>
-        <string>{}</string>
+        <string>{TERRAINIUMD_TMP_DIR}/stdout.log</string>
         <key>StandardErrorPath</key>
-        <string>{}</string>
+        <string>{TERRAINIUMD_TMP_DIR}/stderr.log</string>
         <key>ProcessType</key>
         <string>Background</string>
     </dict>
 </plist>"#,
             daemon_path.display(),
             std::env::var(PATH).context("failed to get PATH")?,
-            format!("{TERRAINIUMD_TMP_DIR}/stdout.log"),
-            format!("{TERRAINIUMD_TMP_DIR}/stderr.log")
         );
         Ok(service)
     }
@@ -78,7 +76,7 @@ impl Service for DarwinService {
         todo!()
     }
 
-    fn enable(&self, daemon_path: Option<PathBuf>) -> Result<()> {
+    fn enable(&self, _daemon_path: Option<PathBuf>) -> Result<()> {
         todo!()
     }
 
@@ -86,7 +84,7 @@ impl Service for DarwinService {
         todo!()
     }
 
-    fn disable(&self, daemon_path: Option<PathBuf>) -> Result<()> {
+    fn disable(&self, _daemon_path: Option<PathBuf>) -> Result<()> {
         todo!()
     }
 

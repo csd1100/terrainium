@@ -265,7 +265,6 @@ pub mod tests {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
-                None,
                 Some(current_dir.path().to_path_buf()),
             ),
             exit_code: 0,
@@ -273,7 +272,7 @@ pub mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(expected);
+        let executor = AssertExecutor::to().wait_for(None, expected);
 
         // setup mock to assert scripts are compiled when init
         let executor = ExpectZSH::with(executor, current_dir.path())
@@ -310,7 +309,6 @@ pub mod tests {
             command: Command::new(
                 editor,
                 vec![terrain_toml_path.to_string_lossy().to_string()],
-                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             exit_code: 0,
@@ -318,7 +316,7 @@ pub mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(expected);
+        let executor = AssertExecutor::to().wait_for(None, expected);
 
         // setup mock to assert scripts are compiled when init
         let executor = ExpectZSH::with(executor, terrain_dir.path())

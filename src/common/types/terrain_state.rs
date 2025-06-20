@@ -657,24 +657,20 @@ pub mod test_utils {
             expected_destructor_background_example_biome(Path::new(terrain_dir))
         };
 
-        commands
-            .into_iter()
-            .enumerate()
-            .for_each(|(idx, mut command)| {
-                command.set_envs(None);
-                command_states.push(CommandState {
-                    command,
-                    log_path: format!(
-                        "{state_dir}/{TEST_TERRAIN_NAME}/{session_id}/{}.{idx}.{timestamp}.log",
-                        if is_constructor {
-                            CONSTRUCTORS
-                        } else {
-                            DESTRUCTORS
-                        }
-                    ),
-                    status: status.clone(),
-                });
+        commands.into_iter().enumerate().for_each(|(idx, command)| {
+            command_states.push(CommandState {
+                command,
+                log_path: format!(
+                    "{state_dir}/{TEST_TERRAIN_NAME}/{session_id}/{}.{idx}.{timestamp}.log",
+                    if is_constructor {
+                        CONSTRUCTORS
+                    } else {
+                        DESTRUCTORS
+                    }
+                ),
+                status: status.clone(),
             });
+        });
         command_states
     }
 
@@ -859,8 +855,7 @@ pub mod test_utils {
         commands
             .into_iter()
             .enumerate()
-            .for_each(|(idx, mut command)| {
-                command.set_envs(None);
+            .for_each(|(idx, command)| {
                 command_states.push(CommandState {
                     command,
                     log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/19700101000000/{}.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", if is_constructor {

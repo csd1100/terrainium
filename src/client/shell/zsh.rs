@@ -35,7 +35,7 @@ impl Shell for Zsh {
     }
 
     fn command(&self) -> Command {
-        Command::new(self.bin.to_string(), vec![], None, Some(self.cwd.clone()))
+        Command::new(self.bin.to_string(), vec![], Some(self.cwd.clone()))
     }
 
     fn get_init_rc_contents() -> String {
@@ -134,25 +134,23 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
     fn execute(
         &self,
         mut args: Vec<String>,
-        envs: Option<BTreeMap<String, String>>,
+        envs: Option<Arc<BTreeMap<String, String>>>,
     ) -> Result<Output> {
         let mut final_args = vec!["-c".to_string()];
         final_args.append(&mut args);
 
         let mut command = self.command();
         command.set_args(final_args);
-        command.set_envs(envs);
 
-        self.executor.get_output(command)
+        self.executor.get_output(envs, command)
     }
 
-    async fn spawn(&self, envs: BTreeMap<String, String>) -> Result<ExitStatus> {
+    async fn spawn(&self, envs: Option<Arc<BTreeMap<String, String>>>) -> Result<ExitStatus> {
         let mut command = self.command();
         command.set_args(vec!["-i".to_string(), "-s".to_string()]);
-        command.set_envs(Some(envs));
 
         self.executor
-            .async_spawn(command)
+            .async_spawn(envs, command)
             .await
             .context("failed to run zsh")
     }

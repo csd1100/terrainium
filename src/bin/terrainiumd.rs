@@ -1,6 +1,5 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use home::home_dir;
 use std::path::PathBuf;
 use std::sync::Arc;
 use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
@@ -10,7 +9,6 @@ use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
-use terrainium::daemon::service::darwin::DarwinService;
 use terrainium::daemon::service::{Service, ServiceProvider};
 use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
@@ -27,12 +25,14 @@ fn get_daemon_config() -> DaemonConfig {
 }
 
 fn is_user_root(executor: Arc<Executor>) -> bool {
-    let user = executor.get_output(Command::new(
-        "whoami".to_string(),
-        vec![],
+    let user = executor.get_output(
         None,
-        Some(PathBuf::from(TERRAINIUMD_TMP_DIR)),
-    ));
+        Command::new(
+            "whoami".to_string(),
+            vec![],
+            Some(PathBuf::from(TERRAINIUMD_TMP_DIR)),
+        ),
+    );
 
     if let Ok(user) = user {
         let user = String::from_utf8_lossy(&user.stdout);
