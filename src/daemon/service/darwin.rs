@@ -10,6 +10,7 @@ use std::sync::Arc;
 const GUI: &str = "gui";
 const LAUNCHCTL: &str = "launchctl";
 const BOOTSTRAP: &str = "bootstrap";
+const BOOTOUT: &str = "bootout";
 const PRINT: &str = "print";
 const PROJECT_ID: &str = "com.csd1100.terrainium";
 
@@ -51,6 +52,9 @@ impl Service for DarwinService {
             return Ok(());
         }
 
+        let daemon_path =
+            daemon_path.unwrap_or(std::env::current_exe().context("failed to get current bin")?);
+
         let service = self.get(daemon_path, true)?;
         std::fs::write(&self.path, &service).context("failed to write service")?;
 
@@ -84,7 +88,7 @@ impl Service for DarwinService {
         todo!()
     }
 
-    fn enable(&self, _daemon_path: Option<PathBuf>) -> Result<()> {
+    fn enable(&self) -> Result<()> {
         todo!()
     }
 
@@ -92,18 +96,43 @@ impl Service for DarwinService {
         todo!()
     }
 
-    fn disable(&self, _daemon_path: Option<PathBuf>) -> Result<()> {
+    fn disable(&self) -> Result<()> {
         todo!()
     }
 
-    fn remove(&self) {
-        todo!()
+    fn remove(&self) -> Result<()> {
+        if !self.is_installed()? {
+            println!("service is not installed!");
+            return Ok(());
+        }
+
+        // bootout service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![
+                BOOTOUT.to_string(),
+                self.get_service_target()
+                    .context("failed to get service target")?,
+            ],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to bootout service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        std::fs::remove_file(&self.path).context("failed to remove service file")
     }
 
-    fn get(&self, daemon_path: Option<PathBuf>, enabled: bool) -> Result<String> {
-        let daemon_path =
-            daemon_path.unwrap_or(std::env::current_exe().context("failed to get current bin")?);
-
+    fn get(&self, daemon_path: PathBuf, enabled: bool) -> Result<String> {
         if !daemon_path.exists() {
             bail!("{} does not exist", daemon_path.display());
         }
@@ -150,14 +179,6 @@ impl Service for DarwinService {
 }
 
 impl DarwinService {
-    fn get_target(&self) -> Result<String> {
-        Ok(format!("{GUI}/{}", self.get_uid()?))
-    }
-
-    fn get_service_target(&self) -> Result<String> {
-        Ok(format!("{}/{PROJECT_ID}", self.get_target()?))
-    }
-
     fn get_uid(&self) -> Result<String> {
         let command = Command::new("id".to_string(), vec!["-u".to_string()], None);
         let output = self.executor.get_output(None, command)?;
@@ -169,5 +190,13 @@ impl DarwinService {
         }
         let uid = String::from_utf8(output.stdout).context("failed to parse output")?;
         Ok(uid.replace('\n', ""))
+    }
+
+    fn get_target(&self) -> Result<String> {
+        Ok(format!("{GUI}/{}", self.get_uid()?))
+    }
+
+    fn get_service_target(&self) -> Result<String> {
+        Ok(format!("{}/{PROJECT_ID}", self.get_target()?))
     }
 }

@@ -25,4 +25,5 @@ pub struct Options {
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
     InstallService { daemon_path: Option<PathBuf> },
+    RemoveService,
 }

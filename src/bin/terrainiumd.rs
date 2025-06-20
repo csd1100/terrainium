@@ -90,6 +90,9 @@ async fn start() -> Result<()> {
                         .install(daemon_path)
                         .context("failed to install service")?;
                 }
+                Verbs::RemoveService => {
+                    service.remove().context("failed to remove service")?;
+                }
             }
         }
         None => {

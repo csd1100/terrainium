@@ -15,11 +15,11 @@ pub trait Service {
     fn is_installed(&self) -> Result<bool>;
     fn install(&self, daemon_path: Option<PathBuf>) -> Result<()>;
     fn start(&self);
-    fn enable(&self, _daemon_path: Option<PathBuf>) -> Result<()>;
+    fn enable(&self) -> Result<()>;
     fn stop(&self);
-    fn disable(&self, _daemon_path: Option<PathBuf>) -> Result<()>;
-    fn remove(&self);
-    fn get(&self, daemon_path: Option<PathBuf>, enabled: bool) -> Result<String>;
+    fn disable(&self) -> Result<()>;
+    fn remove(&self) -> Result<()>;
+    fn get(&self, daemon_path: PathBuf, enabled: bool) -> Result<String>;
 }
 
 pub struct ServiceProvider;
