@@ -1,4 +1,4 @@
-use crate::common::constants::{DISABLE, ENABLE, TERRAINIUMD_TMP_DIR};
+use crate::common::constants::{DISABLE, ENABLE};
 use crate::common::constants::{PATH, TERRAINIUMD_LINUX_SERVICE, TERRAINIUMD_LINUX_SERVICE_PATH};
 use crate::common::execute::{Execute, Executor};
 use crate::common::types::command::Command;
@@ -9,10 +9,7 @@ use std::sync::Arc;
 
 const SYSTEMCTL: &str = "systemctl";
 const USER: &str = "--user";
-const LIST: &str = "list-units";
-const TYPE: &str = "--type";
-const SERVICE: &str = "service";
-const ALL: &str = "--all";
+const STATUS: &str = "status";
 const RELOAD: &str = "daemon-reload";
 const NOW: &str = "--now";
 const IS_ACTIVE: &str = "is-active";
@@ -65,10 +62,8 @@ impl Service for LinuxService {
             SYSTEMCTL.to_string(),
             vec![
                 USER.to_string(),
-                LIST.to_string(),
-                TYPE.to_string(),
-                SERVICE.to_string(),
-                ALL.to_string(),
+                STATUS.to_string(),
+                TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
             None,
         );
@@ -78,15 +73,8 @@ impl Service for LinuxService {
             .get_output(None, command)
             .context("failed to execute process")?;
 
-        if !output.status.success() {
-            bail!(
-                "failed to check if service is loaded: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-
-        let output = String::from_utf8_lossy(&output.stdout);
-        Ok(output.contains(TERRAINIUMD_LINUX_SERVICE))
+        let error = String::from_utf8_lossy(&output.stderr);
+        Ok(error.is_empty())
     }
 
     fn load(&self) -> anyhow::Result<()> {
@@ -96,36 +84,16 @@ impl Service for LinuxService {
         }
 
         // reload systemd to load service
-        let command = Command::new(
-            SYSTEMCTL.to_string(),
-            vec![USER.to_string(), RELOAD.to_string()],
-            None,
-        );
-
-        let output = self
-            .executor
-            .get_output(None, command)
-            .context("failed to execute process")?;
-
-        if !output.status.success() {
-            bail!(
-                "failed to load the service: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        Ok(())
+        self.reload().context("failed to reload service")
     }
 
     fn unload(&self) -> anyhow::Result<()> {
-        // nothing to do here, just reload
-        self.load().context("failed to unload the service")
+        self.reload().context("failed to reload the service")
     }
 
     fn remove(&self) -> anyhow::Result<()> {
         std::fs::remove_file(&self.path).context("failed to remove service file")?;
-        if !self.is_loaded()? {
-            self.unload().context("failed to unload")?;
-        }
+        self.unload().context("failed to unload")?;
         Ok(())
     }
 
@@ -306,8 +274,6 @@ After=multi-user.target
 ExecStart={} --force
 Environment="PATH={}"
 KillSignal=SIGTERM
-StandardOutput=append:{TERRAINIUMD_TMP_DIR}/stdout.log
-StandardError=append:{TERRAINIUMD_TMP_DIR}/stderr.log
 
 [Install]
 WantedBy=default.target"#,
@@ -329,5 +295,26 @@ impl LinuxService {
         }
 
         Box::new(Self { path, executor })
+    }
+
+    fn reload(&self) -> Result<()> {
+        let command = Command::new(
+            SYSTEMCTL.to_string(),
+            vec![USER.to_string(), RELOAD.to_string()],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to load the service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        Ok(())
     }
 }
