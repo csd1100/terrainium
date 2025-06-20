@@ -93,6 +93,12 @@ async fn start() -> Result<()> {
                 Verbs::RemoveService => {
                     service.remove().context("failed to remove service")?;
                 }
+                Verbs::EnableService => {
+                    service.enable().context("failed to enable service")?;
+                }
+                Verbs::DisableService => {
+                    service.disable().context("failed to disable service")?;
+                }
             }
         }
         None => {

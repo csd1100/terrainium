@@ -12,6 +12,8 @@ const LAUNCHCTL: &str = "launchctl";
 const BOOTSTRAP: &str = "bootstrap";
 const BOOTOUT: &str = "bootout";
 const PRINT: &str = "print";
+const ENABLE: &str = "enable";
+const DISABLE: &str = "disable";
 const PROJECT_ID: &str = "com.csd1100.terrainium";
 
 pub struct DarwinService {
@@ -21,10 +23,13 @@ pub struct DarwinService {
 
 impl Service for DarwinService {
     fn init(home_dir: &Path, executor: Arc<Executor>) -> Self {
-        Self {
-            path: home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE),
-            executor,
+        let path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
+
+        if !path.parent().unwrap().exists() {
+            std::fs::create_dir_all(&path).expect("failed to create services directory");
         }
+
+        Self { path, executor }
     }
 
     fn is_installed(&self) -> Result<bool> {
@@ -84,19 +89,69 @@ impl Service for DarwinService {
         Ok(())
     }
 
+    fn enable(&self) -> Result<()> {
+        if !self.is_installed()? {
+            bail!(
+                "service is not installed, run terrainiumd install-service to install the service"
+            );
+        }
+
+        // enable service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![ENABLE.to_string(), self.get_service_target()?],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to enable service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(())
+    }
+
+    fn disable(&self) -> Result<()> {
+        if !self.is_installed()? {
+            bail!(
+                "service is not installed, run terrainiumd install-service to install the service"
+            );
+        }
+
+        // enable service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![DISABLE.to_string(), self.get_service_target()?],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to disable service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(())
+    }
+
     fn start(&self) {
         todo!()
     }
 
-    fn enable(&self) -> Result<()> {
-        todo!()
-    }
-
     fn stop(&self) {
-        todo!()
-    }
-
-    fn disable(&self) -> Result<()> {
         todo!()
     }
 

@@ -26,4 +26,6 @@ pub struct Options {
 pub enum Verbs {
     InstallService { daemon_path: Option<PathBuf> },
     RemoveService,
+    EnableService,
+    DisableService,
 }

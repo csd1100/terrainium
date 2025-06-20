@@ -14,10 +14,10 @@ pub trait Service {
     fn init(home_dir: &Path, executor: Arc<Executor>) -> Self;
     fn is_installed(&self) -> Result<bool>;
     fn install(&self, daemon_path: Option<PathBuf>) -> Result<()>;
-    fn start(&self);
     fn enable(&self) -> Result<()>;
-    fn stop(&self);
     fn disable(&self) -> Result<()>;
+    fn start(&self);
+    fn stop(&self);
     fn remove(&self) -> Result<()>;
     fn get(&self, daemon_path: PathBuf, enabled: bool) -> Result<String>;
 }
