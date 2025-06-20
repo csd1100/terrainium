@@ -1,5 +1,5 @@
-use crate::common::constants::TERRAINIUMD_TMP_DIR;
 use crate::common::constants::{PATH, TERRAINIUMD_DARWIN_SERVICE_FILE};
+use crate::common::constants::{TERRAINIUMD_PID_FILE, TERRAINIUMD_TMP_DIR};
 use crate::common::execute::{Execute, Executor};
 use crate::common::types::command::Command;
 use crate::daemon::service::Service;
@@ -9,12 +9,15 @@ use std::sync::Arc;
 
 const GUI: &str = "gui";
 const LAUNCHCTL: &str = "launchctl";
-const BOOTSTRAP: &str = "bootstrap";
-const BOOTOUT: &str = "bootout";
+const LOAD: &str = "bootstrap";
+const UNLOAD: &str = "bootout";
 const PRINT: &str = "print";
 const ENABLE: &str = "enable";
 const DISABLE: &str = "disable";
+const START: &str = "kickstart";
+const STOP: &str = "kill";
 const PROJECT_ID: &str = "com.csd1100.terrainium";
+const SIGTERM: &str = "SIGTERM";
 
 pub struct DarwinService {
     path: PathBuf,
@@ -33,25 +36,10 @@ impl Service for DarwinService {
     }
 
     fn is_installed(&self) -> Result<bool> {
-        let command = Command::new(
-            LAUNCHCTL.to_string(),
-            vec![
-                PRINT.to_string(),
-                self.get_service_target()
-                    .context("failed to get service target")?,
-            ],
-            None,
-        );
-
-        let status = self
-            .executor
-            .wait(None, command, true)
-            .context("failed to check if service is installed")?;
-
-        Ok(self.path.exists() && status.success())
+        Ok(self.path.exists())
     }
 
-    fn install(&self, daemon_path: Option<PathBuf>) -> Result<()> {
+    fn install(&self, daemon_path: Option<PathBuf>, start: bool) -> Result<()> {
         if self.is_installed()? {
             println!("service is already installed!");
             return Ok(());
@@ -63,33 +51,14 @@ impl Service for DarwinService {
         let service = self.get(daemon_path, true)?;
         std::fs::write(&self.path, &service).context("failed to write service")?;
 
-        // bootstrap service
-        let command = Command::new(
-            LAUNCHCTL.to_string(),
-            vec![
-                BOOTSTRAP.to_string(),
-                self.get_target()?,
-                self.path.to_str().unwrap().to_string(),
-            ],
-            None,
-        );
-
-        let output = self
-            .executor
-            .get_output(None, command)
-            .context("failed to execute process")?;
-
-        if !output.status.success() {
-            bail!(
-                "failed to bootstrap service: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
+        if start {
+            self.start().context("failed to start service")?;
         }
 
         Ok(())
     }
 
-    fn enable(&self) -> Result<()> {
+    fn enable(&self, now: bool) -> Result<()> {
         if !self.is_installed()? {
             bail!(
                 "service is not installed, run terrainiumd install-service to install the service"
@@ -113,6 +82,10 @@ impl Service for DarwinService {
                 "failed to enable service: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
+        }
+
+        if now {
+            self.start().context("failed to start service")?;
         }
 
         Ok(())
@@ -147,25 +120,57 @@ impl Service for DarwinService {
         Ok(())
     }
 
-    fn start(&self) {
-        todo!()
+    fn is_loaded(&self) -> Result<bool> {
+        let is_bootstrapped = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![
+                PRINT.to_string(),
+                self.get_service_target()
+                    .context("failed to get service target")?,
+            ],
+            None,
+        );
+
+        let bootstrapped = self
+            .executor
+            .wait(None, is_bootstrapped, true)
+            .context("failed to check if service is installed")?;
+
+        Ok(bootstrapped.success())
     }
 
-    fn stop(&self) {
-        todo!()
-    }
+    fn load(&self) -> Result<()> {
+        // bootstrap service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![
+                LOAD.to_string(),
+                self.get_target()?,
+                self.path.to_str().unwrap().to_string(),
+            ],
+            None,
+        );
 
-    fn remove(&self) -> Result<()> {
-        if !self.is_installed()? {
-            println!("service is not installed!");
-            return Ok(());
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to bootstrap service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
         }
+        Ok(())
+    }
 
+    fn unload(&self) -> Result<()> {
         // bootout service
         let command = Command::new(
             LAUNCHCTL.to_string(),
             vec![
-                BOOTOUT.to_string(),
+                UNLOAD.to_string(),
                 self.get_service_target()
                     .context("failed to get service target")?,
             ],
@@ -184,7 +189,115 @@ impl Service for DarwinService {
             );
         }
 
+        Ok(())
+    }
+
+    fn is_running(&self) -> Result<bool> {
+        let pid = std::fs::read_to_string(TERRAINIUMD_PID_FILE)
+            .context("failed to read terrainiumd pid file")?;
+
+        let is_running = Command::new("kill".to_string(), vec!["-0".to_string(), pid], None);
+
+        let running = self
+            .executor
+            .wait(None, is_running, true)
+            .context("failed to check if service is running")?;
+
+        Ok(running.success())
+    }
+
+    fn start(&self) -> Result<()> {
+        if !self.is_installed()? {
+            bail!(
+                "service is not installed, run terrainiumd install-service to install the service"
+            );
+        }
+
+        if self.is_running()? {
+            bail!("service is already running");
+        }
+
+        // enable service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![START.to_string(), self.get_service_target()?],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to start the service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        Ok(())
+    }
+
+    fn stop(&self) -> Result<()> {
+        if !self.is_installed()? {
+            bail!(
+                "service is not installed, run terrainiumd install-service to install the service"
+            );
+        }
+
+        if !self.is_running()? {
+            bail!("service is not running");
+        }
+
+        // enable service
+        let command = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![
+                STOP.to_string(),
+                SIGTERM.to_string(),
+                self.get_service_target()?,
+            ],
+            None,
+        );
+
+        let output = self
+            .executor
+            .get_output(None, command)
+            .context("failed to execute process")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to stop the service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(())
+    }
+
+    fn remove(&self) -> Result<()> {
+        if !self.is_installed()? {
+            println!("service is not installed!");
+            return Ok(());
+        }
+
         std::fs::remove_file(&self.path).context("failed to remove service file")
+    }
+
+    fn status(&self) -> Result<()> {
+        let status = if self.is_installed()? {
+            if self.is_running()? {
+                "running"
+            } else if self.is_loaded()? {
+                "loaded"
+            } else {
+                "installed"
+            }
+        } else {
+            "not installed"
+        };
+        println!("{status}");
+        Ok(())
     }
 
     fn get(&self, daemon_path: PathBuf, enabled: bool) -> Result<String> {

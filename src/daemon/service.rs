@@ -13,12 +13,17 @@ pub mod linux;
 pub trait Service {
     fn init(home_dir: &Path, executor: Arc<Executor>) -> Self;
     fn is_installed(&self) -> Result<bool>;
-    fn install(&self, daemon_path: Option<PathBuf>) -> Result<()>;
-    fn enable(&self) -> Result<()>;
+    fn install(&self, daemon_path: Option<PathBuf>, start: bool) -> Result<()>;
+    fn enable(&self, now: bool) -> Result<()>;
     fn disable(&self) -> Result<()>;
-    fn start(&self);
-    fn stop(&self);
+    fn is_loaded(&self) -> Result<bool>;
+    fn load(&self) -> Result<()>;
+    fn unload(&self) -> Result<()>;
+    fn is_running(&self) -> Result<bool>;
+    fn start(&self) -> Result<()>;
+    fn stop(&self) -> Result<()>;
     fn remove(&self) -> Result<()>;
+    fn status(&self) -> Result<()>;
     fn get(&self, daemon_path: PathBuf, enabled: bool) -> Result<String>;
 }
 

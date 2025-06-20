@@ -2,6 +2,7 @@ pub const CONFIG_LOCATION: &str = ".config/terrainium";
 
 pub const TERRAINIUMD: &str = "terrainiumd";
 pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
+pub const TERRAINIUMD_PID_FILE: &str = "/tmp/terrainiumd/pid";
 pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
 pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
 pub const TERRAIN_STATE_FILE_NAME: &str = "state.json";

@@ -24,8 +24,19 @@ pub struct Options {
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
-    InstallService { daemon_path: Option<PathBuf> },
+    InstallService {
+        #[arg(long)]
+        daemon_path: Option<PathBuf>,
+        #[arg(short, long)]
+        start: bool,
+    },
     RemoveService,
-    EnableService,
+    EnableService {
+        #[arg(short, long)]
+        now: bool,
+    },
     DisableService,
+    StartService,
+    StopService,
+    ServiceStatus,
 }

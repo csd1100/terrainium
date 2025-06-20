@@ -2,7 +2,9 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
-use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
+use terrainium::common::constants::{
+    TERRAINIUMD_PID_FILE, TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR,
+};
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
 use terrainium::common::types::styles::{error, warning};
@@ -85,19 +87,28 @@ async fn start() -> Result<()> {
             let service =
                 ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
             match verbs {
-                Verbs::InstallService { daemon_path } => {
+                Verbs::InstallService { daemon_path, start } => {
                     service
-                        .install(daemon_path)
+                        .install(daemon_path, start)
                         .context("failed to install service")?;
                 }
                 Verbs::RemoveService => {
                     service.remove().context("failed to remove service")?;
                 }
-                Verbs::EnableService => {
-                    service.enable().context("failed to enable service")?;
+                Verbs::EnableService { now } => {
+                    service.enable(now).context("failed to enable service")?;
                 }
                 Verbs::DisableService => {
                     service.disable().context("failed to disable service")?;
+                }
+                Verbs::StartService => {
+                    service.start().context("failed to start service")?;
+                }
+                Verbs::StopService => {
+                    service.stop().context("failed to stop service")?;
+                }
+                Verbs::ServiceStatus => {
+                    service.status().context("failed to get service status")?;
                 }
             }
         }
@@ -112,6 +123,10 @@ async fn start() -> Result<()> {
             if args.options.create_config {
                 return DaemonConfig::create_file().context("failed to create terrainiumd config");
             }
+
+            // write pid
+            std::fs::write(TERRAINIUMD_PID_FILE, std::process::id().to_string())
+                .context("failed to write terrainiumd pid file")?;
 
             let context = Arc::new(get_daemon_context(is_root, config, executor).await);
 
