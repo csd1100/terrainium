@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-const USER: &str = "user";
+const GUI: &str = "gui";
 const LAUNCHCTL: &str = "launchctl";
 const LOAD: &str = "bootstrap";
 const UNLOAD: &str = "bootout";
@@ -354,7 +354,7 @@ impl DarwinService {
     }
 
     fn get_target(&self) -> Result<String> {
-        Ok(format!("{USER}/{}", self.get_uid()?))
+        Ok(format!("{GUI}/{}", self.get_uid()?))
     }
 
     fn get_service_target(&self) -> Result<String> {
