@@ -11,7 +11,7 @@ use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
-use terrainium::daemon::service::{Service, ServiceProvider};
+use terrainium::daemon::service::ServiceProvider;
 use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
