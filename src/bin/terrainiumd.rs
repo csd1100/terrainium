@@ -16,7 +16,10 @@ use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
+use tokio::signal::unix::{signal, SignalKind};
+use tokio_stream::wrappers::UnixListenerStream;
 use tokio_stream::StreamExt;
+use tokio_util::sync::CancellationToken;
 use tracing::metadata::LevelFilter;
 use tracing::{debug, info, trace, warn};
 
@@ -55,16 +58,73 @@ async fn get_daemon_context(
     is_user_root: bool,
     daemon_config: DaemonConfig,
     executor: Arc<Executor>,
+    cancellation_token: CancellationToken,
 ) -> DaemonContext {
     let context = DaemonContext::new(
         is_user_root,
         daemon_config,
         executor.clone(),
+        cancellation_token,
         TERRAINIUMD_TMP_DIR,
     )
     .await;
     context.setup_state_manager();
     context
+}
+
+async fn start_listening(
+    context: Arc<DaemonContext>,
+    listener: &mut UnixListenerStream,
+) -> Result<()> {
+    while let Some(socket) = listener.next().await.transpose()? {
+        trace!("received socket connection");
+        let context = context.clone();
+        let _ = tokio::spawn(async move {
+            handle_request(context, DaemonSocket::new(socket)).await;
+        })
+        .await;
+    }
+    Ok(())
+}
+
+async fn run(
+    args: DaemonArgs,
+    is_root: bool,
+    config: DaemonConfig,
+    executor: Arc<Executor>,
+    cancellation_token: CancellationToken,
+) -> Result<()> {
+    let (subscriber, (_file_guard, _out_guard)) = init_logging(
+        TERRAINIUMD_TMP_DIR,
+        LevelFilter::from(args.options.log_level),
+    );
+    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+
+    if args.options.create_config {
+        return DaemonConfig::create_file().context("failed to create terrainiumd config");
+    }
+
+    // write pid
+    std::fs::write(TERRAINIUMD_PID_FILE, std::process::id().to_string())
+        .context("failed to write terrainiumd pid file")?;
+
+    let context = Arc::new(get_daemon_context(is_root, config, executor, cancellation_token).await);
+    let token = context.cancellation_token();
+
+    let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.options.force)
+        .await
+        .context("to create start the terrainium daemon")?;
+
+    tokio::select! {
+        _ = token.cancelled() => {
+            info!("stopping terrainium daemon");
+            Ok(())
+        }
+
+        res = start_listening(context.clone(), daemon.listener()) => {
+            res
+        }
+    }
 }
 
 async fn start() -> Result<()> {
@@ -111,50 +171,29 @@ async fn start() -> Result<()> {
                     service.status().context("failed to get service status")?;
                 }
             }
+            Ok(())
         }
         None => {
-            let (subscriber, (_file_guard, _out_guard)) = init_logging(
-                TERRAINIUMD_TMP_DIR,
-                LevelFilter::from(args.options.log_level),
+            let token = CancellationToken::new();
+            let cloned_token = token.clone();
+
+            let mut sigterm = signal(SignalKind::terminate())?;
+            let result = tokio::join!(
+                tokio::spawn(async move {
+                    sigterm.recv().await;
+                    token.cancel();
+                }),
+                run(args, is_root, config, executor, cloned_token)
             );
-            tracing::subscriber::set_global_default(subscriber)
-                .expect("unable to set global subscriber");
-
-            if args.options.create_config {
-                return DaemonConfig::create_file().context("failed to create terrainiumd config");
-            }
-
-            // write pid
-            std::fs::write(TERRAINIUMD_PID_FILE, std::process::id().to_string())
-                .context("failed to write terrainiumd pid file")?;
-
-            let context = Arc::new(get_daemon_context(is_root, config, executor).await);
-
-            let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.options.force)
-                .await
-                .context("to create start the terrainium daemon")?;
-            let listener = daemon.listener();
-
-            while let Some(socket) = listener.next().await.transpose()? {
-                let context = context.clone();
-                trace!("received socket connection");
-                let _ = tokio::spawn(async move {
-                    handle_request(context, DaemonSocket::new(socket)).await;
-                })
-                .await;
-            }
+            result.1
         }
     }
-
-    Ok(())
 }
 
 #[tokio::main]
 async fn main() {
     match start().await {
-        Ok(_) => {
-            println!("exiting terrainiumd");
-        }
+        Ok(_) => {}
         Err(err) => {
             let err = format!("exiting terrainiumd with an error: {err:?}");
             eprintln!("{}: {err}", error("ERROR"));

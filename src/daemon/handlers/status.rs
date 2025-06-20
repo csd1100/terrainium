@@ -169,6 +169,7 @@ mod tests {
                     false,
                     Default::default(),
                     Default::default(),
+                    Default::default(),
                     state_dir_path.to_str().unwrap(),
                 )
                 .await,
@@ -230,6 +231,7 @@ mod tests {
                     false,
                     Default::default(),
                     Default::default(),
+                    Default::default(),
                     state_dir_path.to_str().unwrap(),
                 )
                 .await,
@@ -264,6 +266,7 @@ mod tests {
             Arc::new(
                 DaemonContext::new(
                     false,
+                    Default::default(),
                     Default::default(),
                     Default::default(),
                     state_dir_path.to_str().unwrap(),
@@ -301,6 +304,7 @@ mod tests {
                     false,
                     Default::default(),
                     Default::default(),
+                    Default::default(),
                     state_dir_path.to_str().unwrap(),
                 )
                 .await,
@@ -335,6 +339,7 @@ mod tests {
             Arc::new(
                 DaemonContext::new(
                     false,
+                    Default::default(),
                     Default::default(),
                     Default::default(),
                     state_dir_path.to_str().unwrap(),

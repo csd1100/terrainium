@@ -93,6 +93,7 @@ mod tests {
             false,
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
+            Default::default(),
             state_directory.path().to_str().unwrap(),
         )
         .await;

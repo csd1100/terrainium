@@ -3,12 +3,14 @@ use crate::common::execute::Executor;
 use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;
 use std::sync::Arc;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Default, Clone, Debug)]
 pub struct DaemonContext {
     is_root: bool,
     is_root_allowed: bool,
     executor: Arc<Executor>,
+    cancellation_token: CancellationToken,
     state_manager: Arc<StateManager>,
 }
 
@@ -17,6 +19,7 @@ impl DaemonContext {
         is_root: bool,
         config: DaemonConfig,
         executor: Arc<Executor>,
+        cancellation_token: CancellationToken,
         state_directory: &str,
     ) -> Self {
         let state_manager = StateManager::init(state_directory, config.history_size()).await;
@@ -24,6 +27,7 @@ impl DaemonContext {
             is_root,
             is_root_allowed: config.is_root_allowed(),
             executor,
+            cancellation_token,
             state_manager: Arc::new(state_manager),
         }
     }
@@ -38,6 +42,10 @@ impl DaemonContext {
 
     pub fn executor(&self) -> Arc<Executor> {
         self.executor.clone()
+    }
+
+    pub fn cancellation_token(&self) -> CancellationToken {
+        self.cancellation_token.clone()
     }
 
     pub fn setup_state_manager(&self) {

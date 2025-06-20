@@ -109,6 +109,7 @@ mod tests {
                 false,
                 DaemonConfig::default(),
                 Arc::new(MockExecutor::default()),
+                Default::default(),
                 &state_dir_path,
             )
             .await,
@@ -156,6 +157,7 @@ mod tests {
                 false,
                 DaemonConfig::default(),
                 Arc::new(MockExecutor::default()),
+                Default::default(),
                 &state_dir_path,
             )
             .await,
