@@ -14,10 +14,10 @@ pub struct DaemonContext {
 
 impl DaemonContext {
     pub async fn new(
-        executor: Arc<Executor>,
-        config: DaemonConfig,
-        state_directory: &str,
         is_root: bool,
+        config: DaemonConfig,
+        executor: Arc<Executor>,
+        state_directory: &str,
     ) -> Self {
         let state_manager = StateManager::init(state_directory, config.history_size()).await;
         DaemonContext {

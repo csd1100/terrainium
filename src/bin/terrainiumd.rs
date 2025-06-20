@@ -49,13 +49,16 @@ fn is_user_root(executor: Arc<Executor>) -> bool {
     false
 }
 
-async fn get_daemon_context() -> DaemonContext {
-    let executor = Arc::new(Executor);
+async fn get_daemon_context(
+    is_user_root: bool,
+    daemon_config: DaemonConfig,
+    executor: Arc<Executor>,
+) -> DaemonContext {
     let context = DaemonContext::new(
+        is_user_root,
+        daemon_config,
         executor.clone(),
-        get_daemon_config(),
         TERRAINIUMD_TMP_DIR,
-        is_user_root(executor),
     )
     .await;
     context.setup_state_manager();
@@ -69,35 +72,40 @@ async fn start() -> Result<()> {
 
     let args = DaemonArgs::parse();
 
-    let (subscriber, (_file_guard, _out_guard)) = init_logging(
-        TERRAINIUMD_TMP_DIR,
-        LevelFilter::from(args.options.log_level),
-    );
-    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+    let config = get_daemon_config();
+    let executor = Arc::new(Executor);
+    let is_root = is_user_root(executor.clone());
 
-    if args.options.create_config {
-        return DaemonConfig::create_file().context("failed to create terrainiumd config");
-    }
-
-    let context = Arc::new(get_daemon_context().await);
-
-    if context.should_exit_early() {
+    if is_root && !config.is_root_allowed() {
         bail!("exiting as service was started as root without being configured.");
     }
 
     match args.verbs {
         Some(verbs) => {
-            let service = ServiceProvider::get().context("failed to get service provider")?;
+            let service =
+                ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
             match verbs {
                 Verbs::InstallService { daemon_path } => {
                     service
                         .install(daemon_path)
-                        .await
                         .context("failed to install service")?;
                 }
             }
         }
         None => {
+            let (subscriber, (_file_guard, _out_guard)) = init_logging(
+                TERRAINIUMD_TMP_DIR,
+                LevelFilter::from(args.options.log_level),
+            );
+            tracing::subscriber::set_global_default(subscriber)
+                .expect("unable to set global subscriber");
+
+            if args.options.create_config {
+                return DaemonConfig::create_file().context("failed to create terrainiumd config");
+            }
+
+            let context = Arc::new(get_daemon_context(is_root, config, executor).await);
+
             let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.options.force)
                 .await
                 .context("to create start the terrainium daemon")?;

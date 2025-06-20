@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
 use std::collections::BTreeMap;
-use std::process::{ExitStatus, Output};
+use std::process::{ExitStatus, Output, Stdio};
 use std::sync::Arc;
 use tracing::{info, trace};
 
@@ -17,6 +17,7 @@ pub trait Execute {
         &self,
         envs: Option<Arc<BTreeMap<String, String>>>,
         command: Command,
+        silent: bool,
     ) -> Result<ExitStatus>;
     fn async_get_output(
         &self,
@@ -56,10 +57,15 @@ impl Execute for Executor {
         &self,
         envs: Option<Arc<BTreeMap<String, String>>>,
         command: Command,
+        silent: bool,
     ) -> Result<ExitStatus> {
         let mut command: std::process::Command = command.into();
         if let Some(envs) = envs {
             command.envs(envs.as_ref());
+        }
+        if silent {
+            command.stdout(Stdio::null());
+            command.stderr(Stdio::null());
         }
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().context("failed to wait for command")
@@ -135,7 +141,7 @@ mock! {
 
     impl Execute for Executor {
         fn get_output(&self, envs: Option<Arc<BTreeMap<String, String>>>, command: Command) -> Result<Output>;
-        fn wait(&self, envs: Option<Arc<BTreeMap<String, String>>>, command: Command) -> Result<ExitStatus>;
+        fn wait(&self, envs: Option<Arc<BTreeMap<String, String>>>, command: Command, silent: bool) -> Result<ExitStatus>;
         async fn async_get_output(
             &self,
             envs: Option<Arc<BTreeMap<String, String>>>,
@@ -276,7 +282,7 @@ pub(crate) mod tests {
         );
 
         let output = Executor
-            .wait(Some(Arc::new(envs)), command)
+            .wait(Some(Arc::new(envs)), command, true)
             .expect("not to fail");
 
         assert_eq!(0, output.code().expect("to be present"));

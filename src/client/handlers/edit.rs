@@ -45,7 +45,7 @@ pub(crate) fn run_editor(
     );
 
     executor
-        .wait(None, command)
+        .wait(None, command, false)
         .context(format!("failed to edit file {:?}", toml_path))?;
 
     Ok(())
@@ -98,7 +98,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(None, expected);
+        let executor = AssertExecutor::to().wait_for(None, expected, false);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)
@@ -153,7 +153,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(None, expected);
+        let executor = AssertExecutor::to().wait_for(None, expected, false);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)
@@ -210,7 +210,7 @@ pub(crate) mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(None, expected);
+        let executor = AssertExecutor::to().wait_for(None, expected, false);
 
         // setup mock to assert scripts are compiled when edit
         let executor = ExpectZSH::with(executor, terrain_dir)

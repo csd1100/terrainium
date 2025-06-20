@@ -90,10 +90,10 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 

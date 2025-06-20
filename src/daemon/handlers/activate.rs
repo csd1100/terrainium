@@ -106,10 +106,10 @@ mod tests {
 
         let context = Arc::new(
             DaemonContext::new(
-                Arc::new(MockExecutor::default()),
-                DaemonConfig::default(),
-                &state_dir_path,
                 false,
+                DaemonConfig::default(),
+                Arc::new(MockExecutor::default()),
+                &state_dir_path,
             )
             .await,
         );
@@ -153,10 +153,10 @@ mod tests {
 
         let context = Arc::new(
             DaemonContext::new(
-                Arc::new(MockExecutor::default()),
-                DaemonConfig::default(),
-                &state_dir_path,
                 false,
+                DaemonConfig::default(),
+                Arc::new(MockExecutor::default()),
+                &state_dir_path,
             )
             .await,
         );

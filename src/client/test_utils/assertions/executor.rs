@@ -34,6 +34,7 @@ impl AssertExecutor {
         mut self,
         envs: Option<Arc<BTreeMap<String, String>>>,
         command: ExpectedCommand,
+        silent: bool,
     ) -> MockExecutor {
         let ExpectedCommand {
             command, exit_code, ..
@@ -41,8 +42,8 @@ impl AssertExecutor {
 
         self.executor
             .expect_wait()
-            .with(eq(envs), eq(command))
-            .return_once(move |_, _| Ok(ExitStatus::from_raw(exit_code)));
+            .with(eq(envs), eq(command), eq(silent))
+            .return_once(move |_, _, _| Ok(ExitStatus::from_raw(exit_code)));
 
         self.executor
     }

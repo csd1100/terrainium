@@ -333,10 +333,10 @@ mod tests {
 
         let request = expected_execute_request_example_biome(None, true);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -376,10 +376,10 @@ mod tests {
         request.timestamp = new_timestamp.clone();
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -429,10 +429,10 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -477,10 +477,10 @@ mod tests {
 
         let request = expected_execute_request_example_biome(None, false);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -520,10 +520,10 @@ mod tests {
         request.timestamp = new_timestamp.clone();
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -573,10 +573,10 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
@@ -631,10 +631,10 @@ mod tests {
         let request =
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            state_directory.path().to_str().unwrap(),
         )
         .await;
 
