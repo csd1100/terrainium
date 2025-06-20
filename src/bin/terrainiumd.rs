@@ -167,7 +167,7 @@ async fn start() -> Result<()> {
                 Verbs::StopService => {
                     service.stop().context("failed to stop service")?;
                 }
-                Verbs::ServiceStatus => {
+                Verbs::Status => {
                     service.status().context("failed to get service status")?;
                 }
             }

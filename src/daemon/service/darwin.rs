@@ -42,6 +42,10 @@ impl Service for DarwinService {
     fn install(&self, daemon_path: Option<PathBuf>, start: bool) -> Result<()> {
         if self.is_installed()? {
             println!("service is already installed!");
+            if !self.is_loaded()? {
+                println!("loading the service!");
+                self.load().context("failed to load the service")?;
+            }
             return Ok(());
         }
 
@@ -52,7 +56,7 @@ impl Service for DarwinService {
         std::fs::write(&self.path, &service).context("failed to write service")?;
 
         if start {
-            self.start().context("failed to start service")?;
+            self.load().context("failed to load service")?;
         }
 
         Ok(())
@@ -193,8 +197,13 @@ impl Service for DarwinService {
     }
 
     fn is_running(&self) -> Result<bool> {
-        let pid = std::fs::read_to_string(TERRAINIUMD_PID_FILE)
-            .context("failed to read terrainiumd pid file")?;
+        let pid_file = Path::new(TERRAINIUMD_PID_FILE);
+        if !pid_file.exists() {
+            return Ok(false);
+        }
+
+        let pid =
+            std::fs::read_to_string(pid_file).context("failed to read terrainiumd pid file")?;
 
         let is_running = Command::new("kill".to_string(), vec!["-0".to_string(), pid], None);
 
@@ -281,17 +290,20 @@ impl Service for DarwinService {
             return Ok(());
         }
 
+        self.unload().context("failed to unload")?;
         std::fs::remove_file(&self.path).context("failed to remove service file")
     }
 
     fn status(&self) -> Result<()> {
         let status = if self.is_installed()? {
-            if self.is_running()? {
-                "running"
-            } else if self.is_loaded()? {
-                "loaded"
+            if self.is_loaded()? {
+                if self.is_running()? {
+                    "running"
+                } else {
+                    "not running"
+                }
             } else {
-                "installed"
+                "not loaded"
             }
         } else {
             "not installed"

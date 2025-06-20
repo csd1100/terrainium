@@ -38,5 +38,5 @@ pub enum Verbs {
     DisableService,
     StartService,
     StopService,
-    ServiceStatus,
+    Status,
 }
