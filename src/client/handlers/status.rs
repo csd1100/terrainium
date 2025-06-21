@@ -3,7 +3,7 @@ use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::TERRAINIUMD_SOCKET;
+use crate::common::constants::get_terrainiumd_socket;
 use crate::common::types::pb;
 use crate::common::types::terrain_state::TerrainState;
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -20,7 +20,7 @@ pub async fn handle(
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(PathBuf::from(get_terrainiumd_socket())).await?
     };
 
     let response = client

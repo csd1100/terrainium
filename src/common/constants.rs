@@ -1,9 +1,6 @@
 pub const CONFIG_LOCATION: &str = ".config/terrainium";
 
 pub const TERRAINIUMD: &str = "terrainiumd";
-pub const TERRAINIUMD_SOCKET: &str = "/tmp/terrainiumd/socket";
-pub const TERRAINIUMD_PID_FILE: &str = "/tmp/terrainiumd/pid";
-pub const TERRAINIUMD_TMP_DIR: &str = "/tmp/terrainiumd";
 pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
 pub const TERRAIN_STATE_FILE_NAME: &str = "state.json";
 pub const TERRAIN_HISTORY_FILE_NAME: &str = "history";
@@ -54,3 +51,19 @@ pub const NONE: &str = "none";
 pub const TRUE: &str = "true";
 pub const JSON: &str = "json";
 pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
+
+pub fn get_terrainiumd_dir() -> &'static str {
+    if cfg!(debug_assertions) {
+        "/tmp/terrainiumd-debug"
+    } else {
+        "/tmp/terrainiumd"
+    }
+}
+
+pub fn get_terrainiumd_socket() -> String {
+    format!("{}/socket", get_terrainiumd_dir())
+}
+
+pub fn get_terrainiumd_pid_file() -> String {
+    format!("{}/pid", get_terrainiumd_dir())
+}

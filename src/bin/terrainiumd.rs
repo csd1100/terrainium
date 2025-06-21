@@ -3,7 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 use terrainium::common::constants::{
-    TERRAINIUMD_PID_FILE, TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR,
+    get_terrainiumd_dir, get_terrainiumd_pid_file, get_terrainiumd_socket,
 };
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
@@ -30,14 +30,7 @@ fn get_daemon_config() -> DaemonConfig {
 }
 
 fn is_user_root(executor: Arc<Executor>) -> bool {
-    let user = executor.get_output(
-        None,
-        Command::new(
-            "whoami".to_string(),
-            vec![],
-            Some(PathBuf::from(TERRAINIUMD_TMP_DIR)),
-        ),
-    );
+    let user = executor.get_output(None, Command::new("whoami".to_string(), vec![], None));
 
     if let Ok(user) = user {
         let user = String::from_utf8_lossy(&user.stdout);
@@ -65,7 +58,7 @@ async fn get_daemon_context(
         daemon_config,
         executor.clone(),
         cancellation_token,
-        TERRAINIUMD_TMP_DIR,
+        get_terrainiumd_dir(),
     )
     .await;
     context.setup_state_manager();
@@ -95,7 +88,7 @@ async fn run(
     cancellation_token: CancellationToken,
 ) -> Result<()> {
     let (subscriber, (_file_guard, _out_guard)) = init_logging(
-        TERRAINIUMD_TMP_DIR,
+        get_terrainiumd_dir(),
         LevelFilter::from(args.options.log_level),
     );
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
@@ -105,13 +98,13 @@ async fn run(
     }
 
     // write pid
-    std::fs::write(TERRAINIUMD_PID_FILE, std::process::id().to_string())
+    std::fs::write(get_terrainiumd_pid_file(), std::process::id().to_string())
         .context("failed to write terrainiumd pid file")?;
 
     let context = Arc::new(get_daemon_context(is_root, config, executor, cancellation_token).await);
     let token = context.cancellation_token();
 
-    let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.options.force)
+    let mut daemon = Daemon::new(PathBuf::from(get_terrainiumd_socket()), args.options.force)
         .await
         .context("to create start the terrainium daemon")?;
 
@@ -147,9 +140,9 @@ async fn start() -> Result<()> {
             let service =
                 ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
             match verbs {
-                Verbs::InstallService { daemon_path, start } => {
+                Verbs::InstallService { daemon_path } => {
                     service
-                        .install(daemon_path, start)
+                        .install(daemon_path)
                         .context("failed to install service")?;
                 }
                 Verbs::RemoveService => {
@@ -168,7 +161,8 @@ async fn start() -> Result<()> {
                     service.stop().context("failed to stop service")?;
                 }
                 Verbs::Status => {
-                    service.status().context("failed to get service status")?;
+                    let status = service.status().context("failed to get service status")?;
+                    println!("{status}");
                 }
             }
             Ok(())

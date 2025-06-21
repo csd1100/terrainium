@@ -1,6 +1,8 @@
 use crate::common::constants::{DISABLE, ENABLE};
 use crate::common::constants::{PATH, TERRAINIUMD_LINUX_SERVICE, TERRAINIUMD_LINUX_SERVICE_PATH};
-use crate::common::execute::{Execute, Executor};
+use crate::common::execute::Execute;
+#[mockall_double::double]
+use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::Service;
 use anyhow::{bail, Context, Result};
@@ -26,7 +28,7 @@ impl Service for LinuxService {
         self.path.exists()
     }
 
-    fn install(&self, daemon_path: Option<PathBuf>, start: bool) -> anyhow::Result<()> {
+    fn install(&self, daemon_path: Option<PathBuf>) -> Result<()> {
         if self.is_installed() {
             println!("service is already installed!");
             if !self.is_loaded()? {
@@ -42,16 +44,12 @@ impl Service for LinuxService {
         let service = self.get(daemon_path)?;
         std::fs::write(&self.path, &service).context("failed to write service")?;
 
-        self.load().context("failed to load service")?;
-
-        if start {
-            self.start().context("failed to start service")?;
-        }
+        self.start().context("failed to start service")?;
 
         Ok(())
     }
 
-    fn is_loaded(&self) -> anyhow::Result<bool> {
+    fn is_loaded(&self) -> Result<bool> {
         if !self.is_installed() {
             bail!(
                 "service is not installed, run terrainiumd install-service to install the service"
@@ -77,7 +75,7 @@ impl Service for LinuxService {
         Ok(error.is_empty())
     }
 
-    fn load(&self) -> anyhow::Result<()> {
+    fn load(&self) -> Result<()> {
         if self.is_loaded()? {
             println!("service is already loaded");
             return Ok(());
@@ -87,21 +85,19 @@ impl Service for LinuxService {
         self.reload().context("failed to reload service")
     }
 
-    fn unload(&self) -> anyhow::Result<()> {
+    fn unload(&self) -> Result<()> {
         self.reload().context("failed to reload the service")
     }
 
-    fn remove(&self) -> anyhow::Result<()> {
+    fn remove(&self) -> Result<()> {
         std::fs::remove_file(&self.path).context("failed to remove service file")?;
         self.unload().context("failed to unload")?;
         Ok(())
     }
 
-    fn enable(&self, now: bool) -> anyhow::Result<()> {
+    fn enable(&self, now: bool) -> Result<()> {
         if !self.is_loaded()? {
-            bail!(
-                "service is not loaded, re-run terrainiumd install-service to install and load the service"
-            );
+            self.load().context("failed to load the service")?;
         }
 
         let mut args = vec![
@@ -132,11 +128,9 @@ impl Service for LinuxService {
         Ok(())
     }
 
-    fn disable(&self) -> anyhow::Result<()> {
+    fn disable(&self) -> Result<()> {
         if !self.is_loaded()? {
-            bail!(
-                "service is not loaded, re-run terrainiumd install-service to install and load the service"
-            );
+            self.load().context("failed to load the service")?;
         }
 
         // disable service
@@ -165,7 +159,7 @@ impl Service for LinuxService {
         Ok(())
     }
 
-    fn is_running(&self) -> anyhow::Result<bool> {
+    fn is_running(&self) -> Result<bool> {
         if !self.is_loaded()? {
             bail!(
                 "service is not loaded, re-run terrainiumd install-service to install and load the service"
@@ -198,7 +192,7 @@ impl Service for LinuxService {
         Ok(running.success())
     }
 
-    fn start(&self) -> anyhow::Result<()> {
+    fn start(&self) -> Result<()> {
         if self.is_running()? {
             bail!("service is already running");
         }
@@ -229,7 +223,7 @@ impl Service for LinuxService {
         Ok(())
     }
 
-    fn stop(&self) -> anyhow::Result<()> {
+    fn stop(&self) -> Result<()> {
         if !self.is_running()? {
             bail!("service is not running");
         }
@@ -274,6 +268,8 @@ After=multi-user.target
 ExecStart={} --force
 Environment="PATH={}"
 KillSignal=SIGTERM
+StandardOutput=append:/tmp/terrainiumd.stdout.log
+StandardError=append:/tmp/terrainiumd.stderr.log
 
 [Install]
 WantedBy=default.target"#,
@@ -291,7 +287,8 @@ impl LinuxService {
         ));
 
         if !path.parent().unwrap().exists() {
-            std::fs::create_dir_all(&path).expect("failed to create services directory");
+            std::fs::create_dir_all(path.parent().unwrap())
+                .expect("failed to create services directory");
         }
 
         Box::new(Self { path, executor })
@@ -317,4 +314,81 @@ impl LinuxService {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    // use crate::client::test_utils::{restore_env_var, set_env_var};
+    // use crate::common::constants::{
+    //     PATH, TERRAINIUMD_DARWIN_SERVICE_FILE, TERRAINIUMD_LINUX_SERVICE,
+    //     TERRAINIUMD_LINUX_SERVICE_PATH,
+    // };
+    // use crate::common::execute::MockExecutor;
+    // use crate::daemon::service::linux::LinuxService;
+    // use crate::daemon::service::tests::{cleanup_test_daemon_binary, create_test_daemon_binary};
+    // use anyhow::Result;
+    // use serial_test::serial;
+    // use std::env::VarError;
+    // use std::path::PathBuf;
+    // use std::sync::Arc;
+    // use tempfile::tempdir;
+    //
+    // #[test]
+    // fn install_works() -> Result<()> {
+    //     let home_dir = tempdir()?;
+    //     let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()));
+    //     service.install(None)?;
+    //     assert!(home_dir
+    //         .path()
+    //         .join(format!(
+    //             "{TERRAINIUMD_LINUX_SERVICE_PATH}/{TERRAINIUMD_LINUX_SERVICE}"
+    //         ))
+    //         .exists());
+    //     assert!(service.is_installed());
+    //     Ok(())
+    // }
+    //
+    // #[serial]
+    // #[test]
+    // fn install_with_daemon_path() -> Result<()> {
+    //     let path: Result<String, VarError>;
+    //     unsafe { path = set_env_var(PATH, Some("/usr/local/bin:/usr/bin:/bin")) }
+    //     let home_dir = tempdir()?;
+    //
+    //     // create daemon file
+    //
+    //     let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()));
+    //     service.install(Some(create_test_daemon_binary()?))?;
+    //     assert!(home_dir
+    //         .path()
+    //         .join(format!(
+    //             "{TERRAINIUMD_LINUX_SERVICE_PATH}/{TERRAINIUMD_LINUX_SERVICE}"
+    //         ))
+    //         .exists());
+    //     assert!(service.is_installed());
+    //
+    //     let contents =
+    //         std::fs::read_to_string(home_dir.path().join(TERRAINIUMD_DARWIN_SERVICE_FILE))?;
+    //     let expected = std::fs::read_to_string("./tests/data/com.csd1100.terrainium.plist")?;
+    //
+    //     assert_eq!(contents, expected);
+    //
+    //     cleanup_test_daemon_binary()?;
+    //     unsafe { restore_env_var(PATH, path) }
+    //     Ok(())
+    // }
+    //
+    // #[test]
+    // fn install_with_daemon_path_errors_no_daemon() -> Result<()> {
+    //     let home_dir = tempdir()?;
+    //
+    //     let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()));
+    //     let error = service
+    //         .install(Some(PathBuf::from("/non_existent")))
+    //         .expect_err("expected error")
+    //         .to_string();
+    //
+    //     assert_eq!(error, "/non_existent does not exist");
+    //     Ok(())
+    // }
 }

@@ -1,4 +1,4 @@
-use crate::common::constants::TERRAINIUMD_SOCKET;
+use crate::common::constants::get_terrainiumd_socket;
 use anyhow::{bail, Context, Result};
 use std::fs::{create_dir_all, remove_file};
 use std::path::{Path, PathBuf};
@@ -32,7 +32,7 @@ impl Daemon {
 
         info!("creating daemon on path: {path:?}");
         let listener = UnixListenerStream::new(
-            UnixListener::bind(TERRAINIUMD_SOCKET).context("failed to bind to socket")?,
+            UnixListener::bind(get_terrainiumd_socket()).context("failed to bind to socket")?,
         );
 
         Ok(Daemon { path, listener })

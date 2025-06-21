@@ -50,7 +50,7 @@ impl ExpectZSH {
 
         Self {
             executor: AssertExecutor::with(self.executor)
-                .get_output_for(None, expected)
+                .get_output_for(None, expected, 1)
                 .successfully(),
             cwd: self.cwd,
         }
@@ -100,6 +100,7 @@ impl ExpectZSH {
                     should_error: false,
                     output: TEST_FPATH.to_string(),
                 },
+                1,
             )
             .successfully();
         Self { executor, cwd }
@@ -126,6 +127,7 @@ impl ExpectZSH {
                     should_error,
                     output: error_message,
                 },
+                1,
             )
             .successfully();
         Self { executor, cwd }

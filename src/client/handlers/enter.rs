@@ -8,7 +8,7 @@ use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    DEBUG_PATH, PATH, TERRAINIUMD_SOCKET, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED,
+    get_terrainiumd_socket, DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED,
     TERRAIN_SESSION_ID, TRUE,
 };
 use crate::common::types::pb;
@@ -96,7 +96,7 @@ async fn send_activate_request(
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(PathBuf::from(get_terrainiumd_socket())).await?
     };
 
     client

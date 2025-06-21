@@ -27,8 +27,6 @@ pub enum Verbs {
     InstallService {
         #[arg(long)]
         daemon_path: Option<PathBuf>,
-        #[arg(short, long)]
-        start: bool,
     },
     RemoveService,
     EnableService {

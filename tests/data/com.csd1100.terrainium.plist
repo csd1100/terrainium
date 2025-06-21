@@ -6,27 +6,20 @@
         <string>com.csd1100.terrainium</string>
         <key>ProgramArguments</key>
         <array>
-            <string>{}</string>
+            <string>/tmp/terrainium-testing-46678f282cf1/terrainiumd</string>
             <string>--force</string>
         </array>
         <key>EnvironmentVariables</key>
         <dict>
             <key>PATH</key>
-            <string>{}</string>
+            <string>/usr/local/bin:/usr/bin:/bin</string>
         </dict>
         <key>RunAtLoad</key>
-        <{enabled}/>
-        <key>KeepAlive</key>
-        <dict>
-            <key>SuccessfulExit</key>
-            <false/>
-            <key>Crashed</key>
-            <true/>
-        </dict>
+        <true/>
         <key>StandardOutPath</key>
-        <string>{}</string>
+        <string>/tmp/terrainiumd.stdout.log</string>
         <key>StandardErrorPath</key>
-        <string>{}</string>
+        <string>/tmp/terrainiumd.stderr.log</string>
         <key>ProcessType</key>
         <string>Background</string>
     </dict>

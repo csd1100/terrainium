@@ -714,6 +714,7 @@ mod tests {
                 },
                 Some(envs.clone()),
                 log_path.clone(),
+                1,
             )
             .successfully();
 
@@ -805,6 +806,7 @@ mod tests {
                 },
                 Some(envs.clone()),
                 log_path.clone(),
+                1,
             )
             .successfully();
 

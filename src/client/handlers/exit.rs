@@ -6,7 +6,9 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::{AutoApply, Terrain};
-use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
+use crate::common::constants::{
+    get_terrainiumd_socket, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME,
+};
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -25,7 +27,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(PathBuf::from(get_terrainiumd_socket())).await?
     };
 
     client

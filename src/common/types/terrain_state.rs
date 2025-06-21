@@ -1,5 +1,5 @@
 use crate::common::constants::{
-    CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_TMP_DIR, TERRAIN_STATE_FILE_NAME,
+    get_terrainiumd_dir, CONSTRUCTORS, DESTRUCTORS, TERRAIN_STATE_FILE_NAME,
 };
 use crate::common::types::command::Command;
 use crate::common::types::pb;
@@ -387,7 +387,7 @@ impl From<pb::Activate> for TerrainState {
                 .enumerate()
                 .map(|(index, command)| {
                     CommandState::from(
-                        TERRAINIUMD_TMP_DIR,
+                        get_terrainiumd_dir(),
                         &terrain_name,
                         &session_id,
                         true,
@@ -441,7 +441,7 @@ impl From<pb::Execute> for TerrainState {
             .map(|(index, command)| CommandState {
                 command: command.into(),
                 log_path: get_log_path(
-                    TERRAINIUMD_TMP_DIR,
+                    get_terrainiumd_dir(),
                     &terrain_name,
                     &identifier,
                     is_constructor,
@@ -718,7 +718,7 @@ pub mod test_utils {
         auto_apply: &AutoApply,
     ) -> TerrainState {
         active_terrain_state_example_biome_with_status(
-            TERRAINIUMD_TMP_DIR,
+            get_terrainiumd_dir(),
             session_id,
             is_auto_apply,
             auto_apply,
@@ -732,7 +732,7 @@ pub mod test_utils {
         auto_apply: &AutoApply,
     ) -> TerrainState {
         active_terrain_state_example_biome_with_status(
-            TERRAINIUMD_TMP_DIR,
+            get_terrainiumd_dir(),
             session_id,
             is_auto_apply,
             auto_apply,
@@ -746,7 +746,7 @@ pub mod test_utils {
         auto_apply: &AutoApply,
     ) -> TerrainState {
         active_terrain_state_example_biome_with_status(
-            TERRAINIUMD_TMP_DIR,
+            get_terrainiumd_dir(),
             session_id,
             is_auto_apply,
             auto_apply,
@@ -852,20 +852,21 @@ pub mod test_utils {
         };
 
         let mut command_states = vec![];
-        commands
-            .into_iter()
-            .enumerate()
-            .for_each(|(idx, command)| {
-                command_states.push(CommandState {
-                    command,
-                    log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/19700101000000/{}.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", if is_constructor {
+        commands.into_iter().enumerate().for_each(|(idx, command)| {
+            command_states.push(CommandState {
+                command,
+                log_path: format!(
+                    "{}/{TEST_TERRAIN_NAME}/19700101000000/{}.{idx}.{TEST_TIMESTAMP_NUMERIC}.log",
+                    get_terrainiumd_dir(),
+                    if is_constructor {
                         CONSTRUCTORS
                     } else {
                         DESTRUCTORS
-                    }),
-                    status: status.clone(),
-                });
+                    }
+                ),
+                status: status.clone(),
             });
+        });
 
         let mut commands = BTreeMap::new();
         commands.insert(TEST_TIMESTAMP.to_string(), command_states);

@@ -272,7 +272,7 @@ pub mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(None, expected, false);
+        let executor = AssertExecutor::to().wait_for(None, expected, false, 1);
 
         // setup mock to assert scripts are compiled when init
         let executor = ExpectZSH::with(executor, current_dir.path())
@@ -316,7 +316,7 @@ pub mod tests {
             output: String::new(),
         };
 
-        let executor = AssertExecutor::to().wait_for(None, expected, false);
+        let executor = AssertExecutor::to().wait_for(None, expected, false, 1);
 
         // setup mock to assert scripts are compiled when init
         let executor = ExpectZSH::with(executor, terrain_dir.path())
