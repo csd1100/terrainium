@@ -54,7 +54,7 @@ impl ServiceProvider {
         if std::env::consts::OS == "macos" {
             DarwinService::init(&home_dir, get_terrainiumd_pid_file(), executor)
         } else if std::env::consts::OS == "linux" {
-            Ok(LinuxService::init(&home_dir, executor))
+            LinuxService::init(&home_dir, executor)
         } else {
             bail!("unsupported operating system: {}", std::env::consts::OS);
         }

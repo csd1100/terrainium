@@ -1,0 +1,13 @@
+[Unit]
+Description=terrainium daemon
+After=multi-user.target
+
+[Service]
+ExecStart=/tmp/terrainium-testing-46678f282cf1/terrainiumd --force
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+KillSignal=SIGTERM
+StandardOutput=append:/tmp/terrainiumd.stdout.log
+StandardError=append:/tmp/terrainiumd.stderr.log
+
+[Install]
+WantedBy=default.target

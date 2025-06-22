@@ -176,6 +176,9 @@ impl Service for DarwinService {
     /// Removes the service from `~/Library/LaunchAgents/com.csd1100.terrainium.plist`.
     /// Unload the service if it is loaded.
     fn remove(&self) -> Result<()> {
+        if !self.is_installed() {
+            bail!("service is not installed!");
+        }
         self.unload().context("failed to unload")?;
         std::fs::remove_file(&self.path).context("failed to remove service file")
     }
@@ -822,7 +825,7 @@ mod tests {
 
         let error = service.remove().expect_err("expected error").to_string();
 
-        assert_eq!(error, "failed to unload");
+        assert_eq!(error, "service is not installed!");
 
         Ok(())
     }
