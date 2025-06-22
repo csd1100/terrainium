@@ -142,7 +142,9 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         let mut command = self.command();
         command.set_args(final_args);
 
-        self.executor.get_output(envs, command)
+        self.executor
+            .get_output(envs, command)
+            .context("failed to execute zsh command due to an error")
     }
 
     async fn spawn(&self, envs: Option<Arc<BTreeMap<String, String>>>) -> Result<ExitStatus> {

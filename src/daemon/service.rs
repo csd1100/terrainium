@@ -1,3 +1,4 @@
+use crate::common::constants::get_terrainiumd_pid_file;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::daemon::service::darwin::DarwinService;
@@ -51,7 +52,7 @@ impl ServiceProvider {
         let home_dir = home_dir.unwrap();
 
         if std::env::consts::OS == "macos" {
-            DarwinService::init(&home_dir, executor)
+            DarwinService::init(&home_dir, get_terrainiumd_pid_file(), executor)
         } else if std::env::consts::OS == "linux" {
             Ok(LinuxService::init(&home_dir, executor))
         } else {
