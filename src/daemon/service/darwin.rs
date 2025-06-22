@@ -20,8 +20,24 @@ const STOP: &str = "kill";
 const PROJECT_ID: &str = "com.csd1100.terrainium";
 const SIGTERM: &str = "SIGTERM";
 
+/// Fetches current users id required for `launchctl` commands using
+/// `id -u` command.
+fn get_uid(executor: Arc<Executor>) -> Result<String> {
+    let command = Command::new("id".to_string(), vec!["-u".to_string()], None);
+    let output = executor.get_output(None, command)?;
+    if !output.status.success() {
+        bail!(
+            "command to get uid exited with error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let uid = String::from_utf8(output.stdout).context("failed to parse output")?;
+    Ok(uid.replace('\n', ""))
+}
+
 /// Manage macOS `launchd` service using `launchctl` commands.
 pub struct DarwinService {
+    uid: String,
     path: PathBuf,
     executor: Arc<Executor>,
 }
@@ -362,7 +378,7 @@ impl Service for DarwinService {
 impl DarwinService {
     /// Creates DarwinService Object with passed service file created using
     /// passed in `home_dir`
-    pub(crate) fn init(home_dir: &Path, executor: Arc<Executor>) -> Box<dyn Service> {
+    pub(crate) fn init(home_dir: &Path, executor: Arc<Executor>) -> Result<Box<dyn Service>> {
         let path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
 
         if !path.parent().unwrap().exists() {
@@ -370,26 +386,17 @@ impl DarwinService {
                 .expect("failed to create services directory");
         }
 
-        Box::new(Self { path, executor })
-    }
+        let uid = get_uid(executor.clone())?;
 
-    /// Fetches current users id required for `launchctl` commands using
-    /// `id -u` command.
-    fn get_uid(&self) -> Result<String> {
-        let command = Command::new("id".to_string(), vec!["-u".to_string()], None);
-        let output = self.executor.get_output(None, command)?;
-        if !output.status.success() {
-            bail!(
-                "command to get uid exited with error: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        let uid = String::from_utf8(output.stdout).context("failed to parse output")?;
-        Ok(uid.replace('\n', ""))
+        Ok(Box::new(Self {
+            path,
+            executor,
+            uid,
+        }))
     }
 
     fn get_target(&self) -> Result<String> {
-        Ok(format!("{GUI}/{}", self.get_uid()?))
+        Ok(format!("{GUI}/{}", self.uid))
     }
 
     fn get_service_target(&self) -> Result<String> {
@@ -415,8 +422,8 @@ mod tests {
     use std::sync::Arc;
     use tempfile::tempdir;
 
-    fn expected_load_commands(home_dir: &Path) -> MockExecutor {
-        let executor = AssertExecutor::to()
+    fn expected_get_uid() -> MockExecutor {
+        AssertExecutor::to()
             .get_output_for(
                 None,
                 ExpectedCommand {
@@ -425,9 +432,13 @@ mod tests {
                     should_error: false,
                     output: "501".to_string(),
                 },
-                2,
+                1,
             )
-            .successfully();
+            .successfully()
+    }
+
+    fn expected_load_commands(home_dir: &Path) -> MockExecutor {
+        let executor = expected_get_uid();
 
         let executor = AssertExecutor::with(executor).wait_for(
             None,
@@ -471,18 +482,7 @@ mod tests {
     }
 
     fn expected_unload_commands() -> MockExecutor {
-        let executor = AssertExecutor::to()
-            .get_output_for(
-                None,
-                ExpectedCommand {
-                    command: Command::new("id".to_string(), vec!["-u".to_string()], None),
-                    exit_code: 0,
-                    should_error: false,
-                    output: "501".to_string(),
-                },
-                2,
-            )
-            .successfully();
+        let executor = expected_get_uid();
 
         let executor = AssertExecutor::with(executor).wait_for(
             None,
@@ -525,7 +525,7 @@ mod tests {
         let service = DarwinService::init(
             home_dir.path(),
             Arc::new(expected_load_commands(home_dir.path())),
-        );
+        )?;
         service.install(None)?;
         assert!(home_dir
             .path()
@@ -547,7 +547,8 @@ mod tests {
         let service = DarwinService::init(
             home_dir.path(),
             Arc::new(expected_load_commands(home_dir.path())),
-        );
+        )?;
+
         service.install(Some(create_test_daemon_binary()?))?;
         assert!(home_dir
             .path()
@@ -570,7 +571,9 @@ mod tests {
     fn install_with_daemon_path_errors_no_daemon() -> Result<()> {
         let home_dir = tempdir()?;
 
-        let service = DarwinService::init(home_dir.path(), Arc::new(MockExecutor::new()));
+        let executor = expected_get_uid();
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
         let error = service
             .install(Some(PathBuf::from("/non_existent")))
             .expect_err("expected error")
@@ -588,7 +591,7 @@ mod tests {
         std::fs::create_dir_all(service_path.parent().unwrap())?;
         std::fs::write(&service_path, "")?;
 
-        let service = DarwinService::init(home_dir.path(), Arc::new(expected_unload_commands()));
+        let service = DarwinService::init(home_dir.path(), Arc::new(expected_unload_commands()))?;
 
         service.remove()?;
 

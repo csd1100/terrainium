@@ -51,7 +51,7 @@ impl ServiceProvider {
         let home_dir = home_dir.unwrap();
 
         if std::env::consts::OS == "macos" {
-            Ok(DarwinService::init(&home_dir, executor))
+            DarwinService::init(&home_dir, executor)
         } else if std::env::consts::OS == "linux" {
             Ok(LinuxService::init(&home_dir, executor))
         } else {
