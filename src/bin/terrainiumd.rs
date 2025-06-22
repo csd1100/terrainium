@@ -30,7 +30,10 @@ fn get_daemon_config() -> DaemonConfig {
 }
 
 fn is_user_root(executor: Arc<Executor>) -> bool {
-    let user = executor.get_output(None, Command::new("whoami".to_string(), vec![], None));
+    let user = executor.get_output(
+        None,
+        Command::new("whoami".to_string(), vec![], Some(std::env::temp_dir())),
+    );
 
     if let Ok(user) = user {
         let user = String::from_utf8_lossy(&user.stdout);

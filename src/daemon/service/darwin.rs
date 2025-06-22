@@ -21,7 +21,11 @@ const SIGTERM: &str = "SIGTERM";
 /// Fetches current users id required for `launchctl` commands using
 /// `id -u` command.
 fn get_uid(executor: Arc<Executor>) -> Result<String> {
-    let command = Command::new("id".to_string(), vec!["-u".to_string()], None);
+    let command = Command::new(
+        "id".to_string(),
+        vec!["-u".to_string()],
+        Some(std::env::temp_dir()),
+    );
     let output = executor.get_output(None, command)?;
     if !output.status.success() {
         bail!(
@@ -89,7 +93,7 @@ impl Service for DarwinService {
                 self.get_service_target()
                     .context("failed to get service target")?,
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let bootstrapped = self
@@ -121,7 +125,7 @@ impl Service for DarwinService {
                 self.get_target()?,
                 self.path.to_str().unwrap().to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -155,7 +159,7 @@ impl Service for DarwinService {
                 self.get_service_target()
                     .context("failed to get service target")?,
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -196,7 +200,7 @@ impl Service for DarwinService {
         let command = Command::new(
             LAUNCHCTL.to_string(),
             vec![ENABLE.to_string(), self.get_service_target()?],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -227,7 +231,7 @@ impl Service for DarwinService {
         let command = Command::new(
             LAUNCHCTL.to_string(),
             vec![DISABLE.to_string(), self.get_service_target()?],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -260,7 +264,11 @@ impl Service for DarwinService {
         let pid = std::fs::read_to_string(&self.pid_file)
             .context("failed to read terrainiumd pid file")?;
 
-        let is_running = Command::new("kill".to_string(), vec!["-0".to_string(), pid], None);
+        let is_running = Command::new(
+            "kill".to_string(),
+            vec!["-0".to_string(), pid],
+            Some(std::env::temp_dir()),
+        );
 
         let running = self
             .executor
@@ -282,7 +290,7 @@ impl Service for DarwinService {
         let command = Command::new(
             LAUNCHCTL.to_string(),
             vec![START.to_string(), self.get_service_target()?],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -316,7 +324,7 @@ impl Service for DarwinService {
                 SIGTERM.to_string(),
                 self.get_service_target()?,
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -445,7 +453,7 @@ mod tests {
                 command: Command::new(
                     "kill".to_string(),
                     vec!["-0".to_string(), TEST_PID.to_string()],
-                    None,
+                    Some(std::env::temp_dir()),
                 ),
                 exit_code: if success { 0 } else { 1 },
                 should_error: false,
@@ -487,7 +495,11 @@ mod tests {
             .get_output_for(
                 None,
                 ExpectedCommand {
-                    command: Command::new("id".to_string(), vec!["-u".to_string()], None),
+                    command: Command::new(
+                        "id".to_string(),
+                        vec!["-u".to_string()],
+                        Some(std::env::temp_dir()),
+                    ),
                     exit_code: 0,
                     should_error: false,
                     output: "501".to_string(),
@@ -504,7 +516,7 @@ mod tests {
                 command: Command::new(
                     LAUNCHCTL.to_string(),
                     vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
-                    None,
+                    Some(std::env::temp_dir()),
                 ),
                 exit_code: if success { 0 } else { 1 },
                 should_error: false,
@@ -530,7 +542,7 @@ mod tests {
                                 .to_string_lossy()
                                 .to_string(),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -549,7 +561,7 @@ mod tests {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
                         vec![UNLOAD.to_string(), format!("gui/501/{PROJECT_ID}")],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -568,7 +580,7 @@ mod tests {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
                         vec![ENABLE.to_string(), format!("gui/501/{PROJECT_ID}")],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -587,7 +599,7 @@ mod tests {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
                         vec![DISABLE.to_string(), format!("gui/501/{PROJECT_ID}")],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -606,7 +618,7 @@ mod tests {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
                         vec![START.to_string(), format!("gui/501/{PROJECT_ID}")],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -629,7 +641,7 @@ mod tests {
                             SIGTERM.to_string(),
                             format!("gui/501/{PROJECT_ID}"),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,

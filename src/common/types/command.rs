@@ -411,11 +411,9 @@ impl Command {
 impl From<Command> for std::process::Command {
     fn from(value: Command) -> std::process::Command {
         let mut command = std::process::Command::new(value.exe);
-        command.args(value.args).current_dir(
-            value
-                .cwd
-                .unwrap_or(std::env::current_dir().expect("failed to get current dir")),
-        );
+        command
+            .args(value.args)
+            .current_dir(value.cwd.expect("cwd to be present"));
         command
     }
 }
@@ -423,11 +421,9 @@ impl From<Command> for std::process::Command {
 impl From<Command> for tokio::process::Command {
     fn from(value: Command) -> tokio::process::Command {
         let mut command = tokio::process::Command::new(value.exe);
-        command.args(value.args).current_dir(
-            value
-                .cwd
-                .unwrap_or(std::env::current_dir().expect("failed to get current dir")),
-        );
+        command
+            .args(value.args)
+            .current_dir(value.cwd.expect("cwd to be present"));
         command
     }
 }

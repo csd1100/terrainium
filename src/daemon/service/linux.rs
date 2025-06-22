@@ -63,7 +63,7 @@ impl Service for LinuxService {
                 STATUS.to_string(),
                 TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -114,7 +114,7 @@ impl Service for LinuxService {
         }
 
         // enable service
-        let command = Command::new(SYSTEMCTL.to_string(), args, None);
+        let command = Command::new(SYSTEMCTL.to_string(), args, Some(std::env::temp_dir()));
 
         let output = self
             .executor
@@ -144,7 +144,7 @@ impl Service for LinuxService {
                 DISABLE.to_string(),
                 TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -180,7 +180,7 @@ impl Service for LinuxService {
                 IS_ACTIVE.to_string(),
                 TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let running = self
@@ -204,7 +204,7 @@ impl Service for LinuxService {
                 START.to_string(),
                 TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -235,7 +235,7 @@ impl Service for LinuxService {
                 STOP.to_string(),
                 TERRAINIUMD_LINUX_SERVICE.to_string(),
             ],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -297,7 +297,7 @@ impl LinuxService {
         let command = Command::new(
             SYSTEMCTL.to_string(),
             vec![USER.to_string(), RELOAD.to_string()],
-            None,
+            Some(std::env::temp_dir()),
         );
 
         let output = self
@@ -353,7 +353,7 @@ mod tests {
                         IS_ACTIVE.to_string(),
                         TERRAINIUMD_LINUX_SERVICE.to_string(),
                     ],
-                    None,
+                    Some(std::env::temp_dir()),
                 ),
                 exit_code: if success { 0 } else { 1 },
                 should_error: false,
@@ -400,7 +400,7 @@ mod tests {
                             STATUS.to_string(),
                             TERRAINIUMD_LINUX_SERVICE.to_string(),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: if success { 0 } else { 1 },
                     should_error: !success,
@@ -423,7 +423,7 @@ mod tests {
                     command: Command::new(
                         SYSTEMCTL.to_string(),
                         vec![USER.to_string(), RELOAD.to_string()],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -442,7 +442,7 @@ mod tests {
                     command: Command::new(
                         SYSTEMCTL.to_string(),
                         vec![USER.to_string(), RELOAD.to_string()],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -466,7 +466,7 @@ mod tests {
             .get_output_for(
                 None,
                 ExpectedCommand {
-                    command: Command::new(SYSTEMCTL.to_string(), args, None),
+                    command: Command::new(SYSTEMCTL.to_string(), args, Some(std::env::temp_dir())),
                     exit_code: 0,
                     should_error: false,
                     output: "".to_string(),
@@ -488,7 +488,7 @@ mod tests {
                             DISABLE.to_string(),
                             TERRAINIUMD_LINUX_SERVICE.to_string(),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -511,7 +511,7 @@ mod tests {
                             START.to_string(),
                             TERRAINIUMD_LINUX_SERVICE.to_string(),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,
@@ -534,7 +534,7 @@ mod tests {
                             STOP.to_string(),
                             TERRAINIUMD_LINUX_SERVICE.to_string(),
                         ],
-                        None,
+                        Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
                     should_error: false,

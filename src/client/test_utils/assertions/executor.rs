@@ -1,7 +1,7 @@
 use crate::common::execute::MockExecutor;
 use crate::common::types::command::Command;
 use anyhow::bail;
-use mockall::predicate::eq;
+use mockall::predicate::{eq, function};
 use std::collections::BTreeMap;
 use std::os::unix::prelude::ExitStatusExt;
 use std::process::{ExitStatus, Output};
@@ -43,7 +43,11 @@ impl AssertExecutor {
 
         self.executor
             .expect_wait()
-            .with(eq(envs), eq(command), eq(silent))
+            .with(
+                eq(envs),
+                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
+                eq(silent),
+            )
             .returning(move |_, _, _| Ok(ExitStatus::from_raw(exit_code)))
             .times(times);
 
@@ -64,7 +68,10 @@ impl AssertExecutor {
         } = command;
         self.executor
             .expect_get_output()
-            .with(eq(envs), eq(command))
+            .with(
+                eq(envs),
+                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
+            )
             .returning(move |_, _| {
                 if error {
                     Ok(Output {
@@ -100,7 +107,10 @@ impl AssertExecutor {
 
         self.executor
             .expect_async_spawn()
-            .with(eq(envs), eq(command))
+            .with(
+                eq(envs),
+                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
+            )
             .returning(move |_, _| {
                 if should_error {
                     bail!("{}", output)
@@ -128,7 +138,11 @@ impl AssertExecutor {
 
         self.executor
             .expect_async_spawn_with_log()
-            .with(eq(log_path), eq(envs), eq(command))
+            .with(
+                eq(log_path),
+                eq(envs),
+                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
+            )
             .returning(move |_, _, _| {
                 if should_error {
                     bail!("{}", output)
