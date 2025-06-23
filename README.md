@@ -119,10 +119,31 @@ terrainium <verb|OPTIONS> [OPTIONS]
 ### terrainiumd
 
 ```sh
-terrainiumd [OPTIONS]
+terrainiumd <verbs|OPTIONS> [OPTIONS]
 ```
 
+- Verbs:
+    - `install` - installs the terrainiumd as a service and starts the installed service.
+
+    - `remove` - removes the terrainiumd as a service and stops the installed service.
+
+    - `enable [OPTION]` - enables terrainium service to be started on the machine startup.
+
+        - `-n|--now` - starts the service after enabling it.
+
+    - `disable [OPTION]` - disables terrainium service to be started on the machine startup.
+
+        - `-n|--now` - stops the service after disabling it.
+
+    - `start` - start the terrainiumd process now if not running.
+
+    - `stop` - stop the terrainiumd process now if running.
+
+    - `status` - prints status of the installed service, status can be: `running`, `not running`, `not loaded`, `not
+      installed`. also displays whether service is enabled to run at startup or not (`enabled`, `disabled`).
+
 - Options:
+    - `--run` - starts the terrainium daemon
     - `--create-config` - creates a config file at location:
       `~/.config/terrainium/terrainiumd.toml`.
     - `-f|--force` - remove existing unix socket and start daemon
@@ -199,6 +220,8 @@ terrainiumd [OPTIONS]
 - The logs for background commands will be stored in status directory in following
   pattern: `<constructors|destructors>.<index>.<timestamp>.log`  
   where: index is based on commands specified in `terrain.toml`.
+- It can also be installed as `launchd` or `systemd` service on macOS and linux
+  respectively.
 
 ### Example
 
