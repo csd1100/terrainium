@@ -454,20 +454,20 @@ mod tests {
             .successfully()
     }
 
-    fn expect_disable(executor: MockExecutor) -> MockExecutor {
+    fn expect_disable(executor: MockExecutor, now: bool) -> MockExecutor {
+        let mut args = vec![
+            USER.to_string(),
+            DISABLE.to_string(),
+            TERRAINIUMD_LINUX_SERVICE.to_string(),
+        ];
+        if now {
+            args.push(NOW.to_string());
+        }
         AssertExecutor::with(executor)
             .get_output_for(
                 None,
                 ExpectedCommand {
-                    command: Command::new(
-                        SYSTEMCTL.to_string(),
-                        vec![
-                            USER.to_string(),
-                            DISABLE.to_string(),
-                            TERRAINIUMD_LINUX_SERVICE.to_string(),
-                        ],
-                        Some(std::env::temp_dir()),
-                    ),
+                    command: Command::new(SYSTEMCTL.to_string(), args, Some(std::env::temp_dir())),
                     exit_code: 0,
                     should_error: false,
                     output: "".to_string(),
@@ -636,14 +636,62 @@ mod tests {
     }
 
     #[test]
+    fn enable_throw_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()))?;
+
+        let error = service
+            .enable(false)
+            .expect_err("expected error")
+            .to_string();
+
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
+
+        Ok(())
+    }
+
+    #[test]
     fn disable_works() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
         let executor = expect_is_loaded(true, MockExecutor::new());
-        let executor = expect_disable(executor);
+        let executor = expect_disable(executor, false);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
         service.disable(false)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn disable_works_with_now() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        create_service_file(home_dir.path())?;
+
+        // setup mocks
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_disable(executor, true);
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
+        service.disable(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn disable_throw_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()))?;
+
+        let error = service
+            .disable(false)
+            .expect_err("expected error")
+            .to_string();
+
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }
