@@ -98,17 +98,13 @@ async fn run(
         return DaemonConfig::create_file().context("failed to create terrainiumd config");
     }
 
-    // write pid
-    std::fs::write(paths.pid(), std::process::id().to_string())
-        .context("failed to write terrainiumd pid file")?;
-
     let context =
         Arc::new(get_daemon_context(is_root, config, executor, cancellation_token, paths).await);
     let token = context.cancellation_token();
 
     let mut daemon = Daemon::new(context.clone(), args.options.force)
         .await
-        .context("to create start the terrainium daemon")?;
+        .context("failed to create the terrainium daemon socket")?;
 
     tokio::select! {
         _ = token.cancelled() => {

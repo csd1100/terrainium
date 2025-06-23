@@ -99,6 +99,10 @@ impl Daemon {
             UnixListener::bind(socket).context("failed to bind to socket")?,
         );
 
+        // write pid
+        std::fs::write(context.state_paths().pid(), std::process::id().to_string())
+            .context("failed to write terrainiumd pid file")?;
+
         Ok(Daemon { listener })
     }
 
@@ -113,7 +117,7 @@ mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::common::types::paths::DaemonPaths;
     use anyhow::Result;
-    use std::fs::metadata;
+    use std::fs::{metadata, read_to_string};
     use std::os::unix::fs::FileTypeExt;
     use tempfile::tempdir;
 
@@ -138,6 +142,7 @@ mod tests {
         assert!(metadata(state_dir.path().join("socket"))?
             .file_type()
             .is_socket());
+        assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
     }
@@ -166,6 +171,7 @@ mod tests {
         assert!(metadata(state_dir.path().join("socket"))?
             .file_type()
             .is_socket());
+        assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
     }
@@ -209,6 +215,7 @@ mod tests {
         assert!(metadata(state_dir.path().join("socket"))?
             .file_type()
             .is_socket());
+        assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
     }
@@ -271,6 +278,7 @@ mod tests {
         assert!(metadata(state_dir.path().join("socket"))?
             .file_type()
             .is_socket());
+        assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
     }
