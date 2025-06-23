@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use tracing::{debug, instrument, trace};
 
 fn get_log_path(
-    state_paths: &str,
+    state_directory: &str,
     terrain_name: &str,
     identifier: &str,
     is_constructor: bool,
@@ -27,7 +27,9 @@ fn get_log_path(
     } else {
         DESTRUCTORS
     };
-    format!("{state_paths}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log")
+    format!(
+        "{state_directory}/{terrain_name}/{identifier}/{operation}.{index}.{numeric_timestamp}.log"
+    )
 }
 
 fn command_states_to_proto(
@@ -100,8 +102,8 @@ pub struct TerrainState {
 }
 
 impl TerrainState {
-    pub fn get_state_dir(state_paths: &str, terrain_name: &str, session_id: &str) -> PathBuf {
-        PathBuf::from(format!("{state_paths}/{terrain_name}/{session_id}"))
+    pub fn get_state_dir(state_directory: &str, terrain_name: &str, session_id: &str) -> PathBuf {
+        PathBuf::from(format!("{state_directory}/{terrain_name}/{session_id}"))
     }
 
     pub fn session_id(&self) -> &str {
@@ -112,12 +114,13 @@ impl TerrainState {
         self.terrain_name.as_str()
     }
 
-    pub fn state_dir(&self, state_paths: &str) -> PathBuf {
-        Self::get_state_dir(state_paths, self.terrain_name(), self.session_id())
+    pub fn state_dir(&self, state_directory: &str) -> PathBuf {
+        Self::get_state_dir(state_directory, self.terrain_name(), self.session_id())
     }
 
-    pub fn state_file(&self, state_paths: &str) -> PathBuf {
-        self.state_dir(state_paths).join(TERRAIN_STATE_FILE_NAME)
+    pub fn state_file(&self, state_directory: &str) -> PathBuf {
+        self.state_dir(state_directory)
+            .join(TERRAIN_STATE_FILE_NAME)
     }
 
     pub fn log_paths(&self, is_constructor: bool, timestamp: &str) -> Vec<String> {
@@ -266,7 +269,7 @@ pub struct CommandState {
 
 impl CommandState {
     pub(crate) fn from(
-        state_paths: &str,
+        state_directory: &str,
         terrain_name: &str,
         session_id: &str,
         is_constructor: bool,
@@ -277,7 +280,7 @@ impl CommandState {
         Self {
             command: command.into(),
             log_path: get_log_path(
-                state_paths,
+                state_directory,
                 terrain_name,
                 session_id,
                 is_constructor,

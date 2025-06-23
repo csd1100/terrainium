@@ -330,7 +330,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_state_for_construct_without_session() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
 
         let request = expected_execute_request_example_biome(None, true);
         let context = DaemonContext::new(
@@ -338,13 +338,13 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
         spawn_commands(request, Arc::new(context)).await.unwrap();
 
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_TIMESTAMP_NUMERIC}/{TERRAIN_STATE_FILE_NAME}"
         ));
         assert!(terrain_state_file.exists());
@@ -355,7 +355,7 @@ mod tests {
             terrain_state_execute_no_session(true, CommandStatus::Starting)
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -368,7 +368,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_construct_with_new_timestamp() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
         let new_timestamp = "1970-01-01_00:00:01".to_string();
         let is_auto_apply = true;
         let auto_apply = AutoApply::All;
@@ -382,12 +382,12 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
         // setup previous state with constructors already added
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
         let old_state =
@@ -408,7 +408,7 @@ mod tests {
         assert_eq!(
             actual_state,
             terrain_state_after_added_command(
-                state_paths.path().to_str().unwrap(),
+                state_directory.path().to_str().unwrap(),
                 TEST_SESSION_ID.to_string(),
                 is_auto_apply,
                 &auto_apply,
@@ -417,7 +417,7 @@ mod tests {
             )
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -427,7 +427,7 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_add_construct_with_same_timestamp() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
         let auto_apply = AutoApply::All;
 
@@ -436,7 +436,7 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -444,7 +444,7 @@ mod tests {
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
 
         // setup previous state with constructors already added
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
         let old_state =
@@ -467,7 +467,7 @@ mod tests {
             terrain_state_after_construct(TEST_SESSION_ID.to_string(), is_auto_apply, &auto_apply)
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -477,7 +477,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_state_for_destruct_without_session() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
 
         let request = expected_execute_request_example_biome(None, false);
         let context = DaemonContext::new(
@@ -485,13 +485,13 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
         spawn_commands(request, Arc::new(context)).await.unwrap();
 
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/19700101000000/{TERRAIN_STATE_FILE_NAME}"
         ));
         assert!(terrain_state_file.exists());
@@ -502,7 +502,7 @@ mod tests {
             terrain_state_execute_no_session(false, CommandStatus::Starting)
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -515,7 +515,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_destruct_with_new_timestamp() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
         let new_timestamp = "1970-01-01_00:00:01".to_string();
         let is_auto_apply = true;
         let auto_apply = AutoApply::All;
@@ -529,12 +529,12 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
         // setup previous state with constructors already added
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
         let old_state =
@@ -555,7 +555,7 @@ mod tests {
         assert_eq!(
             actual_state,
             terrain_state_after_added_command(
-                state_paths.path().to_str().unwrap(),
+                state_directory.path().to_str().unwrap(),
                 TEST_SESSION_ID.to_string(),
                 is_auto_apply,
                 &auto_apply,
@@ -564,7 +564,7 @@ mod tests {
             )
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -574,7 +574,7 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_add_destruct_with_same_timestamp() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
         let auto_apply = AutoApply::All;
 
@@ -583,7 +583,7 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -591,11 +591,11 @@ mod tests {
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), false);
 
         // setup previous state with constructors already added
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
         let old_state = terrain_state_after_deactivate_after_succeeded(
-            state_paths.path().to_str().unwrap(),
+            state_directory.path().to_str().unwrap(),
             TEST_SESSION_ID.to_string(),
             is_auto_apply,
             &auto_apply,
@@ -616,14 +616,14 @@ mod tests {
         assert_eq!(
             actual_state,
             terrain_state_after_deactivate_after_succeeded(
-                state_paths.path().to_str().unwrap(),
+                state_directory.path().to_str().unwrap(),
                 TEST_SESSION_ID.to_string(),
                 is_auto_apply,
                 &auto_apply
             )
         );
 
-        let history_file = state_paths
+        let history_file = state_directory
             .path()
             .join(format!("{TEST_TERRAIN_NAME}/{TERRAIN_HISTORY_FILE_NAME}"));
         assert!(history_file.exists());
@@ -633,7 +633,7 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_when_terrain_state_does_not_exist() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
 
         let request =
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
@@ -642,7 +642,7 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -656,8 +656,8 @@ mod tests {
 
     #[tokio::test]
     async fn executes_command_and_updates_status_success() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
@@ -748,8 +748,8 @@ mod tests {
 
     #[tokio::test]
     async fn executes_command_and_updates_status_error() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);

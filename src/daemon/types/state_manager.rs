@@ -28,12 +28,12 @@ fn state_key(terrain_name: &str, session_id: &str) -> String {
 
 impl StateManager {
     #[instrument]
-    pub async fn init(state_paths: DaemonPaths, history_size: usize) -> Self {
+    pub async fn init(state_directory: DaemonPaths, history_size: usize) -> Self {
         trace!("initializing state manager");
         let states = Arc::new(RwLock::new(HashMap::<String, StoredState>::new()));
         let histories = Arc::new(RwLock::new(HashMap::<String, StoredHistory>::new()));
         Self {
-            state_paths,
+            state_paths: state_directory,
             states,
             histories,
             history_size,

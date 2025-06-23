@@ -92,15 +92,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_state_on_activate() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_string_lossy().to_string();
-        let terrain_state_dir = state_paths
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_string_lossy().to_string();
+        let terrain_state_dir = state_directory
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TEST_SESSION_ID);
         let terrain_state = terrain_state_dir.join(TERRAIN_STATE_FILE_NAME);
 
-        let history = state_paths
+        let history = state_directory
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TERRAIN_HISTORY_FILE_NAME);
@@ -140,15 +140,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_state_history_rotates() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_string_lossy().to_string();
-        let terrain_state_dir = state_paths
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_string_lossy().to_string();
+        let terrain_state_dir = state_directory
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TEST_SESSION_ID);
         let terrain_state = terrain_state_dir.join(TERRAIN_STATE_FILE_NAME);
 
-        let history = state_paths
+        let history = state_directory
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TERRAIN_HISTORY_FILE_NAME);

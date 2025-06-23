@@ -86,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_deactivate() {
-        let state_paths = tempdir().unwrap();
+        let state_directory = tempdir().unwrap();
         let is_auto_apply = true;
         let auto_apply = AutoApply::All;
 
@@ -95,12 +95,12 @@ mod tests {
             DaemonConfig::default(),
             Arc::new(MockExecutor::new()),
             Default::default(),
-            DaemonPaths::new(state_paths.path().to_str().unwrap()),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
         // setup previous state with constructors already added
-        let terrain_state_file = state_paths.path().join(format!(
+        let terrain_state_file = state_directory.path().join(format!(
             "{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/{TERRAIN_STATE_FILE_NAME}"
         ));
         let old_state =
@@ -123,7 +123,7 @@ mod tests {
         assert_eq!(
             actual_state,
             terrain_state_after_deactivate_before_complete(
-                state_paths.path().to_str().unwrap(),
+                state_directory.path().to_str().unwrap(),
                 TEST_SESSION_ID.to_string(),
                 is_auto_apply,
                 &auto_apply

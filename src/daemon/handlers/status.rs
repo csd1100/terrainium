@@ -133,8 +133,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_status() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
@@ -171,7 +171,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -192,8 +192,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_status_from_history() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
@@ -233,7 +233,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -254,8 +254,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_session_state_does_not_exist() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         fs::create_dir_all(&terrain_dir_path).unwrap();
@@ -270,7 +270,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -284,8 +284,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_history_entry_does_not_exist() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
@@ -306,7 +306,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -320,8 +320,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_recent_out_of_bounds() {
-        let state_paths = tempdir().unwrap();
-        let state_dir_path = state_paths.path().to_path_buf();
+        let state_directory = tempdir().unwrap();
+        let state_dir_path = state_directory.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
@@ -343,7 +343,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
