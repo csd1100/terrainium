@@ -160,6 +160,16 @@ impl Service for DarwinService {
         std::fs::remove_file(&self.path).context("failed to remove service file")
     }
 
+    /// Check if service is enabled by reading the service file
+    /// and checking if `RunAtLoad` is true
+    fn is_enabled(&self) -> Result<bool> {
+        let service = std::fs::read_to_string(&self.path).context("failed to read the service")?;
+        Ok(service.contains(
+            r#"<key>RunAtLoad</key>
+        <true/>"#,
+        ))
+    }
+
     /// Enables the service to be bootstrapped and start at the login.
     /// The service must be enabled in order to be bootstrapped.
     ///
@@ -440,21 +450,22 @@ mod tests {
     fn expect_status_mocks(
         home_dir: &Path,
         status: Status,
+        is_enabled: bool,
         executor: MockExecutor,
     ) -> MockExecutor {
         match status {
             Status::Running => {
-                create_service_file(home_dir).unwrap();
+                create_service_file(home_dir, is_enabled).unwrap();
                 let executor = expect_is_loaded(true, executor);
                 expect_is_running(true, executor)
             }
             Status::NotRunning => {
-                create_service_file(home_dir).unwrap();
+                create_service_file(home_dir, is_enabled).unwrap();
                 let executor = expect_is_loaded(true, executor);
                 expect_is_running(false, executor)
             }
             Status::NotLoaded => {
-                create_service_file(home_dir).unwrap();
+                create_service_file(home_dir, is_enabled).unwrap();
                 expect_is_loaded(false, executor)
             }
             Status::NotInstalled => executor,
@@ -605,10 +616,17 @@ mod tests {
             .successfully()
     }
 
-    fn create_service_file(home_dir: &Path) -> Result<PathBuf> {
+    fn create_service_file(home_dir: &Path, is_enabled: bool) -> Result<PathBuf> {
         let service_path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
         std::fs::create_dir_all(service_path.parent().unwrap())?;
-        std::fs::write(&service_path, "")?;
+        let contents = if is_enabled {
+            r#"<key>RunAtLoad</key>
+        <true/>"#
+        } else {
+            r#"<key>RunAtLoad</key>
+        <false/>"#
+        };
+        std::fs::write(&service_path, contents)?;
         Ok(service_path)
     }
 
@@ -639,7 +657,7 @@ mod tests {
         let home_dir = tempdir()?;
 
         // installed
-        let service_file = create_service_file(home_dir.path())?;
+        let service_file = create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
 
@@ -660,7 +678,7 @@ mod tests {
     fn remove_works() -> Result<()> {
         let home_dir = tempdir()?;
 
-        create_service_file(home_dir.path())?;
+        create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         // emulate service is loaded by returning success
@@ -693,7 +711,7 @@ mod tests {
     fn enable_works() -> Result<()> {
         let home_dir = tempdir()?;
 
-        let service_path = create_service_file(home_dir.path())?;
+        let service_path = create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_loaded(false, executor);
@@ -715,7 +733,7 @@ mod tests {
     fn enable_works_with_now() -> Result<()> {
         let home_dir = tempdir()?;
 
-        let service_path = create_service_file(home_dir.path())?;
+        let service_path = create_service_file(home_dir.path(), true)?;
 
         // setup mocks
         let executor = expect_get_uid();
@@ -760,7 +778,7 @@ mod tests {
     #[test]
     fn disable_works() -> Result<()> {
         let home_dir = tempdir()?;
-        let service_path = create_service_file(home_dir.path())?;
+        let service_path = create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_loaded(false, executor);
@@ -779,7 +797,7 @@ mod tests {
     #[test]
     fn disable_works_with_now() -> Result<()> {
         let home_dir = tempdir()?;
-        let service_path = create_service_file(home_dir.path())?;
+        let service_path = create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_loaded(true, executor);
@@ -815,7 +833,7 @@ mod tests {
     #[test]
     fn start_works() -> Result<()> {
         let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
+        create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_running(false, executor);
@@ -831,7 +849,7 @@ mod tests {
     #[test]
     fn start_throws_an_error_if_already_running() -> Result<()> {
         let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
+        create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_running(true, executor);
@@ -847,7 +865,7 @@ mod tests {
     #[test]
     fn stop_works() -> Result<()> {
         let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
+        create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_running(true, executor);
@@ -863,7 +881,7 @@ mod tests {
     #[test]
     fn stop_throws_an_error_if_not_running() -> Result<()> {
         let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
+        create_service_file(home_dir.path(), true)?;
 
         let executor = expect_get_uid();
         let executor = expect_is_running(false, executor);
@@ -880,7 +898,7 @@ mod tests {
     fn status_not_installed() -> Result<()> {
         let home_dir = tempdir()?;
         let executor = expect_get_uid();
-        let executor = expect_status_mocks(home_dir.path(), Status::NotInstalled, executor);
+        let executor = expect_status_mocks(home_dir.path(), Status::NotInstalled, false, executor);
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
@@ -892,11 +910,11 @@ mod tests {
     fn status_not_loaded() -> Result<()> {
         let home_dir = tempdir()?;
         let executor = expect_get_uid();
-        let executor = expect_status_mocks(home_dir.path(), Status::NotLoaded, executor);
+        let executor = expect_status_mocks(home_dir.path(), Status::NotLoaded, false, executor);
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not loaded", service.status()?);
+        assert_eq!("not loaded (disabled)", service.status()?);
         Ok(())
     }
 
@@ -904,11 +922,11 @@ mod tests {
     fn status_not_running() -> Result<()> {
         let home_dir = tempdir()?;
         let executor = expect_get_uid();
-        let executor = expect_status_mocks(home_dir.path(), Status::NotRunning, executor);
+        let executor = expect_status_mocks(home_dir.path(), Status::NotRunning, true, executor);
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not running", service.status()?);
+        assert_eq!("not running (enabled)", service.status()?);
         Ok(())
     }
 
@@ -916,11 +934,11 @@ mod tests {
     fn status_running() -> Result<()> {
         let home_dir = tempdir()?;
         let executor = expect_get_uid();
-        let executor = expect_status_mocks(home_dir.path(), Status::Running, executor);
+        let executor = expect_status_mocks(home_dir.path(), Status::Running, false, executor);
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("running", service.status()?);
+        assert_eq!("running (disabled)", service.status()?);
         Ok(())
     }
 }

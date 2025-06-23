@@ -2,7 +2,7 @@
 use crate::common::execute::Executor;
 use crate::daemon::service::darwin::DarwinService;
 use crate::daemon::service::linux::LinuxService;
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use home::home_dir;
 use std::sync::Arc;
 
@@ -21,24 +21,32 @@ pub trait Service {
     fn load(&self) -> Result<()>;
     fn unload(&self) -> Result<()>;
     fn remove(&self) -> Result<()>;
+    fn is_enabled(&self) -> Result<bool>;
     fn enable(&self, now: bool) -> Result<()>;
     fn disable(&self, now: bool) -> Result<()>;
     fn is_running(&self) -> Result<bool>;
     fn start(&self) -> Result<()>;
     fn stop(&self) -> Result<()>;
-    fn status(&self) -> Result<&'static str> {
-        if self.is_installed() {
-            if self.is_loaded()? {
-                if self.is_running()? {
-                    Ok("running")
-                } else {
-                    Ok("not running")
-                }
-            } else {
-                Ok("not loaded")
-            }
+    fn status(&self) -> Result<String> {
+        if !self.is_installed() {
+            return Ok("not installed".to_string());
+        }
+
+        let is_enabled = if self
+            .is_enabled()
+            .context("failed to check if service is enabled")?
+        {
+            "enabled"
         } else {
-            Ok("not installed")
+            "disabled"
+        };
+
+        if !self.is_loaded()? {
+            Ok(format!("not loaded ({is_enabled})"))
+        } else if !self.is_running()? {
+            Ok(format!("not running ({is_enabled})"))
+        } else {
+            Ok(format!("running ({is_enabled})"))
         }
     }
     fn get(&self, enabled: bool) -> Result<String>;

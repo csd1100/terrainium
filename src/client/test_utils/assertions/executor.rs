@@ -81,21 +81,19 @@ impl AssertExecutor {
             .returning(move |_, _| {
                 if should_fail_to_execute {
                     bail!("failed to execute command");
+                } else if exit_code != 0 {
+                    Ok(Output {
+                        // ExitStatus.code() returns status >> 8 so doing expected << 8
+                        status: get_exit_status(exit_code),
+                        stdout: vec![],
+                        stderr: Vec::from(output.as_bytes()),
+                    })
                 } else {
-                    if exit_code != 0 {
-                        Ok(Output {
-                            // ExitStatus.code() returns status >> 8 so doing expected << 8
-                            status: get_exit_status(exit_code),
-                            stdout: vec![],
-                            stderr: Vec::from(output.as_bytes()),
-                        })
-                    } else {
-                        Ok(Output {
-                            status: get_exit_status(exit_code),
-                            stdout: Vec::from(output.as_bytes()),
-                            stderr: vec![],
-                        })
-                    }
+                    Ok(Output {
+                        status: get_exit_status(exit_code),
+                        stdout: Vec::from(output.as_bytes()),
+                        stderr: vec![],
+                    })
                 }
             })
             .times(times);

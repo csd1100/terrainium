@@ -19,6 +19,7 @@ const NOW: &str = "--now";
 const IS_ACTIVE: &str = "is-active";
 const START: &str = "start";
 const STOP: &str = "stop";
+const IS_ENABLED: &str = "is-enabled";
 
 /// Manage `systemd` service using `systemctl` commands.
 pub struct LinuxService {
@@ -81,7 +82,6 @@ impl Service for LinuxService {
     /// `systemctl --user daemon-reload terrainium.service`
     fn load(&self) -> Result<()> {
         if self.is_loaded()? {
-            println!("service is already loaded");
             return Ok(());
         }
 
@@ -94,7 +94,6 @@ impl Service for LinuxService {
     /// `systemctl --user daemon-reload terrainium.service`
     fn unload(&self) -> Result<()> {
         if !self.is_loaded()? {
-            println!("service is already unloaded");
             return Ok(());
         }
         self.reload().context("failed to reload the services")
@@ -108,6 +107,28 @@ impl Service for LinuxService {
         }
         std::fs::remove_file(&self.path).context("failed to remove service file")?;
         self.reload().context("failed to reload the services")
+    }
+
+    /// Returns if service is enabled by using command
+    ///
+    /// `systemctl --user is-enabled terrainium.service`
+    fn is_enabled(&self) -> Result<bool> {
+        let is_enabled = Command::new(
+            SYSTEMCTL.to_string(),
+            vec![
+                USER.to_string(),
+                IS_ENABLED.to_string(),
+                TERRAINIUMD_LINUX_SERVICE.to_string(),
+            ],
+            Some(std::env::temp_dir()),
+        );
+
+        let enabled = self
+            .executor
+            .get_output(None, is_enabled)
+            .context("failed to check if service is running")?;
+
+        Ok(String::from_utf8_lossy(&enabled.stdout).contains("enabled"))
     }
 
     /// Enables the service to be start at the login.
@@ -346,7 +367,7 @@ mod tests {
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use crate::daemon::service::linux::{
-        LinuxService, IS_ACTIVE, NOW, RELOAD, START, STATUS, STOP, SYSTEMCTL, USER,
+        LinuxService, IS_ACTIVE, IS_ENABLED, NOW, RELOAD, START, STATUS, STOP, SYSTEMCTL, USER,
     };
     use crate::daemon::service::tests::Status;
     use crate::daemon::service::ERROR_SERVICE_NOT_INSTALLED;
@@ -380,22 +401,26 @@ mod tests {
     fn expect_status_mocks(
         home_dir: &Path,
         status: Status,
+        is_enabled: bool,
         executor: MockExecutor,
     ) -> MockExecutor {
         match status {
             Status::Running => {
                 create_service_file(home_dir).unwrap();
                 let executor = expect_is_loaded(true, executor);
-                expect_is_running(true, executor)
+                let executor = expect_is_running(true, executor);
+                expect_is_enabled(is_enabled, executor)
             }
             Status::NotRunning => {
                 create_service_file(home_dir).unwrap();
                 let executor = expect_is_loaded(true, executor);
-                expect_is_running(false, executor)
+                let executor = expect_is_running(false, executor);
+                expect_is_enabled(is_enabled, executor)
             }
             Status::NotLoaded => {
                 create_service_file(home_dir).unwrap();
-                expect_is_loaded(false, executor)
+                let executor = expect_is_loaded(false, executor);
+                expect_is_enabled(is_enabled, executor)
             }
             Status::NotInstalled => executor,
         }
@@ -460,6 +485,33 @@ mod tests {
                     exit_code: 0,
                     should_fail_to_execute: false,
                     output: "".to_string(),
+                },
+                1,
+            )
+            .successfully()
+    }
+
+    fn expect_is_enabled(is_enabled: bool, executor: MockExecutor) -> MockExecutor {
+        AssertExecutor::with(executor)
+            .get_output_for(
+                None,
+                ExpectedCommand {
+                    command: Command::new(
+                        SYSTEMCTL.to_string(),
+                        vec![
+                            USER.to_string(),
+                            IS_ENABLED.to_string(),
+                            TERRAINIUMD_LINUX_SERVICE.to_string(),
+                        ],
+                        Some(std::env::temp_dir()),
+                    ),
+                    exit_code: 0,
+                    should_fail_to_execute: false,
+                    output: if is_enabled {
+                        "enabled".to_string()
+                    } else {
+                        "disabled".to_string()
+                    },
                 },
                 1,
             )
@@ -794,8 +846,12 @@ mod tests {
     #[test]
     fn status_not_installed() -> Result<()> {
         let home_dir = tempdir()?;
-        let executor =
-            expect_status_mocks(home_dir.path(), Status::NotInstalled, MockExecutor::new());
+        let executor = expect_status_mocks(
+            home_dir.path(),
+            Status::NotInstalled,
+            false,
+            MockExecutor::new(),
+        );
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
@@ -806,34 +862,44 @@ mod tests {
     #[test]
     fn status_not_loaded() -> Result<()> {
         let home_dir = tempdir()?;
-        let executor = expect_status_mocks(home_dir.path(), Status::NotLoaded, MockExecutor::new());
+        let executor = expect_status_mocks(
+            home_dir.path(),
+            Status::NotLoaded,
+            false,
+            MockExecutor::new(),
+        );
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not loaded", service.status()?);
+        assert_eq!("not loaded (disabled)", service.status()?);
         Ok(())
     }
 
     #[test]
     fn status_not_running() -> Result<()> {
         let home_dir = tempdir()?;
-        let executor =
-            expect_status_mocks(home_dir.path(), Status::NotRunning, MockExecutor::new());
+        let executor = expect_status_mocks(
+            home_dir.path(),
+            Status::NotRunning,
+            true,
+            MockExecutor::new(),
+        );
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not running", service.status()?);
+        assert_eq!("not running (enabled)", service.status()?);
         Ok(())
     }
 
     #[test]
     fn status_running() -> Result<()> {
         let home_dir = tempdir()?;
-        let executor = expect_status_mocks(home_dir.path(), Status::Running, MockExecutor::new());
+        let executor =
+            expect_status_mocks(home_dir.path(), Status::Running, false, MockExecutor::new());
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("running", service.status()?);
+        assert_eq!("running (disabled)", service.status()?);
         Ok(())
     }
 }
