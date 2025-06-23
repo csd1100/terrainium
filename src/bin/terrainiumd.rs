@@ -143,10 +143,8 @@ async fn start() -> Result<()> {
             let service =
                 ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
             match verbs {
-                Verbs::InstallService { daemon_path } => {
-                    service
-                        .install(daemon_path)
-                        .context("failed to install service")?;
+                Verbs::InstallService => {
+                    service.install().context("failed to install service")?;
                 }
                 Verbs::RemoveService => {
                     service.remove().context("failed to remove service")?;
@@ -154,8 +152,8 @@ async fn start() -> Result<()> {
                 Verbs::EnableService { now } => {
                     service.enable(now).context("failed to enable service")?;
                 }
-                Verbs::DisableService => {
-                    service.disable().context("failed to disable service")?;
+                Verbs::DisableService { now } => {
+                    service.disable(now).context("failed to disable service")?;
                 }
                 Verbs::StartService => {
                     service.start().context("failed to start service")?;

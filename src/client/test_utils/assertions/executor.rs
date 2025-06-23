@@ -48,7 +48,7 @@ impl AssertExecutor {
                 function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
                 eq(silent),
             )
-            .returning(move |_, _, _| Ok(ExitStatus::from_raw(exit_code)))
+            .returning(move |_, _, _| Ok(ExitStatus::from_raw(exit_code << 8)))
             .times(times);
 
         self.executor
@@ -73,7 +73,7 @@ impl AssertExecutor {
                 function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
             )
             .returning(move |_, _| {
-                if error {
+                if error || exit_code != 0 {
                     Ok(Output {
                         // ExitStatus.code() returns status >> 8 so doing expected << 8
                         status: ExitStatus::from_raw(exit_code << 8),

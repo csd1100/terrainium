@@ -1,9 +1,11 @@
-use crate::common::constants::{DISABLE, ENABLE, PATH, TERRAINIUMD_DARWIN_SERVICE_FILE};
+use crate::common::constants::{ENABLE, PATH, TERRAINIUMD_DARWIN_SERVICE_FILE};
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
-use crate::daemon::service::Service;
+use crate::daemon::service::{
+    Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+};
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -17,6 +19,7 @@ const START: &str = "kickstart";
 const STOP: &str = "kill";
 const PROJECT_ID: &str = "com.csd1100.terrainium";
 const SIGTERM: &str = "SIGTERM";
+const RUNNING: &str = "state = running";
 
 /// Fetches current users id required for `launchctl` commands using
 /// `id -u` command.
@@ -41,7 +44,6 @@ fn get_uid(executor: Arc<Executor>) -> Result<String> {
 pub struct DarwinService {
     uid: String,
     path: PathBuf,
-    pid_file: PathBuf,
     executor: Arc<Executor>,
 }
 
@@ -54,25 +56,16 @@ impl Service for DarwinService {
 
     /// Copy com.csd1100.terrainium.plist file to `~/Library/LaunchAgents/com.csd1100.terrainium.plist`
     /// and bootstrap the service.
-    ///
-    /// If `daemon_path` is `Some` then that executable will be launched by `launchd`.
-    fn install(&self, daemon_path: Option<PathBuf>) -> Result<()> {
+    fn install(&self) -> Result<()> {
         if self.is_installed() {
-            if self.is_loaded().is_ok_and(|success| success) {
-                bail!("service is already installed and loaded!");
-            }
-            println!("service is already installed, loading the service...");
-            self.load().context("failed to load service")?;
+            self.load()?;
             return Ok(());
         }
 
-        let daemon_path =
-            daemon_path.unwrap_or(std::env::current_exe().context("failed to get current bin")?);
+        self.write_service(true)
+            .context("failed to write service")?;
 
-        let service = self.get(daemon_path)?;
-        std::fs::write(&self.path, &service).context("failed to write service")?;
-
-        self.load().context("failed to load service")?;
+        self.load()?;
 
         Ok(())
     }
@@ -81,27 +74,12 @@ impl Service for DarwinService {
     /// command.
     fn is_loaded(&self) -> Result<bool> {
         if !self.is_installed() {
-            bail!(
-                "service is not installed, run terrainiumd install-service to install the service"
-            );
+            bail!(ERROR_SERVICE_NOT_INSTALLED);
         }
 
-        let is_bootstrapped = Command::new(
-            LAUNCHCTL.to_string(),
-            vec![
-                PRINT.to_string(),
-                self.get_service_target()
-                    .context("failed to get service target")?,
-            ],
-            Some(std::env::temp_dir()),
-        );
+        let status = self.get_status();
 
-        let bootstrapped = self
-            .executor
-            .wait(None, is_bootstrapped, true)
-            .context("failed to check if service is installed")?;
-
-        Ok(bootstrapped.success())
+        Ok(status.is_ok())
     }
 
     /// Bootstrap using `launchctl` command.
@@ -113,7 +91,6 @@ impl Service for DarwinService {
     /// `launchctl bootstrap gui/<uid> ~/Library/LaunchAgents/com.csd1100.terrainium.plist`
     fn load(&self) -> Result<()> {
         if self.is_loaded()? {
-            println!("service is already loaded");
             return Ok(());
         }
 
@@ -131,11 +108,11 @@ impl Service for DarwinService {
         let output = self
             .executor
             .get_output(None, command)
-            .context("failed to execute process")?;
+            .context("failed to execute bootstrap command")?;
 
         if !output.status.success() {
             bail!(
-                "failed to bootstrap service, enable the service using `terrainiumd enable-service`. error: {}",
+                "failed to load the service, error: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
         }
@@ -147,7 +124,6 @@ impl Service for DarwinService {
     /// `launchctl bootout gui/<uid>/com.csd1100.terrainium`
     fn unload(&self) -> Result<()> {
         if !self.is_loaded()? {
-            println!("service is already unloaded");
             return Ok(());
         }
 
@@ -165,11 +141,11 @@ impl Service for DarwinService {
         let output = self
             .executor
             .get_output(None, command)
-            .context("failed to execute process")?;
+            .context("failed to execute bootout command")?;
 
         if !output.status.success() {
             bail!(
-                "failed to bootout service: {}",
+                "failed to unload the service: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
         }
@@ -180,23 +156,24 @@ impl Service for DarwinService {
     /// Removes the service from `~/Library/LaunchAgents/com.csd1100.terrainium.plist`.
     /// Unload the service if it is loaded.
     fn remove(&self) -> Result<()> {
-        if !self.is_installed() {
-            bail!("service is not installed!");
-        }
-        self.unload().context("failed to unload")?;
+        self.unload()?;
         std::fs::remove_file(&self.path).context("failed to remove service file")
     }
 
     /// Enables the service to be bootstrapped and start at the login.
     /// The service must be enabled in order to be bootstrapped.
-    /// When user is manually starting the service and service is unloaded,
-    /// it must be enabled in order to load it again.
     ///
+    /// Sets `RunAtLoad` to true for service and, runs
     /// `launchctl enable gui/<uid>/com.csd1100.terrainium`
     ///
     /// If `now` is true then service is loaded and started at the same time.
     fn enable(&self, now: bool) -> Result<()> {
-        // enable service
+        self.load()?;
+
+        // enable the service i.e. set `RunAtLoad` to true
+        self.write_service(true)
+            .context("failed to enable service")?;
+
         let command = Command::new(
             LAUNCHCTL.to_string(),
             vec![ENABLE.to_string(), self.get_service_target()?],
@@ -206,76 +183,48 @@ impl Service for DarwinService {
         let output = self
             .executor
             .get_output(None, command)
-            .context("failed to execute process")?;
+            .context("failed to execute enable command")?;
 
         if !output.status.success() {
             bail!(
-                "failed to enable service: {}",
+                "failed to enable service using launchctl: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
         }
 
         if now {
+            // unload to refresh service definition
+            self.unload()?;
             // loading will auto-start service due to `RunAtLoad`
-            self.load().context("failed to start service")?;
+            self.load()?;
         }
 
         Ok(())
     }
 
-    /// Disables the service from ever to be loaded until enabled.
+    /// Sets `RunAtLoad` to false which disables service to start when loaded.
     ///
-    /// `launchctl disable gui/<uid>/com.csd1100.terrainium`
-    fn disable(&self) -> Result<()> {
-        // enable service
-        let command = Command::new(
-            LAUNCHCTL.to_string(),
-            vec![DISABLE.to_string(), self.get_service_target()?],
-            Some(std::env::temp_dir()),
-        );
+    /// if `now` is true then service is stopped as well.
+    fn disable(&self, now: bool) -> Result<()> {
+        self.load()?;
 
-        let output = self
-            .executor
-            .get_output(None, command)
-            .context("failed to execute process")?;
+        // disable the service i.e. set `RunAtLoad` to false
+        self.write_service(false)
+            .context("failed to disable service")?;
 
-        if !output.status.success() {
-            bail!(
-                "failed to disable service: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
+        if now {
+            self.stop()?;
         }
 
         Ok(())
     }
 
-    /// Check if terrainiumd process is running by checking status of pid
-    /// stored at `/tmp/terrainiumd/pid` file.
-    /// Check if service is loaded before and if not, load it.
+    /// Check if terrainiumd process is running by checking if status has
+    /// `state = running` in the output.
+    /// The status is checked by `launchctl print gui/<uid>/com.csd1100.terrainium`
+    /// command.
     fn is_running(&self) -> Result<bool> {
-        if !self.is_loaded()? {
-            self.load().context("failed to load service")?;
-        }
-
-        if !self.pid_file.exists() {
-            return Ok(false);
-        }
-
-        let pid = std::fs::read_to_string(&self.pid_file)
-            .context("failed to read terrainiumd pid file")?;
-
-        let is_running = Command::new(
-            "kill".to_string(),
-            vec!["-0".to_string(), pid],
-            Some(std::env::temp_dir()),
-        );
-
-        let running = self
-            .executor
-            .wait(None, is_running, true)
-            .context("failed to check if service is running")?;
-
-        Ok(running.success())
+        Ok(self.get_status()?.contains(RUNNING))
     }
 
     /// Start the service if it is not already running.
@@ -283,7 +232,7 @@ impl Service for DarwinService {
     /// `launchctl kickstart gui/<uid>/com.csd1100.terrainium`
     fn start(&self) -> Result<()> {
         if self.is_running()? {
-            bail!("service is already running!");
+            bail!(ERROR_ALREADY_RUNNING);
         }
 
         // start service
@@ -296,7 +245,7 @@ impl Service for DarwinService {
         let output = self
             .executor
             .get_output(None, command)
-            .context("failed to execute process")?;
+            .context("failed to execute kickstart command")?;
 
         if !output.status.success() {
             bail!(
@@ -313,7 +262,7 @@ impl Service for DarwinService {
     /// `launchctl kill SIGTERM gui/<uid>/com.csd1100.terrainium`
     fn stop(&self) -> Result<()> {
         if !self.is_running()? {
-            bail!("service is not running!");
+            bail!(ERROR_IS_NOT_RUNNING);
         }
 
         // stop service
@@ -330,7 +279,7 @@ impl Service for DarwinService {
         let output = self
             .executor
             .get_output(None, command)
-            .context("failed to execute process")?;
+            .context("failed to execute kill process")?;
 
         if !output.status.success() {
             bail!(
@@ -343,8 +292,12 @@ impl Service for DarwinService {
     }
 
     /// Returns service `plist` file contents.
-    /// `daemon_path` will be executable to run.
-    fn get(&self, daemon_path: PathBuf) -> Result<String> {
+    ///
+    /// if `enabled` is true, then `RunAtLoad` is set to true in service defintion
+    /// which runs the service whenever it is bootstrapped.
+    fn get(&self, enabled: bool) -> Result<String> {
+        let daemon_path = std::env::current_exe().context("failed to get current bin")?;
+
         if !daemon_path.exists() {
             bail!("{} does not exist", daemon_path.display());
         }
@@ -367,7 +320,7 @@ impl Service for DarwinService {
             <string>{}</string>
         </dict>
         <key>RunAtLoad</key>
-        <true/>
+        <{enabled}/>
         <key>StandardOutPath</key>
         <string>/tmp/terrainiumd.stdout.log</string>
         <key>StandardErrorPath</key>
@@ -384,13 +337,8 @@ impl Service for DarwinService {
 }
 
 impl DarwinService {
-    /// Creates DarwinService Object with passed service file created using
-    /// passed in `home_dir`
-    pub(crate) fn init(
-        home_dir: &Path,
-        pid_file: String,
-        executor: Arc<Executor>,
-    ) -> Result<Box<dyn Service>> {
+    /// Creates DarwinService Object
+    pub(crate) fn init(home_dir: &Path, executor: Arc<Executor>) -> Result<Box<dyn Service>> {
         let path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
 
         if !path.parent().unwrap().exists() {
@@ -404,7 +352,6 @@ impl DarwinService {
             path,
             executor,
             uid,
-            pid_file: PathBuf::from(pid_file),
         }))
     }
 
@@ -415,53 +362,79 @@ impl DarwinService {
     fn get_service_target(&self) -> Result<String> {
         Ok(format!("{}/{PROJECT_ID}", self.get_target()?))
     }
+
+    fn write_service(&self, enabled: bool) -> Result<()> {
+        let service = self.get(enabled)?;
+        std::fs::write(&self.path, &service).context("failed to write service")
+    }
+
+    /// Runs `launchctl print gui/<uid>/com.csd1100.terrainium` command
+    /// to get service status.
+    fn get_status(&self) -> Result<String> {
+        let status = Command::new(
+            LAUNCHCTL.to_string(),
+            vec![
+                PRINT.to_string(),
+                self.get_service_target()
+                    .context("failed to get service target")?,
+            ],
+            Some(std::env::temp_dir()),
+        );
+
+        let output = self
+            .executor
+            .get_output(None, status)
+            .context("failed to execute the status command")?;
+
+        if !output.status.success() {
+            bail!(
+                "failed to get status of the service: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        String::from_utf8(output.stdout).context("failed to decode the status")
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
-    use crate::client::test_utils::{restore_env_var, set_env_var};
-    use crate::common::constants::{
-        get_terrainiumd_pid_file, DISABLE, ENABLE, PATH, TERRAINIUMD_DARWIN_SERVICE_FILE,
-    };
+    use crate::common::constants::{ENABLE, TERRAINIUMD_DARWIN_SERVICE_FILE};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use crate::daemon::service::darwin::{
         DarwinService, LAUNCHCTL, LOAD, PRINT, PROJECT_ID, SIGTERM, START, STOP, UNLOAD,
     };
-    use crate::daemon::service::tests::{cleanup_test_daemon_binary, create_test_daemon_binary};
+    use crate::daemon::service::tests::Status;
+    use crate::daemon::service::ERROR_SERVICE_NOT_INSTALLED;
     use anyhow::Result;
-    use serial_test::serial;
-    use std::env::VarError;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use tempfile::tempdir;
 
-    enum Status {
-        Running,
-        NotRunning,
-        NotLoaded,
-        NotInstalled,
-    }
-
-    const TEST_PID: &str = "pid";
-
-    fn expect_is_running(success: bool, executor: MockExecutor) -> MockExecutor {
-        AssertExecutor::with(executor).wait_for(
-            None,
-            ExpectedCommand {
-                command: Command::new(
-                    "kill".to_string(),
-                    vec!["-0".to_string(), TEST_PID.to_string()],
-                    Some(std::env::temp_dir()),
-                ),
-                exit_code: if success { 0 } else { 1 },
-                should_error: false,
-                output: "".to_string(),
-            },
-            true,
-            1,
-        )
+    fn expect_is_running(running: bool, executor: MockExecutor) -> MockExecutor {
+        AssertExecutor::with(executor)
+            .get_output_for(
+                None,
+                ExpectedCommand {
+                    command: Command::new(
+                        LAUNCHCTL.to_string(),
+                        vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        Some(std::env::temp_dir()),
+                    ),
+                    exit_code: 0,
+                    should_error: false,
+                    output: if running {
+                        "state = running"
+                    } else {
+                        "state = not running"
+                    }
+                    .to_string(),
+                },
+                1,
+            )
+            .successfully()
     }
 
     fn expect_status_mocks(
@@ -472,19 +445,17 @@ mod tests {
         match status {
             Status::Running => {
                 create_service_file(home_dir).unwrap();
-                create_pid_file(home_dir, TEST_PID).unwrap();
-                let executor = expect_is_loaded(true, executor, 2);
+                let executor = expect_is_loaded(true, executor);
                 expect_is_running(true, executor)
             }
             Status::NotRunning => {
                 create_service_file(home_dir).unwrap();
-                create_pid_file(home_dir, TEST_PID).unwrap();
-                let executor = expect_is_loaded(true, executor, 2);
+                let executor = expect_is_loaded(true, executor);
                 expect_is_running(false, executor)
             }
             Status::NotLoaded => {
                 create_service_file(home_dir).unwrap();
-                expect_is_loaded(false, executor, 1)
+                expect_is_loaded(false, executor)
             }
             Status::NotInstalled => executor,
         }
@@ -509,22 +480,23 @@ mod tests {
             .successfully()
     }
 
-    fn expect_is_loaded(success: bool, executor: MockExecutor, times: usize) -> MockExecutor {
-        AssertExecutor::with(executor).wait_for(
-            None,
-            ExpectedCommand {
-                command: Command::new(
-                    LAUNCHCTL.to_string(),
-                    vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
-                    Some(std::env::temp_dir()),
-                ),
-                exit_code: if success { 0 } else { 1 },
-                should_error: false,
-                output: "".to_string(),
-            },
-            true,
-            times,
-        )
+    fn expect_is_loaded(success: bool, executor: MockExecutor) -> MockExecutor {
+        AssertExecutor::with(executor)
+            .get_output_for(
+                None,
+                ExpectedCommand {
+                    command: Command::new(
+                        LAUNCHCTL.to_string(),
+                        vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        Some(std::env::temp_dir()),
+                    ),
+                    exit_code: if success { 0 } else { 1 },
+                    should_error: !success,
+                    output: "".to_string(),
+                },
+                1,
+            )
+            .successfully()
     }
 
     fn expect_load(home_dir: &Path, executor: MockExecutor) -> MockExecutor {
@@ -591,25 +563,6 @@ mod tests {
             .successfully()
     }
 
-    fn expect_disable(executor: MockExecutor) -> MockExecutor {
-        AssertExecutor::with(executor)
-            .get_output_for(
-                None,
-                ExpectedCommand {
-                    command: Command::new(
-                        LAUNCHCTL.to_string(),
-                        vec![DISABLE.to_string(), format!("gui/501/{PROJECT_ID}")],
-                        Some(std::env::temp_dir()),
-                    ),
-                    exit_code: 0,
-                    should_error: false,
-                    output: "".to_string(),
-                },
-                1,
-            )
-            .successfully()
-    }
-
     fn expect_start(executor: MockExecutor) -> MockExecutor {
         AssertExecutor::with(executor)
             .get_output_for(
@@ -659,16 +612,6 @@ mod tests {
         Ok(service_path)
     }
 
-    fn pid_path(test_dir: &Path) -> PathBuf {
-        test_dir.join("pid")
-    }
-
-    fn create_pid_file(test_dir: &Path, pid: &str) -> Result<PathBuf> {
-        let path = pid_path(test_dir);
-        std::fs::write(&path, pid)?;
-        Ok(path)
-    }
-
     #[test]
     fn install_works() -> Result<()> {
         let home_dir = tempdir()?;
@@ -676,58 +619,18 @@ mod tests {
         let executor = expect_get_uid();
 
         // emulate service is not loaded by returning exit code 1
-        let executor = expect_is_loaded(false, executor, 1);
+        let executor = expect_is_loaded(false, executor);
         // load the service
         let executor = expect_load(home_dir.path(), executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
-        service.install(None)?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+        service.install()?;
 
         assert!(home_dir
             .path()
             .join(TERRAINIUMD_DARWIN_SERVICE_FILE)
             .exists());
         assert!(service.is_installed());
-        Ok(())
-    }
-
-    #[serial]
-    #[test]
-    fn install_with_daemon_path() -> Result<()> {
-        let path: Result<String, VarError>;
-        unsafe { path = set_env_var(PATH, Some("/usr/local/bin:/usr/bin:/bin")) }
-        let home_dir = tempdir()?;
-
-        let executor = expect_get_uid();
-        // emulate service is not loaded by returning exit code 1
-        let executor = expect_is_loaded(false, executor, 1);
-        let executor = expect_load(home_dir.path(), executor);
-
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
-
-        service.install(Some(create_test_daemon_binary()?))?;
-        assert!(home_dir
-            .path()
-            .join(TERRAINIUMD_DARWIN_SERVICE_FILE)
-            .exists());
-        assert!(service.is_installed());
-
-        let contents =
-            std::fs::read_to_string(home_dir.path().join(TERRAINIUMD_DARWIN_SERVICE_FILE))?;
-        let expected = std::fs::read_to_string("./tests/data/com.csd1100.terrainium.plist")?;
-
-        assert_eq!(contents, expected);
-
-        cleanup_test_daemon_binary()?;
-        unsafe { restore_env_var(PATH, path) }
         Ok(())
     }
 
@@ -741,63 +644,15 @@ mod tests {
         let executor = expect_get_uid();
 
         // emulate service is not loaded by returning exit code 1
-        let executor = expect_is_loaded(false, executor, 2);
+        let executor = expect_is_loaded(false, executor);
         // load the service
         let executor = expect_load(home_dir.path(), executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
-        service.install(None)?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+        service.install()?;
 
         assert!(service_file.exists());
         assert!(service.is_installed());
-        Ok(())
-    }
-
-    #[test]
-    fn install_with_daemon_path_errors_no_daemon() -> Result<()> {
-        let home_dir = tempdir()?;
-
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(expect_get_uid()),
-        )?;
-        let error = service
-            .install(Some(PathBuf::from("/non_existent")))
-            .expect_err("expected error")
-            .to_string();
-
-        assert_eq!(error, "/non_existent does not exist");
-        Ok(())
-    }
-
-    #[test]
-    fn install_throw_an_error_already_installed() -> Result<()> {
-        let home_dir = tempdir()?;
-
-        create_service_file(home_dir.path())?;
-
-        let executor = expect_get_uid();
-        // emulate service is loaded by returning success
-        let executor = expect_is_loaded(true, executor, 1);
-
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
-
-        let error = service
-            .install(None)
-            .expect_err("expected error")
-            .to_string();
-
-        assert_eq!(error, "service is already installed and loaded!");
-
         Ok(())
     }
 
@@ -809,14 +664,10 @@ mod tests {
 
         let executor = expect_get_uid();
         // emulate service is loaded by returning success
-        let executor = expect_is_loaded(true, executor, 1);
+        let executor = expect_is_loaded(true, executor);
         let executor = expect_unload(executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         service.remove()?;
 
@@ -829,15 +680,11 @@ mod tests {
     fn remove_throws_error_if_not_installed() -> Result<()> {
         let home_dir = tempdir()?;
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(expect_get_uid()),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(expect_get_uid()))?;
 
         let error = service.remove().expect_err("expected error").to_string();
 
-        assert_eq!(error, "service is not installed!");
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }
@@ -845,15 +692,21 @@ mod tests {
     #[test]
     fn enable_works() -> Result<()> {
         let home_dir = tempdir()?;
+
+        let service_path = create_service_file(home_dir.path())?;
+
         let executor = expect_get_uid();
+        let executor = expect_is_loaded(false, executor);
+        let executor = expect_load(home_dir.path(), executor);
         let executor = expect_enable(executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
         service.enable(false)?;
+
+        assert!(std::fs::read_to_string(&service_path)?.contains(
+            r#"<key>RunAtLoad</key>
+        <true/>"#
+        ));
 
         Ok(())
     }
@@ -862,20 +715,44 @@ mod tests {
     fn enable_works_with_now() -> Result<()> {
         let home_dir = tempdir()?;
 
-        create_service_file(home_dir.path())?;
+        let service_path = create_service_file(home_dir.path())?;
 
         // setup mocks
         let executor = expect_get_uid();
+        let executor = expect_is_loaded(true, executor);
+
         let executor = expect_enable(executor);
-        let executor = expect_is_loaded(false, executor, 1);
+
+        // reload the service
+        let executor = expect_is_loaded(true, executor);
+        let executor = expect_unload(executor);
+        let executor = expect_is_loaded(false, executor);
         let executor = expect_load(home_dir.path(), executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
         service.enable(true)?;
+
+        assert!(std::fs::read_to_string(&service_path)?.contains(
+            r#"<key>RunAtLoad</key>
+        <true/>"#
+        ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn enable_throw_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let executor = expect_get_uid();
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service
+            .enable(false)
+            .expect_err("expected error")
+            .to_string();
+
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }
@@ -883,15 +760,54 @@ mod tests {
     #[test]
     fn disable_works() -> Result<()> {
         let home_dir = tempdir()?;
-        let executor = expect_get_uid();
-        let executor = expect_disable(executor);
+        let service_path = create_service_file(home_dir.path())?;
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            get_terrainiumd_pid_file(),
-            Arc::new(executor),
-        )?;
-        service.disable()?;
+        let executor = expect_get_uid();
+        let executor = expect_is_loaded(false, executor);
+        let executor = expect_load(home_dir.path(), executor);
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+        service.disable(false)?;
+
+        assert!(std::fs::read_to_string(&service_path)?.contains(
+            r#"<key>RunAtLoad</key>
+        <false/>"#
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn disable_works_with_now() -> Result<()> {
+        let home_dir = tempdir()?;
+        let service_path = create_service_file(home_dir.path())?;
+
+        let executor = expect_get_uid();
+        let executor = expect_is_loaded(true, executor);
+        let executor = expect_is_running(true, executor);
+        let executor = expect_stop(executor);
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+        service.disable(true)?;
+
+        assert!(std::fs::read_to_string(&service_path)?.contains(
+            r#"<key>RunAtLoad</key>
+        <false/>"#
+        ));
+        Ok(())
+    }
+    #[test]
+    fn disable_throw_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let executor = expect_get_uid();
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service
+            .disable(false)
+            .expect_err("expected error")
+            .to_string();
+
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }
@@ -900,18 +816,12 @@ mod tests {
     fn start_works() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
 
         let executor = expect_get_uid();
-        let executor = expect_is_loaded(true, executor, 1);
         let executor = expect_is_running(false, executor);
         let executor = expect_start(executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         service.start()?;
 
@@ -922,17 +832,11 @@ mod tests {
     fn start_throws_an_error_if_already_running() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
 
         let executor = expect_get_uid();
-        let executor = expect_is_loaded(true, executor, 1);
         let executor = expect_is_running(true, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         let error = service.start().expect_err("expected error").to_string();
         assert_eq!(error, "service is already running!");
@@ -941,44 +845,15 @@ mod tests {
     }
 
     #[test]
-    fn start_loads_service_if_not_loaded() -> Result<()> {
-        let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
-
-        let executor = expect_get_uid();
-        let executor = expect_is_loaded(false, executor, 2);
-        let executor = expect_load(home_dir.path(), executor);
-        let executor = expect_is_running(false, executor);
-        let executor = expect_start(executor);
-
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
-
-        service.start()?;
-
-        Ok(())
-    }
-
-    #[test]
     fn stop_works() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
 
         let executor = expect_get_uid();
-        let executor = expect_is_loaded(true, executor, 1);
         let executor = expect_is_running(true, executor);
         let executor = expect_stop(executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         service.stop()?;
 
@@ -989,43 +864,14 @@ mod tests {
     fn stop_throws_an_error_if_not_running() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
 
         let executor = expect_get_uid();
-        let executor = expect_is_loaded(true, executor, 1);
         let executor = expect_is_running(false, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         let error = service.stop().expect_err("expected error").to_string();
         assert_eq!(error, "service is not running!");
-
-        Ok(())
-    }
-
-    #[test]
-    fn stop_loads_service_if_not_loaded() -> Result<()> {
-        let home_dir = tempdir()?;
-        create_service_file(home_dir.path())?;
-        let pid_file = create_pid_file(home_dir.path(), TEST_PID)?;
-
-        let executor = expect_get_uid();
-        let executor = expect_is_loaded(false, executor, 2);
-        let executor = expect_load(home_dir.path(), executor);
-        let executor = expect_is_running(true, executor);
-        let executor = expect_stop(executor);
-
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_file.to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
-
-        service.stop()?;
 
         Ok(())
     }
@@ -1036,11 +882,7 @@ mod tests {
         let executor = expect_get_uid();
         let executor = expect_status_mocks(home_dir.path(), Status::NotInstalled, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_path(home_dir.path()).to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         assert_eq!("not installed", service.status()?);
         Ok(())
@@ -1052,11 +894,7 @@ mod tests {
         let executor = expect_get_uid();
         let executor = expect_status_mocks(home_dir.path(), Status::NotLoaded, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_path(home_dir.path()).to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         assert_eq!("not loaded", service.status()?);
         Ok(())
@@ -1068,11 +906,7 @@ mod tests {
         let executor = expect_get_uid();
         let executor = expect_status_mocks(home_dir.path(), Status::NotRunning, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_path(home_dir.path()).to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         assert_eq!("not running", service.status()?);
         Ok(())
@@ -1084,11 +918,7 @@ mod tests {
         let executor = expect_get_uid();
         let executor = expect_status_mocks(home_dir.path(), Status::Running, executor);
 
-        let service = DarwinService::init(
-            home_dir.path(),
-            pid_path(home_dir.path()).to_string_lossy().to_string(),
-            Arc::new(executor),
-        )?;
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
         assert_eq!("running", service.status()?);
         Ok(())

@@ -18,6 +18,24 @@ impl Daemon {
             bail!("path for socket should be absolute");
         }
 
+        // if !self.pid_file.exists() {
+        //     return Ok(false);
+        // }
+        //
+        // let pid = std::fs::read_to_string(&self.pid_file)
+        //     .context("failed to read terrainiumd pid file")?;
+        //
+        // let is_running = Command::new(
+        //     "kill".to_string(),
+        //     vec!["-0".to_string(), pid],
+        //     Some(std::env::temp_dir()),
+        // );
+        //
+        // let running = self
+        //     .executor
+        //     .wait(None, is_running, true)
+        //     .context("failed to check if service is running")?;
+
         if !path.exists() {
             warn!("creating directories required for path: {path:?}");
             create_dir_all(path.parent().expect("socket to have parent"))

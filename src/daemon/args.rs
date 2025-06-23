@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
 use tracing::Level;
 
 #[derive(Parser, Debug)]
@@ -24,16 +23,16 @@ pub struct Options {
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
-    InstallService {
-        #[arg(long)]
-        daemon_path: Option<PathBuf>,
-    },
+    InstallService,
     RemoveService,
     EnableService {
         #[arg(short, long)]
         now: bool,
     },
-    DisableService,
+    DisableService {
+        #[arg(short, long)]
+        now: bool,
+    },
     StartService,
     StopService,
     Status,
