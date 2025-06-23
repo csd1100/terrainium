@@ -74,13 +74,14 @@ mod tests {
     use crate::client::test_utils::expected_constructor_background_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
-        get_terrainiumd_dir, EXAMPLE_BIOME, TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME,
-        TERRAIN_TOML, TEST_TIMESTAMP,
+        EXAMPLE_BIOME, TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TERRAIN_TOML,
+        TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
         expected_envs_with_activate_example_biome, expected_status_request, RequestFor,
         TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
     };
+    use crate::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
     use crate::common::types::pb::response::Payload;
     use crate::common::types::pb::status_response::{CommandState, CommandStates};
     use crate::common::types::pb::StatusResponse;
@@ -102,7 +103,7 @@ mod tests {
             .for_each(|(idx, cmd)| {
                 command_states.push(CommandState {
                     command: Some(cmd.into()),
-                    log_path: format!("{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", get_terrainiumd_dir()),
+                    log_path: format!("{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", get_terrainiumd_paths().dir_str()),
                     // status: 1 i.e. starting
                     status: 1,
                     // exit_code: -100 i.e. starting
@@ -132,8 +133,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_status() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_path_buf();
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
@@ -170,7 +171,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    state_dir_path.to_str().unwrap(),
+                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -191,8 +192,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_status_from_history() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_path_buf();
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let session_dir_path = terrain_dir_path.join(TEST_SESSION_ID);
@@ -232,7 +233,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    state_dir_path.to_str().unwrap(),
+                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -253,8 +254,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_session_state_does_not_exist() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_path_buf();
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         fs::create_dir_all(&terrain_dir_path).unwrap();
@@ -269,7 +270,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    state_dir_path.to_str().unwrap(),
+                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -283,8 +284,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_history_entry_does_not_exist() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_path_buf();
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
@@ -305,7 +306,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    state_dir_path.to_str().unwrap(),
+                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -319,8 +320,8 @@ mod tests {
 
     #[tokio::test]
     async fn throws_error_if_recent_out_of_bounds() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_path_buf();
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_path_buf();
 
         let terrain_dir_path = state_dir_path.join(TEST_TERRAIN_NAME);
         let history_path = terrain_dir_path.join(TERRAIN_HISTORY_FILE_NAME);
@@ -342,7 +343,7 @@ mod tests {
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                    state_dir_path.to_str().unwrap(),
+                    DaemonPaths::new(state_paths.path().to_str().unwrap()),
                 )
                 .await,
             ),

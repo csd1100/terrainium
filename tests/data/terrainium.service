@@ -3,7 +3,7 @@ Description=terrainium daemon
 After=multi-user.target
 
 [Service]
-ExecStart=/tmp/terrainium-testing-46678f282cf1/terrainiumd --force
+ExecStart=/tmp/terrainium-testing-46678f282cf1/terrainiumd
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 KillSignal=SIGTERM
 StandardOutput=append:/tmp/terrainiumd.stdout.log

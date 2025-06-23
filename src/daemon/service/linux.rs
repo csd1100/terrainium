@@ -251,7 +251,7 @@ Description=terrainium daemon
 After=multi-user.target
 
 [Service]
-ExecStart={} --force
+ExecStart={}
 Environment="PATH={}"
 KillSignal=SIGTERM
 StandardOutput=append:/tmp/terrainiumd.stdout.log

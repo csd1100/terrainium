@@ -51,19 +51,3 @@ pub const NONE: &str = "none";
 pub const TRUE: &str = "true";
 pub const JSON: &str = "json";
 pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
-
-pub fn get_terrainiumd_dir() -> &'static str {
-    if cfg!(debug_assertions) {
-        "/tmp/terrainiumd-debug"
-    } else {
-        "/tmp/terrainiumd"
-    }
-}
-
-pub fn get_terrainiumd_socket() -> String {
-    format!("{}/socket", get_terrainiumd_dir())
-}
-
-pub fn get_terrainiumd_pid_file() -> String {
-    format!("{}/pid", get_terrainiumd_dir())
-}

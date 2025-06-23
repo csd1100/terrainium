@@ -7,7 +7,6 @@
         <key>ProgramArguments</key>
         <array>
             <string>/tmp/terrainium-testing-46678f282cf1/terrainiumd</string>
-            <string>--force</string>
         </array>
         <key>EnvironmentVariables</key>
         <dict>

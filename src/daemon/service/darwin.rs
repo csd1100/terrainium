@@ -312,7 +312,6 @@ impl Service for DarwinService {
         <key>ProgramArguments</key>
         <array>
             <string>{}</string>
-            <string>--force</string>
         </array>
         <key>EnvironmentVariables</key>
         <dict>

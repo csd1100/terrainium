@@ -1,5 +1,6 @@
 #[mockall_double::double]
 use crate::common::execute::Executor;
+use crate::common::types::paths::DaemonPaths;
 use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;
 use std::sync::Arc;
@@ -20,9 +21,9 @@ impl DaemonContext {
         config: DaemonConfig,
         executor: Arc<Executor>,
         cancellation_token: CancellationToken,
-        state_directory: &str,
+        daemon_paths: DaemonPaths,
     ) -> Self {
-        let state_manager = StateManager::init(state_directory, config.history_size()).await;
+        let state_manager = StateManager::init(daemon_paths, config.history_size()).await;
         DaemonContext {
             is_root,
             is_root_allowed: config.is_root_allowed(),
@@ -36,8 +37,8 @@ impl DaemonContext {
         self.state_manager.clone()
     }
 
-    pub fn state_directory(&self) -> &str {
-        self.state_manager.state_directory()
+    pub fn state_paths(&self) -> &DaemonPaths {
+        self.state_manager.state_paths()
     }
 
     pub fn executor(&self) -> Arc<Executor> {

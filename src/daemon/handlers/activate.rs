@@ -80,6 +80,7 @@ mod tests {
     use crate::common::test_utils::{
         expected_activate_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_NAME,
     };
+    use crate::common::types::paths::DaemonPaths;
     use crate::common::types::terrain_state::test_utils::terrain_state_after_activate;
     use crate::common::types::terrain_state::TerrainState;
     use crate::common::utils::{create_file, write_to_file};
@@ -91,15 +92,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_state_on_activate() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_string_lossy().to_string();
-        let terrain_state_dir = state_directory
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_string_lossy().to_string();
+        let terrain_state_dir = state_paths
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TEST_SESSION_ID);
         let terrain_state = terrain_state_dir.join(TERRAIN_STATE_FILE_NAME);
 
-        let history = state_directory
+        let history = state_paths
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TERRAIN_HISTORY_FILE_NAME);
@@ -110,7 +111,7 @@ mod tests {
                 DaemonConfig::default(),
                 Arc::new(MockExecutor::default()),
                 Default::default(),
-                &state_dir_path,
+                DaemonPaths::new(&state_dir_path),
             )
             .await,
         );
@@ -139,15 +140,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_state_history_rotates() {
-        let state_directory = tempdir().unwrap();
-        let state_dir_path = state_directory.path().to_string_lossy().to_string();
-        let terrain_state_dir = state_directory
+        let state_paths = tempdir().unwrap();
+        let state_dir_path = state_paths.path().to_string_lossy().to_string();
+        let terrain_state_dir = state_paths
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TEST_SESSION_ID);
         let terrain_state = terrain_state_dir.join(TERRAIN_STATE_FILE_NAME);
 
-        let history = state_directory
+        let history = state_paths
             .path()
             .join(TEST_TERRAIN_NAME)
             .join(TERRAIN_HISTORY_FILE_NAME);
@@ -158,7 +159,7 @@ mod tests {
                 DaemonConfig::default(),
                 Arc::new(MockExecutor::default()),
                 Default::default(),
-                &state_dir_path,
+                DaemonPaths::new(&state_dir_path),
             )
             .await,
         );

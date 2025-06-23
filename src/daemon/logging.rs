@@ -5,14 +5,14 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, Layer, Registry};
 
 pub fn init_logging(
-    state_directory: &str,
+    state_paths: &str,
     filter: LevelFilter,
 ) -> (impl SubscriberExt, (WorkerGuard, WorkerGuard)) {
     let appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("terrainiumd")
         .filename_suffix("log")
-        .build(state_directory)
+        .build(state_paths)
         .expect("log file appender to be configured");
     let (non_blocking_file, file_guard) = tracing_appender::non_blocking(appender);
     let (non_blocking_stdout, out_guard) = tracing_appender::non_blocking(std::io::stdout());

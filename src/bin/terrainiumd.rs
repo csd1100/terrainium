@@ -1,12 +1,9 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use std::path::PathBuf;
 use std::sync::Arc;
-use terrainium::common::constants::{
-    get_terrainiumd_dir, get_terrainiumd_pid_file, get_terrainiumd_socket,
-};
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
+use terrainium::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
 use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
@@ -55,13 +52,14 @@ async fn get_daemon_context(
     daemon_config: DaemonConfig,
     executor: Arc<Executor>,
     cancellation_token: CancellationToken,
+    daemon_paths: DaemonPaths,
 ) -> DaemonContext {
     let context = DaemonContext::new(
         is_user_root,
         daemon_config,
         executor.clone(),
         cancellation_token,
-        get_terrainiumd_dir(),
+        daemon_paths,
     )
     .await;
     context.setup_state_manager();
@@ -90,10 +88,10 @@ async fn run(
     executor: Arc<Executor>,
     cancellation_token: CancellationToken,
 ) -> Result<()> {
-    let (subscriber, (_file_guard, _out_guard)) = init_logging(
-        get_terrainiumd_dir(),
-        LevelFilter::from(args.options.log_level),
-    );
+    let paths = get_terrainiumd_paths();
+
+    let (subscriber, (_file_guard, _out_guard)) =
+        init_logging(paths.dir_str(), LevelFilter::from(args.options.log_level));
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
     if args.options.create_config {
@@ -101,13 +99,14 @@ async fn run(
     }
 
     // write pid
-    std::fs::write(get_terrainiumd_pid_file(), std::process::id().to_string())
+    std::fs::write(paths.pid(), std::process::id().to_string())
         .context("failed to write terrainiumd pid file")?;
 
-    let context = Arc::new(get_daemon_context(is_root, config, executor, cancellation_token).await);
+    let context =
+        Arc::new(get_daemon_context(is_root, config, executor, cancellation_token, paths).await);
     let token = context.cancellation_token();
 
-    let mut daemon = Daemon::new(PathBuf::from(get_terrainiumd_socket()), args.options.force)
+    let mut daemon = Daemon::new(context.clone(), args.options.force)
         .await
         .context("to create start the terrainium daemon")?;
 

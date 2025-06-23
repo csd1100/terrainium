@@ -8,13 +8,12 @@ use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    get_terrainiumd_socket, DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED,
-    TERRAIN_SESSION_ID, TRUE,
+    DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_SESSION_ID, TRUE,
 };
+use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
-use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -96,7 +95,7 @@ async fn send_activate_request(
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(get_terrainiumd_socket())).await?
+        Client::new(get_terrainiumd_paths().socket()).await?
     };
 
     client

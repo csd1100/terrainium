@@ -14,19 +14,15 @@ pub struct History {
 }
 
 impl History {
-    pub fn get_path(state_directory: &str, terrain_name: &str) -> PathBuf {
+    pub fn get_path(state_paths: &str, terrain_name: &str) -> PathBuf {
         PathBuf::from(&format!(
-            "{state_directory}/{terrain_name}/{TERRAIN_HISTORY_FILE_NAME}"
+            "{state_paths}/{terrain_name}/{TERRAIN_HISTORY_FILE_NAME}"
         ))
     }
 
-    pub(crate) async fn read(
-        state_directory: &str,
-        terrain_name: &str,
-        size: usize,
-    ) -> Result<Self> {
+    pub(crate) async fn read(state_paths: &str, terrain_name: &str, size: usize) -> Result<Self> {
         let mut file =
-            HistoryFile::create(&Self::get_path(state_directory, terrain_name), size).await?;
+            HistoryFile::create(&Self::get_path(state_paths, terrain_name), size).await?;
         let history = file.read().await?;
         let file = Mutex::new(file);
         Ok(Self { history, file })
