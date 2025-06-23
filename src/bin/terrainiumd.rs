@@ -172,14 +172,17 @@ async fn start() -> Result<()> {
             let cloned_token = token.clone();
 
             let mut sigterm = signal(SignalKind::terminate())?;
-            let result = tokio::join!(
-                tokio::spawn(async move {
-                    sigterm.recv().await;
+            tokio::select! {
+                _ = sigterm.recv() => {
                     token.cancel();
-                }),
-                run(args, is_root, config, executor, cloned_token)
-            );
-            result.1
+                    Ok(())
+                }
+
+                res =
+                run(args, is_root, config, executor, cloned_token) => {
+                    res
+                }
+            }
         }
     }
 }

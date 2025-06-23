@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, info, warn};
 
 #[derive(Debug)]
 pub struct Daemon {
@@ -73,7 +73,6 @@ fn cleanup(
 }
 
 impl Daemon {
-    #[instrument]
     pub async fn new(context: Arc<DaemonContext>, force: bool) -> Result<Daemon> {
         let dir = context.state_paths().dir();
         let socket = context.state_paths().socket();
