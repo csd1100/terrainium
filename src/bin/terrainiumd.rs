@@ -138,22 +138,22 @@ async fn start() -> Result<()> {
             let service =
                 ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
             match verbs {
-                Verbs::InstallService => {
+                Verbs::Install => {
                     service.install().context("failed to install service")?;
                 }
-                Verbs::RemoveService => {
+                Verbs::Remove => {
                     service.remove().context("failed to remove service")?;
                 }
-                Verbs::EnableService { now } => {
+                Verbs::Enable { now } => {
                     service.enable(now).context("failed to enable service")?;
                 }
-                Verbs::DisableService { now } => {
+                Verbs::Disable { now } => {
                     service.disable(now).context("failed to disable service")?;
                 }
-                Verbs::StartService => {
+                Verbs::Start => {
                     service.start().context("failed to start service")?;
                 }
-                Verbs::StopService => {
+                Verbs::Stop => {
                     service.stop().context("failed to stop service")?;
                 }
                 Verbs::Status => {
@@ -164,20 +164,24 @@ async fn start() -> Result<()> {
             Ok(())
         }
         None => {
-            let token = CancellationToken::new();
-            let cloned_token = token.clone();
+            if args.options.run {
+                let token = CancellationToken::new();
+                let cloned_token = token.clone();
 
-            let mut sigterm = signal(SignalKind::terminate())?;
-            tokio::select! {
-                _ = sigterm.recv() => {
-                    token.cancel();
-                    Ok(())
-                }
+                let mut sigterm = signal(SignalKind::terminate())?;
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        token.cancel();
+                        Ok(())
+                    }
 
-                res =
-                run(args, is_root, config, executor, cloned_token) => {
-                    res
+                    res =
+                    run(args, is_root, config, executor, cloned_token) => {
+                        res
+                    }
                 }
+            } else {
+                bail!("unknown args passed, exiting...");
             }
         }
     }

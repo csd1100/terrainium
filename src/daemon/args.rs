@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use tracing::Level;
 
 #[derive(Parser, Debug)]
-#[command()]
+#[command(args_conflicts_with_subcommands = true)]
 pub struct DaemonArgs {
     #[clap(flatten)]
     pub options: Options,
@@ -13,27 +13,51 @@ pub struct DaemonArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
-    #[arg(short, long)]
+    /// kills existing daemon and starts a new daemon
+    #[arg(short, long, conflicts_with = "create_config")]
     pub force: bool,
+
+    /// log level for daemon. allowed values: "trace", "debug", "info", "warn", "error"
     #[arg(short, long, default_value = "info")]
     pub log_level: Level,
+
+    /// creates the daemon config at location ~/.config/terrainium/terrainiumd.toml
     #[arg(long)]
     pub create_config: bool,
+
+    /// starts the daemon, will fail if daemon is already running
+    #[arg(long, conflicts_with = "create_config")]
+    pub run: bool,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
-    InstallService,
-    RemoveService,
-    EnableService {
+    /// installs the terrainiumd as a service and starts the installed service
+    Install,
+
+    /// removes the terrainiumd as a service and stops the installed service
+    Remove,
+
+    /// enables terrainium service to be started on the machine startup
+    Enable {
+        /// start the terrainiumd process now if not running
         #[arg(short, long)]
         now: bool,
     },
-    DisableService {
+    /// disables terrainium service to be started on the machine startup
+    Disable {
+        /// stop the terrainiumd process now if running
         #[arg(short, long)]
         now: bool,
     },
-    StartService,
-    StopService,
+
+    /// start the terrainiumd process now if not running
+    Start,
+
+    /// stop the terrainiumd process now if running
+    Stop,
+
+    /// prints status of the installed service, status can be: "running",
+    /// "not running", "not loaded", "not installed"
     Status,
 }
