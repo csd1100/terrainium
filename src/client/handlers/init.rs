@@ -268,7 +268,7 @@ pub mod tests {
                 Some(current_dir.path().to_path_buf()),
             ),
             exit_code: 0,
-            should_error: false,
+            should_fail_to_execute: false,
             output: String::new(),
         };
 
@@ -312,7 +312,7 @@ pub mod tests {
                 Some(terrain_dir.path().to_path_buf()),
             ),
             exit_code: 0,
-            should_error: false,
+            should_fail_to_execute: false,
             output: String::new(),
         };
 

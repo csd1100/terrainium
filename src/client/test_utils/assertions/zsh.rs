@@ -25,7 +25,7 @@ impl ExpectZSH {
         self,
         script_path: &Path,
         compiled_path: &Path,
-        should_error: bool,
+        should_fail_to_execute: bool,
         exit_code: i32,
         output: String,
     ) -> Self {
@@ -44,7 +44,7 @@ impl ExpectZSH {
         let expected = ExpectedCommand {
             command,
             exit_code,
-            should_error,
+            should_fail_to_execute,
             output,
         };
 
@@ -68,7 +68,7 @@ impl ExpectZSH {
         self.compile_script(
             script_path,
             compiled_path,
-            true,
+            false,
             1,
             "some error while compiling".to_string(),
         )
@@ -97,7 +97,7 @@ impl ExpectZSH {
                         Some(cwd.to_path_buf()),
                     ),
                     exit_code: 0,
-                    should_error: false,
+                    should_fail_to_execute: false,
                     output: TEST_FPATH.to_string(),
                 },
                 1,
@@ -110,7 +110,7 @@ impl ExpectZSH {
         self,
         envs: BTreeMap<String, String>,
         exit_code: i32,
-        should_error: bool,
+        should_fail_to_execute: bool,
         error_message: String,
     ) -> Self {
         let ExpectZSH { executor, cwd } = self;
@@ -124,7 +124,7 @@ impl ExpectZSH {
                         Some(cwd.to_path_buf()),
                     ),
                     exit_code,
-                    should_error,
+                    should_fail_to_execute,
                     output: error_message,
                 },
                 1,

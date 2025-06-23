@@ -1,7 +1,7 @@
 use crate::common::execute::MockExecutor;
 use crate::common::types::command::Command;
 use anyhow::bail;
-use mockall::predicate::{eq, function};
+use mockall::predicate::eq;
 use std::collections::BTreeMap;
 use std::os::unix::prelude::ExitStatusExt;
 use std::process::{ExitStatus, Output};
@@ -11,12 +11,16 @@ use std::sync::Arc;
 pub struct ExpectedCommand {
     pub command: Command,
     pub exit_code: i32,
-    pub should_error: bool,
+    pub should_fail_to_execute: bool,
     pub output: String,
 }
 
 pub struct AssertExecutor {
     executor: MockExecutor,
+}
+
+fn get_exit_status(exit_code: i32) -> ExitStatus {
+    ExitStatus::from_raw(exit_code << 8)
 }
 
 impl AssertExecutor {
@@ -38,17 +42,22 @@ impl AssertExecutor {
         times: usize,
     ) -> MockExecutor {
         let ExpectedCommand {
-            command, exit_code, ..
+            command,
+            exit_code,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_wait()
-            .with(
-                eq(envs),
-                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
-                eq(silent),
-            )
-            .returning(move |_, _, _| Ok(ExitStatus::from_raw(exit_code << 8)))
+            .with(eq(envs), eq(command), eq(silent))
+            .returning(move |_, _, _| {
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
+                } else {
+                    Ok(get_exit_status(exit_code))
+                }
+            })
             .times(times);
 
         self.executor
@@ -63,29 +72,30 @@ impl AssertExecutor {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error: error,
+            should_fail_to_execute,
             output,
         } = command;
         self.executor
             .expect_get_output()
-            .with(
-                eq(envs),
-                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
-            )
+            .with(eq(envs), eq(command))
             .returning(move |_, _| {
-                if error || exit_code != 0 {
-                    Ok(Output {
-                        // ExitStatus.code() returns status >> 8 so doing expected << 8
-                        status: ExitStatus::from_raw(exit_code << 8),
-                        stdout: vec![],
-                        stderr: Vec::from(output.as_bytes()),
-                    })
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
                 } else {
-                    Ok(Output {
-                        status: ExitStatus::from_raw(0),
-                        stdout: Vec::from(output.as_bytes()),
-                        stderr: vec![],
-                    })
+                    if exit_code != 0 {
+                        Ok(Output {
+                            // ExitStatus.code() returns status >> 8 so doing expected << 8
+                            status: get_exit_status(exit_code),
+                            stdout: vec![],
+                            stderr: Vec::from(output.as_bytes()),
+                        })
+                    } else {
+                        Ok(Output {
+                            status: get_exit_status(exit_code),
+                            stdout: Vec::from(output.as_bytes()),
+                            stderr: vec![],
+                        })
+                    }
                 }
             })
             .times(times);
@@ -101,21 +111,18 @@ impl AssertExecutor {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error,
-            output,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_async_spawn()
-            .with(
-                eq(envs),
-                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
-            )
+            .with(eq(envs), eq(command))
             .returning(move |_, _| {
-                if should_error {
-                    bail!("{}", output)
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
                 } else {
-                    Ok(ExitStatus::from_raw(exit_code << 8))
+                    Ok(get_exit_status(exit_code))
                 }
             })
             .times(times);
@@ -132,22 +139,18 @@ impl AssertExecutor {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error,
-            output,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_async_spawn_with_log()
-            .with(
-                eq(log_path),
-                eq(envs),
-                function(move |cmd: &Command| cmd == &command && cmd.cwd().is_some()),
-            )
+            .with(eq(log_path), eq(envs), eq(command))
             .returning(move |_, _, _| {
-                if should_error {
-                    bail!("{}", output)
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
                 } else {
-                    Ok(ExitStatus::from_raw(exit_code << 8))
+                    Ok(get_exit_status(exit_code))
                 }
             })
             .times(times);

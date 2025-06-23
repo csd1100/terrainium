@@ -94,7 +94,7 @@ pub(crate) mod tests {
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
-            should_error: false,
+            should_fail_to_execute: false,
             output: String::new(),
         };
 
@@ -149,7 +149,7 @@ pub(crate) mod tests {
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
-            should_error: false,
+            should_fail_to_execute: false,
             output: String::new(),
         };
 
@@ -206,7 +206,7 @@ pub(crate) mod tests {
                 Some(terrain_dir.into()),
             ),
             exit_code: 0,
-            should_error: false,
+            should_fail_to_execute: false,
             output: String::new(),
         };
 
