@@ -166,7 +166,7 @@ impl Service for DarwinService {
     /// Sets `RunAtLoad` to true for service and, runs
     /// `launchctl enable gui/<uid>/com.csd1100.terrainium`
     ///
-    /// If `now` is true then service is loaded and started at the same time.
+    /// If `now` is true then service is enabled and started at the same time.
     fn enable(&self, now: bool) -> Result<()> {
         self.load()?;
 

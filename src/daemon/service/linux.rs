@@ -20,16 +20,21 @@ const IS_ACTIVE: &str = "is-active";
 const START: &str = "start";
 const STOP: &str = "stop";
 
+/// Manage `systemd` service using `systemctl` commands.
 pub struct LinuxService {
     path: PathBuf,
     executor: Arc<Executor>,
 }
 
 impl Service for LinuxService {
+    /// Check if service file is present at:
+    /// `~/.config/systemd/user/terrainium.service`
     fn is_installed(&self) -> bool {
         self.path.exists()
     }
 
+    /// Copy `terrainium.service` file to `~/.config/systemd/user/terrainium.service`
+    /// and reloads the daemon.
     fn install(&self) -> Result<()> {
         if self.is_installed() {
             self.load()?;
@@ -45,6 +50,8 @@ impl Service for LinuxService {
         Ok(())
     }
 
+    /// Check if service is loaded by using `systemctl --user status terrainium.service`
+    /// command.
     fn is_loaded(&self) -> Result<bool> {
         if !self.is_installed() {
             bail!(ERROR_SERVICE_NOT_INSTALLED,);
@@ -69,6 +76,9 @@ impl Service for LinuxService {
         Ok(error.is_empty())
     }
 
+    /// reload the daemon using `systemctl` command, only if service is not loaded.
+    ///
+    /// `systemctl --user daemon-reload terrainium.service`
     fn load(&self) -> Result<()> {
         if self.is_loaded()? {
             println!("service is already loaded");
@@ -79,6 +89,9 @@ impl Service for LinuxService {
         self.reload().context("failed to reload the services")
     }
 
+    /// reload the daemon using `systemctl` command only if service is loaded.
+    ///
+    /// `systemctl --user daemon-reload terrainium.service`
     fn unload(&self) -> Result<()> {
         if !self.is_loaded()? {
             println!("service is already unloaded");
@@ -87,6 +100,8 @@ impl Service for LinuxService {
         self.reload().context("failed to reload the services")
     }
 
+    /// Removes the service from `~/.config/systemd/user/terrainium.service`.
+    /// Reloads the daemon if service is loaded.
     fn remove(&self) -> Result<()> {
         if !self.is_installed() {
             bail!(ERROR_SERVICE_NOT_INSTALLED);
@@ -95,6 +110,9 @@ impl Service for LinuxService {
         self.reload().context("failed to reload the services")
     }
 
+    /// Enables the service to be start at the login.
+    ///
+    /// If `now` is true then service is loaded and started at the same time.
     fn enable(&self, now: bool) -> Result<()> {
         self.load()?;
 
@@ -126,6 +144,9 @@ impl Service for LinuxService {
         Ok(())
     }
 
+    /// Disables the service from to be started at the login.
+    ///
+    /// If `now` is true then service is disabled and stopped at the same time.
     fn disable(&self, now: bool) -> Result<()> {
         self.load()?;
 
@@ -157,6 +178,8 @@ impl Service for LinuxService {
         Ok(())
     }
 
+    /// Check if terrainiumd process is running by running command
+    /// `systemctl --user is-active terrainium.service`
     fn is_running(&self) -> Result<bool> {
         let is_running = Command::new(
             SYSTEMCTL.to_string(),
@@ -176,6 +199,9 @@ impl Service for LinuxService {
         Ok(running.success())
     }
 
+    /// Start the service if it is not already running.
+    ///
+    /// `systemctl --user start terrainium.service`
     fn start(&self) -> Result<()> {
         if self.is_running()? {
             bail!(ERROR_ALREADY_RUNNING);
@@ -207,6 +233,9 @@ impl Service for LinuxService {
         Ok(())
     }
 
+    /// Stops the service process by sending it `SIGTERM`.
+    ///
+    /// `systemctl --user stop terrainium.service`
     fn stop(&self) -> Result<()> {
         if !self.is_running()? {
             bail!(ERROR_IS_NOT_RUNNING);
@@ -238,6 +267,10 @@ impl Service for LinuxService {
         Ok(())
     }
 
+    /// Returns systemd service file contents.
+    ///
+    /// # NOTE
+    /// `enabled` is not used for linux
     #[allow(unused_variables)]
     fn get(&self, enabled: bool) -> Result<String> {
         let daemon_path = std::env::current_exe().context("failed to get current bin")?;
@@ -280,6 +313,8 @@ impl LinuxService {
         Ok(Box::new(Self { path, executor }))
     }
 
+    /// reloads the systemctl service by command
+    /// `systemctl --user daemon-reload`
     fn reload(&self) -> Result<()> {
         let command = Command::new(
             SYSTEMCTL.to_string(),
