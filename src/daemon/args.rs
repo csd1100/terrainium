@@ -38,13 +38,13 @@ pub enum Verbs {
     /// removes the terrainiumd as a service and stops the installed service
     Remove,
 
-    /// enables terrainium service to be started on the machine startup
+    /// enables terrainiumd service to be started on the machine startup
     Enable {
         /// start the terrainiumd process now if not running
         #[arg(short, long)]
         now: bool,
     },
-    /// disables terrainium service to be started on the machine startup
+    /// disables terrainiumd service to be started on the machine startup
     Disable {
         /// stop the terrainiumd process now if running
         #[arg(short, long)]

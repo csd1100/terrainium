@@ -109,6 +109,7 @@ impl Service for LinuxService {
         if !self.is_installed() {
             bail!(ERROR_SERVICE_NOT_INSTALLED);
         }
+        self.stop()?;
         std::fs::remove_file(&self.path).context("failed to remove service file")?;
         self.reload().context("failed to reload the services")
     }
@@ -679,7 +680,10 @@ mod tests {
         create_service_file(home_dir.path())?;
 
         // emulate service is loaded by returning success
-        let executor = expect_unload(MockExecutor::new());
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_is_running(true, executor);
+        let executor = expect_stop(executor);
+        let executor = expect_unload(executor);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 

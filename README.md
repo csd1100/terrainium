@@ -127,11 +127,11 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 
     - `remove` - removes the terrainiumd as a service and stops the installed service.
 
-    - `enable [OPTION]` - enables terrainium service to be started on the machine startup.
+    - `enable [OPTION]` - enables terrainiumd service to be started on the machine startup.
 
         - `-n|--now` - starts the service after enabling it.
 
-    - `disable [OPTION]` - disables terrainium service to be started on the machine startup.
+    - `disable [OPTION]` - disables terrainiumd service to be started on the machine startup.
 
         - `-n|--now` - stops the service after disabling it.
 
