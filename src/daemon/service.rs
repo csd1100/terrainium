@@ -7,24 +7,29 @@ use home::home_dir;
 use std::sync::Arc;
 
 const ERROR_SERVICE_NOT_INSTALLED: &str =
-    "service is not installed, run `terrainiumd install-service` to install the service.";
+    "service is not installed, run `terrainiumd install` to install the service.";
 const ERROR_ALREADY_RUNNING: &str = "service is already running!";
 const ERROR_IS_NOT_RUNNING: &str = "service is not running!";
+const ERROR_SERVICE_NOT_LOADED: &str =
+    "service is installed but not loaded in the system, run `terrainiumd reload` to reload the service.";
 
 pub mod darwin;
 pub mod linux;
 
+// TODO: enable and start service on install and document it
+// TODO: document statuses and working of service in a separate md file
 pub trait Service {
     fn is_installed(&self) -> bool;
     fn install(&self) -> Result<()>;
     fn is_loaded(&self) -> Result<bool>;
     fn load(&self) -> Result<()>;
     fn unload(&self) -> Result<()>;
+    fn reload(&self) -> Result<()>;
     fn remove(&self) -> Result<()>;
     fn is_enabled(&self) -> Result<bool>;
     fn enable(&self, now: bool) -> Result<()>;
     fn disable(&self, now: bool) -> Result<()>;
-    fn is_running(&self) -> Result<bool>;
+    fn is_running(&self, should_check_loaded: bool) -> Result<bool>;
     fn start(&self) -> Result<()>;
     fn stop(&self) -> Result<()>;
     fn status(&self) -> Result<String> {
@@ -45,7 +50,7 @@ pub trait Service {
             "disabled"
         };
 
-        if !self.is_running()? {
+        if !self.is_running(false)? {
             Ok(format!("not running ({is_enabled})"))
         } else {
             Ok(format!("running ({is_enabled})"))

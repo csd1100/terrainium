@@ -5,6 +5,7 @@ use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::{
     Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+    ERROR_SERVICE_NOT_LOADED,
 };
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
@@ -153,6 +154,15 @@ impl Service for DarwinService {
         Ok(())
     }
 
+    fn reload(&self) -> Result<()> {
+        if !self.is_installed() {
+            bail!(ERROR_SERVICE_NOT_INSTALLED)
+        }
+
+        self.unload()?;
+        self.load()
+    }
+
     /// Removes the service from `~/Library/LaunchAgents/com.csd1100.terrainium.plist`.
     /// Unload the service if it is loaded.
     fn remove(&self) -> Result<()> {
@@ -233,15 +243,30 @@ impl Service for DarwinService {
     /// `state = running` in the output.
     /// The status is checked by `launchctl print gui/<uid>/com.csd1100.terrainium`
     /// command.
-    fn is_running(&self) -> Result<bool> {
-        Ok(self.get_status()?.contains(RUNNING))
+    ///
+    /// `should_check_loaded` defines to check if service is loaded, status
+    /// command has already checked if service is loaded or not so only in
+    /// that case it should be false. In case of start and stop it should
+    /// be true.
+    fn is_running(&self, should_check_loaded: bool) -> Result<bool> {
+        if should_check_loaded && !self.is_installed() {
+            bail!(ERROR_SERVICE_NOT_INSTALLED)
+        }
+
+        let result = self.get_status();
+        match result {
+            Ok(status) => Ok(status.contains(RUNNING)),
+            Err(_) => {
+                bail!(ERROR_SERVICE_NOT_LOADED)
+            }
+        }
     }
 
     /// Start the service if it is not already running.
     ///
     /// `launchctl kickstart gui/<uid>/com.csd1100.terrainium`
     fn start(&self) -> Result<()> {
-        if self.is_running()? {
+        if self.is_running(true)? {
             bail!(ERROR_ALREADY_RUNNING);
         }
 
@@ -271,8 +296,8 @@ impl Service for DarwinService {
     ///
     /// `launchctl kill SIGTERM gui/<uid>/com.csd1100.terrainium`
     fn stop(&self) -> Result<()> {
-        if !self.is_running()? {
-            bail!(ERROR_IS_NOT_RUNNING);
+        if !self.is_running(true)? {
+            bail!(ERROR_IS_NOT_RUNNING)
         }
 
         // stop service
@@ -417,7 +442,7 @@ mod tests {
         DarwinService, LAUNCHCTL, LOAD, PRINT, PROJECT_ID, SIGTERM, START, STOP, UNLOAD,
     };
     use crate::daemon::service::tests::Status;
-    use crate::daemon::service::ERROR_SERVICE_NOT_INSTALLED;
+    use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
     use anyhow::Result;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
@@ -813,6 +838,7 @@ mod tests {
         ));
         Ok(())
     }
+
     #[test]
     fn disable_throw_error_if_not_installed() -> Result<()> {
         let home_dir = tempdir()?;
@@ -863,6 +889,36 @@ mod tests {
     }
 
     #[test]
+    fn start_throws_an_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let executor = expect_get_uid();
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.start().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn start_throws_an_error_if_not_loaded() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path(), true)?;
+
+        let executor = expect_get_uid();
+        let executor = expect_is_loaded(false, executor);
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.start().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_LOADED);
+
+        Ok(())
+    }
+
+    #[test]
     fn stop_works() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path(), true)?;
@@ -890,6 +946,66 @@ mod tests {
 
         let error = service.stop().expect_err("expected error").to_string();
         assert_eq!(error, "service is not running!");
+
+        Ok(())
+    }
+
+    #[test]
+    fn stop_throws_an_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let executor = expect_get_uid();
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.stop().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn stop_throws_an_error_if_not_loaded() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path(), true)?;
+
+        let executor = expect_get_uid();
+        let executor = expect_is_loaded(false, executor);
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.stop().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_LOADED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn reload_works() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path(), true)?;
+
+        let executor = expect_get_uid();
+        let executor = expect_is_loaded(true, executor);
+        let executor = expect_unload(executor);
+        let executor = expect_is_loaded(false, executor);
+        let executor = expect_load(home_dir.path(), executor);
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
+
+        service.reload()?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn reload_throws_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = DarwinService::init(home_dir.path(), Arc::new(expect_get_uid()))?;
+
+        let error = service.reload().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }

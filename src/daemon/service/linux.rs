@@ -6,6 +6,7 @@ use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::{
     Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+    ERROR_SERVICE_NOT_LOADED,
 };
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
@@ -97,6 +98,14 @@ impl Service for LinuxService {
             return Ok(());
         }
         self.reload().context("failed to reload the services")
+    }
+
+    fn reload(&self) -> Result<()> {
+        if !self.is_installed() {
+            bail!(ERROR_SERVICE_NOT_INSTALLED)
+        }
+
+        self.reload()
     }
 
     /// Removes the service from `~/.config/systemd/user/terrainium.service`.
@@ -201,7 +210,22 @@ impl Service for LinuxService {
 
     /// Check if terrainiumd process is running by running command
     /// `systemctl --user is-active terrainium.service`
-    fn is_running(&self) -> Result<bool> {
+    ///
+    /// `should_check_loaded` defines to check if service is loaded. status
+    /// command has already checked if service is loaded or not, so only in
+    /// that case it should be false. In case of start and stop it should
+    /// be true.
+    fn is_running(&self, should_check_loaded: bool) -> Result<bool> {
+        if should_check_loaded {
+            if !self.is_installed() {
+                bail!(ERROR_SERVICE_NOT_INSTALLED);
+            }
+
+            if !self.is_loaded()? {
+                bail!(ERROR_SERVICE_NOT_LOADED);
+            }
+        }
+
         let is_running = Command::new(
             SYSTEMCTL.to_string(),
             vec![
@@ -224,7 +248,7 @@ impl Service for LinuxService {
     ///
     /// `systemctl --user start terrainium.service`
     fn start(&self) -> Result<()> {
-        if self.is_running()? {
+        if self.is_running(true)? {
             bail!(ERROR_ALREADY_RUNNING);
         }
 
@@ -258,7 +282,7 @@ impl Service for LinuxService {
     ///
     /// `systemctl --user stop terrainium.service`
     fn stop(&self) -> Result<()> {
-        if !self.is_running()? {
+        if !self.is_running(true)? {
             bail!(ERROR_IS_NOT_RUNNING);
         }
 
@@ -370,7 +394,7 @@ mod tests {
         LinuxService, IS_ACTIVE, IS_ENABLED, NOW, RELOAD, START, STATUS, STOP, SYSTEMCTL, USER,
     };
     use crate::daemon::service::tests::Status;
-    use crate::daemon::service::ERROR_SERVICE_NOT_INSTALLED;
+    use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
     use anyhow::Result;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
@@ -625,6 +649,7 @@ mod tests {
         // start the service
         let executor = expect_is_loaded(false, MockExecutor::new());
         let executor = expect_load(executor);
+        let executor = expect_is_loaded(true, executor);
         let executor = expect_is_running(false, executor);
         let executor = expect_start(executor);
 
@@ -787,7 +812,8 @@ mod tests {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
 
-        let executor = expect_is_running(false, MockExecutor::new());
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_is_running(false, executor);
         let executor = expect_start(executor);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
@@ -802,7 +828,8 @@ mod tests {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
 
-        let executor = expect_is_running(true, MockExecutor::new());
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_is_running(true, executor);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
@@ -813,11 +840,38 @@ mod tests {
     }
 
     #[test]
+    fn start_throws_an_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()))?;
+
+        let error = service.start().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn start_throws_an_error_if_not_loaded() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path())?;
+
+        let executor = expect_is_loaded(false, MockExecutor::new());
+        let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.start().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_LOADED);
+
+        Ok(())
+    }
+
+    #[test]
     fn stop_works() -> Result<()> {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
 
-        let executor = expect_is_running(true, MockExecutor::new());
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_is_running(true, executor);
         let executor = expect_stop(executor);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
@@ -832,12 +886,65 @@ mod tests {
         let home_dir = tempdir()?;
         create_service_file(home_dir.path())?;
 
-        let executor = expect_is_running(false, MockExecutor::new());
+        let executor = expect_is_loaded(true, MockExecutor::new());
+        let executor = expect_is_running(false, executor);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
         let error = service.stop().expect_err("expected error").to_string();
         assert_eq!(error, "service is not running!");
+
+        Ok(())
+    }
+
+    #[test]
+    fn stop_throws_an_error_if_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()))?;
+
+        let error = service.stop().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn stop_throws_an_error_if_not_loaded() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path())?;
+
+        let executor = expect_is_loaded(false, MockExecutor::new());
+        let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
+
+        let error = service.stop().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_LOADED);
+
+        Ok(())
+    }
+
+    #[test]
+    fn reload_works() -> Result<()> {
+        let home_dir = tempdir()?;
+        create_service_file(home_dir.path())?;
+
+        let executor = expect_load(MockExecutor::new());
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
+
+        service.reload()?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn reload_throws_not_installed() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let service = LinuxService::init(home_dir.path(), Arc::new(MockExecutor::new()))?;
+
+        let error = service.reload().expect_err("expected error").to_string();
+        assert_eq!(error, ERROR_SERVICE_NOT_INSTALLED);
 
         Ok(())
     }

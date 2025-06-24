@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use std::process::exit;
 use std::sync::Arc;
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
@@ -160,6 +161,9 @@ async fn start() -> Result<()> {
                     let status = service.status().context("failed to get service status")?;
                     println!("{status}");
                 }
+                Verbs::Reload => {
+                    service.reload().context("failed to reload the service")?;
+                }
             }
             Ok(())
         }
@@ -194,6 +198,7 @@ async fn main() {
         Err(err) => {
             let err = format!("exiting terrainiumd with an error: {err:?}");
             eprintln!("{}: {err}", error("ERROR"));
+            exit(1);
         }
     }
 }

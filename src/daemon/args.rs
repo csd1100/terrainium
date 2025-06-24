@@ -57,6 +57,10 @@ pub enum Verbs {
     /// stop the terrainiumd process now if running
     Stop,
 
+    /// just reloads the service in the system (launchd, systemd).
+    /// Does NOT start the service.
+    Reload,
+
     /// prints status of the installed service, status can be: "running",
     /// "not running", "not loaded", "not installed"
     Status,
