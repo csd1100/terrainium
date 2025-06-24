@@ -92,7 +92,7 @@ pub(crate) async fn spawn_commands(
             .enumerate()
             .map(|(index, cmd)| {
                 CommandState::from(
-                    context.state_directory(),
+                    context.state_paths().dir_str(),
                     &terrain_name,
                     &session_id,
                     is_constructor,
@@ -216,7 +216,7 @@ async fn spawn_command(
     drop(state_mut);
 
     let res = executor
-        .async_spawn_with_log(command, envs, &log_path)
+        .async_spawn_with_log(&log_path, Some(envs), command)
         .await;
 
     let mut state_mut = stored_state.write().await;
@@ -309,6 +309,7 @@ mod tests {
     };
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TIMESTAMP_NUMERIC};
     use crate::common::types::command::Command;
+    use crate::common::types::paths::DaemonPaths;
     use crate::common::types::terrain_state::test_utils::{
         terrain_state_after_activate, terrain_state_after_added_command,
         terrain_state_after_construct, terrain_state_after_construct_failed,
@@ -333,10 +334,11 @@ mod tests {
 
         let request = expected_execute_request_example_biome(None, true);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -376,10 +378,11 @@ mod tests {
         request.timestamp = new_timestamp.clone();
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -429,10 +432,11 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -477,10 +481,11 @@ mod tests {
 
         let request = expected_execute_request_example_biome(None, false);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -520,10 +525,11 @@ mod tests {
         request.timestamp = new_timestamp.clone();
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -573,10 +579,11 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -631,10 +638,11 @@ mod tests {
         let request =
             expected_execute_request_example_biome(Some(TEST_SESSION_ID.to_string()), true);
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 
@@ -699,15 +707,15 @@ mod tests {
                             "-c".to_string(),
                             "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
-                        None,
                         Some(PathBuf::from(TEST_TERRAIN_DIR)),
                     ),
                     exit_code: 0,
-                    should_error: false,
+                    should_fail_to_execute: false,
                     output: "".to_string(),
                 },
-                envs.clone(),
+                Some(envs.clone()),
                 log_path.clone(),
+                1,
             )
             .successfully();
 
@@ -791,15 +799,15 @@ mod tests {
                             "-c".to_string(),
                             "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
                         ],
-                        None,
                         Some(PathBuf::from(TEST_TERRAIN_DIR)),
                     ),
                     exit_code: 1,
-                    should_error: false,
+                    should_fail_to_execute: false,
                     output: "".to_string(),
                 },
-                envs.clone(),
+                Some(envs.clone()),
                 log_path.clone(),
+                1,
             )
             .successfully();
 

@@ -4,6 +4,7 @@ use crate::common::test_utils::TEST_FPATH;
 use crate::common::types::command::Command;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 const ZSH: &str = "/bin/zsh";
 
@@ -24,7 +25,7 @@ impl ExpectZSH {
         self,
         script_path: &Path,
         compiled_path: &Path,
-        should_error: bool,
+        should_fail_to_execute: bool,
         exit_code: i32,
         output: String,
     ) -> Self {
@@ -38,19 +39,18 @@ impl ExpectZSH {
                     script_path.display(),
                 ),
             ],
-            None,
             Some(self.cwd.clone()),
         );
         let expected = ExpectedCommand {
             command,
             exit_code,
-            should_error,
+            should_fail_to_execute,
             output,
         };
 
         Self {
             executor: AssertExecutor::with(self.executor)
-                .get_output_for(expected)
+                .get_output_for(None, expected, 1)
                 .successfully(),
             cwd: self.cwd,
         }
@@ -68,7 +68,7 @@ impl ExpectZSH {
         self.compile_script(
             script_path,
             compiled_path,
-            true,
+            false,
             1,
             "some error while compiling".to_string(),
         )
@@ -88,17 +88,20 @@ impl ExpectZSH {
     pub fn get_fpath(self) -> Self {
         let ExpectZSH { executor, cwd } = self;
         let executor = AssertExecutor::with(executor)
-            .get_output_for(ExpectedCommand {
-                command: Command::new(
-                    "/bin/zsh".to_string(),
-                    vec!["-c".to_string(), "/bin/echo -n $FPATH".to_string()],
-                    None,
-                    Some(cwd.to_path_buf()),
-                ),
-                exit_code: 0,
-                should_error: false,
-                output: TEST_FPATH.to_string(),
-            })
+            .get_output_for(
+                None,
+                ExpectedCommand {
+                    command: Command::new(
+                        "/bin/zsh".to_string(),
+                        vec!["-c".to_string(), "/bin/echo -n $FPATH".to_string()],
+                        Some(cwd.to_path_buf()),
+                    ),
+                    exit_code: 0,
+                    should_fail_to_execute: false,
+                    output: TEST_FPATH.to_string(),
+                },
+                1,
+            )
             .successfully();
         Self { executor, cwd }
     }
@@ -107,22 +110,25 @@ impl ExpectZSH {
         self,
         envs: BTreeMap<String, String>,
         exit_code: i32,
-        should_error: bool,
+        should_fail_to_execute: bool,
         error_message: String,
     ) -> Self {
         let ExpectZSH { executor, cwd } = self;
         let executor = AssertExecutor::with(executor)
-            .async_spawn(ExpectedCommand {
-                command: Command::new(
-                    "/bin/zsh".to_string(),
-                    vec!["-i".to_string(), "-s".to_string()],
-                    Some(envs),
-                    Some(cwd.to_path_buf()),
-                ),
-                exit_code,
-                should_error,
-                output: error_message,
-            })
+            .async_spawn(
+                Some(Arc::new(envs)),
+                ExpectedCommand {
+                    command: Command::new(
+                        "/bin/zsh".to_string(),
+                        vec!["-i".to_string(), "-s".to_string()],
+                        Some(cwd.to_path_buf()),
+                    ),
+                    exit_code,
+                    should_fail_to_execute,
+                    output: error_message,
+                },
+                1,
+            )
             .successfully();
         Self { executor, cwd }
     }

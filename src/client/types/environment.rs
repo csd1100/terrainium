@@ -235,6 +235,7 @@ mod tests {
     use crate::common::types::command::Command;
     use anyhow::Result;
     use std::collections::BTreeMap;
+    use std::env::VarError;
     use std::fs;
     use std::fs::create_dir_all;
     use std::path::PathBuf;
@@ -302,13 +303,11 @@ mod tests {
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                None,
                 Some(fs::canonicalize(terrain_dir.path().join("tests/scripts"))?),
             ),
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                None,
                 Some(PathBuf::from("/tmp")),
             ),
         ];
@@ -322,7 +321,6 @@ mod tests {
         let mut expected_bg_destructors = vec![Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-            None,
             Some(fs::canonicalize(terrain_dir.path().join("tests/scripts"))?),
         )];
         // biome bg destructors
@@ -362,24 +360,24 @@ mod tests {
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                None,
                 Some(PathBuf::from("tests/scripts")),
             ),
             Command::new(
                 "/bin/bash".to_string(),
                 vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-                None,
                 Some(PathBuf::from("/tmp")),
             ),
         ]);
         terrain.terrain_mut().add_bg_destructors(vec![Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "./print_num_for_10_sec".to_string()],
-            None,
             Some(PathBuf::from("${TEST_DIR}/${SCRIPTS_DIR}")),
         )]);
 
-        let old_env = set_env_var("PROCESS_ENV_VAR", Some("PROCESS_ENV_VALUE"));
+        let old_env: std::result::Result<String, VarError>;
+        unsafe {
+            old_env = set_env_var("PROCESS_ENV_VAR", Some("PROCESS_ENV_VALUE"));
+        }
 
         let actual = Environment::from(
             &terrain,
@@ -390,7 +388,9 @@ mod tests {
 
         assert_eq!(actual, expected);
 
-        restore_env_var("PROCESS_ENV_VAR", old_env);
+        unsafe {
+            restore_env_var("PROCESS_ENV_VAR", old_env);
+        }
         Ok(())
     }
 
@@ -493,13 +493,11 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering terrain".to_string()],
-                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["entering biome example_biome2".to_string()],
-                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];
@@ -508,13 +506,11 @@ mod tests {
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting terrain".to_string()],
-                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
             Command::new(
                 "/bin/echo".to_string(),
                 vec!["exiting biome example_biome2".to_string()],
-                None,
                 Some(terrain_dir.path().to_path_buf()),
             ),
         ];

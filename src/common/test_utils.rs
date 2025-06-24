@@ -17,6 +17,7 @@ pub const TEST_SESSION_ID: &str = "session_id";
 pub const TEST_FPATH: &str = "/usr/share/zsh/completions";
 pub const TEST_TERRAIN_DIR: &str = "/tmp/terrain_dir";
 pub const TEST_CENTRAL_DIR: &str = "/tmp/central_dir";
+pub const TEST_DIRECTORY: &str = "/tmp/terrainium-testing-46678f282cf1/";
 
 pub fn expected_envs_with_activate_example_biome(
     is_auto_apply: bool,

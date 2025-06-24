@@ -481,7 +481,6 @@ pub(crate) fn example_constructors() -> Commands {
             "/bin/echo".to_string(),
             vec!["entering terrain".to_string()],
             None,
-            None,
         )],
         vec![],
     )
@@ -492,7 +491,6 @@ pub(crate) fn example_destructors() -> Commands {
         vec![Command::new(
             "/bin/echo".to_string(),
             vec!["exiting terrain".to_string()],
-            None,
             None,
         )],
         vec![],

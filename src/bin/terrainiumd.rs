@@ -1,19 +1,23 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use std::path::PathBuf;
+use std::process::exit;
 use std::sync::Arc;
-use terrainium::common::constants::{TERRAINIUMD_SOCKET, TERRAINIUMD_TMP_DIR};
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
+use terrainium::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
 use terrainium::common::types::styles::{error, warning};
-use terrainium::daemon::args::DaemonArgs;
+use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
+use terrainium::daemon::service::ServiceProvider;
 use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
+use tokio::signal::unix::{signal, SignalKind};
+use tokio_stream::wrappers::UnixListenerStream;
 use tokio_stream::StreamExt;
+use tokio_util::sync::CancellationToken;
 use tracing::metadata::LevelFilter;
 use tracing::{debug, info, trace, warn};
 
@@ -24,12 +28,10 @@ fn get_daemon_config() -> DaemonConfig {
 }
 
 fn is_user_root(executor: Arc<Executor>) -> bool {
-    let user = executor.get_output(Command::new(
-        "whoami".to_string(),
-        vec![],
+    let user = executor.get_output(
         None,
-        Some(PathBuf::from(TERRAINIUMD_TMP_DIR)),
-    ));
+        Command::new("whoami".to_string(), vec![], Some(std::env::temp_dir())),
+    );
 
     if let Ok(user) = user {
         let user = String::from_utf8_lossy(&user.stdout);
@@ -46,17 +48,75 @@ fn is_user_root(executor: Arc<Executor>) -> bool {
     false
 }
 
-async fn get_daemon_context() -> DaemonContext {
-    let executor = Arc::new(Executor);
+async fn get_daemon_context(
+    is_user_root: bool,
+    daemon_config: DaemonConfig,
+    executor: Arc<Executor>,
+    cancellation_token: CancellationToken,
+    daemon_paths: DaemonPaths,
+) -> DaemonContext {
     let context = DaemonContext::new(
+        is_user_root,
+        daemon_config,
         executor.clone(),
-        get_daemon_config(),
-        TERRAINIUMD_TMP_DIR,
-        is_user_root(executor),
+        cancellation_token,
+        daemon_paths,
     )
     .await;
     context.setup_state_manager();
     context
+}
+
+async fn start_listening(
+    context: Arc<DaemonContext>,
+    listener: &mut UnixListenerStream,
+) -> Result<()> {
+    while let Some(socket) = listener.next().await.transpose()? {
+        trace!("received socket connection");
+        let context = context.clone();
+        let _ = tokio::spawn(async move {
+            handle_request(context, DaemonSocket::new(socket)).await;
+        })
+        .await;
+    }
+    Ok(())
+}
+
+async fn run(
+    args: DaemonArgs,
+    is_root: bool,
+    config: DaemonConfig,
+    executor: Arc<Executor>,
+    cancellation_token: CancellationToken,
+) -> Result<()> {
+    let paths = get_terrainiumd_paths();
+
+    let (subscriber, (_file_guard, _out_guard)) =
+        init_logging(paths.dir_str(), LevelFilter::from(args.options.log_level));
+    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+
+    if args.options.create_config {
+        return DaemonConfig::create_file().context("failed to create terrainiumd config");
+    }
+
+    let context =
+        Arc::new(get_daemon_context(is_root, config, executor, cancellation_token, paths).await);
+    let token = context.cancellation_token();
+
+    let mut daemon = Daemon::new(context.clone(), args.options.force)
+        .await
+        .context("failed to create the terrainium daemon socket")?;
+
+    tokio::select! {
+        _ = token.cancelled() => {
+            info!("stopping terrainium daemon");
+            Ok(())
+        }
+
+        res = start_listening(context.clone(), daemon.listener()) => {
+            res
+        }
+    }
 }
 
 async fn start() -> Result<()> {
@@ -66,46 +126,79 @@ async fn start() -> Result<()> {
 
     let args = DaemonArgs::parse();
 
-    let (subscriber, (_file_guard, _out_guard)) =
-        init_logging(TERRAINIUMD_TMP_DIR, LevelFilter::from(args.log_level));
-    tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+    let config = get_daemon_config();
+    let executor = Arc::new(Executor);
+    let is_root = is_user_root(executor.clone());
 
-    if args.create_config {
-        return DaemonConfig::create_file().context("failed to create terrainiumd config");
-    }
-
-    let context = Arc::new(get_daemon_context().await);
-
-    if context.should_exit_early() {
+    if is_root && !config.is_root_allowed() {
         bail!("exiting as service was started as root without being configured.");
     }
 
-    let mut daemon = Daemon::new(PathBuf::from(TERRAINIUMD_SOCKET), args.force)
-        .await
-        .context("to create start the terrainium daemon")?;
-    let listener = daemon.listener();
+    match args.verbs {
+        Some(verbs) => {
+            let service =
+                ServiceProvider::get(executor.clone()).context("failed to get service provider")?;
+            match verbs {
+                Verbs::Install => {
+                    service.install().context("failed to install service")?;
+                }
+                Verbs::Remove => {
+                    service.remove().context("failed to remove service")?;
+                }
+                Verbs::Enable { now } => {
+                    service.enable(now).context("failed to enable service")?;
+                }
+                Verbs::Disable { now } => {
+                    service.disable(now).context("failed to disable service")?;
+                }
+                Verbs::Start => {
+                    service.start().context("failed to start service")?;
+                }
+                Verbs::Stop => {
+                    service.stop().context("failed to stop service")?;
+                }
+                Verbs::Status => {
+                    let status = service.status().context("failed to get service status")?;
+                    println!("{status}");
+                }
+                Verbs::Reload => {
+                    service.reload().context("failed to reload the service")?;
+                }
+            }
+            Ok(())
+        }
+        None => {
+            if args.options.run {
+                let token = CancellationToken::new();
+                let cloned_token = token.clone();
 
-    while let Some(socket) = listener.next().await.transpose()? {
-        let context = context.clone();
-        trace!("received socket connection");
-        let _ = tokio::spawn(async move {
-            handle_request(context, DaemonSocket::new(socket)).await;
-        })
-        .await;
+                let mut sigterm = signal(SignalKind::terminate())?;
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        token.cancel();
+                        Ok(())
+                    }
+
+                    res =
+                    run(args, is_root, config, executor, cloned_token) => {
+                        res
+                    }
+                }
+            } else {
+                bail!("unknown args passed, exiting...");
+            }
+        }
     }
-
-    Ok(())
 }
 
 #[tokio::main]
 async fn main() {
     match start().await {
-        Ok(_) => {
-            println!("exiting terrainiumd");
-        }
+        Ok(_) => {}
         Err(err) => {
             let err = format!("exiting terrainiumd with an error: {err:?}");
             eprintln!("{}: {err}", error("ERROR"));
+            exit(1);
         }
     }
 }

@@ -72,6 +72,7 @@ mod tests {
     use crate::common::test_utils::{
         expected_deactivate_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_NAME,
     };
+    use crate::common::types::paths::DaemonPaths;
     use crate::common::types::terrain_state::test_utils::{
         terrain_state_after_construct, terrain_state_after_deactivate_before_complete,
     };
@@ -90,10 +91,11 @@ mod tests {
         let auto_apply = AutoApply::All;
 
         let context = DaemonContext::new(
-            Arc::new(MockExecutor::new()),
-            DaemonConfig::default(),
-            state_directory.path().to_str().unwrap(),
             false,
+            DaemonConfig::default(),
+            Arc::new(MockExecutor::new()),
+            Default::default(),
+            DaemonPaths::new(state_directory.path().to_str().unwrap()),
         )
         .await;
 

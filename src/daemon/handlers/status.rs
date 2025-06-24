@@ -74,13 +74,14 @@ mod tests {
     use crate::client::test_utils::expected_constructor_background_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
-        EXAMPLE_BIOME, TERRAINIUMD_TMP_DIR, TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME,
-        TERRAIN_TOML, TEST_TIMESTAMP,
+        EXAMPLE_BIOME, TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TERRAIN_TOML,
+        TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
         expected_envs_with_activate_example_biome, expected_status_request, RequestFor,
         TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
     };
+    use crate::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
     use crate::common::types::pb::response::Payload;
     use crate::common::types::pb::status_response::{CommandState, CommandStates};
     use crate::common::types::pb::StatusResponse;
@@ -102,7 +103,7 @@ mod tests {
             .for_each(|(idx, cmd)| {
                 command_states.push(CommandState {
                     command: Some(cmd.into()),
-                    log_path: format!("{TERRAINIUMD_TMP_DIR}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log"),
+                    log_path: format!("{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", get_terrainiumd_paths().dir_str()),
                     // status: 1 i.e. starting
                     status: 1,
                     // exit_code: -100 i.e. starting
@@ -166,10 +167,11 @@ mod tests {
             request,
             Arc::new(
                 DaemonContext::new(
-                    Default::default(),
-                    Default::default(),
-                    state_dir_path.to_str().unwrap(),
                     false,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -227,10 +229,11 @@ mod tests {
             request,
             Arc::new(
                 DaemonContext::new(
-                    Default::default(),
-                    Default::default(),
-                    state_dir_path.to_str().unwrap(),
                     false,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -263,10 +266,11 @@ mod tests {
             request,
             Arc::new(
                 DaemonContext::new(
-                    Default::default(),
-                    Default::default(),
-                    state_dir_path.to_str().unwrap(),
                     false,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -298,10 +302,11 @@ mod tests {
             request,
             Arc::new(
                 DaemonContext::new(
-                    Default::default(),
-                    Default::default(),
-                    state_dir_path.to_str().unwrap(),
                     false,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),
@@ -334,10 +339,11 @@ mod tests {
             request,
             Arc::new(
                 DaemonContext::new(
-                    Default::default(),
-                    Default::default(),
-                    state_dir_path.to_str().unwrap(),
                     false,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    DaemonPaths::new(state_directory.path().to_str().unwrap()),
                 )
                 .await,
             ),

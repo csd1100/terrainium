@@ -3,25 +3,36 @@ use anyhow::{Context, Result};
 #[cfg(test)]
 use mockall::mock;
 use std::collections::BTreeMap;
-use std::process::{ExitStatus, Output};
+use std::process::{ExitStatus, Output, Stdio};
 use std::sync::Arc;
 use tracing::{info, trace};
 
 pub trait Execute {
-    fn get_output(&self, command: Command) -> Result<Output>;
-    fn wait(&self, command: Command) -> Result<ExitStatus>;
+    fn get_output(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+    ) -> Result<Output>;
+    fn wait(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+        silent: bool,
+    ) -> Result<ExitStatus>;
     fn async_get_output(
         &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
         command: Command,
     ) -> impl std::future::Future<Output = Result<Output>> + Send;
     fn async_spawn_with_log(
         &self,
-        command: Command,
-        envs: Arc<BTreeMap<String, String>>,
         log_path: &str,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
     fn async_spawn(
         &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
         command: Command,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
 }
@@ -30,29 +41,55 @@ pub trait Execute {
 pub struct Executor;
 
 impl Execute for Executor {
-    fn get_output(&self, command: Command) -> Result<Output> {
+    fn get_output(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+    ) -> Result<Output> {
         let mut command: std::process::Command = command.into();
+        if let Some(envs) = envs {
+            command.envs(envs.as_ref());
+        }
         command.output().context("failed to get output")
     }
 
-    fn wait(&self, command: Command) -> Result<ExitStatus> {
+    fn wait(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+        silent: bool,
+    ) -> Result<ExitStatus> {
         let mut command: std::process::Command = command.into();
+        if let Some(envs) = envs {
+            command.envs(envs.as_ref());
+        }
+        if silent {
+            command.stdout(Stdio::null());
+            command.stderr(Stdio::null());
+        }
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().context("failed to wait for command")
     }
 
-    async fn async_get_output(&self, command: Command) -> Result<Output> {
+    async fn async_get_output(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+    ) -> Result<Output> {
         info!("running async get_output for '{command}'");
-        trace!("running async process {command:?}");
+        trace!("running async process {command:?} with envs {envs:?}");
         let mut command: tokio::process::Command = command.into();
+        if let Some(envs) = envs {
+            command.envs(envs.as_ref());
+        }
         command.output().await.context("failed to get output")
     }
 
     async fn async_spawn_with_log(
         &self,
-        command: Command,
-        envs: Arc<BTreeMap<String, String>>,
         log_path: &str,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
     ) -> Result<ExitStatus> {
         info!("running async process with wait for '{command}', with logs in file: {log_path}",);
         trace!("running async process with wait {command} and envs: {envs:?}");
@@ -74,15 +111,24 @@ impl Execute for Executor {
         let stderr: std::fs::File = log_file.into_std().await;
 
         let mut command: tokio::process::Command = command.into();
-        command.envs(envs.as_ref());
+        if let Some(envs) = envs {
+            command.envs(envs.as_ref());
+        }
         command.stdout(stdout);
         command.stderr(stderr);
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
     }
 
-    async fn async_spawn(&self, command: Command) -> Result<ExitStatus> {
+    async fn async_spawn(
+        &self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: Command,
+    ) -> Result<ExitStatus> {
         let mut command: tokio::process::Command = command.into();
+        if let Some(envs) = envs {
+            command.envs(envs.as_ref());
+        }
         let mut child = command.spawn().context("failed to run command")?;
         child.wait().await.context("failed to wait for command")
     }
@@ -94,13 +140,24 @@ mock! {
     pub Executor {}
 
     impl Execute for Executor {
-        fn get_output(&self, command: Command) -> Result<Output>;
-        fn wait(&self, command: Command) -> Result<ExitStatus>;
-        async fn async_get_output(&self, command: Command) -> Result<Output>;
-        async fn async_spawn_with_log(&self, command: Command,
-            envs: Arc<BTreeMap<String, String>>,
-            log_path: &str) -> Result<ExitStatus>;
-        async fn async_spawn(&self, command: Command) -> Result<ExitStatus>;
+        fn get_output(&self, envs: Option<Arc<BTreeMap<String, String>>>, command: Command) -> Result<Output>;
+        fn wait(&self, envs: Option<Arc<BTreeMap<String, String>>>, command: Command, silent: bool) -> Result<ExitStatus>;
+        async fn async_get_output(
+            &self,
+            envs: Option<Arc<BTreeMap<String, String>>>,
+            command: Command,
+        ) -> Result<Output>;
+        async fn async_spawn_with_log(
+            &self,
+            log_path: &str,
+            envs: Option<Arc<BTreeMap<String, String>>>,
+            command: Command,
+        ) -> Result<ExitStatus>;
+        async fn async_spawn(
+            &self,
+            envs: Option<Arc<BTreeMap<String, String>>>,
+            command: Command,
+        ) -> Result<ExitStatus>;
     }
 }
 
@@ -111,27 +168,33 @@ pub(crate) mod tests {
     use crate::common::types::command::Command;
     use anyhow::Result;
     use std::collections::BTreeMap;
+    use std::env::VarError;
+    use std::sync::Arc;
 
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {
         let test_var = "TEST_VAR";
-        let orig_env = test_utils::set_env_var(test_var, Some("TEST_VALUE"));
+        let orig_env: std::result::Result<String, VarError>;
+        unsafe {
+            orig_env = test_utils::set_env_var(test_var, Some("TEST_VALUE"));
+        }
 
         let command = Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "echo $TEST_VAR".to_string()],
-            None,
             Some(std::env::current_dir()?),
         );
 
-        let output = Executor.get_output(command).expect("not to fail");
+        let output = Executor.get_output(None, command).expect("not to fail");
 
         assert_eq!(
             "TEST_VALUE\n",
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        test_utils::restore_env_var(test_var, orig_env);
+        unsafe {
+            test_utils::restore_env_var(test_var, orig_env);
+        }
 
         Ok(())
     }
@@ -141,8 +204,13 @@ pub(crate) mod tests {
         let test_var1 = "TEST_VAR1";
         let test_var2 = "TEST_VAR2";
 
-        let orig_env1 = test_utils::set_env_var(test_var1, Some("OLD_VALUE1"));
-        let orig_env2 = test_utils::set_env_var(test_var2, Some("OLD_VALUE2"));
+        let orig_env1: std::result::Result<String, VarError>;
+        let orig_env2: std::result::Result<String, VarError>;
+
+        unsafe {
+            orig_env1 = test_utils::set_env_var(test_var1, Some("OLD_VALUE1"));
+            orig_env2 = test_utils::set_env_var(test_var2, Some("OLD_VALUE2"));
+        }
 
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert(test_var1.to_owned(), "NEW_VALUE1".to_string());
@@ -153,20 +221,22 @@ pub(crate) mod tests {
                 "-c".to_string(),
                 "echo \"$TEST_VAR1\n$TEST_VAR2\"".to_string(),
             ],
-            Some(envs),
             Some(std::env::current_dir()?),
         );
 
-        let output = Executor.get_output(command).expect("not to fail");
+        let output = Executor
+            .get_output(Some(Arc::new(envs)), command)
+            .expect("not to fail");
 
         assert_eq!(
             "NEW_VALUE1\nOLD_VALUE2\n",
             String::from_utf8(output.stdout).expect("convert to ascii")
         );
 
-        test_utils::restore_env_var(test_var1, orig_env1);
-        test_utils::restore_env_var(test_var2, orig_env2);
-
+        unsafe {
+            test_utils::restore_env_var(test_var1, orig_env1);
+            test_utils::restore_env_var(test_var2, orig_env2);
+        }
         Ok(())
     }
 
@@ -180,13 +250,13 @@ pub(crate) mod tests {
         let mut command = Command::new(
             "/bin/bash".to_string(),
             vec![],
-            None,
             Some(std::env::current_dir()?),
         );
-        command.set_envs(Some(envs));
         command.set_args(args);
 
-        let output = Executor.get_output(command).expect("not to fail");
+        let output = Executor
+            .get_output(Some(Arc::new(envs)), command)
+            .expect("not to fail");
 
         assert_eq!(
             "TEST_VALUE\n",
@@ -208,11 +278,12 @@ pub(crate) mod tests {
         let command = Command::new(
             "/bin/bash".to_string(),
             vec!["-c".to_string(), "$TEST_SCRIPT".to_string()],
-            Some(envs),
             Some(std::env::current_dir()?),
         );
 
-        let output = Executor.wait(command).expect("not to fail");
+        let output = Executor
+            .wait(Some(Arc::new(envs)), command, true)
+            .expect("not to fail");
 
         assert_eq!(0, output.code().expect("to be present"));
 

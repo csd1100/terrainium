@@ -8,7 +8,12 @@ use std::path::Path;
 pub mod assertions;
 pub mod constants;
 
-pub fn set_env_var(key: &str, value: Option<&str>) -> Result<String, VarError> {
+/// # Safety
+///
+/// Setting or removing env variable can affect the other threads
+/// in program so tests cannot be run in the parallel. Always use
+/// this method in test annotated with #\[serial]
+pub unsafe fn set_env_var(key: &str, value: Option<&str>) -> Result<String, VarError> {
     // FIX: the tests run in parallel so setting same env var will cause tests to fail
     // as env var is not reset yet
     let orig_env = std::env::var(key);
@@ -21,7 +26,12 @@ pub fn set_env_var(key: &str, value: Option<&str>) -> Result<String, VarError> {
     orig_env
 }
 
-pub fn restore_env_var(key: &str, orig_env: anyhow::Result<String, VarError>) {
+/// # Safety
+///
+/// Setting or removing env variable can affect the other threads
+/// in program so tests cannot be run in the parallel. Always use
+/// this method in test annotated with #\[serial]
+pub unsafe fn restore_env_var(key: &str, orig_env: anyhow::Result<String, VarError>) {
     // FIX: the tests run in parallel so restoring env vars won't help if vars have same key
     if let Ok(orig_var) = orig_env {
         std::env::set_var(key, &orig_var);
@@ -92,13 +102,11 @@ pub(crate) fn expected_constructor_foreground_example_biome(terrain_dir: &Path) 
         Command::new(
             "/bin/echo".to_string(),
             vec!["entering terrain".to_string()],
-            None,
             Some(terrain_dir.to_path_buf()),
         ),
         Command::new(
             "/bin/echo".to_string(),
             vec!["entering biome example_biome".to_string()],
-            None,
             Some(terrain_dir.to_path_buf()),
         ),
     ]
@@ -111,7 +119,6 @@ pub(crate) fn expected_constructor_background_example_biome(terrain_dir: &Path) 
             "-c".to_string(),
             "${PWD}/tests/scripts/print_num_for_10_sec".to_string(),
         ],
-        None,
         Some(terrain_dir.to_path_buf()),
     )]
 }
@@ -121,13 +128,11 @@ pub(crate) fn expected_destructor_foreground_example_biome(terrain_dir: &Path) -
         Command::new(
             "/bin/echo".to_string(),
             vec!["exiting terrain".to_string()],
-            None,
             Some(terrain_dir.to_path_buf()),
         ),
         Command::new(
             "/bin/echo".to_string(),
             vec!["exiting biome example_biome".to_string()],
-            None,
             Some(terrain_dir.to_path_buf()),
         ),
     ]
@@ -140,7 +145,6 @@ pub(crate) fn expected_destructor_background_example_biome(terrain_dir: &Path) -
             "-c".to_string(),
             "${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec".to_string(),
         ],
-        None,
         Some(terrain_dir.to_path_buf()),
     )]
 }

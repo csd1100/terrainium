@@ -80,6 +80,7 @@ mod tests {
     use crate::common::test_utils::{
         expected_activate_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_NAME,
     };
+    use crate::common::types::paths::DaemonPaths;
     use crate::common::types::terrain_state::test_utils::terrain_state_after_activate;
     use crate::common::types::terrain_state::TerrainState;
     use crate::common::utils::{create_file, write_to_file};
@@ -106,10 +107,11 @@ mod tests {
 
         let context = Arc::new(
             DaemonContext::new(
-                Arc::new(MockExecutor::default()),
-                DaemonConfig::default(),
-                &state_dir_path,
                 false,
+                DaemonConfig::default(),
+                Arc::new(MockExecutor::default()),
+                Default::default(),
+                DaemonPaths::new(&state_dir_path),
             )
             .await,
         );
@@ -153,10 +155,11 @@ mod tests {
 
         let context = Arc::new(
             DaemonContext::new(
-                Arc::new(MockExecutor::default()),
-                DaemonConfig::default(),
-                &state_dir_path,
                 false,
+                DaemonConfig::default(),
+                Arc::new(MockExecutor::default()),
+                Default::default(),
+                DaemonPaths::new(&state_dir_path),
             )
             .await,
         );

@@ -19,10 +19,14 @@ pub trait Shell: Debug {
     fn setup_integration(&self, init_script_dir: PathBuf) -> Result<()>;
     fn update_rc(path: Option<PathBuf>) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
-    fn execute(&self, args: Vec<String>, envs: Option<BTreeMap<String, String>>) -> Result<Output>;
+    fn execute(
+        &self,
+        args: Vec<String>,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+    ) -> Result<Output>;
     fn spawn(
         &self,
-        envs: BTreeMap<String, String>,
+        envs: Option<Arc<BTreeMap<String, String>>>,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
     fn generate_envs(&self, context: &Context, biome_arg: &str)
         -> Result<BTreeMap<String, String>>;

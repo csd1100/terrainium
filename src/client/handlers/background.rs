@@ -5,10 +5,10 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAINIUMD_SOCKET};
+use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS};
+use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use anyhow::{Context as AnyhowContext, Result};
-use std::path::PathBuf;
 
 pub async fn handle(
     context: Context,
@@ -24,7 +24,7 @@ pub async fn handle(
     let mut client: Client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(get_terrainiumd_paths().socket()).await?
     };
 
     let name = environment.name().to_owned();

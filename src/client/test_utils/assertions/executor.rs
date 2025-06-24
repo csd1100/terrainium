@@ -11,12 +11,16 @@ use std::sync::Arc;
 pub struct ExpectedCommand {
     pub command: Command,
     pub exit_code: i32,
-    pub should_error: bool,
+    pub should_fail_to_execute: bool,
     pub output: String,
 }
 
 pub struct AssertExecutor {
     executor: MockExecutor,
+}
+
+fn get_exit_status(exit_code: i32) -> ExitStatus {
+    ExitStatus::from_raw(exit_code << 8)
 }
 
 impl AssertExecutor {
@@ -30,92 +34,124 @@ impl AssertExecutor {
         Self { executor }
     }
 
-    pub fn wait_for(mut self, command: ExpectedCommand) -> MockExecutor {
+    pub fn wait_for(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+        silent: bool,
+        times: usize,
+    ) -> MockExecutor {
         let ExpectedCommand {
-            command, exit_code, ..
+            command,
+            exit_code,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_wait()
-            .with(eq(command))
-            .return_once(move |_| Ok(ExitStatus::from_raw(exit_code)));
+            .with(eq(envs), eq(command), eq(silent))
+            .returning(move |_, _, _| {
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
+                } else {
+                    Ok(get_exit_status(exit_code))
+                }
+            })
+            .times(times);
 
         self.executor
     }
 
-    pub fn get_output_for(mut self, command: ExpectedCommand) -> Self {
+    pub fn get_output_for(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+        times: usize,
+    ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error: error,
+            should_fail_to_execute,
             output,
         } = command;
         self.executor
             .expect_get_output()
-            .with(eq(command))
-            .return_once(move |_| {
-                if error {
+            .with(eq(envs), eq(command))
+            .returning(move |_, _| {
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
+                } else if exit_code != 0 {
                     Ok(Output {
                         // ExitStatus.code() returns status >> 8 so doing expected << 8
-                        status: ExitStatus::from_raw(exit_code << 8),
+                        status: get_exit_status(exit_code),
                         stdout: vec![],
                         stderr: Vec::from(output.as_bytes()),
                     })
                 } else {
                     Ok(Output {
-                        status: ExitStatus::from_raw(0),
+                        status: get_exit_status(exit_code),
                         stdout: Vec::from(output.as_bytes()),
                         stderr: vec![],
                     })
                 }
-            });
+            })
+            .times(times);
         self
     }
 
-    pub fn async_spawn(mut self, command: ExpectedCommand) -> Self {
+    pub fn async_spawn(
+        mut self,
+        envs: Option<Arc<BTreeMap<String, String>>>,
+        command: ExpectedCommand,
+        times: usize,
+    ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error,
-            output,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_async_spawn()
-            .with(eq(command))
-            .return_once(move |_| {
-                if should_error {
-                    bail!("{}", output)
+            .with(eq(envs), eq(command))
+            .returning(move |_, _| {
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
                 } else {
-                    Ok(ExitStatus::from_raw(exit_code << 8))
+                    Ok(get_exit_status(exit_code))
                 }
-            });
+            })
+            .times(times);
         self
     }
 
     pub fn async_spawn_with_log(
         mut self,
         command: ExpectedCommand,
-        envs: Arc<BTreeMap<String, String>>,
+        envs: Option<Arc<BTreeMap<String, String>>>,
         log_path: String,
+        times: usize,
     ) -> Self {
         let ExpectedCommand {
             command,
             exit_code,
-            should_error,
-            output,
+            should_fail_to_execute,
+            ..
         } = command;
 
         self.executor
             .expect_async_spawn_with_log()
-            .with(eq(command), eq(envs), eq(log_path))
-            .return_once(move |_, _, _| {
-                if should_error {
-                    bail!("{}", output)
+            .with(eq(log_path), eq(envs), eq(command))
+            .returning(move |_, _, _| {
+                if should_fail_to_execute {
+                    bail!("failed to execute command");
                 } else {
-                    Ok(ExitStatus::from_raw(exit_code << 8))
+                    Ok(get_exit_status(exit_code))
                 }
-            });
+            })
+            .times(times);
         self
     }
 

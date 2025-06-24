@@ -6,12 +6,12 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::{AutoApply, Terrain};
-use crate::common::constants::{TERRAINIUMD_SOCKET, TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
+use crate::common::constants::{TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
+use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
 use anyhow::{bail, Context as AnyhowContext, Result};
 use std::env;
-use std::path::PathBuf;
 use std::str::FromStr;
 
 pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) -> Result<()> {
@@ -25,7 +25,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     let mut client = if let Some(client) = client {
         client
     } else {
-        Client::new(PathBuf::from(TERRAINIUMD_SOCKET)).await?
+        Client::new(get_terrainiumd_paths().socket()).await?
     };
 
     client
@@ -99,6 +99,7 @@ mod tests {
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use serial_test::serial;
+    use std::env::VarError;
     use std::path::Path;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
@@ -129,7 +130,10 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn should_throw_an_error_if_terrain_selected_biome_not_set() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, None);
+        let selected_biome: std::result::Result<String, VarError>;
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, None);
+        }
 
         let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default())
             .set_session_id(TEST_SESSION_ID);
@@ -141,13 +145,18 @@ mod tests {
 
         assert_eq!(actual_error, TERRAIN_NOT_ACTIVE_ERR);
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        }
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_example_biome() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+        let selected_biome: std::result::Result<String, VarError>;
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+        }
 
         let client = ExpectClient::send(ProtoRequest::Deactivate(
             test_utils::expected_deactivate_request_example_biome(TEST_SESSION_ID),
@@ -166,13 +175,18 @@ mod tests {
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        }
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_none() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
+        let selected_biome: std::result::Result<String, VarError>;
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
+        }
 
         let client =
             ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
@@ -189,14 +203,21 @@ mod tests {
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        }
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_enabled_but_not_background() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
-        let auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Enabled.to_string()));
+        let selected_biome: std::result::Result<String, VarError>;
+        let auto_apply: std::result::Result<String, VarError>;
+
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+            auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Enabled.to_string()));
+        }
 
         let client =
             ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
@@ -213,15 +234,22 @@ mod tests {
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
-        restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+            restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
+        }
     }
 
     #[serial]
     #[tokio::test]
     async fn send_request_for_auto_apply_replace_but_not_background() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
-        let auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Replace.to_string()));
+        let selected_biome: std::result::Result<String, VarError>;
+        let auto_apply: std::result::Result<String, VarError>;
+
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(EXAMPLE_BIOME));
+            auto_apply = set_env_var(TERRAIN_AUTO_APPLY, Some(&AutoApply::Replace.to_string()));
+        }
 
         let client =
             ExpectClient::send(ProtoRequest::Deactivate(expected_request_none())).successfully();
@@ -238,14 +266,19 @@ mod tests {
             .await
             .unwrap();
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
-        restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+            restore_env_var(TERRAIN_AUTO_APPLY, auto_apply);
+        }
     }
 
     #[serial]
     #[tokio::test]
     async fn should_throw_an_error_if_error_response() {
-        let selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
+        let selected_biome: std::result::Result<String, VarError>;
+        unsafe {
+            selected_biome = set_env_var(TERRAIN_SELECTED_BIOME, Some(NONE));
+        }
 
         let context = Context::build(Path::new(""), Path::new(""), false, MockExecutor::default())
             .set_session_id(TEST_SESSION_ID);
@@ -260,6 +293,8 @@ mod tests {
 
         assert_eq!(actual_error, "failed to parse the request");
 
-        restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        unsafe {
+            restore_env_var(TERRAIN_SELECTED_BIOME, selected_biome);
+        }
     }
 }
