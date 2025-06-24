@@ -32,7 +32,7 @@ pub struct Options {
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
-    /// installs the terrainiumd as a service and starts the installed service
+    /// installs the terrainiumd as a service and enables, starts the installed service
     Install,
 
     /// removes the terrainiumd as a service and stops the installed service

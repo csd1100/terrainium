@@ -46,8 +46,7 @@ impl Service for LinuxService {
         let service = self.get(true)?;
         std::fs::write(&self.path, &service).context("failed to write service")?;
 
-        self.load()?;
-        self.start()?;
+        self.enable(true)?;
 
         Ok(())
     }
@@ -649,9 +648,7 @@ mod tests {
         // start the service
         let executor = expect_is_loaded(false, MockExecutor::new());
         let executor = expect_load(executor);
-        let executor = expect_is_loaded(true, executor);
-        let executor = expect_is_running(false, executor);
-        let executor = expect_start(executor);
+        let executor = expect_enable(executor, true);
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
         service.install()?;

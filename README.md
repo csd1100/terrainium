@@ -123,7 +123,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 ```
 
 - Verbs:
-    - `install` - installs the terrainiumd as a service and starts the installed service.
+    - `install` - installs the terrainiumd as a service and enables, starts the installed service.
 
     - `remove` - removes the terrainiumd as a service and stops the installed service.
 
@@ -138,6 +138,9 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
     - `start` - start the terrainiumd process now if not running.
 
     - `stop` - stop the terrainiumd process now if running.
+
+    - `reload` - just reloads the service in the system (launchd, systemd).
+      Does NOT start the service.
 
     - `status` - prints status of the installed service, status can be: `running`, `not running`, `not loaded`, `not
       installed`, also displays whether service is enabled to run at startup or not (`enabled`, `disabled`).

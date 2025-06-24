@@ -66,7 +66,7 @@ impl Service for DarwinService {
         self.write_service(true)
             .context("failed to write service")?;
 
-        self.load()?;
+        self.enable(true)?;
 
         Ok(())
     }
@@ -188,7 +188,9 @@ impl Service for DarwinService {
     ///
     /// If `now` is true then service is enabled and started at the same time.
     fn enable(&self, now: bool) -> Result<()> {
-        self.load()?;
+        if !self.is_installed() {
+            bail!(ERROR_SERVICE_NOT_INSTALLED);
+        }
 
         // enable the service i.e. set `RunAtLoad` to true
         self.write_service(true)
@@ -216,6 +218,9 @@ impl Service for DarwinService {
             // unload to refresh service definition
             self.unload()?;
             // loading will auto-start service due to `RunAtLoad`
+            self.load()?;
+        } else {
+            // load once again
             self.load()?;
         }
 
@@ -661,9 +666,11 @@ mod tests {
 
         let executor = expect_get_uid();
 
-        // emulate service is not loaded by returning exit code 1
+        // from enable
+        let executor = expect_enable(executor);
+        let executor = expect_is_loaded(true, executor);
+        let executor = expect_unload(executor);
         let executor = expect_is_loaded(false, executor);
-        // load the service
         let executor = expect_load(home_dir.path(), executor);
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
@@ -762,7 +769,6 @@ mod tests {
 
         // setup mocks
         let executor = expect_get_uid();
-        let executor = expect_is_loaded(true, executor);
 
         let executor = expect_enable(executor);
 
