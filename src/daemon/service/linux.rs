@@ -1,5 +1,5 @@
-use crate::common::constants::{DISABLE, ENABLE};
-use crate::common::constants::{PATH, TERRAINIUMD_LINUX_SERVICE, TERRAINIUMD_LINUX_SERVICE_PATH};
+use crate::common::constants::{DISABLE, ENABLE, TERRAINIUMD, TERRAINIUMD_DEBUG};
+use crate::common::constants::{PATH, TERRAINIUMD_LINUX_SERVICE_PATH};
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
@@ -30,12 +30,12 @@ pub struct LinuxService {
 
 impl Service for LinuxService {
     /// Check if service file is present at:
-    /// `~/.config/systemd/user/terrainium.service`
+    /// `~/.config/systemd/user/terrainiumd.service`
     fn is_installed(&self) -> bool {
         self.path.exists()
     }
 
-    /// Copy `terrainium.service` file to `~/.config/systemd/user/terrainium.service`
+    /// Copy `terrainiumd.service` file to `~/.config/systemd/user/terrainiumd.service`
     /// and reloads the daemon.
     fn install(&self) -> Result<()> {
         if self.is_installed() {
@@ -51,7 +51,7 @@ impl Service for LinuxService {
         Ok(())
     }
 
-    /// Check if service is loaded by using `systemctl --user status terrainium.service`
+    /// Check if service is loaded by using `systemctl --user status terrainiumd.service`
     /// command.
     fn is_loaded(&self) -> Result<bool> {
         if !self.is_installed() {
@@ -60,11 +60,7 @@ impl Service for LinuxService {
 
         let command = Command::new(
             SYSTEMCTL.to_string(),
-            vec![
-                USER.to_string(),
-                STATUS.to_string(),
-                TERRAINIUMD_LINUX_SERVICE.to_string(),
-            ],
+            vec![USER.to_string(), STATUS.to_string(), Self::get_name()],
             Some(std::env::temp_dir()),
         );
 
@@ -79,7 +75,7 @@ impl Service for LinuxService {
 
     /// reload the daemon using `systemctl` command, only if service is not loaded.
     ///
-    /// `systemctl --user daemon-reload terrainium.service`
+    /// `systemctl --user daemon-reload terrainiumd.service`
     fn load(&self) -> Result<()> {
         if self.is_loaded()? {
             return Ok(());
@@ -91,7 +87,7 @@ impl Service for LinuxService {
 
     /// reload the daemon using `systemctl` command only if service is loaded.
     ///
-    /// `systemctl --user daemon-reload terrainium.service`
+    /// `systemctl --user daemon-reload terrainiumd.service`
     fn unload(&self) -> Result<()> {
         if !self.is_loaded()? {
             return Ok(());
@@ -107,7 +103,7 @@ impl Service for LinuxService {
         self.reload()
     }
 
-    /// Removes the service from `~/.config/systemd/user/terrainium.service`.
+    /// Removes the service from `~/.config/systemd/user/terrainiumd.service`.
     /// Reloads the daemon if service is loaded.
     fn remove(&self) -> Result<()> {
         if !self.is_installed() {
@@ -119,15 +115,11 @@ impl Service for LinuxService {
 
     /// Returns if service is enabled by using command
     ///
-    /// `systemctl --user is-enabled terrainium.service`
+    /// `systemctl --user is-enabled terrainiumd.service`
     fn is_enabled(&self) -> Result<bool> {
         let is_enabled = Command::new(
             SYSTEMCTL.to_string(),
-            vec![
-                USER.to_string(),
-                IS_ENABLED.to_string(),
-                TERRAINIUMD_LINUX_SERVICE.to_string(),
-            ],
+            vec![USER.to_string(), IS_ENABLED.to_string(), Self::get_name()],
             Some(std::env::temp_dir()),
         );
 
@@ -145,11 +137,7 @@ impl Service for LinuxService {
     fn enable(&self, now: bool) -> Result<()> {
         self.load()?;
 
-        let mut args = vec![
-            USER.to_string(),
-            ENABLE.to_string(),
-            TERRAINIUMD_LINUX_SERVICE.to_string(),
-        ];
+        let mut args = vec![USER.to_string(), ENABLE.to_string(), Self::get_name()];
 
         if now {
             args.push(NOW.to_string());
@@ -179,11 +167,7 @@ impl Service for LinuxService {
     fn disable(&self, now: bool) -> Result<()> {
         self.load()?;
 
-        let mut args = vec![
-            USER.to_string(),
-            DISABLE.to_string(),
-            TERRAINIUMD_LINUX_SERVICE.to_string(),
-        ];
+        let mut args = vec![USER.to_string(), DISABLE.to_string(), Self::get_name()];
 
         if now {
             args.push(NOW.to_string());
@@ -208,7 +192,7 @@ impl Service for LinuxService {
     }
 
     /// Check if terrainiumd process is running by running command
-    /// `systemctl --user is-active terrainium.service`
+    /// `systemctl --user is-active terrainiumd.service`
     ///
     /// `should_check_loaded` defines to check if service is loaded. status
     /// command has already checked if service is loaded or not, so only in
@@ -227,11 +211,7 @@ impl Service for LinuxService {
 
         let is_running = Command::new(
             SYSTEMCTL.to_string(),
-            vec![
-                USER.to_string(),
-                IS_ACTIVE.to_string(),
-                TERRAINIUMD_LINUX_SERVICE.to_string(),
-            ],
+            vec![USER.to_string(), IS_ACTIVE.to_string(), Self::get_name()],
             Some(std::env::temp_dir()),
         );
 
@@ -245,7 +225,7 @@ impl Service for LinuxService {
 
     /// Start the service if it is not already running.
     ///
-    /// `systemctl --user start terrainium.service`
+    /// `systemctl --user start terrainiumd.service`
     fn start(&self) -> Result<()> {
         if self.is_running(true)? {
             bail!(ERROR_ALREADY_RUNNING);
@@ -254,11 +234,7 @@ impl Service for LinuxService {
         // start service
         let command = Command::new(
             SYSTEMCTL.to_string(),
-            vec![
-                USER.to_string(),
-                START.to_string(),
-                TERRAINIUMD_LINUX_SERVICE.to_string(),
-            ],
+            vec![USER.to_string(), START.to_string(), Self::get_name()],
             Some(std::env::temp_dir()),
         );
 
@@ -279,7 +255,7 @@ impl Service for LinuxService {
 
     /// Stops the service process by sending it `SIGTERM`.
     ///
-    /// `systemctl --user stop terrainium.service`
+    /// `systemctl --user stop terrainiumd.service`
     fn stop(&self) -> Result<()> {
         if !self.is_running(true)? {
             bail!(ERROR_IS_NOT_RUNNING);
@@ -288,11 +264,7 @@ impl Service for LinuxService {
         // stop service
         let command = Command::new(
             SYSTEMCTL.to_string(),
-            vec![
-                USER.to_string(),
-                STOP.to_string(),
-                TERRAINIUMD_LINUX_SERVICE.to_string(),
-            ],
+            vec![USER.to_string(), STOP.to_string(), Self::get_name()],
             Some(std::env::temp_dir()),
         );
 
@@ -331,13 +303,14 @@ After=multi-user.target
 ExecStart={} --run
 Environment="PATH={}"
 KillSignal=SIGTERM
-StandardOutput=append:/tmp/terrainiumd.stdout.log
-StandardError=append:/tmp/terrainiumd.stderr.log
+StandardOutput=append:/tmp/{2}.stdout.log
+StandardError=append:/tmp/{2}.stderr.log
 
 [Install]
 WantedBy=default.target"#,
             daemon_path.display(),
             std::env::var(PATH).context("failed to get PATH")?,
+            Self::get_service_identifier()
         );
         Ok(service)
     }
@@ -346,7 +319,8 @@ WantedBy=default.target"#,
 impl LinuxService {
     pub(crate) fn init(home_dir: &Path, executor: Arc<Executor>) -> Result<Box<dyn Service>> {
         let path = home_dir.join(format!(
-            "{TERRAINIUMD_LINUX_SERVICE_PATH}/{TERRAINIUMD_LINUX_SERVICE}"
+            "{TERRAINIUMD_LINUX_SERVICE_PATH}/{}",
+            Self::get_name()
         ));
 
         if !path.parent().unwrap().exists() {
@@ -355,6 +329,21 @@ impl LinuxService {
         }
 
         Ok(Box::new(Self { path, executor }))
+    }
+
+    /// Get the service file name.
+    ///
+    /// Will be different for debug build to avoid interference with release build
+    fn get_name() -> String {
+        format!("{}.service", Self::get_service_identifier())
+    }
+
+    fn get_service_identifier() -> &'static str {
+        if cfg!(debug_assertions) {
+            TERRAINIUMD_DEBUG
+        } else {
+            TERRAINIUMD
+        }
     }
 
     /// reloads the systemctl service by command
@@ -384,9 +373,7 @@ impl LinuxService {
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
-    use crate::common::constants::{
-        DISABLE, ENABLE, TERRAINIUMD_LINUX_SERVICE, TERRAINIUMD_LINUX_SERVICE_PATH,
-    };
+    use crate::common::constants::{DISABLE, ENABLE, TERRAINIUMD_LINUX_SERVICE_PATH};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use crate::daemon::service::linux::{
@@ -398,6 +385,8 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use tempfile::tempdir;
+
+    const TERRAINIUMD_LINUX_SERVICE: &str = "terrainiumd-debug.service";
 
     fn expect_is_running(success: bool, executor: MockExecutor) -> MockExecutor {
         AssertExecutor::with(executor).wait_for(

@@ -1,4 +1,6 @@
-use crate::common::constants::{ENABLE, PATH, TERRAINIUMD_DARWIN_SERVICE_FILE};
+use crate::common::constants::{
+    ENABLE, PATH, TERRAINIUMD, TERRAINIUMD_DARWIN_SERVICE_PATH, TERRAINIUMD_DEBUG,
+};
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
@@ -18,7 +20,6 @@ const UNLOAD: &str = "bootout";
 const PRINT: &str = "print";
 const START: &str = "kickstart";
 const STOP: &str = "kill";
-const PROJECT_ID: &str = "com.csd1100.terrainium";
 const SIGTERM: &str = "SIGTERM";
 const RUNNING: &str = "state = running";
 
@@ -50,12 +51,12 @@ pub struct DarwinService {
 
 impl Service for DarwinService {
     /// Check if service `plist` file is present at:
-    /// `~/Library/LaunchAgents/com.csd1100.terrainium.plist`
+    /// `~/Library/LaunchAgents/com.csd1100.terrainiumd.plist`
     fn is_installed(&self) -> bool {
         self.path.exists()
     }
 
-    /// Copy com.csd1100.terrainium.plist file to `~/Library/LaunchAgents/com.csd1100.terrainium.plist`
+    /// Copy com.csd1100.terrainiumd.plist file to `~/Library/LaunchAgents/com.csd1100.terrainiumd.plist`
     /// and bootstrap the service.
     fn install(&self) -> Result<()> {
         if self.is_installed() {
@@ -89,7 +90,7 @@ impl Service for DarwinService {
     /// is disabled by the user. User must enable the service to bootstrap and run
     /// the service
     ///
-    /// `launchctl bootstrap gui/<uid> ~/Library/LaunchAgents/com.csd1100.terrainium.plist`
+    /// `launchctl bootstrap gui/<uid> ~/Library/LaunchAgents/com.csd1100.terrainiumd.plist`
     fn load(&self) -> Result<()> {
         if self.is_loaded()? {
             return Ok(());
@@ -163,7 +164,7 @@ impl Service for DarwinService {
         self.load()
     }
 
-    /// Removes the service from `~/Library/LaunchAgents/com.csd1100.terrainium.plist`.
+    /// Removes the service from `~/Library/LaunchAgents/com.csd1100.terrainiumd.plist`.
     /// Unload the service if it is loaded.
     fn remove(&self) -> Result<()> {
         self.unload()?;
@@ -348,7 +349,7 @@ impl Service for DarwinService {
 <plist version="1.0">
     <dict>
         <key>Label</key>
-        <string>{PROJECT_ID}</string>
+        <string>{}</string>
         <key>ProgramArguments</key>
         <array>
             <string>{}</string>
@@ -362,15 +363,17 @@ impl Service for DarwinService {
         <key>RunAtLoad</key>
         <{enabled}/>
         <key>StandardOutPath</key>
-        <string>/tmp/terrainiumd.stdout.log</string>
+        <string>/tmp/{3}.stdout.log</string>
         <key>StandardErrorPath</key>
-        <string>/tmp/terrainiumd.stderr.log</string>
+        <string>/tmp/{3}.stderr.log</string>
         <key>ProcessType</key>
         <string>Background</string>
     </dict>
 </plist>"#,
+            Self::get_name(),
             daemon_path.display(),
             std::env::var(PATH).context("failed to get PATH")?,
+            Self::get_service_identifier()
         );
         Ok(service)
     }
@@ -379,7 +382,10 @@ impl Service for DarwinService {
 impl DarwinService {
     /// Creates DarwinService Object
     pub(crate) fn init(home_dir: &Path, executor: Arc<Executor>) -> Result<Box<dyn Service>> {
-        let path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
+        let path = home_dir.join(format!(
+            "{TERRAINIUMD_DARWIN_SERVICE_PATH}/{}.plist",
+            Self::get_name()
+        ));
 
         if !path.parent().unwrap().exists() {
             std::fs::create_dir_all(path.parent().unwrap())
@@ -395,12 +401,27 @@ impl DarwinService {
         }))
     }
 
+    /// Get the service file name.
+    ///
+    /// Will be different for debug build to avoid interference with release build
+    fn get_name() -> String {
+        format!("com.csd1100.{}", Self::get_service_identifier())
+    }
+
+    fn get_service_identifier() -> &'static str {
+        if cfg!(debug_assertions) {
+            TERRAINIUMD_DEBUG
+        } else {
+            TERRAINIUMD
+        }
+    }
+
     fn get_target(&self) -> Result<String> {
         Ok(format!("{GUI}/{}", self.uid))
     }
 
     fn get_service_target(&self) -> Result<String> {
-        Ok(format!("{}/{PROJECT_ID}", self.get_target()?))
+        Ok(format!("{}/{}", self.get_target()?, Self::get_name()))
     }
 
     fn write_service(&self, enabled: bool) -> Result<()> {
@@ -440,11 +461,11 @@ impl DarwinService {
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
-    use crate::common::constants::{ENABLE, TERRAINIUMD_DARWIN_SERVICE_FILE};
+    use crate::common::constants::ENABLE;
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use crate::daemon::service::darwin::{
-        DarwinService, LAUNCHCTL, LOAD, PRINT, PROJECT_ID, SIGTERM, START, STOP, UNLOAD,
+        DarwinService, LAUNCHCTL, LOAD, PRINT, SIGTERM, START, STOP, UNLOAD,
     };
     use crate::daemon::service::tests::Status;
     use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
@@ -453,6 +474,9 @@ mod tests {
     use std::sync::Arc;
     use tempfile::tempdir;
 
+    const SERVICE_TARGET: &str = "gui/501/com.csd1100.terrainiumd-debug";
+    const SERVICE_FILE: &str = "Library/LaunchAgents/com.csd1100.terrainiumd-debug.plist";
+
     fn expect_is_running(running: bool, executor: MockExecutor) -> MockExecutor {
         AssertExecutor::with(executor)
             .get_output_for(
@@ -460,7 +484,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        vec![PRINT.to_string(), SERVICE_TARGET.to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -528,7 +552,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![PRINT.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        vec![PRINT.to_string(), SERVICE_TARGET.to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: if success { 0 } else { 1 },
@@ -550,10 +574,7 @@ mod tests {
                         vec![
                             LOAD.to_string(),
                             "gui/501".to_string(),
-                            home_dir
-                                .join(TERRAINIUMD_DARWIN_SERVICE_FILE)
-                                .to_string_lossy()
-                                .to_string(),
+                            home_dir.join(SERVICE_FILE).to_string_lossy().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -573,7 +594,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![UNLOAD.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        vec![UNLOAD.to_string(), SERVICE_TARGET.to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -592,7 +613,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![ENABLE.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        vec![ENABLE.to_string(), SERVICE_TARGET.to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -611,7 +632,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![START.to_string(), format!("gui/501/{PROJECT_ID}")],
+                        vec![START.to_string(), SERVICE_TARGET.to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -633,7 +654,7 @@ mod tests {
                         vec![
                             STOP.to_string(),
                             SIGTERM.to_string(),
-                            format!("gui/501/{PROJECT_ID}"),
+                            SERVICE_TARGET.to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -647,7 +668,7 @@ mod tests {
     }
 
     fn create_service_file(home_dir: &Path, is_enabled: bool) -> Result<PathBuf> {
-        let service_path = home_dir.join(TERRAINIUMD_DARWIN_SERVICE_FILE);
+        let service_path = home_dir.join(SERVICE_FILE);
         std::fs::create_dir_all(service_path.parent().unwrap())?;
         let contents = if is_enabled {
             r#"<key>RunAtLoad</key>
@@ -676,10 +697,7 @@ mod tests {
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
         service.install()?;
 
-        assert!(home_dir
-            .path()
-            .join(TERRAINIUMD_DARWIN_SERVICE_FILE)
-            .exists());
+        assert!(home_dir.path().join(SERVICE_FILE).exists());
         assert!(service.is_installed());
         Ok(())
     }

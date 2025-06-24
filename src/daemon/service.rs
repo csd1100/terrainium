@@ -16,8 +16,6 @@ const ERROR_SERVICE_NOT_LOADED: &str =
 pub mod darwin;
 pub mod linux;
 
-// TODO: different name for debug service and release service
-// TODO: document statuses and working of service in a separate md file
 pub trait Service {
     fn is_installed(&self) -> bool;
     fn install(&self) -> Result<()>;
