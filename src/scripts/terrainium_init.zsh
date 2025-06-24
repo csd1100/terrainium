@@ -28,8 +28,8 @@ if [ "$TERRAIN_ENABLED" = "true" ]; then
     typeset +x TERRAIN_SELECTED_BIOME
     typeset +x TERRAIN_AUTO_APPLY
     typeset +x TERRAIN_DIR
-    typeset +x TERRAIN_INIT_SCRIPT
-    typeset +x terrain_init
+    unset TERRAIN_INIT_SCRIPT
+    unset terrain_init
 else
     chpwd_functions=(__terrainium_chpwd_functions $chpwd_functions)
     __terrainium_auto_apply

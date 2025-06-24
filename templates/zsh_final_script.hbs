@@ -44,36 +44,57 @@ function __terrainium_exit() {
     fi
 }
 
-function __terrainium_preexec_functions() {
-    tenter="terrainium enter*"
-    texit="terrainium exit*"
-    tconstruct="terrainium construct*"
-    tdestruct="terrainium destruct*"
+function __terrainium_reexport_envs() {
+    typeset -x TERRAIN_ENABLED
+    typeset -x TERRAIN_SESSION_ID
+    typeset -x TERRAIN_SELECTED_BIOME
+    typeset -x TERRAIN_AUTO_APPLY
+    typeset -x TERRAIN_DIR
+}
 
+function __terrainium_unexport_envs() {
+    typeset +x TERRAIN_ENABLED
+    typeset +x TERRAIN_SESSION_ID
+    typeset +x TERRAIN_SELECTED_BIOME
+    typeset +x TERRAIN_AUTO_APPLY
+    typeset +x TERRAIN_DIR
+}
+
+function __terrainium_preexec_functions() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-        case "$3" in
-            $~texit)
-                __terrainium_exit
-                ;;
-            $~tconstruct)
-                __terrainium_shell_constructor
-                ;;
-            $~tdestruct)
-                __terrainium_shell_destructor
-                ;;
-        esac
+        local command=(${(s/ /)3})
+        if [ ${command[1]} = "terrainium" ]; then
+            local is_terrainium="true"
+            local verb="${command[2]}"
+        elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
+            local is_terrainium="true"
+            local verb="${command[4]}"
+        fi
+        if [ "$is_terrainium" = "true" ]; then
+            __terrainium_reexport_envs
+            case "$verb" in
+                "exit")
+                    __terrainium_exit
+                    ;;
+                "construct")
+                    __terrainium_shell_constructor
+                    ;;
+                "destruct")
+                    __terrainium_shell_destructor
+                    ;;
+            esac
+        fi
     fi
 }
 
 function __terrainium_zshexit_functions() {
+    __terrainium_reexport_envs
     __terrainium_shell_destructor
     echo "exiting terrain with session id: ${TERRAIN_SESSION_ID}"
-    TERRAIN_SESSION_ID="$TERRAIN_SESSION_ID" \
-    TERRAIN_SELECTED_BIOME="$TERRAIN_SELECTED_BIOME" \
-    TERRAIN_AUTO_APPLY=${TERRAIN_AUTO_APPLY:-off} \
     terrainium exit
     __terrainium_unalias
     __terrainium_unset_envs
+    __terrainium_unexport_envs
 }
 
 preexec_functions=(__terrainium_preexec_functions $preexec_functions)
