@@ -914,7 +914,7 @@ mod tests {
 
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not loaded (disabled)", service.status()?);
+        assert_eq!("not loaded", service.status()?);
         Ok(())
     }
 

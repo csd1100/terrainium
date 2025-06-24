@@ -32,6 +32,10 @@ pub trait Service {
             return Ok("not installed".to_string());
         }
 
+        if !self.is_loaded()? {
+            return Ok("not loaded".to_string());
+        }
+
         let is_enabled = if self
             .is_enabled()
             .context("failed to check if service is enabled")?
@@ -41,9 +45,7 @@ pub trait Service {
             "disabled"
         };
 
-        if !self.is_loaded()? {
-            Ok(format!("not loaded ({is_enabled})"))
-        } else if !self.is_running()? {
+        if !self.is_running()? {
             Ok(format!("not running ({is_enabled})"))
         } else {
             Ok(format!("running ({is_enabled})"))

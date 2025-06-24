@@ -140,7 +140,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
     - `stop` - stop the terrainiumd process now if running.
 
     - `status` - prints status of the installed service, status can be: `running`, `not running`, `not loaded`, `not
-      installed`. also displays whether service is enabled to run at startup or not (`enabled`, `disabled`).
+      installed`, also displays whether service is enabled to run at startup or not (`enabled`, `disabled`).
 
 - Options:
     - `--run` - starts the terrainium daemon

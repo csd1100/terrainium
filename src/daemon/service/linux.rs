@@ -419,8 +419,7 @@ mod tests {
             }
             Status::NotLoaded => {
                 create_service_file(home_dir).unwrap();
-                let executor = expect_is_loaded(false, executor);
-                expect_is_enabled(is_enabled, executor)
+                expect_is_loaded(false, executor)
             }
             Status::NotInstalled => executor,
         }
@@ -871,7 +870,7 @@ mod tests {
 
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
 
-        assert_eq!("not loaded (disabled)", service.status()?);
+        assert_eq!("not loaded", service.status()?);
         Ok(())
     }
 
