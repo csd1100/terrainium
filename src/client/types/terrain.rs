@@ -1225,7 +1225,8 @@ pub mod tests {
         operation_type: &&str,
         commands_type: &&str,
     ) -> ValidationFixAction<'a> {
-        let fix_action = if operation_type == &"constructor" {
+        
+        if operation_type == &"constructor" {
             if commands_type == &"foreground" {
                 ValidationFixAction::Trim {
                     biome_name,
@@ -1247,8 +1248,7 @@ pub mod tests {
                 biome_name,
                 target: Target::BackgroundDestructor(command),
             }
-        };
-        fix_action
+        }
     }
 
     fn create_file_with_all_executable_permission(file_path: &PathBuf) {
