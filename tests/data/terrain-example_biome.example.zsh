@@ -97,7 +97,7 @@ function __terrainium_preexec_functions() {
 function __terrainium_precmd_functions() {
     if [ "$__TERRAIN_ENVS_EXPORTED" = "true" ]; then
         __terrainium_unexport_envs
-        unset __terrainium_is_terrainium
+        unset __terrainium_is_terrain
         unset __terrainium_verb
     fi
 }
