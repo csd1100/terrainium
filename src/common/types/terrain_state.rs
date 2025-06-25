@@ -81,7 +81,7 @@ fn command_states_to_display(command_states: &BTreeMap<String, Vec<CommandState>
         .iter()
         .map(|(key, value)| {
             let commands: String = value.iter().map(|c| c.to_string()).collect();
-            format!(r#"  {} {}"#, sub_heading(key), commands)
+            format!("\n    {} {}", sub_heading(key), commands)
         })
         .collect()
 }
