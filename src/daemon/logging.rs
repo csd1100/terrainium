@@ -7,7 +7,7 @@ use tracing_subscriber::{fmt, Layer, Registry};
 pub fn init_logging(
     state_directory: &str,
     filter: LevelFilter,
-) -> (impl SubscriberExt, (WorkerGuard, WorkerGuard)) {
+) -> (impl SubscriberExt + use<>, (WorkerGuard, WorkerGuard)) {
     let appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("terrainiumd")
