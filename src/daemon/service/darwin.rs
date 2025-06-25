@@ -474,8 +474,21 @@ mod tests {
     use std::sync::Arc;
     use tempfile::tempdir;
 
-    const SERVICE_TARGET: &str = "gui/501/com.csd1100.terrainiumd-debug";
-    const SERVICE_FILE: &str = "Library/LaunchAgents/com.csd1100.terrainiumd-debug.plist";
+    fn service_target() -> &'static str {
+        if cfg!(debug_assertions) {
+            "gui/501/com.csd1100.terrainiumd-debug"
+        } else {
+            "gui/501/com.csd1100.terrainiumd"
+        }
+    }
+
+    fn service_file() -> &'static str {
+        if cfg!(debug_assertions) {
+            "Library/LaunchAgents/com.csd1100.terrainiumd-debug.plist"
+        } else {
+            "Library/LaunchAgents/com.csd1100.terrainiumd.plist"
+        }
+    }
 
     fn expect_is_running(running: bool, executor: MockExecutor) -> MockExecutor {
         AssertExecutor::with(executor)
@@ -484,7 +497,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![PRINT.to_string(), SERVICE_TARGET.to_string()],
+                        vec![PRINT.to_string(), service_target().to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -552,7 +565,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![PRINT.to_string(), SERVICE_TARGET.to_string()],
+                        vec![PRINT.to_string(), service_target().to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: if success { 0 } else { 1 },
@@ -574,7 +587,7 @@ mod tests {
                         vec![
                             LOAD.to_string(),
                             "gui/501".to_string(),
-                            home_dir.join(SERVICE_FILE).to_string_lossy().to_string(),
+                            home_dir.join(service_file()).to_string_lossy().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -594,7 +607,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![UNLOAD.to_string(), SERVICE_TARGET.to_string()],
+                        vec![UNLOAD.to_string(), service_target().to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -613,7 +626,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![ENABLE.to_string(), SERVICE_TARGET.to_string()],
+                        vec![ENABLE.to_string(), service_target().to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -632,7 +645,7 @@ mod tests {
                 ExpectedCommand {
                     command: Command::new(
                         LAUNCHCTL.to_string(),
-                        vec![START.to_string(), SERVICE_TARGET.to_string()],
+                        vec![START.to_string(), service_target().to_string()],
                         Some(std::env::temp_dir()),
                     ),
                     exit_code: 0,
@@ -654,7 +667,7 @@ mod tests {
                         vec![
                             STOP.to_string(),
                             SIGTERM.to_string(),
-                            SERVICE_TARGET.to_string(),
+                            service_target().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -668,7 +681,7 @@ mod tests {
     }
 
     fn create_service_file(home_dir: &Path, is_enabled: bool) -> Result<PathBuf> {
-        let service_path = home_dir.join(SERVICE_FILE);
+        let service_path = home_dir.join(service_file());
         std::fs::create_dir_all(service_path.parent().unwrap())?;
         let contents = if is_enabled {
             r#"<key>RunAtLoad</key>
@@ -697,7 +710,7 @@ mod tests {
         let service = DarwinService::init(home_dir.path(), Arc::new(executor))?;
         service.install()?;
 
-        assert!(home_dir.path().join(SERVICE_FILE).exists());
+        assert!(home_dir.path().join(service_file()).exists());
         assert!(service.is_installed());
         Ok(())
     }

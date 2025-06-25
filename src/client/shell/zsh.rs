@@ -70,6 +70,17 @@ fn get_unsets() -> String {
         .join("\n")
 }
 
+fn get_debug_command_check() -> &'static str {
+    if cfg!(debug_assertions) {
+        r#"
+    elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
+        typeset +x  __terrainium_is_terrainium="true"
+        typeset +x  __terrainium_verb="${command[4]}""#
+    } else {
+        ""
+    }
+}
+
 impl Shell for Zsh {
     fn get(cwd: &Path, executor: Arc<Executor>) -> Self {
         Self {
@@ -114,10 +125,7 @@ function __terrainium_parse_command() {{
     local command=(${{(s/ /)1}})
     if [ "${{command[1]}}" = "terrainium" ]; then
         typeset +x __terrainium_is_terrainium="true"
-        typeset +x __terrainium_verb="${{command[2]}}"
-    elif [ "${{command[1]}} ${{command[2]}}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
-        typeset +x  __terrainium_is_terrainium="true"
-        typeset +x  __terrainium_verb="${{command[4]}}"
+        typeset +x __terrainium_verb="${{command[2]}}"{}
     fi
 }}
 
@@ -170,6 +178,7 @@ fi
             AutoApply::Background,
             AutoApply::Replace,
             AutoApply::All,
+            get_debug_command_check(),
             get_exports('-'),
             get_exports('+'),
             get_unsets(),
@@ -476,6 +485,7 @@ mod tests {
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::test_utils::constants::{
         WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, ZSH_INTEGRATION_SCRIPT,
+        ZSH_INTEGRATION_SCRIPT_RELEASE,
     };
     use crate::client::types::environment::Environment;
     use crate::client::types::terrain::Terrain;
@@ -582,7 +592,13 @@ mod tests {
             .setup_integration(zsh_integration_script_location)
             .expect("to succeed");
 
-        let expected = fs::read_to_string(ZSH_INTEGRATION_SCRIPT).unwrap();
+        let file_name = if cfg!(debug_assertions) {
+            ZSH_INTEGRATION_SCRIPT
+        } else {
+            ZSH_INTEGRATION_SCRIPT_RELEASE
+        };
+
+        let expected = fs::read_to_string(file_name).unwrap();
         let actual = fs::read_to_string(&zsh_integration_script).unwrap();
 
         assert_eq!(actual, expected);
