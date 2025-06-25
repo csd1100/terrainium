@@ -80,10 +80,10 @@ fn status(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
-    use crate::client::test_utils::expected_env_vars_example_biome;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
     use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::test_utils;
+    use crate::common::test_utils::expected_env_vars_example_biome;
     use crate::common::test_utils::{RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
     use std::path::Path;
@@ -99,7 +99,7 @@ mod tests {
             is_background: false,
             start_timestamp: TEST_TIMESTAMP.to_string(),
             end_timestamp: TEST_TIMESTAMP.to_string(),
-            envs: expected_env_vars_example_biome(terrain_dir),
+            envs: expected_env_vars_example_biome(),
             constructors: Default::default(),
             destructors: Default::default(),
         }

@@ -209,6 +209,10 @@ impl Context {
         self.central_dir.join(SCRIPTS_DIR_NAME)
     }
 
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     pub(crate) fn executor(&self) -> &Arc<Executor> {
         &self.executor
     }
@@ -217,11 +221,7 @@ impl Context {
         &self.shell
     }
 
-    pub fn config(&self) -> &Config {
-        &self.config
-    }
-
-    pub fn set_session_id(mut self, session_id: &str) -> Self {
+    pub(crate) fn set_session_id(mut self, session_id: &str) -> Self {
         self.session_id = Some(session_id.to_string());
         self
     }

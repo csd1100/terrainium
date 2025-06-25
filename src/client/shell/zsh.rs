@@ -242,8 +242,7 @@ fi
             .context("failed to run zsh")
     }
 
-    fn generate_envs(&self, context: &Context, biome: &str) -> Result<BTreeMap<String, String>> {
-        let scripts_dir = context.scripts_dir();
+    fn generate_envs(&self, scripts_dir: PathBuf, biome: &str) -> Result<BTreeMap<String, String>> {
         let compiled_script = Self::compiled_script_path(&scripts_dir, biome)
             .to_str()
             .expect("path to be converted to string")
@@ -441,14 +440,18 @@ impl Zsh {
 
 #[cfg(test)]
 mod tests {
+    use crate::client::args::BiomeArg;
+    use crate::client::shell::zsh::{re_un_exports, unsets};
     use crate::client::shell::{Shell, Zsh};
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::test_utils::constants::{
         WITH_EXAMPLE_BIOME_FOR_EXAMPLE_SCRIPT, ZSH_INTEGRATION_SCRIPT,
     };
+    use crate::client::types::environment::Environment;
     use crate::client::types::terrain::Terrain;
-    use crate::common::constants::EXAMPLE_BIOME;
+    use crate::common::constants::{EXAMPLE_BIOME, FPATH, NONE};
     use crate::common::execute::MockExecutor;
+    use std::collections::HashSet;
     use std::fs;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
@@ -593,5 +596,50 @@ mod tests {
 
         assert!(fs::exists(zsh_integration_script_backup)
             .expect("failed to check if shell integration script created"));
+    }
+
+    #[test]
+    fn assert_re_un_exports() {
+        // added tests to keep them in sync with actual values
+        let environment =
+            Environment::from(&Terrain::example(), BiomeArg::None, Path::new("")).unwrap();
+
+        let vars = environment
+            .activation_env_vars(String::new(), Path::new(""), true)
+            .keys()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+
+        let actual = re_un_exports()
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+
+        assert_eq!(actual, vars);
+    }
+
+    #[test]
+    fn assert_unsets() {
+        // added tests to keep them in sync with actual values
+        let executor = ExpectZSH::with(MockExecutor::new(), Path::new(""))
+            .get_fpath()
+            .successfully();
+
+        let zsh = Zsh::get(Path::new(""), Arc::new(executor));
+
+        let mut vars = zsh
+            .generate_envs(PathBuf::new(), NONE)
+            .unwrap()
+            .keys()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+        vars.remove(FPATH);
+
+        let actual = unsets()
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+
+        assert_eq!(actual, vars);
     }
 }

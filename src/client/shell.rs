@@ -31,8 +31,11 @@ pub trait Shell: Debug {
         &self,
         envs: Option<Arc<BTreeMap<String, String>>>,
     ) -> impl std::future::Future<Output = Result<ExitStatus>> + Send;
-    fn generate_envs(&self, context: &Context, biome_arg: &str)
-        -> Result<BTreeMap<String, String>>;
+    fn generate_envs(
+        &self,
+        scripts_dir: PathBuf,
+        biome_arg: &str,
+    ) -> Result<BTreeMap<String, String>>;
     fn templates() -> BTreeMap<String, String>;
 }
 

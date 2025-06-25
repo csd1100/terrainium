@@ -298,12 +298,12 @@ async fn spawn_command(
 #[cfg(test)]
 mod tests {
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
-    use crate::client::test_utils::expected_env_vars_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
         TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::expected_env_vars_example_biome;
     use crate::common::test_utils::{
         expected_execute_request_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
     };
@@ -323,7 +323,7 @@ mod tests {
     use crate::daemon::types::history::History;
     use crate::daemon::types::state::State;
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     use std::sync::Arc;
     use tempfile::tempdir;
     use tokio::sync::RwLock;
@@ -696,7 +696,7 @@ mod tests {
             .remove(0)
             .command_and_log_path();
 
-        let envs = Arc::new(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)));
+        let envs = Arc::new(expected_env_vars_example_biome());
 
         let executor = AssertExecutor::with(MockExecutor::default())
             .async_spawn_with_log(
@@ -788,7 +788,7 @@ mod tests {
             .remove(0)
             .command_and_log_path();
 
-        let envs = Arc::new(expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)));
+        let envs = Arc::new(expected_env_vars_example_biome());
 
         let executor = AssertExecutor::with(MockExecutor::default())
             .async_spawn_with_log(

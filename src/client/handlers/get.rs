@@ -243,7 +243,7 @@ mod tests {
         };
 
         let output = super::get(context, Terrain::default(), args).expect("to not throw an error");
-        let expected = "";
+        let expected = "Aliases:\n";
 
         assert_eq!(output, expected);
 
@@ -274,8 +274,6 @@ mod tests {
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -307,8 +305,6 @@ mod tests {
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -333,10 +329,7 @@ mod tests {
         };
 
         let output = super::get(context, Terrain::default(), args).expect("to not throw an error");
-        let expected = r#"Environment Variables:
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="none"
-"#;
+        let expected = "Environment Variables:\n";
 
         assert_eq!(output, expected);
 
@@ -367,8 +360,6 @@ mod tests {
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="example_biome"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
@@ -520,8 +511,6 @@ Aliases:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="example_biome"
 Aliases:
     tenter="terrainium enter --biome example_biome"
     texit="terrainium exit"
@@ -641,8 +630,6 @@ Aliases:
     NULL_POINTER="${NULL}"
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
-    TERRAIN_DIR=""
-    TERRAIN_SELECTED_BIOME="example_biome"
 Aliases:
     non_existent="!!!DOES NOT EXIST!!!"
     tenter="terrainium enter --biome example_biome"

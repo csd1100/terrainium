@@ -7,10 +7,7 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{
-    DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_NAME,
-    TERRAIN_SESSION_ID, TRUE,
-};
+use crate::common::constants::{DEBUG_PATH, PATH, TERRAINIUM_DEV};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
@@ -41,21 +38,13 @@ pub async fn handle(
 
     let zsh_envs = context
         .shell()
-        .generate_envs(&context, environment.selected_biome())?;
+        .generate_envs(context.scripts_dir(), environment.selected_biome())?;
     environment.append_envs(zsh_envs);
-
-    environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
-    environment.insert_env(TERRAIN_NAME.to_string(), environment.name().to_owned());
-    environment.insert_env(
-        TERRAIN_SESSION_ID.to_string(),
-        context.session_id().expect("session id to be set"),
+    environment.add_activation_envs(
+        context.session_id().unwrap(),
+        context.terrain_dir(),
+        is_auto_apply,
     );
-    if is_auto_apply {
-        environment.insert_env(
-            TERRAIN_AUTO_APPLY.to_string(),
-            environment.auto_apply().to_string(),
-        );
-    }
 
     let is_background = !is_auto_apply
         || (context.config().auto_apply() && environment.auto_apply().is_background_enabled());
@@ -145,18 +134,17 @@ mod tests {
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
-    use crate::client::test_utils::expected_env_vars_none;
     use crate::client::types::context::Context;
     use crate::client::types::proto::ProtoRequest;
     use crate::client::types::terrain::{AutoApply, Terrain};
-    use crate::common::constants::{
-        FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
-    };
+    use crate::common::constants::{NONE, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
         expected_activate_request_example_biome, expected_envs_with_activate_example_biome,
-        TEST_FPATH, TEST_TERRAIN_NAME,
+        TEST_TERRAIN_NAME,
+    };
+    use crate::common::test_utils::{
+        expected_activation_env_vars, expected_env_vars_none, expected_zsh_env_vars,
     };
     use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use crate::common::types::pb;
@@ -167,19 +155,14 @@ mod tests {
         is_auto_apply: bool,
         auto_apply: &AutoApply,
     ) -> BTreeMap<String, String> {
-        let script = format!("{TEST_CENTRAL_DIR}/scripts/terrain-none.zwc");
-
-        let mut envs = expected_env_vars_none(Path::new(TEST_TERRAIN_DIR));
-        envs.insert(FPATH.to_string(), format!("{}:{}", script, TEST_FPATH));
-        envs.insert(TERRAIN_INIT_FN.to_string(), "terrain-none.zsh".to_string());
-        envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
-        envs.insert(TERRAIN_DIR.to_string(), TEST_TERRAIN_DIR.to_string());
-        envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
-        envs.insert(TERRAIN_NAME.to_string(), TEST_TERRAIN_NAME.to_string());
-        envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
-        if is_auto_apply {
-            envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.to_string());
-        }
+        let mut envs = expected_env_vars_none();
+        envs.append(&mut expected_activation_env_vars(
+            NONE,
+            is_auto_apply,
+            auto_apply,
+            TEST_TERRAIN_DIR,
+        ));
+        envs.append(&mut expected_zsh_env_vars(NONE));
         envs
     }
 
