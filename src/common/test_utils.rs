@@ -3,9 +3,8 @@ use crate::client::test_utils::{
 };
 use crate::client::types::terrain::AutoApply;
 use crate::common::constants::{
-    EXAMPLE_BIOME, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, TERRAIN_TOML,
-    TEST_TIMESTAMP, TRUE,
+    EXAMPLE_BIOME, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+    TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP,
 };
 use crate::common::types::pb;
 use std::collections::BTreeMap;
@@ -144,7 +143,6 @@ pub(crate) fn expected_activation_env_vars(
     terrain_dir: &str,
 ) -> BTreeMap<String, String> {
     let mut envs = BTreeMap::new();
-    envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
     envs.insert(TERRAIN_NAME.to_string(), TEST_TERRAIN_NAME.to_string());
     envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
     envs.insert(TERRAIN_SELECTED_BIOME.to_string(), biome.to_string());

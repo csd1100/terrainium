@@ -17,13 +17,12 @@ function __terrainium_chpwd_functions() {
     __terrainium_auto_apply
 }
 
-if [ "$TERRAIN_ENABLED" = "true" ]; then
+if [ -n "$TERRAIN_SESSION_ID" ]; then
     autoload -Uzw "${TERRAIN_INIT_SCRIPT}"
     "${terrain_init}"
     builtin unfunction -- "${terrain_init}"
     __terrainium_enter
     # unexport but set terrainium env vars
-    typeset +x TERRAIN_ENABLED
     typeset +x TERRAIN_NAME
     typeset +x TERRAIN_SESSION_ID
     typeset +x TERRAIN_SELECTED_BIOME

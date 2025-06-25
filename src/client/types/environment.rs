@@ -7,8 +7,7 @@ use crate::client::validation::{
     ValidationResults,
 };
 use crate::common::constants::{
-    TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_NAME, TERRAIN_SELECTED_BIOME,
-    TERRAIN_SESSION_ID, TRUE,
+    TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
@@ -67,7 +66,6 @@ impl Environment {
         is_auto_apply: bool,
     ) -> BTreeMap<String, String> {
         let mut envs = BTreeMap::new();
-        envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
         envs.insert(TERRAIN_NAME.to_string(), self.name.clone());
         envs.insert(TERRAIN_SESSION_ID.to_string(), session_id);
         envs.insert(TERRAIN_SELECTED_BIOME.to_string(), self.merged.name());

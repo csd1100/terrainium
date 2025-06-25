@@ -16,7 +16,6 @@ pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
 pub const TERRAIN_INIT_FN: &str = "terrain_init";
-pub const TERRAIN_ENABLED: &str = "TERRAIN_ENABLED";
 pub const TERRAIN_NAME: &str = "TERRAIN_NAME";
 pub const TERRAIN_SESSION_ID: &str = "TERRAIN_SESSION_ID";
 pub const TERRAIN_AUTO_APPLY: &str = "TERRAIN_AUTO_APPLY";

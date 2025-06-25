@@ -29,7 +29,7 @@ function __terrainium_unalias() {
 }
 
 function __terrainium_shell_constructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         if pushd /home/user/work/terrainium &> /dev/null; then
             /bin/echo entering terrain
             popd &> /dev/null
@@ -44,7 +44,7 @@ function __terrainium_shell_constructor() {
 }
 
 function __terrainium_shell_destructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         if pushd /home/user/work/terrainium &> /dev/null; then
             /bin/echo exiting terrain
             popd &> /dev/null
@@ -63,19 +63,18 @@ function __terrainium_enter() {
 }
 
 function __terrain_prompt() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         echo "${TERRAIN_NAME}(${TERRAIN_SELECTED_BIOME})"
     fi
 }
 
 function __terrainium_exit() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         builtin exit
     fi
 }
 
 function __terrainium_reexport_envs() {
-    typeset -x TERRAIN_ENABLED
     typeset -x TERRAIN_NAME
     typeset -x TERRAIN_SESSION_ID
     typeset -x TERRAIN_SELECTED_BIOME
@@ -85,7 +84,6 @@ function __terrainium_reexport_envs() {
 }
 
 function __terrainium_unexport_envs() {
-    typeset +x TERRAIN_ENABLED
     typeset +x TERRAIN_NAME
     typeset +x TERRAIN_SESSION_ID
     typeset +x TERRAIN_SELECTED_BIOME
@@ -95,7 +93,7 @@ function __terrainium_unexport_envs() {
 }
 
 function __terrainium_preexec_functions() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         local command=(${(s/ /)3})
         if [ "${command[1]}" = "terrainium" ]; then
             local is_terrainium="true"

@@ -17,13 +17,13 @@ function __terrainium_unalias() {
 }
 
 function __terrainium_shell_constructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
 {{> commands this.environment.merged.constructors }}
     fi
 }
 
 function __terrainium_shell_destructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
 {{> commands this.environment.merged.destructors }}
     fi
 }
@@ -33,13 +33,13 @@ function __terrainium_enter() {
 }
 
 function __terrain_prompt() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         echo "${TERRAIN_NAME}(${TERRAIN_SELECTED_BIOME})"
     fi
 }
 
 function __terrainium_exit() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         builtin exit
     fi
 }
@@ -55,7 +55,7 @@ function __terrainium_unexport_envs() {
 }
 
 function __terrainium_preexec_functions() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         local command=(${(s/ /)3})
         if [ "${command[1]}" = "terrainium" ]; then
             local is_terrainium="true"

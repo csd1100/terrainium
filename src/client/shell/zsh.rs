@@ -4,8 +4,8 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{
-    FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+    FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+    TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
 use crate::common::execute::Execute;
 #[mockall_double::double]
@@ -36,7 +36,6 @@ struct ScriptData {
 
 fn re_un_exports() -> Vec<&'static str> {
     vec![
-        TERRAIN_ENABLED,
         TERRAIN_NAME,
         TERRAIN_SESSION_ID,
         TERRAIN_SELECTED_BIOME,
@@ -107,7 +106,7 @@ function __terrainium_chpwd_functions() {{
     __terrainium_auto_apply
 }}
 
-if [ "$TERRAIN_ENABLED" = "true" ]; then
+if [ -n "$TERRAIN_SESSION_ID" ]; then
     autoload -Uzw "${{TERRAIN_INIT_SCRIPT}}"
     "${{terrain_init}}"
     builtin unfunction -- "${{terrain_init}}"
