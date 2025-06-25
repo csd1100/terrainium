@@ -8,7 +8,8 @@ use crate::client::types::environment::Environment;
 use crate::client::types::proto::ProtoRequest;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{
-    DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_SESSION_ID, TRUE,
+    DEBUG_PATH, PATH, TERRAINIUM_DEV, TERRAIN_AUTO_APPLY, TERRAIN_ENABLED, TERRAIN_NAME,
+    TERRAIN_SESSION_ID, TRUE,
 };
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
@@ -44,6 +45,7 @@ pub async fn handle(
     environment.append_envs(zsh_envs);
 
     environment.insert_env(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+    environment.insert_env(TERRAIN_NAME.to_string(), environment.name().to_owned());
     environment.insert_env(
         TERRAIN_SESSION_ID.to_string(),
         context.session_id().expect("session id to be set"),
@@ -149,7 +151,7 @@ mod tests {
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{
         FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-        TERRAIN_INIT_SCRIPT, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
+        TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
     };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
@@ -173,6 +175,7 @@ mod tests {
         envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
         envs.insert(TERRAIN_DIR.to_string(), TEST_TERRAIN_DIR.to_string());
         envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+        envs.insert(TERRAIN_NAME.to_string(), TEST_TERRAIN_NAME.to_string());
         envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
         if is_auto_apply {
             envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.to_string());

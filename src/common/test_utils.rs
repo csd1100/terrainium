@@ -5,7 +5,7 @@ use crate::client::test_utils::{
 use crate::client::types::terrain::AutoApply;
 use crate::common::constants::{
     EXAMPLE_BIOME, FPATH, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_ENABLED, TERRAIN_INIT_FN,
-    TERRAIN_INIT_SCRIPT, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
+    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP, TRUE,
 };
 use crate::common::types::pb;
 use std::collections::BTreeMap;
@@ -34,6 +34,7 @@ pub fn expected_envs_with_activate_example_biome(
     envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
     envs.insert(TERRAIN_DIR.to_string(), TEST_TERRAIN_DIR.to_string());
     envs.insert(TERRAIN_ENABLED.to_string(), TRUE.to_string());
+    envs.insert(TERRAIN_NAME.to_string(), TEST_TERRAIN_NAME.to_string());
     envs.insert(TERRAIN_SESSION_ID.to_string(), TEST_SESSION_ID.to_string());
     if is_auto_apply {
         envs.insert(TERRAIN_AUTO_APPLY.to_string(), auto_apply.to_string());

@@ -151,6 +151,8 @@ pub enum Verbs {
         recent: Option<u32>,
         #[arg(short, long, group = "session")]
         session_id: Option<String>,
+        #[arg(short, long)]
+        terrain_name: Option<String>,
     },
 
     #[cfg(feature = "terrain-schema")]

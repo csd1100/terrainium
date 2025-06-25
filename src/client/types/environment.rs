@@ -8,7 +8,6 @@ use crate::client::validation::{
 };
 use crate::common::constants::{TERRAIN_DIR, TERRAIN_SELECTED_BIOME};
 use anyhow::{bail, Context, Result};
-use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -115,14 +114,6 @@ impl Environment {
         self.merged.append_envs(envs);
     }
 
-    pub(crate) fn to_rendered(
-        &self,
-        main_template: String,
-        templates: BTreeMap<String, String>,
-    ) -> Result<String> {
-        render(main_template, templates, self)
-    }
-
     fn validate_envs(&self) -> ValidationResults {
         let mut result = HashSet::new();
         self.merged.envs().iter().for_each(|(k, v)| {
@@ -193,27 +184,9 @@ Auto Apply: {}
     }
 }
 
-pub(crate) fn render<T: Serialize>(
-    main_template: String,
-    templates: BTreeMap<String, String>,
-    arg: T,
-) -> Result<String> {
-    let mut handlebars = Handlebars::new();
-    templates.iter().for_each(|(name, template)| {
-        handlebars
-            .register_template_string(name, template)
-            .expect("failed to register template")
-    });
-
-    handlebars
-        .render(&main_template, &arg)
-        .context("failed to render template ".to_string() + &main_template)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::client::args::BiomeArg;
-    use crate::client::shell::{Shell, Zsh};
     use crate::client::test_utils::{
         expected_aliases_example_biome, expected_constructor_background_example_biome,
         expected_constructor_foreground_example_biome, expected_constructors_example_biome,
@@ -564,26 +537,6 @@ mod tests {
             format!("{environment}"),
             fs::read_to_string("./tests/data/terrain-example_biome.rendered")
                 .expect("test data file to be read"),
-        )
-    }
-
-    #[test]
-    fn environment_to_zsh() {
-        let environment = Environment::from(
-            &Terrain::example(),
-            BiomeArg::Default,
-            &PathBuf::from("/home/user/work/terrainium"),
-        )
-        .expect("not to fail");
-
-        let rendered = environment
-            .to_rendered("zsh".to_string(), Zsh::templates())
-            .expect("no error to be thrown");
-
-        assert_eq!(
-            fs::read_to_string("./tests/data/terrain-example_biome.example.zsh")
-                .expect("test data file to be read"),
-            rendered
         )
     }
 

@@ -68,7 +68,7 @@ function __terrainium_enter() {
 
 function __terrain_prompt() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-        echo "terrainium(example_biome)"
+        echo "${TERRAIN_NAME}(${TERRAIN_SELECTED_BIOME})"
     fi
 }
 
@@ -80,6 +80,7 @@ function __terrainium_exit() {
 
 function __terrainium_reexport_envs() {
     typeset -x TERRAIN_ENABLED
+    typeset -x TERRAIN_NAME
     typeset -x TERRAIN_SESSION_ID
     typeset -x TERRAIN_SELECTED_BIOME
     typeset -x TERRAIN_AUTO_APPLY
@@ -89,6 +90,7 @@ function __terrainium_reexport_envs() {
 
 function __terrainium_unexport_envs() {
     typeset +x TERRAIN_ENABLED
+    typeset +x TERRAIN_NAME
     typeset +x TERRAIN_SESSION_ID
     typeset +x TERRAIN_SELECTED_BIOME
     typeset +x TERRAIN_AUTO_APPLY
@@ -132,7 +134,7 @@ function __terrainium_precmd_functions() {
 function __terrainium_zshexit_functions() {
     __terrainium_reexport_envs
     __terrainium_shell_destructor
-    echo "exiting terrain with session id: ${TERRAIN_SESSION_ID}"
+    echo "exiting terrain: ${TERRAIN_NAME} with session id: ${TERRAIN_SESSION_ID}"
     terrainium exit
     __terrainium_unalias
     __terrainium_unset_envs

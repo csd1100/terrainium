@@ -1,21 +1,34 @@
 #[mockall_double::double]
 use crate::client::types::client::Client;
-use crate::client::types::context::Context;
 use crate::client::types::proto::{ProtoRequest, ProtoResponse};
-use crate::client::types::terrain::Terrain;
+use crate::common::constants::TERRAIN_NAME;
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::types::terrain_state::TerrainState;
 use anyhow::{bail, Context as AnyhowContext, Result};
 
+/// requires either session_id or recent to be some value
+/// if user has not provided session_id try to read TERRAIN_SESSION_ID
+/// env var
 pub async fn handle(
-    context: Context,
-    terrain: Terrain,
     json: bool,
+    terrain_name: Option<String>,
     session_id: Option<String>,
     recent: Option<u32>,
     client: Option<Client>,
 ) -> Result<()> {
+    let terrain_name = match terrain_name {
+        None => std::env::var(TERRAIN_NAME).context(
+            "if there is no active terrain,\
+         terrain name should passed with `--terrain-name <NAME>`",
+        )?,
+        Some(terrain_name) => terrain_name,
+    };
+
+    if session_id.is_none() && recent.is_none() {
+        bail!("session_id or recent must be provided to fetch the status...");
+    }
+
     let mut client = if let Some(client) = client {
         client
     } else {
@@ -24,7 +37,9 @@ pub async fn handle(
 
     let response = client
         .request(ProtoRequest::Status(status(
-            context, session_id, recent, terrain,
+            terrain_name,
+            session_id,
+            recent,
         )))
         .await?;
 
@@ -44,27 +59,20 @@ pub async fn handle(
 }
 
 fn status(
-    context: Context,
+    terrain_name: String,
     session_id: Option<String>,
     recent: Option<u32>,
-    terrain: Terrain,
 ) -> pb::StatusRequest {
     let identifier = match session_id {
         Some(session_id) => pb::status_request::Identifier::SessionId(session_id),
         None => match recent {
-            None => {
-                if let Some(session_id) = context.session_id() {
-                    pb::status_request::Identifier::SessionId(session_id)
-                } else {
-                    pb::status_request::Identifier::Recent(0)
-                }
-            }
+            None => pb::status_request::Identifier::Recent(0),
             Some(recent) => pb::status_request::Identifier::Recent(recent),
         },
     };
 
     pb::StatusRequest {
-        terrain_name: terrain.name().to_string(),
+        terrain_name,
         identifier: Some(identifier),
     }
 }
@@ -73,11 +81,8 @@ fn status(
 mod tests {
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::expected_env_vars_example_biome;
-    use crate::client::types::context::Context;
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
-    use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP};
-    use crate::common::execute::MockExecutor;
     use crate::common::test_utils;
     use crate::common::test_utils::{RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
@@ -101,45 +106,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn returns_status_for_current() {
-        let session_id = TEST_SESSION_ID;
-        let terrain_dir = tempdir().unwrap();
-
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        )
-        .set_session_id(session_id);
-
-        let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
-            RequestFor::None,
-            session_id,
-        )))
-        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            session_id,
-            terrain_dir.path(),
-        ))))
-        .successfully();
-
-        super::handle(context, Terrain::example(), false, None, None, Some(client))
-            .await
-            .unwrap()
-    }
-
-    #[tokio::test]
     async fn returns_status_for_specified_session_id() {
         let session_id = "some-session-id";
         let terrain_dir = tempdir().unwrap();
-
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        )
-        .set_session_id(session_id);
 
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::SessionId(session_id.to_string()),
@@ -152,9 +121,8 @@ mod tests {
         .successfully();
 
         super::handle(
-            context,
-            Terrain::example(),
             false,
+            Some(TEST_TERRAIN_NAME.to_string()),
             Some(session_id.to_string()),
             None,
             Some(client),
@@ -167,13 +135,6 @@ mod tests {
     async fn returns_status_for_specified_recent() {
         let terrain_dir = tempdir().unwrap();
 
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        );
-
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::Recent(1),
             "",
@@ -185,9 +146,8 @@ mod tests {
         .successfully();
 
         super::handle(
-            context,
-            Terrain::example(),
             false,
+            Some(TEST_TERRAIN_NAME.to_string()),
             None,
             Some(1),
             Some(client),
@@ -197,43 +157,35 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn returns_status_for_no_recent_no_session_id() {
-        let terrain_dir = tempdir().unwrap();
-
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        );
-
-        let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
-            RequestFor::None,
-            "",
-        )))
-        .with_expected_response(ProtoResponse::Status(Box::from(expected_status_response(
-            TEST_SESSION_ID,
-            terrain_dir.path(),
-        ))))
-        .successfully();
-
-        super::handle(context, Terrain::example(), false, None, None, Some(client))
+    async fn returns_error_no_terrain_name() {
+        let error = super::handle(false, None, None, None, None)
             .await
-            .unwrap()
+            .expect_err("Should have returned error")
+            .to_string();
+
+        assert_eq!(
+            error,
+            "if there is no active terrain,terrain name should passed with `--terrain-name <NAME>`"
+        );
+    }
+
+    #[tokio::test]
+    async fn returns_error_status_for_no_recent_no_session_id() {
+        let error = super::handle(false, Some(TEST_TERRAIN_NAME.to_string()), None, None, None)
+            .await
+            .expect_err("Should have returned error")
+            .to_string();
+
+        assert_eq!(
+            error,
+            "session_id or recent must be provided to fetch the status..."
+        );
     }
 
     #[tokio::test]
     async fn returns_no_error_for_json() {
         let terrain_dir = tempdir().unwrap();
 
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        )
-        .set_session_id(TEST_SESSION_ID);
-
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
             TEST_SESSION_ID,
@@ -244,23 +196,19 @@ mod tests {
         ))))
         .successfully();
 
-        super::handle(context, Terrain::example(), true, None, None, Some(client))
-            .await
-            .unwrap()
+        super::handle(
+            true,
+            Some(TEST_TERRAIN_NAME.to_string()),
+            Some(TEST_SESSION_ID.to_string()),
+            None,
+            Some(client),
+        )
+        .await
+        .unwrap()
     }
 
     #[tokio::test]
     async fn returns_error_for_invalid_response() {
-        let terrain_dir = tempdir().unwrap();
-
-        let context = Context::build(
-            terrain_dir.path(),
-            Path::new(""),
-            false,
-            MockExecutor::default(),
-        )
-        .set_session_id(TEST_SESSION_ID);
-
         let client = ExpectClient::send(ProtoRequest::Status(test_utils::expected_status_request(
             RequestFor::None,
             TEST_SESSION_ID,
@@ -268,10 +216,16 @@ mod tests {
         .with_expected_response(ProtoResponse::Success)
         .successfully();
 
-        let error = super::handle(context, Terrain::example(), true, None, None, Some(client))
-            .await
-            .unwrap_err()
-            .to_string();
+        let error = super::handle(
+            true,
+            Some(TEST_TERRAIN_NAME.to_string()),
+            Some(TEST_SESSION_ID.to_string()),
+            None,
+            Some(client),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
 
         assert_eq!(error, "invalid status response from daemon");
     }

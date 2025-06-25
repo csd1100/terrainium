@@ -2,29 +2,29 @@
 # DO NOT EDIT MANUALLY USE `terrainium edit` COMMAND TO EDIT TOML
 
 # USER DEFINED ALIASES: START
-{{> aliases this.merged.aliases }}
+{{> alias this.environment.merged.aliases }}
 # USER DEFINED ALIASES: END
 # USER DEFINED ENVS: START
-{{> envs this.merged.envs }}
+{{> export this.environment.merged.envs }}
 # USER DEFINED ENVS: END
 
 function __terrainium_unset_envs() {
-{{> unenvs this.merged.envs }}
+{{> unset this.environment.merged.envs }}
 }
 
 function __terrainium_unalias() {
-{{> unaliases this.merged.aliases }}
+{{> unalias this.environment.merged.aliases }}
 }
 
 function __terrainium_shell_constructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> commands this.merged.constructors }}
+{{> commands this.environment.merged.constructors }}
     fi
 }
 
 function __terrainium_shell_destructor() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> commands this.merged.destructors }}
+{{> commands this.environment.merged.destructors }}
     fi
 }
 
@@ -34,7 +34,7 @@ function __terrainium_enter() {
 
 function __terrain_prompt() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
-        echo "{{ this.name }}({{ this.selected_biome }})"
+        echo "${TERRAIN_NAME}(${TERRAIN_SELECTED_BIOME})"
     fi
 }
 
@@ -45,20 +45,12 @@ function __terrainium_exit() {
 }
 
 function __terrainium_reexport_envs() {
-    typeset -x TERRAIN_ENABLED
-    typeset -x TERRAIN_SESSION_ID
-    typeset -x TERRAIN_SELECTED_BIOME
-    typeset -x TERRAIN_AUTO_APPLY
-    typeset -x TERRAIN_DIR
+{{> reexport this.typeset }}
     typeset +x __TERRAIN_ENVS_EXPORTED="true"
 }
 
 function __terrainium_unexport_envs() {
-    typeset +x TERRAIN_ENABLED
-    typeset +x TERRAIN_SESSION_ID
-    typeset +x TERRAIN_SELECTED_BIOME
-    typeset +x TERRAIN_AUTO_APPLY
-    typeset +x TERRAIN_DIR
+{{> unexport this.typeset }}
     unset __TERRAIN_ENVS_EXPORTED
 }
 
@@ -98,7 +90,7 @@ function __terrainium_precmd_functions() {
 function __terrainium_zshexit_functions() {
     __terrainium_reexport_envs
     __terrainium_shell_destructor
-    echo "exiting terrain with session id: ${TERRAIN_SESSION_ID}"
+    echo "exiting terrain: ${TERRAIN_NAME} with session id: ${TERRAIN_SESSION_ID}"
     terrainium exit
     __terrainium_unalias
     __terrainium_unset_envs

@@ -14,6 +14,7 @@ use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
+use terrainium::common::constants::TERRAIN_SESSION_ID;
 use terrainium::common::execute::Executor;
 use terrainium::common::types::styles::warning;
 
@@ -37,6 +38,24 @@ async fn main() -> Result<()> {
             }
         }
         Some(verbs) => {
+            if let Verbs::Status {
+                json,
+                recent,
+                session_id,
+                terrain_name,
+            } = verbs
+            {
+                return status::handle(
+                    json,
+                    terrain_name,
+                    session_id.or(std::env::var(TERRAIN_SESSION_ID).ok()),
+                    recent,
+                    None,
+                )
+                .await
+                .context("failed to get the terrain status");
+            }
+
             let home_dir = home_dir().context("failed to get home directory")?;
             let current_dir = std::env::current_dir().context("failed to get current directory")?;
             let context = Context::new(&verbs, home_dir, current_dir, Arc::new(Executor))?;
@@ -150,13 +169,9 @@ async fn main() -> Result<()> {
                     .await
                     .context("failed to exit the terrain")?,
 
-                Verbs::Status {
-                    json,
-                    recent,
-                    session_id,
-                } => status::handle(context, terrain, json, session_id, recent, None)
-                    .await
-                    .context("failed to get the terrain status")?,
+                Verbs::Status { .. } => {
+                    // no need to do anything as handled above
+                }
 
                 #[cfg(feature = "terrain-schema")]
                 Verbs::Schema => schema::handle().context("failed to generate schema")?,

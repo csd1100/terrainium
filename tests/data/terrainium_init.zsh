@@ -24,6 +24,7 @@ if [ "$TERRAIN_ENABLED" = "true" ]; then
     __terrainium_enter
     # unexport but set terrainium env vars
     typeset +x TERRAIN_ENABLED
+    typeset +x TERRAIN_NAME
     typeset +x TERRAIN_SESSION_ID
     typeset +x TERRAIN_SELECTED_BIOME
     typeset +x TERRAIN_AUTO_APPLY
