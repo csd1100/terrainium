@@ -84,6 +84,7 @@ function __terrainium_reexport_envs() {
     typeset -x TERRAIN_SELECTED_BIOME
     typeset -x TERRAIN_AUTO_APPLY
     typeset -x TERRAIN_DIR
+    typeset +x __TERRAIN_ENVS_EXPORTED="true"
 }
 
 function __terrainium_unexport_envs() {
@@ -92,12 +93,13 @@ function __terrainium_unexport_envs() {
     typeset +x TERRAIN_SELECTED_BIOME
     typeset +x TERRAIN_AUTO_APPLY
     typeset +x TERRAIN_DIR
+    unset __TERRAIN_ENVS_EXPORTED
 }
 
 function __terrainium_preexec_functions() {
     if [ "$TERRAIN_ENABLED" = "true" ]; then
         local command=(${(s/ /)3})
-        if [ ${command[1]} = "terrainium" ]; then
+        if [ "${command[1]}" = "terrainium" ]; then
             local is_terrainium="true"
             local verb="${command[2]}"
         elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
@@ -121,6 +123,12 @@ function __terrainium_preexec_functions() {
     fi
 }
 
+function __terrainium_precmd_functions() {
+    if [ "$__TERRAIN_ENVS_EXPORTED" = "true" ]; then
+        __terrainium_unexport_envs
+    fi
+}
+
 function __terrainium_zshexit_functions() {
     __terrainium_reexport_envs
     __terrainium_shell_destructor
@@ -132,4 +140,5 @@ function __terrainium_zshexit_functions() {
 }
 
 preexec_functions=(__terrainium_preexec_functions $preexec_functions)
+precmd_functions=(__terrainium_precmd_functions $precmd_functions)
 zshexit_functions=(__terrainium_zshexit_functions $zshexit_functions)

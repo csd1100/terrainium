@@ -163,6 +163,7 @@ async fn main() -> Result<()> {
                 } => status::handle(context, terrain, json, session_id, recent, None)
                     .await
                     .context("failed to get the terrain status")?,
+
                 #[cfg(feature = "terrain-schema")]
                 Verbs::Schema => schema::handle().context("failed to generate schema")?,
             }
