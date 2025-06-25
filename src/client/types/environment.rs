@@ -6,9 +6,10 @@ use crate::client::validation::{
     ValidationError, ValidationFixAction, ValidationMessageLevel, ValidationResult,
     ValidationResults,
 };
-use crate::common::constants::{TERRAIN_DIR, TERRAIN_SELECTED_BIOME};
+use crate::common::constants::{
+    TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+};
 use anyhow::{bail, Context, Result};
-use handlebars::Handlebars;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -26,12 +27,6 @@ pub struct Environment {
 impl Environment {
     pub fn from(terrain: &Terrain, selected_biome: BiomeArg, terrain_dir: &Path) -> Result<Self> {
         let mut merged: Biome = terrain.merged(&selected_biome)?;
-        // add required envs
-        merged.insert_env(
-            TERRAIN_DIR.to_string(),
-            terrain_dir.to_string_lossy().to_string(),
-        );
-        merged.insert_env(TERRAIN_SELECTED_BIOME.to_string(), merged.name());
 
         merged.substitute_envs();
         merged
@@ -53,6 +48,35 @@ impl Environment {
         result.unwrap().print_validation_message();
 
         Ok(environment)
+    }
+
+    pub fn add_activation_envs(
+        &mut self,
+        session_id: String,
+        terrain_dir: &Path,
+        is_auto_apply: bool,
+    ) {
+        self.append_envs(self.activation_env_vars(session_id, terrain_dir, is_auto_apply));
+    }
+
+    pub fn activation_env_vars(
+        &self,
+        session_id: String,
+        terrain_dir: &Path,
+        is_auto_apply: bool,
+    ) -> BTreeMap<String, String> {
+        let mut envs = BTreeMap::new();
+        envs.insert(TERRAIN_NAME.to_string(), self.name.clone());
+        envs.insert(TERRAIN_SESSION_ID.to_string(), session_id);
+        envs.insert(TERRAIN_SELECTED_BIOME.to_string(), self.merged.name());
+        envs.insert(TERRAIN_DIR.to_string(), terrain_dir.display().to_string());
+        if is_auto_apply {
+            envs.insert(
+                TERRAIN_AUTO_APPLY.to_string(),
+                self.auto_apply().to_string(),
+            );
+        }
+        envs
     }
 
     pub fn name(&self) -> &String {
@@ -107,20 +131,8 @@ impl Environment {
         self.merged.destructors()
     }
 
-    pub(crate) fn insert_env(&mut self, key: String, value: String) {
-        self.merged.insert_env(key, value);
-    }
-
     pub(crate) fn append_envs(&mut self, envs: BTreeMap<String, String>) {
         self.merged.append_envs(envs);
-    }
-
-    pub(crate) fn to_rendered(
-        &self,
-        main_template: String,
-        templates: BTreeMap<String, String>,
-    ) -> Result<String> {
-        render(main_template, templates, self)
     }
 
     fn validate_envs(&self) -> ValidationResults {
@@ -193,33 +205,14 @@ Auto Apply: {}
     }
 }
 
-pub(crate) fn render<T: Serialize>(
-    main_template: String,
-    templates: BTreeMap<String, String>,
-    arg: T,
-) -> Result<String> {
-    let mut handlebars = Handlebars::new();
-    templates.iter().for_each(|(name, template)| {
-        handlebars
-            .register_template_string(name, template)
-            .expect("failed to register template")
-    });
-
-    handlebars
-        .render(&main_template, &arg)
-        .context("failed to render template ".to_string() + &main_template)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::client::args::BiomeArg;
-    use crate::client::shell::{Shell, Zsh};
     use crate::client::test_utils::{
         expected_aliases_example_biome, expected_constructor_background_example_biome,
         expected_constructor_foreground_example_biome, expected_constructors_example_biome,
         expected_destructor_background_example_biome, expected_destructor_foreground_example_biome,
-        expected_destructors_example_biome, expected_env_vars_example_biome, restore_env_var,
-        set_env_var,
+        expected_destructors_example_biome, restore_env_var, set_env_var,
     };
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
@@ -232,6 +225,7 @@ mod tests {
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
+    use crate::common::test_utils::expected_env_vars_example_biome;
     use crate::common::types::command::Command;
     use anyhow::Result;
     use std::collections::BTreeMap;
@@ -243,13 +237,7 @@ mod tests {
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
-        let mut terrain = Terrain::default();
-        terrain
-            .terrain_mut()
-            .insert_env("TERRAIN_DIR".to_string(), "".to_string());
-        terrain
-            .terrain_mut()
-            .insert_env("TERRAIN_SELECTED_BIOME".to_string(), NONE.to_string());
+        let terrain = Terrain::default();
 
         let expected: Environment = Environment::build(None, NONE.to_string(), terrain.terrain());
 
@@ -290,7 +278,7 @@ mod tests {
         let terrain_dir = tempdir()?;
         create_dir_all(terrain_dir.path().join("tests/scripts"))?;
 
-        let mut expected_envs = expected_env_vars_example_biome(terrain_dir.path());
+        let mut expected_envs = expected_env_vars_example_biome();
         expected_envs.insert(
             "PROCESS_ENV_REF_VAR".to_string(),
             "PROCESS_ENV_VALUE".to_string(),
@@ -403,7 +391,7 @@ mod tests {
             EXAMPLE_BIOME.to_string(),
             &Biome::new(
                 EXAMPLE_BIOME.to_string(),
-                expected_env_vars_example_biome(terrain_dir.path()),
+                expected_env_vars_example_biome(),
                 expected_aliases_example_biome(),
                 expected_constructors_example_biome(terrain_dir.path()),
                 expected_destructors_example_biome(terrain_dir.path()),
@@ -422,13 +410,6 @@ mod tests {
         let terrain_dir = tempdir()?;
 
         let mut terrain = Terrain::example();
-        terrain.terrain_mut().insert_env(
-            "TERRAIN_DIR".to_string(),
-            terrain_dir.path().to_string_lossy().to_string(),
-        );
-        terrain
-            .terrain_mut()
-            .insert_env("TERRAIN_SELECTED_BIOME".to_string(), "none".to_string());
         terrain.terrain_mut().substitute_envs();
         terrain.terrain_mut().substitute_cwd(terrain_dir.path())?;
 
@@ -465,14 +446,6 @@ mod tests {
         let terrain_dir = tempdir()?;
 
         let mut expected_envs: BTreeMap<String, String> = BTreeMap::new();
-        expected_envs.insert(
-            "TERRAIN_DIR".to_string(),
-            terrain_dir.path().to_string_lossy().to_string(),
-        );
-        expected_envs.insert(
-            "TERRAIN_SELECTED_BIOME".to_string(),
-            "example_biome2".to_string(),
-        );
         expected_envs.insert("EDITOR".to_string(), "nano".to_string());
         expected_envs.insert("ENV_VAR".to_string(), "env_val".to_string());
         expected_envs.insert(
@@ -564,26 +537,6 @@ mod tests {
             format!("{environment}"),
             fs::read_to_string("./tests/data/terrain-example_biome.rendered")
                 .expect("test data file to be read"),
-        )
-    }
-
-    #[test]
-    fn environment_to_zsh() {
-        let environment = Environment::from(
-            &Terrain::example(),
-            BiomeArg::Default,
-            &PathBuf::from("/home/user/work/terrainium"),
-        )
-        .expect("not to fail");
-
-        let rendered = environment
-            .to_rendered("zsh".to_string(), Zsh::templates())
-            .expect("no error to be thrown");
-
-        assert_eq!(
-            fs::read_to_string("./tests/data/terrain-example_biome.example.zsh")
-                .expect("test data file to be read"),
-            rendered
         )
     }
 

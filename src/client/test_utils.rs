@@ -1,5 +1,4 @@
 use crate::client::types::commands::Commands;
-use crate::common::constants::{EXAMPLE_BIOME, NONE};
 use crate::common::types::command::Command;
 use std::collections::BTreeMap;
 use std::env::VarError;
@@ -41,50 +40,6 @@ pub unsafe fn restore_env_var(key: &str, orig_env: anyhow::Result<String, VarErr
         std::env::remove_var(key);
         assert!(std::env::var(key).is_err());
     }
-}
-
-pub(crate) fn expected_env_vars_none(terrain_dir: &Path) -> BTreeMap<String, String> {
-    let mut expected_envs = BTreeMap::new();
-    expected_envs.insert(
-        "TERRAIN_DIR".to_string(),
-        terrain_dir.to_string_lossy().to_string(),
-    );
-    expected_envs.insert("TERRAIN_SELECTED_BIOME".to_string(), NONE.to_string());
-    expected_envs.insert("EDITOR".to_string(), "vim".to_string());
-    expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-    expected_envs.insert("PAGER".to_string(), "less".to_string());
-    expected_envs.insert("ENV_VAR".to_string(), "env_val".to_string());
-    expected_envs.insert(
-        "NESTED_POINTER".to_string(),
-        "env_val-env_val-${NULL}".to_string(),
-    );
-    expected_envs.insert("POINTER_ENV_VAR".to_string(), "env_val".to_string());
-    expected_envs
-}
-
-pub(crate) fn expected_env_vars_example_biome(terrain_dir: &Path) -> BTreeMap<String, String> {
-    let mut expected_envs = BTreeMap::new();
-    expected_envs.insert(
-        "TERRAIN_DIR".to_string(),
-        terrain_dir.to_string_lossy().to_string(),
-    );
-    expected_envs.insert(
-        "TERRAIN_SELECTED_BIOME".to_string(),
-        EXAMPLE_BIOME.to_string(),
-    );
-    expected_envs.insert("EDITOR".to_string(), "nvim".to_string());
-    expected_envs.insert("NULL_POINTER".to_string(), "${NULL}".to_string());
-    expected_envs.insert("PAGER".to_string(), "less".to_string());
-    expected_envs.insert("ENV_VAR".to_string(), "overridden_env_val".to_string());
-    expected_envs.insert(
-        "NESTED_POINTER".to_string(),
-        "overridden_env_val-overridden_env_val-${NULL}".to_string(),
-    );
-    expected_envs.insert(
-        "POINTER_ENV_VAR".to_string(),
-        "overridden_env_val".to_string(),
-    );
-    expected_envs
 }
 
 pub(crate) fn expected_aliases_example_biome() -> BTreeMap<String, String> {

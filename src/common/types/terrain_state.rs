@@ -81,7 +81,7 @@ fn command_states_to_display(command_states: &BTreeMap<String, Vec<CommandState>
         .iter()
         .map(|(key, value)| {
             let commands: String = value.iter().map(|c| c.to_string()).collect();
-            format!(r#"  {} {}"#, sub_heading(key), commands)
+            format!("\n    {} {}", sub_heading(key), commands)
         })
         .collect()
 }
@@ -627,16 +627,15 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
 pub mod test_utils {
     use super::*;
     use crate::client::test_utils::{
-        expected_constructor_background_example_biome,
-        expected_destructor_background_example_biome, expected_env_vars_example_biome,
+        expected_constructor_background_example_biome, expected_destructor_background_example_biome,
     };
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
         CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        expected_envs_with_activate_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
-        TEST_TIMESTAMP_NUMERIC,
+        expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
+        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
     };
     use std::path::Path;
 
@@ -888,7 +887,7 @@ pub mod test_utils {
             is_background: false,
             start_timestamp: "".to_string(),
             end_timestamp: "".to_string(),
-            envs: expected_env_vars_example_biome(Path::new(TEST_TERRAIN_DIR)),
+            envs: expected_env_vars_example_biome(),
             constructors,
             destructors,
         }

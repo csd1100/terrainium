@@ -2,29 +2,29 @@
 # DO NOT EDIT MANUALLY USE `terrainium edit` COMMAND TO EDIT TOML
 
 # USER DEFINED ALIASES: START
-{{> aliases this.merged.aliases }}
+{{> alias this.environment.merged.aliases }}
 # USER DEFINED ALIASES: END
 # USER DEFINED ENVS: START
-{{> envs this.merged.envs }}
+{{> export this.environment.merged.envs }}
 # USER DEFINED ENVS: END
 
 function __terrainium_unset_envs() {
-{{> unenvs this.merged.envs }}
+{{> unset this.environment.merged.envs }}
 }
 
 function __terrainium_unalias() {
-{{> unaliases this.merged.aliases }}
+{{> unalias this.environment.merged.aliases }}
 }
 
 function __terrainium_shell_constructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> commands this.merged.constructors }}
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
+{{> commands this.environment.merged.constructors }}
     fi
 }
 
 function __terrainium_shell_destructor() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
-{{> commands this.merged.destructors }}
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
+{{> commands this.environment.merged.destructors }}
     fi
 }
 
@@ -33,45 +33,53 @@ function __terrainium_enter() {
 }
 
 function __terrain_prompt() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
-        echo "{{ this.name }}({{ this.selected_biome }})"
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
+        echo "${TERRAIN_NAME}(${TERRAIN_SELECTED_BIOME})"
     fi
 }
 
 function __terrainium_exit() {
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
         builtin exit
     fi
 }
 
 function __terrainium_preexec_functions() {
-    tenter="terrainium enter*"
-    texit="terrainium exit*"
-    tconstruct="terrainium construct*"
-    tdestruct="terrainium destruct*"
+    __terrainium_parse_command "$3"
+    if [ -n "$TERRAIN_SESSION_ID" ]; then
+        if [ "$__terrainium_is_terrainium" = "true" ]; then
+            __terrainium_reexport_envs
+            case "$__terrainium_verb" in
+                "exit")
+                    __terrainium_exit
+                    ;;
+                "construct")
+                    __terrainium_shell_constructor
+                    ;;
+                "destruct")
+                    __terrainium_shell_destructor
+                    ;;
+            esac
+        fi
+    fi
+}
 
-    if [ "$TERRAIN_ENABLED" = "true" ]; then
-        case "$3" in
-            $~texit)
-                __terrainium_exit
-                ;;
-            $~tconstruct)
-                __terrainium_shell_constructor
-                ;;
-            $~tdestruct)
-                __terrainium_shell_destructor
-                ;;
-        esac
+function __terrainium_precmd_functions() {
+    if [ "$__TERRAIN_ENVS_EXPORTED" = "true" ]; then
+        __terrainium_unexport_envs
     fi
 }
 
 function __terrainium_zshexit_functions() {
+    __terrainium_reexport_envs
     __terrainium_shell_destructor
-    echo "exiting terrain with session id: ${TERRAIN_SESSION_ID}"
+    echo "exiting terrain: ${TERRAIN_NAME} with session id: ${TERRAIN_SESSION_ID}"
     terrainium exit
     __terrainium_unalias
     __terrainium_unset_envs
+    __terrainium_unexport_envs
 }
 
 preexec_functions=(__terrainium_preexec_functions $preexec_functions)
+precmd_functions=(__terrainium_precmd_functions $precmd_functions)
 zshexit_functions=(__terrainium_zshexit_functions $zshexit_functions)

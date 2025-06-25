@@ -111,10 +111,6 @@ impl Biome {
             get_pairs(&self.aliases)
         };
 
-        if body.is_empty() {
-            return String::new();
-        }
-
         format!("{header}\n{body}")
     }
 
@@ -130,10 +126,6 @@ impl Biome {
         } else {
             get_pairs(&self.envs)
         };
-
-        if body.is_empty() {
-            return String::new();
-        }
 
         format!("{header}\n{body}")
     }
@@ -164,10 +156,6 @@ impl Biome {
 
     pub(crate) fn set_envs(&mut self, envs: BTreeMap<String, String>) {
         self.envs = envs;
-    }
-
-    pub(crate) fn insert_env(&mut self, key: String, value: String) {
-        self.envs.insert(key, value);
     }
 
     pub(crate) fn insert_foreground_constructor(&mut self, idx: usize, command: Command) {
@@ -499,6 +487,10 @@ pub(crate) fn example_destructors() -> Commands {
 
 #[cfg(test)]
 impl Biome {
+    pub(crate) fn insert_env(&mut self, key: String, value: String) {
+        self.envs.insert(key, value);
+    }
+
     pub(crate) fn add_envs(&mut self, envs: Vec<(&str, &str)>) {
         envs.into_iter().for_each(|(k, v)| {
             self.envs.insert(k.to_string(), v.to_string());

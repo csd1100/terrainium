@@ -387,7 +387,13 @@ mod tests {
     use std::sync::Arc;
     use tempfile::tempdir;
 
-    const TERRAINIUMD_LINUX_SERVICE: &str = "terrainiumd-debug.service";
+    fn service_name() -> &'static str {
+        if cfg!(debug_assertions) {
+            "terrainiumd-debug.service"
+        } else {
+            "terrainiumd.service"
+        }
+    }
 
     fn expect_is_running(success: bool, executor: MockExecutor) -> MockExecutor {
         AssertExecutor::with(executor).wait_for(
@@ -398,7 +404,7 @@ mod tests {
                     vec![
                         USER.to_string(),
                         IS_ACTIVE.to_string(),
-                        TERRAINIUMD_LINUX_SERVICE.to_string(),
+                        service_name().to_string(),
                     ],
                     Some(std::env::temp_dir()),
                 ),
@@ -448,7 +454,7 @@ mod tests {
                         vec![
                             USER.to_string(),
                             STATUS.to_string(),
-                            TERRAINIUMD_LINUX_SERVICE.to_string(),
+                            service_name().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -513,7 +519,7 @@ mod tests {
                         vec![
                             USER.to_string(),
                             IS_ENABLED.to_string(),
-                            TERRAINIUMD_LINUX_SERVICE.to_string(),
+                            service_name().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -534,7 +540,7 @@ mod tests {
         let mut args = vec![
             USER.to_string(),
             ENABLE.to_string(),
-            TERRAINIUMD_LINUX_SERVICE.to_string(),
+            service_name().to_string(),
         ];
         if now {
             args.push(NOW.to_string());
@@ -557,7 +563,7 @@ mod tests {
         let mut args = vec![
             USER.to_string(),
             DISABLE.to_string(),
-            TERRAINIUMD_LINUX_SERVICE.to_string(),
+            service_name().to_string(),
         ];
         if now {
             args.push(NOW.to_string());
@@ -586,7 +592,7 @@ mod tests {
                         vec![
                             USER.to_string(),
                             START.to_string(),
-                            TERRAINIUMD_LINUX_SERVICE.to_string(),
+                            service_name().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -609,7 +615,7 @@ mod tests {
                         vec![
                             USER.to_string(),
                             STOP.to_string(),
-                            TERRAINIUMD_LINUX_SERVICE.to_string(),
+                            service_name().to_string(),
                         ],
                         Some(std::env::temp_dir()),
                     ),
@@ -624,7 +630,8 @@ mod tests {
 
     fn create_service_file(home_dir: &Path) -> Result<PathBuf> {
         let service_path = home_dir.join(format!(
-            "{TERRAINIUMD_LINUX_SERVICE_PATH}/{TERRAINIUMD_LINUX_SERVICE}"
+            "{TERRAINIUMD_LINUX_SERVICE_PATH}/{}",
+            service_name()
         ));
         std::fs::create_dir_all(service_path.parent().unwrap())?;
         std::fs::write(&service_path, "")?;
@@ -646,7 +653,8 @@ mod tests {
         assert!(home_dir
             .path()
             .join(format!(
-                "{TERRAINIUMD_LINUX_SERVICE_PATH}/{TERRAINIUMD_LINUX_SERVICE}"
+                "{TERRAINIUMD_LINUX_SERVICE_PATH}/{}",
+                service_name()
             ))
             .exists());
         assert!(service.is_installed());

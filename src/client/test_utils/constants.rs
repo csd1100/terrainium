@@ -1,5 +1,7 @@
 pub const IN_CURRENT_DIR: bool = false;
 pub const IN_CENTRAL_DIR: bool = true;
+pub const ZSH_INTEGRATION_SCRIPT: &str = "./tests/data/terrainium_init.zsh";
+pub const ZSH_INTEGRATION_SCRIPT_RELEASE: &str = "./tests/data/terrainium_init-release.zsh";
 pub const WITH_EMPTY_TERRAIN_TOML: &str = "./tests/data/terrain.empty.toml";
 pub const WITH_NONE_BIOME_FOR_EMPTY_TERRAIN_SCRIPT: &str = "./tests/data/terrain-none.empty.zsh";
 pub const WITH_EXAMPLE_TERRAIN_TOML_COMMENTS: &str = "./tests/data/terrain.example.comments.toml";

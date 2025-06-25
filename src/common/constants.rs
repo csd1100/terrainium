@@ -16,12 +16,11 @@ pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
 pub const TERRAIN_INIT_FN: &str = "terrain_init";
-pub const TERRAIN_ENABLED: &str = "TERRAIN_ENABLED";
+pub const TERRAIN_NAME: &str = "TERRAIN_NAME";
 pub const TERRAIN_SESSION_ID: &str = "TERRAIN_SESSION_ID";
 pub const TERRAIN_AUTO_APPLY: &str = "TERRAIN_AUTO_APPLY";
 pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 pub const TERRAIN_SELECTED_BIOME: &str = "TERRAIN_SELECTED_BIOME";
-pub const TERRAIN_ACTIVATION_TIMESTAMP: &str = "TERRAIN_ACTIVATION_TIMESTAMP";
 pub const TERRAIN_TOML: &str = "terrain.toml";
 
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
