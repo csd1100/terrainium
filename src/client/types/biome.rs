@@ -458,8 +458,8 @@ pub(crate) fn example_envs() -> BTreeMap<String, String> {
 
 pub(crate) fn example_aliases() -> BTreeMap<String, String> {
     let mut aliases: BTreeMap<String, String> = BTreeMap::new();
-    aliases.insert("tenter".to_string(), "terrainium enter".to_string());
-    aliases.insert("texit".to_string(), "terrainium exit".to_string());
+    aliases.insert("tenter".to_string(), "terrain enter".to_string());
+    aliases.insert("texit".to_string(), "terrain exit".to_string());
     aliases
 }
 

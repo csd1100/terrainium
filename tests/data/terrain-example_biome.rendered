@@ -8,8 +8,8 @@ Environment Variables:
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
 Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 Constructors:
     foreground:
         `/bin/echo entering terrain` in terrain directory

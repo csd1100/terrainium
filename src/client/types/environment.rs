@@ -459,9 +459,9 @@ mod tests {
         let mut expected_aliases: BTreeMap<String, String> = BTreeMap::new();
         expected_aliases.insert(
             "tenter".to_string(),
-            "terrainium enter --biome example_biome2".to_string(),
+            "terrain enter --biome example_biome2".to_string(),
         );
-        expected_aliases.insert("texit".to_string(), "terrainium exit".to_string());
+        expected_aliases.insert("texit".to_string(), "terrain exit".to_string());
         let expected_constructor_foreground: Vec<Command> = vec![
             Command::new(
                 "/bin/echo".to_string(),

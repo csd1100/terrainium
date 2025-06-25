@@ -2,7 +2,7 @@
 
 A command-line utility written in Rust for env management
 
-- `terrainium` is cli utility that takes in a `terrain.toml` file as input and
+- terrainium is cli utility that takes in a `terrain.toml` file as input and
   creates your development environment for you.
 - This utility will automatically set environment variables, aliases and run specified
   commands in shell or in background.
@@ -11,10 +11,10 @@ A command-line utility written in Rust for env management
 
 ## Command-Line Arguments (Usage)
 
-### terrainium
+### terrain
 
 ```sh
-terrainium <verb|OPTIONS> [OPTIONS]
+terrain <verb|OPTIONS> [OPTIONS]
 ```
 
 - Verbs:
@@ -44,7 +44,7 @@ terrainium <verb|OPTIONS> [OPTIONS]
           i.e. if we want to pass 2 variables user will have to do following:
 
           ```shell
-          terrainium update -e NEW_VAR1=VALUE1 -e NEW_VAR2=VALUE2
+          terrain update -e NEW_VAR1=VALUE1 -e NEW_VAR2=VALUE2
           ```
 
         - `-a|--alias <ALIAS_NAME>=<ALIAS_VALUE>` adds or updates alias `ALIAS_NAME`
@@ -52,7 +52,7 @@ terrainium <verb|OPTIONS> [OPTIONS]
           i.e. if we want to pass 2 aliases user will have to do following:
 
           ```shell
-          terrainium update -a new_alias1=value1 -a new_alias2=value2
+          terrain update -a new_alias1=value1 -a new_alias2=value2
           ```
 
         - `--auto-apply <AUTO_APPLY_VALUE>` update auto-apply config. Value can be
@@ -163,7 +163,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 - When user runs `terrainium enter` command without options following things will
   happen:
     - Without any arguments if `default-biome` is set in `terrain.toml`,
-      `terrainium` will:
+      `terrain` will:
         1. combine the environment variables from `default-biome` and the main `terrain`.
            if there are any environment variables redefined in biome they will take
            precedence.
@@ -183,7 +183,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 ### Auto Apply
 
 - If `auto-apply` is enabled in the config, and when directory is changed using
-  `cd` command. The `default-biome` will be selected and `terrainium enter` will
+  `cd` command. The `default-biome` will be selected and `terrain enter` will
   run with following conditions:
 
     1. If only `enabled` is true only the background commands will **NOT** run.
@@ -198,7 +198,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 
 - When `construct` or `destruct` command is run, 2 types of processes are spawned:
 
-    1. `foreground` - Which are run in shell activated by `terrainium enter` command.
+    1. `foreground` - Which are run in shell activated by `terrain enter` command.
     2. `background` - which are separate processes started in background and logs for
        these processes are present in `/tmp/terrainiumd/terrains/<terrain_name>/$TERRAINIUM_SESSION_ID/` directory.
 
@@ -214,11 +214,11 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
   (constructors and destructors) defined in the terrain.
 - The daemon will run using unix socket, the socket will be created at
   `/tmp/terrainiumd/socket`.
-- The daemon will receive request from client (`terrainium`),
+- The daemon will receive request from client (`terrain`),
   and will execute background constructors and destructor.
 - It also stores terrain session status in `/tmp/terrainiumd/<terrain_name>/<session_id>`
   directory.
-- When `terrainium status` command is run daemon will return the status stored in
+- When `terrain status` command is run daemon will return the status stored in
   `/tmp/terrainiumd/<terrain_name>/<session_id>/state.json` file
 - The logs for background commands will be stored in status directory in following
   pattern: `<constructors|destructors>.<index>.<timestamp>.log`  
@@ -229,7 +229,7 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 ### Example
 
 - If [terrain.toml](./tests/data/terrain.example.toml) is used.
-- When `terrainium enter` is run, the default biome `example_biome` will be applied:
+- When `terrain enter` is run, the default biome `example_biome` will be applied:
     1. environment variables set will be:
         - `EDITOR=nvim` -- from `example_biome`
         - `ENV_VAR="overridden_env_val"` -- from `example_biome`
@@ -241,12 +241,9 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
           if `NULL` env var is set in parent shell it will be substituted here.
         - `PAGER="less"` -- from terrain
         - `NULL_POINTER=${NULL}` -- from terrain
-        - `TERRAIN_DIR=<terrain directory>` -- terrainium env var, always added
-        - `TERRAIN_SELECTED_BIOME="example_biome"` -- terrainium env var, always added
-        - `TERRAIN_SESSION_ID=<uuid>` -- terrainium env var, always added
     2. aliases set will be:
-        - `texit=terrainium exit` -- from `terrain`
-        - `tenter=terrainium enter -b example_biome` -- from `example_biome`
+        - `texit=terrain exit` -- from `terrain`
+        - `tenter=terrain enter -b example_biome` -- from `example_biome`
     3. In shell that was started, following commands will be run:
         - `/bin/echo entering terrain` -- from `terrain` inside terrain directory as
           `cwd` is not specified
@@ -256,14 +253,14 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
         - `/bin/bash -c ${PWD}/tests/scripts/print_num_for_10_sec` -- from
           `example_biome`.
 
-- When `terrainium exit` is run, the terrain will be closed:
-    1. In shell that was started by `terrainium enter` following commands will be run:
+- When `terrain exit` is run, the terrain will be closed:
+    1. In shell that was started by `terrain enter` following commands will be run:
         1. `/bin/echo exiting terrain` -- from `terrain`
         2. `/bin/echo exiting example_biome` -- from `example_biome`
     2. In background following commands will be run:
         1. `/bin/bash -c ${TERRAIN_DIR}/tests/scripts/print_num_for_10_sec` -- from
            `example_biome`.
-        2. The shell started by `terrainium enter` will be closed.
+        2. The shell started by `terrain enter` will be closed.
 
 ## Shell Integration
 
@@ -275,14 +272,14 @@ terrainiumd <verbs|OPTIONS> [OPTIONS]
 source "$HOME/.config/terrainium/shell_integration/terrainium_init.zsh"
 ```
 
-- You can also do this to using `terrainium --update-rc` command.
-- If you want to update file different from `~/.zshrc` use `terrainium --update-rc-path <path>`
+- You can also do this to using `terrain --update-rc` command.
+- If you want to update file different from `~/.zshrc` use `terrain --update-rc-path <path>`
 
 ## For developers
 
-- If `TERRAINIUM_DEV` is set to `true` in the terrain, `terrainium` and `terrainiumd`
+- If `TERRAINIUM_DEV` is set to `true` in the terrain, `terrain` and `terrainiumd`
   binaries will be used from debug directory.
 - Feature `terrain-schema` can be used to generate json schema for `terrain.toml`.
-- `schema` argument can be passed to `terrainium` command when built with
+- `schema` argument can be passed to `terrain` command when built with
   `terrain-schema` feature that will generate required json schemas in directory
   [`./schema/`](./schema).

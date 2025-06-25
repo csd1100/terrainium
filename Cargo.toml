@@ -2,7 +2,7 @@
 name = "terrainium"
 version = "0.1.0"
 edition = "2021"
-default-run = "terrainium"
+default-run = "terrain"
 build = "build.rs"
 
 [features]

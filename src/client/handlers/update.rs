@@ -227,7 +227,7 @@ mod tests {
                 alias: vec![
                     Pair {
                         key: "tenter".to_string(),
-                        value: "terrainium enter --biome example_biome2".to_string(),
+                        value: "terrain enter --biome example_biome2".to_string(),
                     },
                     Pair {
                         key: "new".to_string(),

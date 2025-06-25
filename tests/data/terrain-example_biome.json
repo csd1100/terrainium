@@ -13,8 +13,8 @@
       "POINTER_ENV_VAR": "overridden_env_val"
     },
     "aliases": {
-      "tenter": "terrainium enter --biome example_biome",
-      "texit": "terrainium exit"
+      "tenter": "terrain enter --biome example_biome",
+      "texit": "terrain exit"
     },
     "constructors": {
       "foreground": [
