@@ -2,10 +2,10 @@ use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload;
 use crate::common::types::socket::{
-    socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop, Socket,
+    Socket, socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop,
 };
 use anyhow::Context as AnyhowContext;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 #[cfg(test)]
 use mockall::mock;
 use prost_types::Any;

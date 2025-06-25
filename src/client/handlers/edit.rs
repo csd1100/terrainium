@@ -37,10 +37,12 @@ pub(crate) fn run_editor(
 
     let command = Command::new(
         editor,
-        vec![toml_path
-            .to_string_lossy()
-            .parse()
-            .context(format!("failed to convert path {:?} to string", toml_path))?],
+        vec![
+            toml_path
+                .to_string_lossy()
+                .parse()
+                .context(format!("failed to convert path {:?} to string", toml_path))?,
+        ],
         Some(terrain_dir.to_path_buf()),
     );
 

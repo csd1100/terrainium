@@ -6,7 +6,7 @@ use crate::common::constants::{
 };
 #[mockall_double::double]
 use crate::common::execute::Executor;
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -299,7 +299,7 @@ pub(crate) mod tests {
     use anyhow::Result;
     use home::home_dir;
     use serial_test::serial;
-    use std::env::{current_dir, VarError};
+    use std::env::{VarError, current_dir};
     use std::fs::{create_dir_all, write};
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
@@ -394,7 +394,10 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+        );
 
         Ok(())
     }
@@ -417,7 +420,10 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+        );
 
         Ok(())
     }
@@ -437,7 +443,10 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+        );
 
         Ok(())
     }
@@ -459,7 +468,10 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+        );
 
         Ok(())
     }

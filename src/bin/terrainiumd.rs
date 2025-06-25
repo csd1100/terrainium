@@ -1,10 +1,10 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use std::process::exit;
 use std::sync::Arc;
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
-use terrainium::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
+use terrainium::common::types::paths::{DaemonPaths, get_terrainiumd_paths};
 use terrainium::common::types::styles::{error, warning};
 use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
@@ -14,9 +14,9 @@ use terrainium::daemon::types::config::DaemonConfig;
 use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
-use tokio::signal::unix::{signal, SignalKind};
-use tokio_stream::wrappers::UnixListenerStream;
+use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::UnixListenerStream;
 use tokio_util::sync::CancellationToken;
 use tracing::metadata::LevelFilter;
 use tracing::{debug, info, trace, warn};
@@ -121,7 +121,10 @@ async fn run(
 
 async fn start() -> Result<()> {
     if cfg!(debug_assertions) {
-        println!("{}: you are running debug build of terrainiumd, which might cause some unwanted behavior.",warning("WARNING"));
+        println!(
+            "{}: you are running debug build of terrainiumd, which might cause some unwanted behavior.",
+            warning("WARNING")
+        );
     }
 
     let args = DaemonArgs::parse();

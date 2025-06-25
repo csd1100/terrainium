@@ -3,14 +3,14 @@ use crate::common::execute::Execute;
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::common::types::pb;
-use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::Response;
+use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::terrain_state::{CommandState, CommandStatus, TerrainState};
 use crate::common::utils::remove_non_numeric;
-use crate::daemon::handlers::{error_response, RequestHandler};
+use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::state_manager::{StoredHistory, StoredState};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use prost_types::Any;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -304,10 +304,10 @@ mod tests {
     };
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::expected_env_vars_example_biome;
-    use crate::common::test_utils::{
-        expected_execute_request_example_biome, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
-    };
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TIMESTAMP_NUMERIC};
+    use crate::common::test_utils::{
+        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, expected_execute_request_example_biome,
+    };
     use crate::common::types::command::Command;
     use crate::common::types::paths::DaemonPaths;
     use crate::common::types::terrain_state::test_utils::{
@@ -317,7 +317,7 @@ mod tests {
     };
     use crate::common::types::terrain_state::{CommandStatus, TerrainState};
     use crate::common::utils::{create_file, write_to_file};
-    use crate::daemon::handlers::execute::{spawn_commands, CommandInfo};
+    use crate::daemon::handlers::execute::{CommandInfo, spawn_commands};
     use crate::daemon::types::config::DaemonConfig;
     use crate::daemon::types::context::DaemonContext;
     use crate::daemon::types::history::History;

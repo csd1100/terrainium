@@ -6,10 +6,10 @@ use crate::common::execute::Execute;
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::{
-    Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
-    ERROR_SERVICE_NOT_LOADED,
+    ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+    ERROR_SERVICE_NOT_LOADED, Service,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 

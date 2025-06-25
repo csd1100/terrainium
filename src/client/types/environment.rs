@@ -9,7 +9,7 @@ use crate::client::validation::{
 use crate::common::constants::{
     TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -217,10 +217,10 @@ mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
+    use crate::client::types::terrain::Terrain;
     use crate::client::types::terrain::tests::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
-    use crate::client::types::terrain::Terrain;
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };

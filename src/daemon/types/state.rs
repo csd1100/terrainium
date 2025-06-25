@@ -1,7 +1,7 @@
 use crate::common::types::terrain_state::{CommandState, CommandStatus, TerrainState};
 use crate::common::utils;
 use crate::daemon::types::state_manager::StoredHistory;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::collections::BTreeMap;
 use std::path::Path;
 use tokio::fs::File;

@@ -5,10 +5,10 @@ use crate::common::execute::Execute;
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::{
-    Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
-    ERROR_SERVICE_NOT_LOADED,
+    ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+    ERROR_SERVICE_NOT_LOADED, Service,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -378,7 +378,7 @@ mod tests {
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
     use crate::daemon::service::linux::{
-        LinuxService, IS_ACTIVE, IS_ENABLED, NOW, RELOAD, START, STATUS, STOP, SYSTEMCTL, USER,
+        IS_ACTIVE, IS_ENABLED, LinuxService, NOW, RELOAD, START, STATUS, STOP, SYSTEMCTL, USER,
     };
     use crate::daemon::service::tests::Status;
     use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
@@ -650,13 +650,15 @@ mod tests {
         let service = LinuxService::init(home_dir.path(), Arc::new(executor))?;
         service.install()?;
 
-        assert!(home_dir
-            .path()
-            .join(format!(
-                "{TERRAINIUMD_LINUX_SERVICE_PATH}/{}",
-                service_name()
-            ))
-            .exists());
+        assert!(
+            home_dir
+                .path()
+                .join(format!(
+                    "{TERRAINIUMD_LINUX_SERVICE_PATH}/{}",
+                    service_name()
+                ))
+                .exists()
+        );
         assert!(service.is_installed());
         Ok(())
     }

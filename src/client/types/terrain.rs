@@ -10,7 +10,7 @@ use crate::common::constants::{
     BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
 use crate::common::types::command::Command;
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -444,7 +444,7 @@ pub mod tests {
     use std::collections::BTreeMap;
     use std::env::VarError;
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
-    use std::os::unix::fs::{symlink, PermissionsExt};
+    use std::os::unix::fs::{PermissionsExt, symlink};
     use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::tempdir;
@@ -1225,7 +1225,6 @@ pub mod tests {
         operation_type: &&str,
         commands_type: &&str,
     ) -> ValidationFixAction<'a> {
-        
         if operation_type == &"constructor" {
             if commands_type == &"foreground" {
                 ValidationFixAction::Trim {

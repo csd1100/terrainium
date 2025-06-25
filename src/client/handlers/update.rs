@@ -4,9 +4,9 @@ use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{ALIASES, AUTO_APPLY, BIOMES, DEFAULT_BIOME, ENVS, NONE, TERRAIN};
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use std::fs::{copy, write};
-use toml_edit::{value, DocumentMut};
+use toml_edit::{DocumentMut, value};
 
 pub fn handle(
     context: Context,
@@ -72,9 +72,10 @@ mod tests {
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::test_utils::constants::{
-        IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
+        IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
         WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_UPDATED_EXAMPLE_TOML,
+        WITHOUT_DEFAULT_BIOME_TOML,
     };
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};

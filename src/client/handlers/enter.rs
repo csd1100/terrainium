@@ -11,7 +11,7 @@ use crate::common::constants::{DEBUG_PATH, PATH, TERRAINIUM_DEV};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -139,14 +139,14 @@ mod tests {
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{NONE, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
+    use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use crate::common::test_utils::{
-        expected_activate_request_example_biome, expected_envs_with_activate_example_biome,
-        TEST_TERRAIN_NAME,
+        TEST_TERRAIN_NAME, expected_activate_request_example_biome,
+        expected_envs_with_activate_example_biome,
     };
     use crate::common::test_utils::{
         expected_activation_env_vars, expected_env_vars_none, expected_zsh_env_vars,
     };
-    use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use crate::common::types::pb;
     use std::collections::BTreeMap;
     use std::path::Path;
@@ -639,6 +639,9 @@ mod tests {
         .unwrap_err()
         .to_string();
 
-        assert_eq!(err, "failed to spawn background processes while entering terrain environment: failed to parse the request");
+        assert_eq!(
+            err,
+            "failed to spawn background processes while entering terrain environment: failed to parse the request"
+        );
     }
 }

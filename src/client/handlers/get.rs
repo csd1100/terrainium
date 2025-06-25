@@ -59,8 +59,8 @@ mod tests {
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
-    use crate::client::types::terrain::tests::set_auto_apply;
     use crate::client::types::terrain::Terrain;
+    use crate::client::types::terrain::tests::set_auto_apply;
     use crate::common::constants::EXAMPLE_BIOME;
     use crate::common::execute::MockExecutor;
     use anyhow::Result;

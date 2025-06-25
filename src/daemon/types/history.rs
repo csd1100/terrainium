@@ -1,7 +1,7 @@
 use crate::common::constants::TERRAIN_HISTORY_FILE_NAME;
 use crate::common::types::pb::status_request::Identifier;
 use crate::common::utils;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::sync::Mutex;

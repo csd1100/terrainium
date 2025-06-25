@@ -1,5 +1,5 @@
 use crate::common::constants::{CONFIG_LOCATION, TERRAINIUMD_CONF};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;

@@ -3,7 +3,7 @@ use crate::common::types::paths::DaemonPaths;
 use crate::common::types::terrain_state::{CommandState, TerrainState};
 use crate::daemon::types::history::History;
 use crate::daemon::types::state::State;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;

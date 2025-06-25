@@ -3,7 +3,7 @@ use crate::common::execute::Execute;
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::fs::{create_dir_all, remove_file};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -139,9 +139,11 @@ mod tests {
         Daemon::new(context, false).await?;
 
         assert!(state_dir.path().join("socket").exists());
-        assert!(metadata(state_dir.path().join("socket"))?
-            .file_type()
-            .is_socket());
+        assert!(
+            metadata(state_dir.path().join("socket"))?
+                .file_type()
+                .is_socket()
+        );
         assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
@@ -151,9 +153,11 @@ mod tests {
     async fn socket_is_created_when_socket_exist_but_no_pid() -> Result<()> {
         let state_dir = tempdir()?;
         std::fs::write(state_dir.path().join("socket"), "test")?;
-        assert!(!metadata(state_dir.path().join("socket"))?
-            .file_type()
-            .is_socket());
+        assert!(
+            !metadata(state_dir.path().join("socket"))?
+                .file_type()
+                .is_socket()
+        );
 
         let context = Arc::new(
             DaemonContext::new(
@@ -168,9 +172,11 @@ mod tests {
 
         Daemon::new(context, false).await?;
 
-        assert!(metadata(state_dir.path().join("socket"))?
-            .file_type()
-            .is_socket());
+        assert!(
+            metadata(state_dir.path().join("socket"))?
+                .file_type()
+                .is_socket()
+        );
         assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
@@ -212,9 +218,11 @@ mod tests {
 
         Daemon::new(context, false).await?;
 
-        assert!(metadata(state_dir.path().join("socket"))?
-            .file_type()
-            .is_socket());
+        assert!(
+            metadata(state_dir.path().join("socket"))?
+                .file_type()
+                .is_socket()
+        );
         assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())
@@ -275,9 +283,11 @@ mod tests {
 
         Daemon::new(context, true).await?;
 
-        assert!(metadata(state_dir.path().join("socket"))?
-            .file_type()
-            .is_socket());
+        assert!(
+            metadata(state_dir.path().join("socket"))?
+                .file_type()
+                .is_socket()
+        );
         assert_ne!(read_to_string(state_dir.path().join("pid"))?, "pid");
 
         Ok(())

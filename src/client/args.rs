@@ -1,5 +1,5 @@
 use crate::client::types::terrain::AutoApply;
-use crate::client::validation::{validate_identifiers, IdentifierType};
+use crate::client::validation::{IdentifierType, validate_identifiers};
 use crate::common::constants::{
     AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
     NONE,

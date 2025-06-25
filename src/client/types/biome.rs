@@ -1,5 +1,5 @@
 use crate::client::types::commands::Commands;
-use crate::client::validation::{validate_identifiers, IdentifierType, ValidationResults};
+use crate::client::validation::{IdentifierType, ValidationResults, validate_identifiers};
 use crate::common::constants::{
     ALIASES, BACKGROUND, CONSTRUCTORS, DESTRUCTORS, DOES_NOT_EXIST, ENVS, FOREGROUND,
 };
@@ -11,7 +11,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
-use toml_edit::{value, Array, Item, Table};
+use toml_edit::{Array, Item, Table, value};
 
 fn replace_key(table: &mut Item, old_key: &str, new_key: &str) {
     let value = table.as_table_mut().unwrap().remove(old_key);

@@ -10,7 +10,7 @@ use crate::common::constants::{TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use std::env;
 use std::str::FromStr;
 

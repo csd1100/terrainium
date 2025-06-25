@@ -26,8 +26,8 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::expected_execute_request_example_biome;
     use crate::common::test_utils::TEST_TERRAIN_DIR;
+    use crate::common::test_utils::expected_execute_request_example_biome;
     use crate::common::types::pb;
     use std::path::Path;
 

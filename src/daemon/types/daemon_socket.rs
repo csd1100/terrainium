@@ -1,5 +1,5 @@
 use crate::common::types::socket::{
-    socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop, Socket,
+    Socket, socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop,
 };
 use anyhow::Result;
 #[cfg(test)]

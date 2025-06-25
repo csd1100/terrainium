@@ -1,9 +1,9 @@
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Response, StatusRequest};
-use crate::daemon::handlers::{error_response, RequestHandler};
+use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use prost_types::Any;
 use std::sync::Arc;
 use tracing::trace;
@@ -78,13 +78,13 @@ mod tests {
         TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        expected_envs_with_activate_example_biome, expected_status_request, RequestFor,
-        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        RequestFor, TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        expected_envs_with_activate_example_biome, expected_status_request,
     };
-    use crate::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
+    use crate::common::types::paths::{DaemonPaths, get_terrainiumd_paths};
+    use crate::common::types::pb::StatusResponse;
     use crate::common::types::pb::response::Payload;
     use crate::common::types::pb::status_response::{CommandState, CommandStates};
-    use crate::common::types::pb::StatusResponse;
     use crate::common::types::terrain_state::test_utils::terrain_state_after_activate;
     use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::handlers::status::status;

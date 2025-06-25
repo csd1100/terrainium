@@ -5,7 +5,7 @@ use crate::common::constants::{TERRAIN_NAME, TERRAIN_SESSION_ID};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::types::terrain_state::TerrainState;
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 
 fn get_valid_terrain_name_session_id(
     terrain_name: Option<String>,

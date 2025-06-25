@@ -1,5 +1,5 @@
-use crate::common::types::pb::response::Payload::Error;
 use crate::common::types::pb::Response;
+use crate::common::types::pb::response::Payload::Error;
 use crate::common::types::socket::Socket;
 use crate::daemon::handlers::activate::ActivateHandler;
 use crate::daemon::handlers::deactivate::DeactivateHandler;
@@ -8,7 +8,7 @@ use crate::daemon::handlers::status::StatusHandler;
 use crate::daemon::types::context::DaemonContext;
 #[mockall_double::double]
 use crate::daemon::types::daemon_socket::DaemonSocket;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use prost_types::Any;
 use std::sync::Arc;
 use tracing::{debug, error, trace};

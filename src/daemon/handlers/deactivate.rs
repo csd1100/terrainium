@@ -2,7 +2,7 @@ use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Deactivate, Response};
 use crate::daemon::handlers::execute::spawn_commands;
-use crate::daemon::handlers::{error_response, RequestHandler};
+use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
 use anyhow::{Context, Result};
 use prost_types::Any;
@@ -70,13 +70,13 @@ mod tests {
     use crate::common::constants::TERRAIN_STATE_FILE_NAME;
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        expected_deactivate_request_example_biome, TEST_SESSION_ID, TEST_TERRAIN_NAME,
+        TEST_SESSION_ID, TEST_TERRAIN_NAME, expected_deactivate_request_example_biome,
     };
     use crate::common::types::paths::DaemonPaths;
+    use crate::common::types::terrain_state::TerrainState;
     use crate::common::types::terrain_state::test_utils::{
         terrain_state_after_construct, terrain_state_after_deactivate_before_complete,
     };
-    use crate::common::types::terrain_state::TerrainState;
     use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::types::config::DaemonConfig;
     use crate::daemon::types::context::DaemonContext;

@@ -6,7 +6,7 @@ use crate::common::types::styles::{
     colored, error, heading, sub_heading, sub_value, success, value, warning,
 };
 use crate::common::utils::remove_non_numeric;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::builder::styling::AnsiColor;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -634,8 +634,8 @@ pub mod test_utils {
         CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
         TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
     };
     use std::path::Path;
 
