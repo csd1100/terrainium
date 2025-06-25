@@ -36,6 +36,7 @@ struct ScriptData {
 
 fn re_un_exports() -> Vec<&'static str> {
     vec![
+        FPATH,
         TERRAIN_NAME,
         TERRAIN_SESSION_ID,
         TERRAIN_SELECTED_BIOME,
@@ -48,10 +49,15 @@ fn unsets() -> Vec<&'static str> {
     vec![TERRAIN_INIT_SCRIPT, TERRAIN_INIT_FN]
 }
 
-fn get_unexports() -> String {
+fn get_exports(which: char) -> String {
     re_un_exports()
         .into_iter()
-        .map(|e| format!("{: <4}typeset +x {e}", ""))
+        .map(|e| {
+            format!(
+                "{: <4}if [ -n \"${e}\" ]; then typeset {which}x {e}; fi",
+                ""
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -95,10 +101,49 @@ function __terrainium_auto_apply() {{
         auto_apply="{}"
     fi
 
+    typeset -x FPATH
     if [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
         terrainium enter --auto-apply
     elif [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
         exec terrainium enter --auto-apply
+    fi
+    typeset +x FPATH
+}}
+
+function __terrainium_parse_command() {{
+    local command=(${{(s/ /)1}})
+    if [ "${{command[1]}}" = "terrainium" ]; then
+        typeset +x __terrainium_is_terrainium="true"
+        typeset +x __terrainium_verb="${{command[2]}}"
+    elif [ "${{command[1]}} ${{command[2]}}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
+        typeset +x  __terrainium_is_terrainium="true"
+        typeset +x  __terrainium_verb="${{command[4]}}"
+    fi
+}}
+
+function __terrainium_reexport_envs() {{
+{}
+    typeset +x __TERRAIN_ENVS_EXPORTED="true"
+}}
+
+function __terrainium_unexport_envs() {{
+    # unexport but set terrainium env vars
+{}
+    unset __TERRAIN_ENVS_EXPORTED
+}}
+
+function __terrainium_fpath_preexec_function() {{
+    __terrainium_parse_command "$3"
+    if [ "$__terrainium_is_terrainium" = "true" ]; then
+        typeset -x FPATH
+    fi
+}}
+
+function __terrainium_fpath_precmd_function() {{
+    if [ "$__terrainium_is_terrainium" = "true" ]; then
+        typeset +x FPATH
+        unset __terrainium_is_terrainium
+        unset __terrainium_verb
     fi
 }}
 
@@ -111,10 +156,11 @@ if [ -n "$TERRAIN_SESSION_ID" ]; then
     "${{terrain_init}}"
     builtin unfunction -- "${{terrain_init}}"
     __terrainium_enter
-    # unexport but set terrainium env vars
-{}
+    __terrainium_unexport_envs
 {}
 else
+    preexec_functions=(__terrainium_fpath_preexec_function $preexec_functions)
+    precmd_functions=(__terrainium_fpath_precmd_function $precmd_functions)
     chpwd_functions=(__terrainium_chpwd_functions $chpwd_functions)
     __terrainium_auto_apply
 fi
@@ -124,7 +170,8 @@ fi
             AutoApply::Background,
             AutoApply::Replace,
             AutoApply::All,
-            get_unexports(),
+            get_exports('-'),
+            get_exports('+'),
             get_unsets(),
         )
     }
@@ -318,32 +365,16 @@ alias {{@key}}="{{{this}}}"
 {{/if}}"#
                 .to_string(),
         );
-
-        templates.insert(
-            "reexport".to_string(),
-            r#"{{#if this}}
-{{#each this}}
-    typeset -x {{this}}
-{{/each}}
-{{/if}}"#
-                .to_string(),
-        );
-
-        templates.insert(
-            "unexport".to_string(),
-            r#"{{#if this}}
-{{#each this}}
-    typeset +x {{this}}
-{{/each}}
-{{/if}}"#
-                .to_string(),
-        );
         templates
     }
 }
 
 impl Zsh {
     fn get_fpath(&self) -> Result<String> {
+        if let Ok(fpath) = std::env::var(FPATH) {
+            return Ok(fpath);
+        }
+
         let cmd = "/bin/echo -n $FPATH";
 
         let output = self.execute(vec![cmd.to_string()], None)?;
@@ -603,11 +634,12 @@ mod tests {
         let environment =
             Environment::from(&Terrain::example(), BiomeArg::None, Path::new("")).unwrap();
 
-        let vars = environment
+        let mut vars = environment
             .activation_env_vars(String::new(), Path::new(""), true)
             .keys()
             .map(ToOwned::to_owned)
             .collect::<HashSet<String>>();
+        vars.insert(FPATH.to_owned());
 
         let actual = re_un_exports()
             .into_iter()

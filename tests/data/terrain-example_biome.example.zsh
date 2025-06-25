@@ -74,37 +74,12 @@ function __terrainium_exit() {
     fi
 }
 
-function __terrainium_reexport_envs() {
-    typeset -x TERRAIN_NAME
-    typeset -x TERRAIN_SESSION_ID
-    typeset -x TERRAIN_SELECTED_BIOME
-    typeset -x TERRAIN_AUTO_APPLY
-    typeset -x TERRAIN_DIR
-    typeset +x __TERRAIN_ENVS_EXPORTED="true"
-}
-
-function __terrainium_unexport_envs() {
-    typeset +x TERRAIN_NAME
-    typeset +x TERRAIN_SESSION_ID
-    typeset +x TERRAIN_SELECTED_BIOME
-    typeset +x TERRAIN_AUTO_APPLY
-    typeset +x TERRAIN_DIR
-    unset __TERRAIN_ENVS_EXPORTED
-}
-
 function __terrainium_preexec_functions() {
+    __terrainium_parse_command "$3"
     if [ -n "$TERRAIN_SESSION_ID" ]; then
-        local command=(${(s/ /)3})
-        if [ "${command[1]}" = "terrainium" ]; then
-            local is_terrainium="true"
-            local verb="${command[2]}"
-        elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
-            local is_terrainium="true"
-            local verb="${command[4]}"
-        fi
-        if [ "$is_terrainium" = "true" ]; then
+        if [ "$__terrainium_is_terrainium" = "true" ]; then
             __terrainium_reexport_envs
-            case "$verb" in
+            case "$__terrainium_verb" in
                 "exit")
                     __terrainium_exit
                     ;;
