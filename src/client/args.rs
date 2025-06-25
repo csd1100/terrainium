@@ -51,9 +51,15 @@ pub enum Verbs {
         edit: bool,
     },
 
-    Edit,
+    Edit {
+        #[arg(long)]
+        active: bool,
+    },
 
     Update {
+        #[arg(long)]
+        active: bool,
+
         #[arg(short, long, groups = ["update_biome" , "update"])]
         set_default: Option<String>,
 
@@ -76,11 +82,17 @@ pub enum Verbs {
         backup: bool,
     },
 
-    Generate,
+    Generate {
+        #[arg(long)]
+        active: bool,
+    },
 
     Validate,
 
     Get {
+        #[arg(long)]
+        active: bool,
+
         #[arg(long)]
         debug: bool,
 

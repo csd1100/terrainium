@@ -28,6 +28,7 @@ impl ExpectZSH {
         should_fail_to_execute: bool,
         exit_code: i32,
         output: String,
+        times: usize,
     ) -> Self {
         let command = Command::new(
             ZSH.to_string(),
@@ -50,14 +51,23 @@ impl ExpectZSH {
 
         Self {
             executor: AssertExecutor::with(self.executor)
-                .get_output_for(None, expected, 1)
+                .get_output_for(None, expected, times)
                 .successfully(),
             cwd: self.cwd,
         }
     }
 
     pub fn compile_script_successfully_for(self, script_path: &Path, compiled_path: &Path) -> Self {
-        self.compile_script(script_path, compiled_path, false, 0, String::new())
+        self.compile_script(script_path, compiled_path, false, 0, String::new(), 1)
+    }
+
+    pub fn compile_script_successfully_for_times(
+        self,
+        script_path: &Path,
+        compiled_path: &Path,
+        times: usize,
+    ) -> Self {
+        self.compile_script(script_path, compiled_path, false, 0, String::new(), times)
     }
 
     pub fn compile_script_with_non_zero_exit_code(
@@ -71,6 +81,7 @@ impl ExpectZSH {
             false,
             1,
             "some error while compiling".to_string(),
+            1,
         )
     }
 

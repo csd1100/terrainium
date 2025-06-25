@@ -1,7 +1,7 @@
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
-use std::env::current_dir;
+use std::sync::Arc;
 use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
@@ -38,33 +38,26 @@ async fn main() -> Result<()> {
         }
         Some(verbs) => {
             let home_dir = home_dir().context("failed to get home directory")?;
-            let current_dir = current_dir().context("failed to get current directory")?;
+            let current_dir = std::env::current_dir().context("failed to get current directory")?;
+            let context = Context::new(&verbs, home_dir, current_dir, Arc::new(Executor))?;
 
-            if let Verbs::Init {
-                central,
-                example,
-                edit,
-            } = verbs
-            {
-                let context = Context::create(home_dir, current_dir, Executor, central)?;
+            if let Verbs::Init { example, edit, .. } = verbs {
                 return init::handle(context, example, edit)
                     .context("failed to initialize new terrain");
             }
 
-            let context = Context::get(home_dir, current_dir, Executor)?;
-
-            if let Verbs::Edit = verbs {
+            if let Verbs::Edit { .. } = verbs {
                 return edit::handle(context).context("failed to edit the terrain");
             }
 
             let (terrain, terrain_toml) = Terrain::get_validated_and_fixed_terrain(&context)?;
 
             match verbs {
-                Verbs::Init { .. } | Verbs::Edit => {
+                Verbs::Init { .. } | Verbs::Edit { .. } => {
                     // no need to do anything as it is handled above
                 }
 
-                Verbs::Generate => generate::handle(context, terrain)
+                Verbs::Generate { .. } => generate::handle(context, terrain)
                     .context("failed to generate scripts for the terrain")?,
 
                 Verbs::Validate => {
@@ -122,6 +115,7 @@ async fn main() -> Result<()> {
                     alias,
                     auto_apply,
                     backup,
+                    ..
                 } => update::handle(
                     context,
                     terrain,
