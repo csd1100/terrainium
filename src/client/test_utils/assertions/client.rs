@@ -1,7 +1,8 @@
-use crate::client::types::client::MockClient;
-use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 use anyhow::bail;
 use mockall::predicate::eq;
+
+use crate::client::types::client::MockClient;
+use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 
 pub struct ExpectClient {
     request: ProtoRequest,

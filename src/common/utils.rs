@@ -1,10 +1,12 @@
-use crate::common::constants::TEST_TIMESTAMP;
-use anyhow::Context;
-use regex::Regex;
 use std::fs::create_dir_all;
 use std::path::Path;
+
+use anyhow::Context;
+use regex::Regex;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
+
+use crate::common::constants::TEST_TIMESTAMP;
 
 pub fn remove_non_numeric(string: &str) -> String {
     let re = Regex::new(r"[^0-9]").unwrap();

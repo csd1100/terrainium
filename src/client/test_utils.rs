@@ -1,8 +1,9 @@
-use crate::client::types::commands::Commands;
-use crate::common::types::command::Command;
 use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;
+
+use crate::client::types::commands::Commands;
+use crate::common::types::command::Command;
 
 pub mod assertions;
 pub mod constants;

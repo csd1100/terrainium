@@ -1,5 +1,11 @@
-use crate::common::constants::{DISABLE, ENABLE, TERRAINIUMD, TERRAINIUMD_DEBUG};
-use crate::common::constants::{PATH, TERRAINIUMD_LINUX_SERVICE_PATH};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+
+use crate::common::constants::{
+    DISABLE, ENABLE, PATH, TERRAINIUMD, TERRAINIUMD_DEBUG, TERRAINIUMD_LINUX_SERVICE_PATH,
+};
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
@@ -8,9 +14,6 @@ use crate::daemon::service::{
     ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
     ERROR_SERVICE_NOT_LOADED, Service,
 };
-use anyhow::{Context, Result, bail};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 const SYSTEMCTL: &str = "systemctl";
 const USER: &str = "--user";
@@ -373,6 +376,12 @@ impl LinuxService {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::common::constants::{DISABLE, ENABLE, TERRAINIUMD_LINUX_SERVICE_PATH};
     use crate::common::execute::MockExecutor;
@@ -382,10 +391,6 @@ mod tests {
     };
     use crate::daemon::service::tests::Status;
     use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
-    use anyhow::Result;
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     fn service_name() -> &'static str {
         if cfg!(debug_assertions) {

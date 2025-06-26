@@ -1,8 +1,9 @@
+use anyhow::{Context as AnyhowContext, Result};
+
 use crate::client::args::GetArgs;
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
-use anyhow::{Context as AnyhowContext, Result};
 
 pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<()> {
     let output = get(context, terrain, get_args)?;
@@ -56,6 +57,12 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
 
 #[cfg(test)]
 mod tests {
+    use std::fs::read_to_string;
+    use std::path::Path;
+    use std::str::FromStr;
+
+    use anyhow::Result;
+
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::types::config::Config;
     use crate::client::types::context::Context;
@@ -63,10 +70,6 @@ mod tests {
     use crate::client::types::terrain::tests::set_auto_apply;
     use crate::common::constants::EXAMPLE_BIOME;
     use crate::common::execute::MockExecutor;
-    use anyhow::Result;
-    use std::fs::read_to_string;
-    use std::path::Path;
-    use std::str::FromStr;
 
     #[test]
     fn get_all_for_default_biome() -> Result<()> {

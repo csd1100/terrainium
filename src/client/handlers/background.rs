@@ -1,3 +1,5 @@
+use anyhow::{Context as AnyhowContext, Result};
+
 use crate::client::args::BiomeArg;
 #[mockall_double::double]
 use crate::client::types::client::Client;
@@ -8,7 +10,6 @@ use crate::client::types::terrain::Terrain;
 use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
-use anyhow::{Context as AnyhowContext, Result};
 
 pub async fn handle(
     context: Context,

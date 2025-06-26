@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::path::Path;
+
 use crate::client::test_utils::{
     expected_constructor_background_example_biome, expected_destructor_background_example_biome,
 };
@@ -7,8 +10,6 @@ use crate::common::constants::{
     TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP,
 };
 use crate::common::types::pb;
-use std::collections::BTreeMap;
-use std::path::Path;
 
 pub const TEST_TERRAIN_NAME: &str = "terrainium";
 pub const TEST_TIMESTAMP_NUMERIC: &str = "19700101000000";

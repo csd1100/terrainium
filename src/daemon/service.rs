@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use home::home_dir;
+
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::daemon::service::darwin::DarwinService;
 use crate::daemon::service::linux::LinuxService;
-use anyhow::{Context, Result, bail};
-use home::home_dir;
-use std::sync::Arc;
 
 const ERROR_SERVICE_NOT_INSTALLED: &str =
     "service is not installed, run `terrainiumd install` to install the service.";

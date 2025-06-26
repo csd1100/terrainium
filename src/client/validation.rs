@@ -1,8 +1,10 @@
-use crate::common::types::command::{Command, CommandsType, OperationType};
-use regex::Regex;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Formatter;
+
+use regex::Regex;
 use tracing::{debug, error, info, warn};
+
+use crate::common::types::command::{Command, CommandsType, OperationType};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]

@@ -1,7 +1,8 @@
+use std::sync::Arc;
+
 use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use home::home_dir;
-use std::sync::Arc;
 use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;

@@ -1,16 +1,17 @@
+use std::path::PathBuf;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+#[cfg(test)]
+use mockall::mock;
+use prost_types::Any;
+use tokio::net::UnixStream;
+
 use crate::client::types::proto::{ProtoRequest, ProtoResponse};
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload;
 use crate::common::types::socket::{
     Socket, socket_is_ready, socket_read, socket_stop_write, socket_write_and_stop,
 };
-use anyhow::Context as AnyhowContext;
-use anyhow::{Result, bail};
-#[cfg(test)]
-use mockall::mock;
-use prost_types::Any;
-use std::path::PathBuf;
-use tokio::net::UnixStream;
 
 #[derive(Debug)]
 pub struct Client {

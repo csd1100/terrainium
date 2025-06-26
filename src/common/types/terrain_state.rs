@@ -1,3 +1,12 @@
+use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
+
+use anyhow::{Context, Result, bail};
+use clap::builder::styling::AnsiColor;
+use serde::{Deserialize, Serialize};
+use tracing::{debug, instrument, trace};
+
 use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAIN_STATE_FILE_NAME};
 use crate::common::types::command::Command;
 use crate::common::types::paths::get_terrainiumd_paths;
@@ -6,13 +15,6 @@ use crate::common::types::styles::{
     colored, error, heading, sub_heading, sub_value, success, value, warning,
 };
 use crate::common::utils::remove_non_numeric;
-use anyhow::{Context, Result, bail};
-use clap::builder::styling::AnsiColor;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
-use tracing::{debug, instrument, trace};
 
 fn get_log_path(
     state_directory: &str,
@@ -625,6 +627,8 @@ impl TryFrom<pb::status_response::CommandState> for CommandState {
 
 #[cfg(test)]
 pub mod test_utils {
+    use std::path::Path;
+
     use super::*;
     use crate::client::test_utils::{
         expected_constructor_background_example_biome, expected_destructor_background_example_biome,
@@ -637,7 +641,6 @@ pub mod test_utils {
         TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
         expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
     };
-    use std::path::Path;
 
     fn get_commands(
         state_dir: &str,

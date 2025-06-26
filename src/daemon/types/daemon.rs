@@ -1,15 +1,17 @@
+use std::fs::{create_dir_all, remove_file};
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use tokio::net::UnixListener;
+use tokio_stream::wrappers::UnixListenerStream;
+use tracing::{debug, info, warn};
+
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{Context, Result, bail};
-use std::fs::{create_dir_all, remove_file};
-use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::net::UnixListener;
-use tokio_stream::wrappers::UnixListenerStream;
-use tracing::{debug, info, warn};
 
 #[derive(Debug)]
 pub struct Daemon {
@@ -113,13 +115,15 @@ impl Daemon {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::{metadata, read_to_string};
+    use std::os::unix::fs::FileTypeExt;
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use super::*;
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::common::types::paths::DaemonPaths;
-    use anyhow::Result;
-    use std::fs::{metadata, read_to_string};
-    use std::os::unix::fs::FileTypeExt;
-    use tempfile::tempdir;
 
     #[tokio::test]
     async fn socket_is_created() -> Result<()> {

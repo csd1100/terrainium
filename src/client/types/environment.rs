@@ -1,3 +1,10 @@
+use std::collections::{BTreeMap, HashSet};
+use std::fmt::{Display, Formatter};
+use std::path::Path;
+
+use anyhow::{Context, Result, bail};
+use serde::Serialize;
+
 use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
@@ -9,11 +16,6 @@ use crate::client::validation::{
 use crate::common::constants::{
     TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
-use anyhow::{Context, Result, bail};
-use serde::Serialize;
-use std::collections::{BTreeMap, HashSet};
-use std::fmt::{Display, Formatter};
-use std::path::Path;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
@@ -208,6 +210,15 @@ Auto Apply: {}
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+    use std::env::VarError;
+    use std::fs;
+    use std::fs::create_dir_all;
+    use std::path::PathBuf;
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::{
         expected_aliases_example_biome, expected_constructor_background_example_biome,
@@ -228,13 +239,6 @@ mod tests {
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::test_utils::expected_env_vars_example_biome;
     use crate::common::types::command::Command;
-    use anyhow::Result;
-    use std::collections::BTreeMap;
-    use std::env::VarError;
-    use std::fs;
-    use std::fs::create_dir_all;
-    use std::path::PathBuf;
-    use tempfile::tempdir;
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {

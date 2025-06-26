@@ -1,3 +1,10 @@
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use prost_types::Any;
+use tracing::{debug, error, trace};
+
 use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
@@ -10,11 +17,6 @@ use crate::common::utils::remove_non_numeric;
 use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
 use crate::daemon::types::state_manager::{StoredHistory, StoredState};
-use anyhow::{Context, Result, bail};
-use prost_types::Any;
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use tracing::{debug, error, trace};
 
 pub(crate) struct ExecuteHandler;
 
@@ -297,16 +299,22 @@ async fn spawn_command(
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+    use tokio::sync::RwLock;
+
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
         TERRAIN_HISTORY_FILE_NAME, TERRAIN_STATE_FILE_NAME, TEST_TIMESTAMP,
     };
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::expected_env_vars_example_biome;
-    use crate::common::test_utils::{TEST_SESSION_ID, TEST_TIMESTAMP_NUMERIC};
     use crate::common::test_utils::{
-        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, expected_execute_request_example_biome,
+        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        expected_env_vars_example_biome, expected_execute_request_example_biome,
     };
     use crate::common::types::command::Command;
     use crate::common::types::paths::DaemonPaths;
@@ -322,11 +330,6 @@ mod tests {
     use crate::daemon::types::context::DaemonContext;
     use crate::daemon::types::history::History;
     use crate::daemon::types::state::State;
-    use std::fs;
-    use std::path::PathBuf;
-    use std::sync::Arc;
-    use tempfile::tempdir;
-    use tokio::sync::RwLock;
 
     #[tokio::test]
     async fn create_state_for_construct_without_session() {

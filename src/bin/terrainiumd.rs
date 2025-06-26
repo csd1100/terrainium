@@ -1,7 +1,8 @@
-use anyhow::{Context, Result, bail};
-use clap::Parser;
 use std::process::exit;
 use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use clap::Parser;
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
 use terrainium::common::types::paths::{DaemonPaths, get_terrainiumd_paths};

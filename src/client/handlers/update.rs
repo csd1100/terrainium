@@ -1,12 +1,14 @@
+use std::fs::{copy, write};
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+use toml_edit::{DocumentMut, value};
+
 use crate::client::args::UpdateArgs;
 use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{ALIASES, AUTO_APPLY, BIOMES, DEFAULT_BIOME, ENVS, NONE, TERRAIN};
-use anyhow::{Context as AnyhowContext, Result, bail};
-use std::fs::{copy, write};
-use toml_edit::{DocumentMut, value};
 
 pub fn handle(
     context: Context,
@@ -69,6 +71,12 @@ pub fn handle(
 
 #[cfg(test)]
 mod tests {
+    use std::fs::{copy, create_dir_all, read_to_string};
+    use std::path::{Path, PathBuf};
+
+    use tempfile::tempdir;
+    use toml_edit::DocumentMut;
+
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
@@ -83,10 +91,6 @@ mod tests {
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
-    use std::fs::{copy, create_dir_all, read_to_string};
-    use std::path::{Path, PathBuf};
-    use tempfile::tempdir;
-    use toml_edit::DocumentMut;
 
     #[test]
     fn set_default_biome() {

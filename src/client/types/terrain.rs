@@ -1,3 +1,16 @@
+use std::collections::BTreeMap;
+use std::fmt::Display;
+use std::fs::{read_to_string, write};
+use std::path::Path;
+use std::str::FromStr;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use toml_edit::DocumentMut;
+use tracing::info;
+
 use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
@@ -10,17 +23,6 @@ use crate::common::constants::{
     BACKGROUND, BIOMES, CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, FOREGROUND, NONE, TERRAIN,
 };
 use crate::common::types::command::Command;
-use anyhow::{Context as AnyhowContext, Result, bail};
-#[cfg(feature = "terrain-schema")]
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fmt::Display;
-use std::fs::{read_to_string, write};
-use std::path::Path;
-use std::str::FromStr;
-use toml_edit::DocumentMut;
-use tracing::info;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -426,6 +428,17 @@ impl Default for Terrain {
 
 #[cfg(test)]
 pub mod tests {
+    use std::collections::BTreeMap;
+    use std::env::VarError;
+    use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    use serial_test::serial;
+    use tempfile::tempdir;
+    use toml_edit::DocumentMut;
+
     use crate::client::test_utils::constants::{
         WITH_EXAMPLE_TERRAIN_TOML_COMMENTS, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS_SPACES,
     };
@@ -440,15 +453,6 @@ pub mod tests {
     use crate::common::constants::{NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::{Command, CommandsType};
-    use serial_test::serial;
-    use std::collections::BTreeMap;
-    use std::env::VarError;
-    use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
-    use std::os::unix::fs::{PermissionsExt, symlink};
-    use std::path::PathBuf;
-    use std::str::FromStr;
-    use tempfile::tempdir;
-    use toml_edit::DocumentMut;
 
     pub fn force_set_invalid_default_biome(terrain: &mut Terrain, default_biome: Option<String>) {
         terrain.default_biome = default_biome;

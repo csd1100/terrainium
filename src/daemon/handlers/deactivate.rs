@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
+use anyhow::{Context, Result};
+use prost_types::Any;
+use tracing::trace;
+
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Deactivate, Response};
 use crate::daemon::handlers::execute::spawn_commands;
 use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{Context, Result};
-use prost_types::Any;
-use std::sync::Arc;
-use tracing::trace;
 
 pub struct DeactivateHandler;
 impl RequestHandler for DeactivateHandler {
@@ -66,6 +68,11 @@ async fn deactivate(request: Deactivate, context: Arc<DaemonContext>) -> Respons
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::TERRAIN_STATE_FILE_NAME;
     use crate::common::execute::MockExecutor;
@@ -80,9 +87,6 @@ mod tests {
     use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::types::config::DaemonConfig;
     use crate::daemon::types::context::DaemonContext;
-    use std::fs;
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     #[tokio::test]
     async fn test_deactivate() {

@@ -1,11 +1,13 @@
-use crate::common::execute::MockExecutor;
-use crate::common::types::command::Command;
-use anyhow::bail;
-use mockall::predicate::eq;
 use std::collections::BTreeMap;
 use std::os::unix::prelude::ExitStatusExt;
 use std::process::{ExitStatus, Output};
 use std::sync::Arc;
+
+use anyhow::bail;
+use mockall::predicate::eq;
+
+use crate::common::execute::MockExecutor;
+use crate::common::types::command::Command;
 
 #[derive(Clone)]
 pub struct ExpectedCommand {

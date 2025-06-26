@@ -1,3 +1,8 @@
+use std::env;
+use std::str::FromStr;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background::execute_request;
 #[mockall_double::double]
@@ -10,9 +15,6 @@ use crate::common::constants::{TERRAIN_AUTO_APPLY, TERRAIN_SELECTED_BIOME};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
-use anyhow::{Context as AnyhowContext, Result, bail};
-use std::env;
-use std::str::FromStr;
 
 pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) -> Result<()> {
     let session_id = context.session_id();
@@ -86,6 +88,11 @@ fn deactivate(
 
 #[cfg(test)]
 mod tests {
+    use std::env::VarError;
+    use std::path::Path;
+
+    use serial_test::serial;
+
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::context::Context;
@@ -98,9 +105,6 @@ mod tests {
     use crate::common::test_utils;
     use crate::common::test_utils::{TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME};
     use crate::common::types::pb;
-    use serial_test::serial;
-    use std::env::VarError;
-    use std::path::Path;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
         "no active terrain found, use 'terrain enter' command to activate a terrain.";

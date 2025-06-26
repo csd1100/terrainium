@@ -1,15 +1,17 @@
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::str::FromStr;
+
+use anyhow::bail;
+use clap::{Parser, Subcommand};
+use tracing::Level;
+
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
 use crate::common::constants::{
     AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
     NONE,
 };
-use anyhow::bail;
-use clap::{Parser, Subcommand};
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::str::FromStr;
-use tracing::Level;
 
 const DEFAULT_SELECTED: &str = "__default__";
 
@@ -271,10 +273,11 @@ impl FromStr for AutoApply {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::NONE;
-    use std::str::FromStr;
 
     #[test]
     fn pair_from_str() {

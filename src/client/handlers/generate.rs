@@ -1,8 +1,10 @@
+use std::fs::{create_dir_all, exists};
+
+use anyhow::{Context as AnyhowContext, Result};
+
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use anyhow::{Context as AnyhowContext, Result};
-use std::fs::{create_dir_all, exists};
 
 pub fn handle(context: Context, terrain: Terrain) -> Result<()> {
     if !exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
@@ -15,14 +17,15 @@ pub fn handle(context: Context, terrain: Terrain) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::types::context::Context;
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::execute::MockExecutor;
-    use anyhow::Result;
-    use tempfile::tempdir;
 
     #[test]
     fn generates_script() -> Result<()> {

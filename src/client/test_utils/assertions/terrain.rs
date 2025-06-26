@@ -1,6 +1,7 @@
-use crate::common::constants::TERRAIN_TOML;
 use std::fs::read_to_string;
 use std::path::Path;
+
+use crate::common::constants::TERRAIN_TOML;
 
 pub struct AssertTerrain<'a> {
     current_dir: &'a Path,

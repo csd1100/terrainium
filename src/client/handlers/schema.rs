@@ -11,11 +11,12 @@ mod inner {
     use std::fs;
     use std::path::PathBuf;
 
+    use anyhow::Result;
+    use schemars::schema_for;
+
     use crate::client::types::config::Config;
     use crate::client::types::terrain::Terrain;
     use crate::daemon::types::config::DaemonConfig;
-    use anyhow::Result;
-    use schemars::schema_for;
 
     pub fn generate_and_store_schema() -> Result<()> {
         let terrain_toml_schema = schema_for!(Terrain);

@@ -1,3 +1,9 @@
+use std::path::Path;
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result};
+use tracing::info;
+
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
@@ -5,10 +11,6 @@ use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
-use anyhow::{Context as AnyhowContext, Result};
-use std::path::Path;
-use std::sync::Arc;
-use tracing::info;
 
 const EDITOR: &str = "EDITOR";
 
@@ -55,6 +57,15 @@ pub(crate) fn run_editor(
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::env::VarError;
+    use std::fs;
+    use std::path::PathBuf;
+
+    use anyhow::Result;
+    use fs::{copy, create_dir_all};
+    use serial_test::serial;
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
@@ -65,13 +76,6 @@ pub(crate) mod tests {
     use crate::client::types::context::Context;
     use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::types::command::Command;
-    use anyhow::Result;
-    use fs::{copy, create_dir_all};
-    use serial_test::serial;
-    use std::env::VarError;
-    use std::fs;
-    use std::path::PathBuf;
-    use tempfile::tempdir;
 
     pub(crate) const EDITOR: &str = "EDITOR";
 

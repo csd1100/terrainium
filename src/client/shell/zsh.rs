@@ -1,3 +1,17 @@
+use std::collections::BTreeMap;
+use std::fs;
+use std::io::Write;
+use std::os::unix::process::ExitStatusExt;
+use std::path::{Path, PathBuf};
+use std::process::{ExitStatus, Output};
+use std::str::FromStr;
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+use home::home_dir;
+use serde::Serialize;
+use tracing::warn;
+
 use crate::client::args::BiomeArg;
 use crate::client::shell::{Shell, Zsh, render};
 use crate::client::types::context::Context;
@@ -11,18 +25,6 @@ use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
-use anyhow::{Context as AnyhowContext, Result, bail};
-use home::home_dir;
-use serde::Serialize;
-use std::collections::BTreeMap;
-use std::fs;
-use std::io::Write;
-use std::os::unix::process::ExitStatusExt;
-use std::path::{Path, PathBuf};
-use std::process::{ExitStatus, Output};
-use std::str::FromStr;
-use std::sync::Arc;
-use tracing::warn;
 
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
 
@@ -485,6 +487,13 @@ impl Zsh {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+
     use crate::client::args::BiomeArg;
     use crate::client::shell::zsh::{re_un_exports, unsets};
     use crate::client::shell::{Shell, Zsh};
@@ -497,11 +506,6 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, FPATH, NONE};
     use crate::common::execute::MockExecutor;
-    use std::collections::HashSet;
-    use std::fs;
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     #[test]
     fn creates_script() {

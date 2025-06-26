@@ -1,12 +1,14 @@
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use prost_types::Any;
+use tracing::trace;
+
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Response, StatusRequest};
 use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{Context, Result, bail};
-use prost_types::Any;
-use std::sync::Arc;
-use tracing::trace;
 
 pub struct StatusHandler;
 
@@ -71,6 +73,13 @@ async fn status(request: StatusRequest, context: Arc<DaemonContext>) -> Result<R
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+    use std::fs;
+    use std::path::Path;
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+
     use crate::client::test_utils::expected_constructor_background_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
@@ -89,11 +98,6 @@ mod tests {
     use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::handlers::status::status;
     use crate::daemon::types::context::DaemonContext;
-    use std::collections::BTreeMap;
-    use std::fs;
-    use std::path::Path;
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     fn expected_status_response(is_auto_apply: bool, auto_apply: &AutoApply) -> StatusResponse {
         let mut command_states = vec![];
