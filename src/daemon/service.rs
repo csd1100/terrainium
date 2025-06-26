@@ -10,7 +10,8 @@ const ERROR_SERVICE_NOT_INSTALLED: &str =
     "service is not installed, run `terrainiumd install` to install the service.";
 const ERROR_ALREADY_RUNNING: &str = "service is already running!";
 const ERROR_IS_NOT_RUNNING: &str = "service is not running!";
-const ERROR_SERVICE_NOT_LOADED: &str = "service is installed but not loaded in the system, run `terrainiumd reload` to reload the service.";
+const ERROR_SERVICE_NOT_LOADED: &str = "service is installed but not loaded in the system, run \
+                                        `terrainiumd reload` to reload the service.";
 
 pub mod darwin;
 pub mod linux;

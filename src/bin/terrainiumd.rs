@@ -122,7 +122,8 @@ async fn run(
 async fn start() -> Result<()> {
     if cfg!(debug_assertions) {
         println!(
-            "{}: you are running debug build of terrainiumd, which might cause some unwanted behavior.",
+            "{}: you are running debug build of terrainiumd, which might cause some unwanted \
+             behavior.",
             warning("WARNING")
         );
     }

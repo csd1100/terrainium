@@ -103,7 +103,11 @@ mod tests {
             .for_each(|(idx, cmd)| {
                 command_states.push(CommandState {
                     command: Some(cmd.into()),
-                    log_path: format!("{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", get_terrainiumd_paths().dir_str()),
+                    log_path: format!(
+                        "{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.\
+                         {TEST_TIMESTAMP_NUMERIC}.log",
+                        get_terrainiumd_paths().dir_str()
+                    ),
                     // status: 1 i.e. starting
                     status: 1,
                     // exit_code: -100 i.e. starting

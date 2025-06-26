@@ -16,8 +16,8 @@ fn get_valid_terrain_name_session_id(
     match terrain_name {
         None => Ok((
             terrain_name_env.context(
-                "if there is no active terrain,\
-         terrain name should passed with `--terrain-name <NAME>`",
+                "if there is no active terrain,terrain name should passed with `--terrain-name \
+                 <NAME>`",
             )?,
             session_id.or(session_id_env),
         )),

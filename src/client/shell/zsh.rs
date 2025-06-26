@@ -200,7 +200,8 @@ fi
             .context("failed to check if shell integration script exists")?
         {
             warn!(
-                "shell-integration script not found in config directory, copying script to config directory"
+                "shell-integration script not found in config directory, copying script to config \
+                 directory"
             );
 
             fs::write(&init_script_location, script)
@@ -218,7 +219,8 @@ fi
                 .context("failed to remove outdated shell-integration script")?;
 
             warn!(
-                "shell-integration script was outdated in config directory, copying newer script to config directory"
+                "shell-integration script was outdated in config directory, copying newer script \
+                 to config directory"
             );
 
             fs::write(&init_script_location, script)

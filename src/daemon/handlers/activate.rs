@@ -171,7 +171,15 @@ mod tests {
             expected_activate_request_example_biome(true, is_auto_apply, &auto_apply);
 
         let mut history_file = create_file(&history).await.unwrap();
-        write_to_file(&mut history_file, format!("{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\n{TEST_SESSION_ID}-4\n{TEST_SESSION_ID}-5")).await.unwrap();
+        write_to_file(
+            &mut history_file,
+            format!(
+                "{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\\
+                 n{TEST_SESSION_ID}-4\n{TEST_SESSION_ID}-5"
+            ),
+        )
+        .await
+        .unwrap();
 
         super::activate(expected_request, context).await.unwrap();
 
@@ -181,7 +189,8 @@ mod tests {
         assert_eq!(
             history_contents,
             format!(
-                "{TEST_SESSION_ID}\n{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\n{TEST_SESSION_ID}-4"
+                "{TEST_SESSION_ID}\n{TEST_SESSION_ID}-1\n{TEST_SESSION_ID}-2\n{TEST_SESSION_ID}-3\\
+                 n{TEST_SESSION_ID}-4"
             )
         );
 

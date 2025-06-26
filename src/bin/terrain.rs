@@ -21,7 +21,8 @@ use terrainium::common::types::styles::warning;
 async fn main() -> Result<()> {
     if cfg!(debug_assertions) {
         println!(
-            "{}: you are running debug build of terrainium, which might cause some unwanted behavior.",
+            "{}: you are running debug build of terrainium, which might cause some unwanted \
+             behavior.",
             warning("WARNING")
         );
     }

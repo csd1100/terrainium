@@ -145,9 +145,10 @@ impl Environment {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "environment variable '{k}' contains reference to variables \
-                     ('{refs}') that are not defined in terrain.toml and system environment variables. \
-                      ensure that variables ('{refs}') are set before using '{k}' environment variable."
+                        "environment variable '{k}' contains reference to variables ('{refs}') \
+                         that are not defined in terrain.toml and system environment variables. \
+                         ensure that variables ('{refs}') are set before using '{k}' environment \
+                         variable."
                     ),
                     r#for: self.selected_biome().clone(),
                     fix_action: ValidationFixAction::None,
@@ -558,13 +559,17 @@ mod tests {
         let messages = environment.validate().expect("should not fail").results();
 
         assert_eq!(messages.len(), 1);
-        assert!(messages.contains(&ValidationResult {
-            level: ValidationMessageLevel::Warn,
-            message: "environment variable 'NESTED_POINTER' contains reference to variables \
-                 ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system environment variables. \
-                 ensure that variables ('NULL_1', 'NULL_2') are set before using 'NESTED_POINTER' environment variable.".to_string(),
-            r#for: "none".to_string(),
-            fix_action: ValidationFixAction::None,
-        }));
+        assert!(
+            messages.contains(&ValidationResult {
+                level: ValidationMessageLevel::Warn,
+                message: "environment variable 'NESTED_POINTER' contains reference to variables \
+                          ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system \
+                          environment variables. ensure that variables ('NULL_1', 'NULL_2') are \
+                          set before using 'NESTED_POINTER' environment variable."
+                    .to_string(),
+                r#for: "none".to_string(),
+                fix_action: ValidationFixAction::None,
+            })
+        );
     }
 }

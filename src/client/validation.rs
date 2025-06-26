@@ -213,8 +213,7 @@ pub(crate) fn validate_identifiers<'a>(
         if k.is_empty() {
             messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message:
-                "empty identifier is not allowed".to_string(),
+                message: "empty identifier is not allowed".to_string(),
                 r#for: for_str.clone(),
                 fix_action: ValidationFixAction::None,
             });
@@ -225,11 +224,12 @@ pub(crate) fn validate_identifiers<'a>(
             fixable = true;
             messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
-                message: format!(
-                    "trimming spaces from identifier: '{k}'"
-                ),
+                message: format!("trimming spaces from identifier: '{k}'"),
                 r#for: for_str.clone(),
-                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_identifier(&data_type, k) },
+                fix_action: ValidationFixAction::Trim {
+                    biome_name,
+                    target: Target::from_identifier(&data_type, k),
+                },
             });
         }
 
@@ -239,9 +239,7 @@ pub(crate) fn validate_identifiers<'a>(
         if k.contains(" ") {
             messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!(
-                    "identifier '{k}' is invalid as it contains spaces",
-                ),
+                message: format!("identifier '{k}' is invalid as it contains spaces",),
                 r#for: for_str.clone(),
                 fix_action: ValidationFixAction::None,
             });
@@ -250,9 +248,7 @@ pub(crate) fn validate_identifiers<'a>(
         if starting_with_num.is_match(k) {
             messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!(
-                    "identifier '{k}' cannot start with number",
-                ),
+                message: format!("identifier '{k}' cannot start with number",),
                 r#for: for_str.clone(),
                 fix_action: ValidationFixAction::None,
             });
@@ -261,7 +257,10 @@ pub(crate) fn validate_identifiers<'a>(
         if invalid_identifier.is_match(k) {
             messages.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
-                message: format!("identifier '{k}' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters."),
+                message: format!(
+                    "identifier '{k}' contains invalid characters. identifier name can only \
+                     include [a-zA-Z0-9_] characters."
+                ),
                 r#for: for_str.clone(),
                 fix_action: ValidationFixAction::None,
             });

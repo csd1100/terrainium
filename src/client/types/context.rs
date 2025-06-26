@@ -136,7 +136,8 @@ impl Context {
 
         if terrain_dir.join(TERRAIN_TOML).exists() || central_dir.join(TERRAIN_TOML).exists() {
             bail!(
-                "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+                "terrain for this project is already present. edit existing terrain with 'terrain \
+                 edit' command"
             );
         }
 
@@ -396,7 +397,8 @@ pub(crate) mod tests {
 
         assert_eq!(
             err,
-            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
         );
 
         Ok(())
@@ -422,7 +424,8 @@ pub(crate) mod tests {
 
         assert_eq!(
             err,
-            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
         );
 
         Ok(())
@@ -445,7 +448,8 @@ pub(crate) mod tests {
 
         assert_eq!(
             err,
-            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
         );
 
         Ok(())
@@ -470,7 +474,8 @@ pub(crate) mod tests {
 
         assert_eq!(
             err,
-            "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
         );
 
         Ok(())

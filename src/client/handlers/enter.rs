@@ -641,7 +641,8 @@ mod tests {
 
         assert_eq!(
             err,
-            "failed to spawn background processes while entering terrain environment: failed to parse the request"
+            "failed to spawn background processes while entering terrain environment: failed to \
+             parse the request"
         );
     }
 }

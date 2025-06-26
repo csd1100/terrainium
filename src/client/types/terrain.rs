@@ -560,110 +560,168 @@ pub mod tests {
 
         [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: "empty identifier is not allowed".to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate empty identifier message for {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "empty identifier is not allowed".to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate empty identifier message for \
+                     {biome_name}({identifier_type})"
+                );
 
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message:
-                    "identifier 'TEST WITH SPACES' is invalid as it contains spaces"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier with spaces message for {biome_name}({identifier_type})");
-
-                let fix_action = if identifier_type == &"env" {
-                    ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }
-                } else {
-                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" WITH_LEADING_SPACES") }
-                };
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message:
-                    "trimming spaces from identifier: ' WITH_LEADING_SPACES'"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action,
-                }), "failed to validate trimming leading spaces from identifier message for {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier 'TEST WITH SPACES' is invalid as it contains spaces"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier with spaces message for \
+                     {biome_name}({identifier_type})"
+                );
 
                 let fix_action = if identifier_type == &"env" {
-                    ValidationFixAction::Trim { biome_name, target: Target::Env("WITH_TRAILING_SPACES ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Env(" WITH_LEADING_SPACES"),
+                    }
                 } else {
-                    ValidationFixAction::Trim { biome_name, target: Target::Alias("WITH_TRAILING_SPACES ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Alias(" WITH_LEADING_SPACES"),
+                    }
                 };
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message:
-                    "trimming spaces from identifier: 'WITH_TRAILING_SPACES '"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action,
-                }), "failed to validate trimming trailing spaces from identifier message for {biome_name}({identifier_type})");
-
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message:
-                    "identifier '1STARTING_WITH_NUM' cannot start with number"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier starting with number message for {biome_name}({identifier_type})");
-
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: "identifier 'WITH-INVALID-#.(' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.".to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier with invalid chars for {biome_name}({identifier_type})");
-
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message:
-                    "identifier '1INVALID-#. (' is invalid as it contains spaces"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier with spaces message for ' 1INVALID-#. ( ' and {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: ' WITH_LEADING_SPACES'"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action,
+                    }),
+                    "failed to validate trimming leading spaces from identifier message for \
+                     {biome_name}({identifier_type})"
+                );
 
                 let fix_action = if identifier_type == &"env" {
-                    ValidationFixAction::Trim { biome_name, target: Target::Env(" 1INVALID-#. ( ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Env("WITH_TRAILING_SPACES "),
+                    }
                 } else {
-                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" 1INVALID-#. ( ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Alias("WITH_TRAILING_SPACES "),
+                    }
                 };
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message: "trimming spaces from identifier: ' 1INVALID-#. ( '"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: fix_action.clone(),
-                }), "failed to validate trimming spaces environment variable message for ' 1INVALID-#. ( ' and {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: 'WITH_TRAILING_SPACES '"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action,
+                    }),
+                    "failed to validate trimming trailing spaces from identifier message for \
+                     {biome_name}({identifier_type})"
+                );
 
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message: "trimming spaces from identifier: ' 1INVALID-#. ( '"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action,
-                }), "failed to validate trimming spaces environment variable message for ' 1INVALID-#. ( ' and {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier '1STARTING_WITH_NUM' cannot start with number"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier starting with number message for \
+                     {biome_name}({identifier_type})"
+                );
 
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: "identifier '1INVALID-#. (' cannot start with number"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier starting with number for '1INVALID-#. (' and {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier 'WITH-INVALID-#.(' contains invalid characters. \
+                                  identifier name can only include [a-zA-Z0-9_] characters."
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier with invalid chars for \
+                     {biome_name}({identifier_type})"
+                );
 
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Error,
-                    message: "identifier '1INVALID-#. (' contains invalid characters. identifier name can only include [a-zA-Z0-9_] characters.".to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action: ValidationFixAction::None,
-                }), "failed to validate identifier with invalid chars for '1INVALID-#. (' and {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier '1INVALID-#. (' is invalid as it contains spaces"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier with spaces message for ' 1INVALID-#. ( ' and \
+                     {biome_name}({identifier_type})"
+                );
+
+                let fix_action = if identifier_type == &"env" {
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Env(" 1INVALID-#. ( "),
+                    }
+                } else {
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Alias(" 1INVALID-#. ( "),
+                    }
+                };
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: ' 1INVALID-#. ( '".to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: fix_action.clone(),
+                    }),
+                    "failed to validate trimming spaces environment variable message for ' \
+                     1INVALID-#. ( ' and {biome_name}({identifier_type})"
+                );
+
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: ' 1INVALID-#. ( '".to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action,
+                    }),
+                    "failed to validate trimming spaces environment variable message for ' \
+                     1INVALID-#. ( ' and {biome_name}({identifier_type})"
+                );
+
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier '1INVALID-#. (' cannot start with number".to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier starting with number for '1INVALID-#. (' and \
+                     {biome_name}({identifier_type})"
+                );
+
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Error,
+                        message: "identifier '1INVALID-#. (' contains invalid characters. \
+                                  identifier name can only include [a-zA-Z0-9_] characters."
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action: ValidationFixAction::None,
+                    }),
+                    "failed to validate identifier with invalid chars for '1INVALID-#. (' and \
+                     {biome_name}({identifier_type})"
+                );
             })
         });
     }
@@ -895,151 +953,327 @@ pub mod tests {
                     ["foreground", "background"]
                         .iter()
                         .for_each(|commands_type| {
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!(
-                                    "exe cannot be empty, make sure it is set before {commands_type} {operation_type} is to be run.",
-                                ),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate empty exe for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe cannot be empty, make sure it is set before \
+                                         {commands_type} {operation_type} is to be run.",
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate empty exe for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: "exe 'with spaces' contains whitespaces.".to_string(),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate whitespace not being present in exe for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: "exe 'with spaces' contains whitespaces.".to_string(),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate whitespace not being present in exe for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe 'not_in_path' is not present in PATH variable. make sure it is present before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate exe being not in path for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe 'not_in_path' is not present in PATH variable. make \
+                                         sure it is present before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate exe being not in path for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!(
-                                    "cwd: '{}' does not exists for command exe: 'valid_command' args: 'some_args1 some_args2'.",
-                                    test_dir.path().join("./relative_dir_does_not_exist").display(),
-                                ),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate relative cwd does not exist for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "cwd: '{}' does not exists for command exe: \
+                                         'valid_command' args: 'some_args1 some_args2'.",
+                                        test_dir
+                                            .path()
+                                            .join("./relative_dir_does_not_exist")
+                                            .display(),
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate relative cwd does not exist for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: "cwd: '/absolute_dir_does_not_exist' does not exists for command exe: 'valid_command' args: 'some_args1 some_args2'.".to_string(),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate absolute cwd does not exist for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: "cwd: '/absolute_dir_does_not_exist' does not exists \
+                                              for command exe: 'valid_command' args: 'some_args1 \
+                                              some_args2'."
+                                        .to_string(),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate absolute cwd does not exist for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!(
-                                    "cwd: '{}' is not a directory for command exe: 'valid_command' args: 'some_args1 some_args2'.",
-                                    absolute_exe_path.display(),
-                                ),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate absolute cwd does not exist for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "cwd: '{}' is not a directory for command exe: \
+                                         'valid_command' args: 'some_args1 some_args2'.",
+                                        absolute_exe_path.display(),
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate absolute cwd does not exist for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("cwd: '{}' is not a directory for command exe: 'valid_command' args: 'some_args1 some_args2'.",
-                                                 test_dir.path().join("./relative_path_with_cwd").display()),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate cwd not a directory exist for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "cwd: '{}' is not a directory for command exe: \
+                                         'valid_command' args: 'some_args1 some_args2'.",
+                                        test_dir.path().join("./relative_path_with_cwd").display()
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate cwd not a directory exist for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!(
-                                    "cwd: '{}' is a symlink but does not resolve to directory ({}) for command exe: 'valid_command' args: 'some_args1 some_args2'.",
-                                    symlink_file.display(),
-                                    relative_file.display(),
-                                ),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate symlink cwd file for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "cwd: '{}' is a symlink but does not resolve to directory \
+                                         ({}) for command exe: 'valid_command' args: 'some_args1 \
+                                         some_args2'.",
+                                        symlink_file.display(),
+                                        relative_file.display(),
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate symlink cwd file for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe ' with_leading_spaces' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action,
-                            }), "failed to validate exe leading spaces for {biome_name}({operation_type}:{commands_type})");
+                            let fix_action = get_test_fix_action(
+                                &leading_space_command,
+                                biome_name,
+                                operation_type,
+                                commands_type,
+                            );
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: format!(
+                                        "exe ' with_leading_spaces' has leading / trailing \
+                                         spaces. make sure it is removed before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action,
+                                }),
+                                "failed to validate exe leading spaces for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            let fix_action = get_test_fix_action(&trailing_space_command, biome_name, operation_type, commands_type);
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe 'with_trailing_spaces ' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action,
-                            }), "failed to validate exe trailing for {biome_name}({operation_type}:{commands_type})");
+                            let fix_action = get_test_fix_action(
+                                &trailing_space_command,
+                                biome_name,
+                                operation_type,
+                                commands_type,
+                            );
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: format!(
+                                        "exe 'with_trailing_spaces ' has leading / trailing \
+                                         spaces. make sure it is removed before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action,
+                                }),
+                                "failed to validate exe trailing for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe './not_executable' does not have permissions to execute. make sure it has correct permissions before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate exe not having execute permission for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe './not_executable' does not have permissions to \
+                                         execute. make sure it has correct permissions before \
+                                         {commands_type} {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate exe not having execute permission for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe './symlink_symlink_not_executable' does not have permissions to execute. make sure it has correct permissions before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate symlink exe not having execute permission for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe './symlink_symlink_not_executable' does not have \
+                                         permissions to execute. make sure it has correct \
+                                         permissions before {commands_type} {operation_type} is \
+                                         to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate symlink exe not having execute permission for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe './relative_not_present' does not exists. make sure it is present before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate exe being not in present in relative path for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe './relative_not_present' does not exists. make sure \
+                                         it is present before {commands_type} {operation_type} is \
+                                         to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate exe being not in present in relative path for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe './relative_not_present_current_dir' does not exists. make sure it is present before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate exe being not in present in relative path for terrain directory {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe './relative_not_present_current_dir' does not \
+                                         exists. make sure it is present before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate exe being not in present in relative path for \
+                                 terrain directory {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Error,
-                                message: format!("exe '{}' does not exists. make sure it is present before {commands_type} {operation_type} is to be run.", absolute_path_not_present.display()),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate exe absolute path not being present for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Error,
+                                    message: format!(
+                                        "exe '{}' does not exists. make sure it is present before \
+                                         {commands_type} {operation_type} is to be run.",
+                                        absolute_path_not_present.display()
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate exe absolute path not being present for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
                             if commands_type == &CommandsType::Background.to_string() {
-                                assert!(messages.contains(&ValidationResult {
-                                    level: ValidationMessageLevel::Warn,
-                                    message: "command exe: 'sudo' args: 'whoami' uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).".to_string(),
-                                    r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                    fix_action: ValidationFixAction::None,
-                                }), "failed to validate exe containing sudo for {biome_name}({operation_type}:{commands_type})");
+                                assert!(
+                                    messages.contains(&ValidationResult {
+                                        level: ValidationMessageLevel::Warn,
+                                        message: "command exe: 'sudo' args: 'whoami' uses sudo. \
+                                                  Running sudo commands in background is not \
+                                                  allowed (see terrainium docs for more info)."
+                                            .to_string(),
+                                        r#for: format!(
+                                            "{biome_name}({operation_type}:{commands_type})"
+                                        ),
+                                        fix_action: ValidationFixAction::None,
+                                    }),
+                                    "failed to validate exe containing sudo for \
+                                     {biome_name}({operation_type}:{commands_type})"
+                                );
                             } else {
-                                assert!(messages.contains(&ValidationResult {
-                                    level: ValidationMessageLevel::Warn,
-                                    message: "command exe: 'sudo' args: 'whoami' uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.".to_string(),
-                                    r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                    fix_action: ValidationFixAction::None,
-                                }), "failed to validate exe containing sudo for {biome_name}({operation_type}:{commands_type})");
+                                assert!(
+                                    messages.contains(&ValidationResult {
+                                        level: ValidationMessageLevel::Warn,
+                                        message: "command exe: 'sudo' args: 'whoami' uses sudo. \
+                                                  Running sudo commands in foreground will block \
+                                                  entering / exiting shell till user is \
+                                                  authenticated."
+                                            .to_string(),
+                                        r#for: format!(
+                                            "{biome_name}({operation_type}:{commands_type})"
+                                        ),
+                                        fix_action: ValidationFixAction::None,
+                                    }),
+                                    "failed to validate exe containing sudo for \
+                                     {biome_name}({operation_type}:{commands_type})"
+                                );
                             }
 
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Info,
-                                message: format!(
-                                    "cwd: '{}/${{RELATIVE_DIR}}' contains environment variable references: 'RELATIVE_DIR' for exe: 'valid_command' args: 'some_args1 some_args2'. Make sure they are set before the {commands_type} {operation_type} is executed",
-                                    test_dir.path().display(),
-                                ),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action: ValidationFixAction::None,
-                            }), "failed to validate cwd with env var for {biome_name}({operation_type}:{commands_type})");
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Info,
+                                    message: format!(
+                                        "cwd: '{}/${{RELATIVE_DIR}}' contains environment \
+                                         variable references: 'RELATIVE_DIR' for exe: \
+                                         'valid_command' args: 'some_args1 some_args2'. Make sure \
+                                         they are set before the {commands_type} {operation_type} \
+                                         is executed",
+                                        test_dir.path().display(),
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action: ValidationFixAction::None,
+                                }),
+                                "failed to validate cwd with env var for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
                         })
                 })
         });
@@ -1126,32 +1360,50 @@ pub mod tests {
         [NONE, "test_biome"].iter().for_each(|biome_name| {
             ["env", "alias"].iter().for_each(|identifier_type| {
                 let fix_action = if identifier_type == &"env" {
-                    ValidationFixAction::Trim { biome_name, target: Target::Env(" WITH_LEADING_SPACES") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Env(" WITH_LEADING_SPACES"),
+                    }
                 } else {
-                    ValidationFixAction::Trim { biome_name, target: Target::Alias(" WITH_LEADING_SPACES") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Alias(" WITH_LEADING_SPACES"),
+                    }
                 };
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message:
-                    "trimming spaces from identifier: ' WITH_LEADING_SPACES'"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action,
-                }), "failed to validate trimming leading spaces from identifier message for {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: ' WITH_LEADING_SPACES'"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action,
+                    }),
+                    "failed to validate trimming leading spaces from identifier message for \
+                     {biome_name}({identifier_type})"
+                );
 
                 let fix_action = if identifier_type == &"env" {
-                    ValidationFixAction::Trim { biome_name, target: Target::Env("WITH_TRAILING_SPACES ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Env("WITH_TRAILING_SPACES "),
+                    }
                 } else {
-                    ValidationFixAction::Trim { biome_name, target: Target::Alias("WITH_TRAILING_SPACES ") }
+                    ValidationFixAction::Trim {
+                        biome_name,
+                        target: Target::Alias("WITH_TRAILING_SPACES "),
+                    }
                 };
-                assert!(messages.contains(&ValidationResult {
-                    level: ValidationMessageLevel::Warn,
-                    message:
-                    "trimming spaces from identifier: 'WITH_TRAILING_SPACES '"
-                        .to_string(),
-                    r#for: format!("{biome_name}({identifier_type})"),
-                    fix_action,
-                }), "failed to validate trimming trailing spaces from identifier message for {biome_name}({identifier_type})");
+                assert!(
+                    messages.contains(&ValidationResult {
+                        level: ValidationMessageLevel::Warn,
+                        message: "trimming spaces from identifier: 'WITH_TRAILING_SPACES '"
+                            .to_string(),
+                        r#for: format!("{biome_name}({identifier_type})"),
+                        fix_action,
+                    }),
+                    "failed to validate trimming trailing spaces from identifier message for \
+                     {biome_name}({identifier_type})"
+                );
             });
 
             ["constructor", "destructor"]
@@ -1160,21 +1412,51 @@ pub mod tests {
                     ["foreground", "background"]
                         .iter()
                         .for_each(|commands_type| {
-                            let fix_action = get_test_fix_action(&leading_space_command, biome_name, operation_type, commands_type);
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe ' with_leading_spaces' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action,
-                            }), "failed to validate exe leading spaces for {biome_name}({operation_type}:{commands_type})");
+                            let fix_action = get_test_fix_action(
+                                &leading_space_command,
+                                biome_name,
+                                operation_type,
+                                commands_type,
+                            );
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: format!(
+                                        "exe ' with_leading_spaces' has leading / trailing \
+                                         spaces. make sure it is removed before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action,
+                                }),
+                                "failed to validate exe leading spaces for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
 
-                            let fix_action = get_test_fix_action(&trailing_space_command, biome_name, operation_type, commands_type);
-                            assert!(messages.contains(&ValidationResult {
-                                level: ValidationMessageLevel::Warn,
-                                message: format!("exe 'with_trailing_spaces ' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run."),
-                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                                fix_action,
-                            }), "failed to validate exe trailing for {biome_name}({operation_type}:{commands_type})");
+                            let fix_action = get_test_fix_action(
+                                &trailing_space_command,
+                                biome_name,
+                                operation_type,
+                                commands_type,
+                            );
+                            assert!(
+                                messages.contains(&ValidationResult {
+                                    level: ValidationMessageLevel::Warn,
+                                    message: format!(
+                                        "exe 'with_trailing_spaces ' has leading / trailing \
+                                         spaces. make sure it is removed before {commands_type} \
+                                         {operation_type} is to be run."
+                                    ),
+                                    r#for: format!(
+                                        "{biome_name}({operation_type}:{commands_type})"
+                                    ),
+                                    fix_action,
+                                }),
+                                "failed to validate exe trailing for \
+                                 {biome_name}({operation_type}:{commands_type})"
+                            );
                         })
                 })
         });
