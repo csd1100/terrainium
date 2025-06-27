@@ -1,79 +1,127 @@
 # Testing
 
-## Expected behavior and Scenarios to test manually
+Expected behavior and Scenarios to test manually
 
-- `init`:
+## creates configuration file
 
-    - creates a terrain.toml file in same directory
-    - throws error if terrain already exists
-    - creates script and zwc files for all biomes in central storage in all scenarios
-    - `-c` - creates file in at central storage
-    - creates the central storage if not present
-    - `-x` - creates a file with example terrain.toml
-    - `-e` - creates a file and opens editor
-    - `-c -e` creates file in central storage and opens editor
-    - `-c -x` creates example file in central storage
-    - `-x -e` creates example file locally and opens editor
-    - `-c -x -e` creates example file in central storage and opens editor
+### using `--create-config` argument
 
-- `edit`:
+**User Input:**
 
-    - opens editor to edit terrain.toml
-    - recompiles all zsh and zwc after exiting editor
+```shell
+terrain --create-config
+```
 
-- `update`:
+**Expected Output:**
 
-    - `-s` updated default biome
-    - no other flag can be used with `-s`
-    - `-b` updates appropriate biome
-    - `-b` cannot be used with `-n`
-    - `-e` updates env
-    - `-a` updates aliases
-    - for `-e` and `-a` values should be key value pair separated by `<key>=<value>`
-    - `-n` creates a new biome
-    - `-e` and `-a` with `-n` updates the new biome
-    - `-k` creates backup file
-    - validate values for all options
-    - zsh script and zwc is recompiled after execution
+- configuration file is created at location `~/.config/terrainium/terrainium.toml`
 
-- `generate`:
+---
 
-    - generates zsh script and zwc for all biomes
-    - valid zsh script is generated
+### creates configuration file with logging
 
-- `get`
+**User Input:**
 
-    - without any option returns all
-    - `-b` returns all for specific biome and also of main terrain if not defined
-    - `--alias` returns all aliases
-    - `-a` returns alias passed in as option to arg
-    - `--alias` and `-a` cannot be used together
-    - `--env` returns all envs
-    - `-e` returns env passed in as option to arg
-    - `--env` and `-e` cannot be used together
-    - `-c` returns constructors
-    - `-d` returns destructors
+```shell
+terrain --create-config -l trace
+```
 
-- `enter`
+**Expected Output:**
 
-    - shell has started with options
-    - by default enters default biome if defined otherwise main terrain
-    - `-b` if specified enters specific biome and if terrain is already enabled
-      and `-b` passed can be used to change biome
-    - background and foreground constructors called
-    - background constructors logged at `/tmp/terrainium-<session-id>` dir
+- config file is created at location `~/.config/terrainium/terrainium.toml`
+- shows logs of config file creation
 
-- `exit`
+---
 
-    - by default exits entirely
-    - background and foreground destructors called
-    - background destructors logged at `/tmp/terrainium-<session-id>` dir
+### create configuration fails with other options
 
-- `construct`
+**User Input:**
 
-    - background and foreground constructors called
-    - background constructors logged at `/tmp/terrainium-<session-id>` dir
+```shell
+# ! will fail
+terrain --create-config --update-rc
+```
 
-- `destruct`
-    - background and foreground destructors called
-    - background destructors logged at `/tmp/terrainium-<session-id>` dir
+```shell
+# ! will fail
+terrain --create-config init
+```
+
+**Expected Output:**
+
+- error showing `--create-config` cannot be used with other options
+
+---
+
+## setup shell integration
+
+### using `--update-rc` argument
+
+**User Input:**
+
+```shell
+terrain --update-rc
+```
+
+**Expected Output:**
+
+- shell integration script is created at location `~/.config/terrainium/shell_integration/`
+- `~/.zshrc` file is updated to source shell integration script
+
+---
+
+### using `--update-rc-path` argument
+
+**User Input:**
+
+```shell
+terrain --update-rc-path ~/zsh/source.zsh
+```
+
+**Expected Output:**
+
+- shell integration script is created at location `~/.config/terrainium/shell_integration/`
+- `~/zsh/source.zsh` file is updated to source shell integration script
+
+---
+
+### errors when `--update-rc` and `--update-rc-path` is used together
+
+**User Input:**
+
+```shell
+# ! will fail
+terrain --update-rc --update-rc-path ~/zsh/source.zsh
+```
+
+**Expected Output:**
+
+- fails with error both of the options cannot be used together
+
+---
+
+### fails when shell other than zsh is used
+
+**User Input:**
+
+```shell
+# ! will fail
+#  SHELL env var does not contain zsh OR is not set
+terrain --update-rc
+```
+
+**Expected Output:**
+
+- fails with error as other shells are not supported yet
+
+---
+
+# Template
+
+## Description
+
+### Use Case
+
+**User Input:**
+
+**Expected Output:**

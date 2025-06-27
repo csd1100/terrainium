@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::bail;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueHint};
 use tracing::Level;
 
 use crate::client::types::terrain::AutoApply;
@@ -15,8 +15,11 @@ use crate::common::constants::{
 
 const DEFAULT_SELECTED: &str = "__default__";
 
+/// terrainium
+///
+/// a command-line utility for environment management
 #[derive(Parser, Debug)]
-#[command(args_conflicts_with_subcommands = true)]
+#[command(version, args_conflicts_with_subcommands = true)]
 pub struct ClientArgs {
     #[clap(flatten)]
     pub options: Options,
@@ -27,15 +30,25 @@ pub struct ClientArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
-    #[arg(long)]
+    /// creates a configuration file for terrain client
+    ///
+    /// location: `~/.config/terrainium/terrainium.toml`
+    #[arg(long, conflicts_with = "update-rc")]
     pub create_config: bool,
 
+    /// adds shell integration to default shell rc file
+    ///
+    /// file: `~/.zshrc`
     #[arg(long, group = "update-rc")]
     pub update_rc: bool,
 
-    #[arg(long, group = "update-rc")]
+    /// adds shell integration to specified rc file
+    #[arg(long, group = "update-rc", value_hint = ValueHint::FilePath)]
     pub update_rc_path: Option<PathBuf>,
 
+    /// set logging level for validation messages
+    ///
+    /// [possible values: "trace", "debug", "info", "warn", "error"]
     #[arg(short, long, default_value = "warn", global = true)]
     pub log_level: Level,
 }

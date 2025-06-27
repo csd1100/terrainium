@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{Context as AnyhowContext, Result, bail};
 
 use crate::client::args::Verbs;
-use crate::client::shell::{Shell, Zsh};
+use crate::client::shell::{Shell, Zsh, get_shell};
 use crate::client::types::config::Config;
 use crate::common::constants::{
     CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML,
@@ -148,6 +148,7 @@ impl Context {
         } else {
             terrain_dir.join(TERRAIN_TOML)
         };
+
         Self::generate(
             home_dir,
             terrain_dir,
@@ -168,13 +169,13 @@ impl Context {
     ) -> Result<Self> {
         let config = Config::from_file().unwrap_or_default();
 
-        let shell = Zsh::get(
-            &std::env::current_dir().context("failed to get current directory")?,
-            executor.clone(),
-        );
+        let cwd = std::env::current_dir().context("failed to get current directory")?;
+        let shell = get_shell(cwd.as_path(), executor.clone())?;
 
         shell
-            .setup_integration(Self::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))
+            .setup_integration(
+                Self::config_dir(home_dir.as_path()).join(SHELL_INTEGRATION_SCRIPTS_DIR),
+            )
             .context("failed to setup shell integration")?;
 
         Ok(Context {
@@ -200,7 +201,7 @@ impl Context {
         &self.central_dir
     }
 
-    pub fn config_dir(home_dir: PathBuf) -> PathBuf {
+    pub fn config_dir(home_dir: &Path) -> PathBuf {
         home_dir.join(CONFIG_LOCATION)
     }
 

@@ -10,6 +10,8 @@ pub const TERRAINIUMD_LINUX_SERVICE_PATH: &str = ".config/systemd/user";
 pub const ENABLE: &str = "enable";
 pub const DISABLE: &str = "disable";
 
+pub const ZSHRC: &str = ".zshrc";
+pub const SHELL: &str = "SHELL";
 pub const PATH: &str = "PATH";
 pub const FPATH: &str = "FPATH";
 pub const DEBUG_PATH: &str = "target/debug";
@@ -42,10 +44,12 @@ pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 pub const FOREGROUND: &str = "foreground";
 pub const BACKGROUND: &str = "background";
-pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
 
-pub const EXAMPLE_BIOME: &str = "example_biome";
-pub const NONE: &str = "none";
+pub const ZSH: &str = "zsh";
 pub const TRUE: &str = "true";
 pub const JSON: &str = "json";
+pub const NONE: &str = "none";
+pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
+
+pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
