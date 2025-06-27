@@ -8,10 +8,7 @@ use tracing::Level;
 
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
-use crate::common::constants::{
-    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
-    NONE,
-};
+use crate::common::constants::NONE;
 
 const DEFAULT_SELECTED: &str = "__default__";
 
@@ -19,7 +16,11 @@ const DEFAULT_SELECTED: &str = "__default__";
 ///
 /// a command-line utility for environment management
 #[derive(Parser, Debug)]
-#[command(version, args_conflicts_with_subcommands = true)]
+#[command(
+    version,
+    propagate_version(true),
+    args_conflicts_with_subcommands = true
+)]
 pub struct ClientArgs {
     #[clap(flatten)]
     pub options: Options,
@@ -48,53 +49,108 @@ pub struct Options {
 
     /// set logging level for validation messages
     ///
-    /// [possible values: "trace", "debug", "info", "warn", "error"]
-    #[arg(short, long, default_value = "warn", global = true)]
+    /// [possible values: trace, debug, info, warn, error]
+    #[arg(
+        short,
+        long,
+        default_value = "warn",
+        global = true,
+        display_order = 100
+    )]
     pub log_level: Level,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
+    /// initialize terrain in current directory
+    ///
+    /// creates terrain.toml file
     Init {
+        /// creates terrain.toml in central directory.
+        ///
+        /// if current directory is /home/user/work/project, then
+        /// terrain.toml file is created in
+        /// ~/.config/terrainium/terrains/_home_user_work_project/.
+        ///
+        /// This is useful if user does not want to add terrain.toml
+        /// to source control
         #[arg(short, long)]
         central: bool,
 
+        /// creates terrain.toml with example terrain included.
         #[arg(short = 'x', long)]
         example: bool,
 
+        /// opens terrain.toml in EDITOR after creation
+        ///
+        /// launches editor defined in EDITOR environment variable.
+        /// if EDITOR environment variable is not set, 'vi' will be used
+        /// as editor.
         #[arg(short, long)]
         edit: bool,
     },
 
+    /// opens terrain.toml for current directory in EDITOR
+    ///
+    /// launches editor defined in EDITOR environment variable.
+    /// if EDITOR environment variable is not set, 'vi' will be used
+    /// as editor.
     Edit {
+        /// opens editor for active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
+    /// updates terrain.toml for current directory
     Update {
-        #[arg(long)]
-        active: bool,
-
-        #[arg(short, long, groups = ["update_biome" , "update"])]
+        /// sets default biome.
+        ///
+        /// will fail if specified biome is not defined before.
+        #[arg(short, long, conflicts_with_all = ["biome", "new", "env", "alias", "auto_apply"])]
         set_default: Option<String>,
 
-        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+        /// updates specified biome
+        ///
+        /// if not specified default biome will be updated
+        #[arg(short, long, group = "biomes", default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        #[arg(short, long, group = "update_biome")]
+        /// creates a new biome
+        ///
+        /// if -e and -a is used with this option, new biome will be created
+        /// with specified environment variables and aliases
+        #[arg(short, long, group = "biomes")]
         new: Option<String>,
 
-        #[arg(short, long, group = "update")]
-        alias: Vec<Pair>,
-
-        #[arg(short, long, group = "update")]
+        /// updates environment variable to specified biome in '--new' or '--biome'
+        ///
+        /// format for environment variable will be ENV_VAR="some value"
+        ///
+        /// multiple environment variable can be specified by -e ENV_VAR1=value1 -e ENV_VAR2=value2
+        #[arg(short, long, value_name = "ENV_VAR=\"env value\"")]
         env: Vec<Pair>,
 
-        #[arg(long)]
+        /// updates alias to specified biome in '--new' or '--biome'
+        ///
+        /// format for alias will be alias="some value".
+        ///
+        /// multiple aliases can be specified by -a alias1=value1 -a alias2=value2
+        #[arg(short, long, value_name = "ALIAS=\"alias value\"")]
+        alias: Vec<Pair>,
+
+        /// updates auto_apply value
+        #[arg(long, value_enum)]
         auto_apply: Option<AutoApply>,
 
-        #[arg(short = 'k', long)]
+        /// backs up terrain.toml before update
+        ///
+        /// backs up to terrain.toml.bkp file in same directory as terrain.toml
+        #[arg(long)]
         backup: bool,
+
+        /// updates active terrain rather than current directory
+        #[arg(long)]
+        active: bool,
     },
 
     Generate {
@@ -253,40 +309,32 @@ impl FromStr for Pair {
             bail!("pair of key values should be passed in format <KEY>=<VALUE>.");
         }
 
-        let mut env = BTreeMap::new();
-        env.insert(pair[0].to_string(), pair[1].to_string());
+        let key = pair.first().unwrap().to_string();
+        let value = pair
+            .last()
+            .unwrap()
+            .trim_matches(|c| c == '\'' || c == '"')
+            .to_string();
 
-        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, NONE);
+        let mut identifier = BTreeMap::new();
+        identifier.insert(key.clone(), value.clone());
+
+        let validation_results =
+            validate_identifiers(IdentifierType::Identifier, &identifier, NONE);
         if !validation_results.results_ref().is_empty() {
             validation_results.print_validation_message();
             bail!("env or alias is not valid, please make sure that it is valid.");
         }
 
-        Ok(Pair {
-            key: pair.first().expect("key to be present").to_string(),
-            value: pair.get(1).expect("value to be present").to_string(),
-        })
-    }
-}
-
-impl FromStr for AutoApply {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            AUTO_APPLY_ENABLED => Ok(AutoApply::Enabled),
-            AUTO_APPLY_REPLACE => Ok(AutoApply::Replace),
-            AUTO_APPLY_BACKGROUND => Ok(AutoApply::Background),
-            AUTO_APPLY_ALL => Ok(AutoApply::All),
-            AUTO_APPLY_OFF => Ok(AutoApply::Off),
-            _ => bail!("failed to parse auto_apply argument from: {s}"),
-        }
+        Ok(Pair { key, value })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use clap::ValueEnum;
 
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
@@ -299,6 +347,30 @@ mod tests {
             Pair {
                 key: "KEY".to_string(),
                 value: "VALUE".to_string()
+            },
+            pair
+        );
+    }
+
+    #[test]
+    fn pair_from_value_with_double_quotes_and_space() {
+        let pair = Pair::from_str("KEY=\"SOME VALUE\"").expect("no error to be thrown");
+        assert_eq!(
+            Pair {
+                key: "KEY".to_string(),
+                value: "SOME VALUE".to_string()
+            },
+            pair
+        );
+    }
+
+    #[test]
+    fn pair_from_value_with_single_quotes_and_space() {
+        let pair = Pair::from_str("KEY='SOME VALUE'").expect("no error to be thrown");
+        assert_eq!(
+            Pair {
+                key: "KEY".to_string(),
+                value: "SOME VALUE".to_string()
             },
             pair
         );
@@ -347,29 +419,29 @@ mod tests {
     #[test]
     fn auto_apply_from_str() {
         assert_eq!(
-            AutoApply::from_str("enabled").expect("to be parsed"),
+            AutoApply::from_str("enabled", false).expect("to be parsed"),
             AutoApply::Enabled
         );
         assert_eq!(
-            AutoApply::from_str("all").expect("to be parsed"),
+            AutoApply::from_str("all", false).expect("to be parsed"),
             AutoApply::All
         );
         assert_eq!(
-            AutoApply::from_str("replace").expect("to be parsed"),
+            AutoApply::from_str("replace", false).expect("to be parsed"),
             AutoApply::Replace
         );
         assert_eq!(
-            AutoApply::from_str("background").expect("to be parsed"),
+            AutoApply::from_str("background", false).expect("to be parsed"),
             AutoApply::Background
         );
         assert_eq!(
-            AutoApply::from_str("off").expect("to be parsed"),
+            AutoApply::from_str("off", false).expect("to be parsed"),
             AutoApply::default()
         );
 
         assert_eq!(
-            AutoApply::from_str(NONE).err().unwrap().to_string(),
-            "failed to parse auto_apply argument from: none"
+            AutoApply::from_str(NONE, false).err().unwrap().to_string(),
+            "invalid variant: none"
         );
     }
 }

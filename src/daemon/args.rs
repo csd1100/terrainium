@@ -17,7 +17,7 @@ pub struct Options {
     #[arg(short, long, conflicts_with = "create_config")]
     pub force: bool,
 
-    /// log level for daemon. allowed values: "trace", "debug", "info", "warn", "error"
+    /// log level for daemon. allowed values: trace, debug, info, warn, error
     #[arg(short, long, default_value = "info")]
     pub log_level: Level,
 

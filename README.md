@@ -20,12 +20,16 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
 - Commands:
   - `init [OPTIONS]` - Generates `terrain.toml` in current directory or
     central location.
-    - `-c|--central` - Stores terrain in `~/.config/terrainium/terrains/[..._parent]_$(pwd)/terrain.toml`.  
-      e.g. If terrain is defined in directory `/home/user/work/repos/terrainium` the `terrain.toml` will be stored
-      in `/home/user/.config/terrainium/terrains/_home_user_work_repos_terrainium/terrain.toml`.
+    - `-c|--central` - Stores terrain in central directory, e.g. if terrain is
+      defined for project in directory `/home/user/work/repos/terrainium`, then
+      the `terrain.toml` will be created in `/home/user/.config/terrainium/terrains/_home_user_work_repos_terrainium/terrain.toml`.
     - `-x|--example` - Generates example terrain with all possible options.
     - `-e|--edit` - Generates terrain and opens file in `EDITOR`.
-  - `edit` - edit terrain with editor specified in `EDITOR` environment variable.
+
+  - `edit [OPTIONS]` - edit current directory's terrain with editor specified in
+    `EDITOR` environment variable.
+    - `--active` - opens editor for active terrain rather than current directory
+
   - `update OPTIONS` - Updates terrain with options
     - `-s|--set-default <name>` - set default `biome`.  
       _Cannot be used with other options._
@@ -35,7 +39,8 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
       this, the environment variable and alias will be set for the new biome.  
       _Cannot be used with `-b` flag._
     - `-e|--env <VAR_NAME>=<VAR_VALUE>` adds or updates environment variable `VAR_NAME`
-      with value `VAR_VALUE`. Only single variable can be passed with a single `-e`.
+      with value `VAR_VALUE`. If value has space double quotes can be used `-e VAR="SOME VALUE"`.  
+      Only single variable can be passed with a single `-e`.
       i.e. If we want to pass 2 variables user will have to do following:
 
       ```shell
@@ -43,7 +48,8 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
       ```
 
     - `-a|--alias <ALIAS_NAME>=<ALIAS_VALUE>` adds or updates alias `ALIAS_NAME`
-      with value `ALIAS_VALUE`. Only single alias can be passed with a single `-a`.
+      with value `ALIAS_VALUE`.If value has space, double quotes can be used `-a alias="SOME VALUE"`.  
+      Only single alias can be passed with a single `-a`.
       i.e. If we want to pass 2 aliases user will have to do following:
 
       ```shell
@@ -52,8 +58,9 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
 
     - `--auto-apply <AUTO_APPLY_VALUE>` update auto-apply configuration.
       Value can be `all`, `enabled`, `background`, `replace`, `off`.
-    - `-k|--backup` creates a backup `terrain.toml.bkp` in the same directory before
+    - `--backup` creates a backup `terrain.toml.bkp` in the same directory before
       updating the original.
+    - `--active` updates active terrain rather than current directory
 
   - `generate` - generates and compiles required shell scripts.
   - `validate` - validates the `terrain.toml` and shows error and warnings if any.
@@ -84,11 +91,16 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
     - `-s|--session-id <session_id>` - specify session for which status is to be fetched.
   - `-h|--help` - shows help.
 
-  - **NOTE** - The `-b|--biome <biome_name>` argument for all supported commands following is the behavior:
-    - if not specified `default-biome` will be selected.
-    - if there is no `default-biome`, then main terrain will be used.
-    - if value `none` is passed main terrain will be used regardless of other biome definitions.
-    - if biome with name `biome_name` is not present error will be thrown.
+  - **NOTE**
+    - The `-b|--biome <biome_name>` argument for all supported commands following is the behavior:
+      - if not specified `default-biome` will be selected.
+      - if there is no `default-biome`, then main terrain will be used.
+      - if value `none` is passed main terrain will be used regardless of other biome definitions.
+      - if biome with name `biome_name` is not present error will be thrown.
+    - The `--active` argument is useful when terrainium shell is active, but user is in
+      a different directory that has terrain defined.
+      - The commands that provide `--active` flag by default try to use terrain for
+        current directory rather than activated terrain in current shell session.
 
 - Options:
   - `--create-config` - creates a config file at location:

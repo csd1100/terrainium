@@ -106,7 +106,7 @@ terrain --update-rc --update-rc-path ~/zsh/source.zsh
 
 ```shell
 # ! will fail
-#  SHELL env var does not contain zsh OR is not set
+#  SHELL environment variable does not contain zsh OR is not set
 terrain --update-rc
 ```
 
@@ -115,6 +115,295 @@ terrain --update-rc
 - fails with error as other shells are not supported yet
 
 ---
+
+## set logging level
+
+### set logging level
+
+**User Input:**
+
+```shell
+terrain validate -l trace
+```
+
+**Expected Output:**
+
+- prints validation messages from trace level
+
+---
+
+### fails for invalid logging level
+
+**User Input:**
+
+```shell
+# ! will fail
+terrain validate -l any
+```
+
+**Expected Output:**
+
+- fails with error showing invalid logging level
+
+---
+
+## initializes terrain
+
+### using `init` command
+
+**User Input:**
+
+```shell
+terrain init
+```
+
+**Expected Output:**
+
+- creates `terrain.toml` in current directory.
+
+---
+
+### with example terrain
+
+**User Input:**
+
+```shell
+terrain init -x
+```
+
+**Expected Output:**
+
+- creates `terrain.toml` in current directory with example terrain included.
+
+---
+
+### inside central directory
+
+**User Input:**
+
+```shell
+terrain init -c
+```
+
+**Expected Output:**
+
+- creates `terrain.toml` in central directory.
+- if current directory is `/home/user/work/project`, then `terrain.toml` file is created in
+  `~/.config/terrainium/terrains/_home_user_work_project/`.
+
+---
+
+### launches editor
+
+**User Input:**
+
+```shell
+terrain init -e
+```
+
+**Expected Output:**
+
+- creates `terrain.toml` in current directory.
+- launches editor specified in `EDITOR` environment variable
+- if `EDITOR` not specified uses `vi`
+
+---
+
+### combined flags
+
+**User Input:**
+
+```shell
+terrain init -cxe
+```
+
+**Expected Output:**
+
+- creates `terrain.toml` in central directory.
+- launches editor specified in `EDITOR` environment variable
+- if `EDITOR` not specified uses `vi`
+
+---
+
+### fails if terrain already exists
+
+**User Input:**
+
+```shell
+# ! will fail
+terrain init
+terrain init
+```
+
+```shell
+# ! will fail
+terrain init -c # creates terrain in central directory
+terrain init
+```
+
+```shell
+# ! will fail
+terrain init
+terrain init -c # creates terrain in central directory
+```
+
+**Expected Output:**
+
+- fails with error notifying user that terrain is already present
+
+---
+
+## updates terrain
+
+### sets default biome
+
+**User Input:**
+
+```shell
+terrain update -s example_biome
+```
+
+**Expected Output:**
+
+- updates `default_biome` in `terrain.toml` to `example_biome`
+
+---
+
+### `--set-default` throws error with other arguments, except `--active`, `--backup`
+
+**User Input:**
+
+```shell
+# ! will fail
+terrain update -s example_biome -b example_biome -e VAR1="SOME VALUE"
+```
+
+```shell
+# ! will fail
+terrain update -s example_biome -n new_biome -e VAR1="SOME VALUE"
+```
+
+```shell
+# ! will fail
+terrain update -s example_biome --auto-apply off
+```
+
+**Expected Output:**
+
+- fails with error `--set-default` cannot be used with other variables
+
+---
+
+### updates default biome
+
+**User Input:**
+
+```shell
+terrain update  -e VAR1="SOME VALUE" -a greet="echo hello world!"
+```
+
+**Expected Output:**
+
+- updates `default_biome`
+- adds or updates environment variable `VAR1`
+- adds or updates alias `greet`
+
+---
+
+### updates specified biome
+
+**User Input:**
+
+```shell
+terrain update -b example_biome -e VAR1="SOME VALUE" -a greet="echo hello world!"
+```
+
+**Expected Output:**
+
+- updates `example_biome`
+- adds or updates environment variable `VAR1`
+- adds or updates alias `greet`
+
+---
+
+### updates multiple environment variables and aliases
+
+**User Input:**
+
+```shell
+terrain update -e VAR1="SOME VALUE" -a alias="echo hello world!" \
+  -e VAR2="SOME VALUE" -a alias2="echo hello world!"
+
+```
+
+**Expected Output:**
+
+- updates `default_biome`
+- adds or updates environment variables `VAR1`, `VAR2`
+- adds or updates alias `alias1`, `alias2`
+
+---
+
+### adds new biome
+
+**User Input:**
+
+```shell
+terrain update -n new_biome -e VAR1="SOME VALUE" -a greet="echo hello world!"
+```
+
+**Expected Output:**
+
+- creates `new_biome`
+- adds environment variable `VAR1` in `new_biome`
+- adds alias `greet` in `new_biome`
+
+---
+
+### updates auto-apply
+
+**User Input:**
+
+```shell
+terrain update --auto-apply off
+terrain update --auto-apply enabled
+terrain update --auto-apply background
+terrain update --auto-apply all
+terrain update --auto-apply replace
+```
+
+**Expected Output:**
+
+- updates `auto-apply` value
+
+### backs up terrain.toml
+
+**User Input:**
+
+```shell
+terrain update --auto-apply replace --backup
+```
+
+**Expected Output:**
+
+- updates `auto-apply` value
+- creates the backup in `terrain.toml.bkp` file
+
+### updates current terrain
+
+**User Input:**
+
+```shell
+cd ~/work/active_terrain
+terrain enter
+cd ~/work/other_terrain
+terrain update -e ENV_VAR="value" --active
+```
+
+**Expected Output:**
+
+- updates `active_terrain`
+- sets `ENV_VAR` in `active_terrain`'s default biome
 
 # Template
 
