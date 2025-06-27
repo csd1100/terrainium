@@ -123,7 +123,7 @@ impl Service for DarwinService {
 
     /// Unloads the service.
     ///
-    /// `launchctl bootout gui/<uid>/com.csd1100.terrainium`
+    /// `launchctl bootout gui/<uid>/com.csd1100.terrainiumd`
     fn unload(&self) -> Result<()> {
         if !self.is_loaded()? {
             return Ok(());
@@ -185,7 +185,7 @@ impl Service for DarwinService {
     /// The service must be enabled in order to be bootstrapped.
     ///
     /// Sets `RunAtLoad` to true for service and, runs
-    /// `launchctl enable gui/<uid>/com.csd1100.terrainium`
+    /// `launchctl enable gui/<uid>/com.csd1100.terrainiumd`
     ///
     /// If `now` is true then service is enabled and started at the same time.
     fn enable(&self, now: bool) -> Result<()> {
@@ -247,7 +247,7 @@ impl Service for DarwinService {
 
     /// Check if terrainiumd process is running by checking if status has
     /// `state = running` in the output.
-    /// The status is checked by `launchctl print gui/<uid>/com.csd1100.terrainium`
+    /// The status is checked by `launchctl print gui/<uid>/com.csd1100.terrainiumd`
     /// command.
     ///
     /// `should_check_loaded` defines to check if service is loaded, status
@@ -270,7 +270,7 @@ impl Service for DarwinService {
 
     /// Start the service if it is not already running.
     ///
-    /// `launchctl kickstart gui/<uid>/com.csd1100.terrainium`
+    /// `launchctl kickstart gui/<uid>/com.csd1100.terrainiumd`
     fn start(&self) -> Result<()> {
         if self.is_running(true)? {
             bail!(ERROR_ALREADY_RUNNING);
@@ -300,7 +300,7 @@ impl Service for DarwinService {
 
     /// Stops the service process by sending it `SIGTERM`.
     ///
-    /// `launchctl kill SIGTERM gui/<uid>/com.csd1100.terrainium`
+    /// `launchctl kill SIGTERM gui/<uid>/com.csd1100.terrainiumd`
     fn stop(&self) -> Result<()> {
         if !self.is_running(true)? {
             bail!(ERROR_IS_NOT_RUNNING)
@@ -429,7 +429,7 @@ impl DarwinService {
         std::fs::write(&self.path, &service).context("failed to write service")
     }
 
-    /// Runs `launchctl print gui/<uid>/com.csd1100.terrainium` command
+    /// Runs `launchctl print gui/<uid>/com.csd1100.terrainiumd` command
     /// to get service status.
     fn get_status(&self) -> Result<String> {
         let status = Command::new(

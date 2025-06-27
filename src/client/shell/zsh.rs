@@ -74,7 +74,7 @@ fn get_debug_command_check() -> &'static str {
     if cfg!(debug_assertions) {
         r#"
     elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
-        typeset +x  __terrainium_is_terrainium="true"
+        typeset +x  __terrainium_is_terrain="true"
         typeset +x  __terrainium_verb="${command[4]}""#
     } else {
         ""
@@ -107,24 +107,24 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
             r#"#!/usr/bin/env zsh
 
 function __terrainium_auto_apply() {{
-    auto_apply="$(terrainium get --auto-apply 2> /dev/null)"
+    auto_apply="$(terrain get --auto-apply 2> /dev/null)"
     if [ $? != 0 ]; then
         auto_apply="{}"
     fi
 
     typeset -x FPATH
     if [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
-        terrainium enter --auto-apply
+        terrain enter --auto-apply
     elif [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
-        exec terrainium enter --auto-apply
+        exec terrain enter --auto-apply
     fi
     typeset +x FPATH
 }}
 
 function __terrainium_parse_command() {{
     local command=(${{(s/ /)1}})
-    if [ "${{command[1]}}" = "terrainium" ]; then
-        typeset +x __terrainium_is_terrainium="true"
+    if [ "${{command[1]}}" = "terrain" ]; then
+        typeset +x __terrainium_is_terrain="true"
         typeset +x __terrainium_verb="${{command[2]}}"{}
     fi
 }}
@@ -142,15 +142,15 @@ function __terrainium_unexport_envs() {{
 
 function __terrainium_fpath_preexec_function() {{
     __terrainium_parse_command "$3"
-    if [ "$__terrainium_is_terrainium" = "true" ]; then
+    if [ "$__terrainium_is_terrain" = "true" ]; then
         typeset -x FPATH
     fi
 }}
 
 function __terrainium_fpath_precmd_function() {{
-    if [ "$__terrainium_is_terrainium" = "true" ]; then
+    if [ "$__terrainium_is_terrain" = "true" ]; then
         typeset +x FPATH
-        unset __terrainium_is_terrainium
+        unset __terrainium_is_terrain
         unset __terrainium_verb
     fi
 }}

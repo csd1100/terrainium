@@ -109,7 +109,7 @@ impl Context {
         let terrain_paths = get_terrain_dir(&home_dir, &cwd);
 
         if terrain_paths.is_none() {
-            bail!("terrain.toml does not exists, run 'terrainium init' to initialize terrain.");
+            bail!("terrain.toml does not exists, run 'terrain init' to initialize terrain.");
         }
 
         let (terrain_dir, toml_path) = terrain_paths.unwrap();
@@ -615,7 +615,7 @@ pub(crate) mod tests {
 
         assert_eq!(
             err,
-            "terrain.toml does not exists, run 'terrainium init' to initialize terrain."
+            "terrain.toml does not exists, run 'terrain init' to initialize terrain."
         );
 
         Ok(())

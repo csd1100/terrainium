@@ -12,8 +12,8 @@ NESTED_POINTER = "${POINTER_ENV_VAR}-${ENV_VAR}-${NULL_POINTER}" # will resolve 
 PAGER = "less"
 
 [terrain.aliases]
-tenter = "terrainium enter"
-texit = "terrainium exit"
+tenter = "terrain enter"
+texit = "terrain exit"
 greet = "echo hello"
 
 [terrain.constructors]
@@ -35,7 +35,7 @@ EDITOR = "nvim"
 ENV_VAR = "overridden_env_val"
 
 [biomes.example_biome.aliases]
-tenter = "terrainium enter --biome example_biome"
+tenter = "terrain enter --biome example_biome"
 
 [[biomes.example_biome.constructors.foreground]]
 exe = "/bin/echo"

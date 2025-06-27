@@ -361,7 +361,7 @@ impl Terrain {
         let mut biome_aliases: BTreeMap<String, String> = BTreeMap::new();
         biome_aliases.insert(
             "tenter".to_string(),
-            "terrainium enter --biome example_biome".to_string(),
+            "terrain enter --biome example_biome".to_string(),
         );
 
         let biome_constructors: Commands = Commands::new(
@@ -465,7 +465,7 @@ pub mod tests {
         let mut biome_aliases: BTreeMap<String, String> = BTreeMap::new();
         biome_aliases.insert(
             "tenter".to_string(),
-            "terrainium enter --biome ".to_string() + &name,
+            "terrain enter --biome ".to_string() + &name,
         );
         let biome_constructor_foreground: Vec<Command> = vec![Command::new(
             "/bin/echo".to_string(),

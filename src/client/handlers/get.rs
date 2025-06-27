@@ -190,8 +190,8 @@ mod tests {
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 "#;
 
         assert_eq!(output, expected);
@@ -217,8 +217,8 @@ mod tests {
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 "#;
 
         assert_eq!(output, expected);
@@ -361,8 +361,8 @@ mod tests {
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
 Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 "#;
 
         assert_eq!(output, expected);
@@ -416,7 +416,7 @@ Aliases:
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Aliases:
     non_existent="!!!DOES NOT EXIST!!!"
-    tenter="terrainium enter --biome example_biome"
+    tenter="terrain enter --biome example_biome"
 "#;
 
         assert_eq!(output, expected);
@@ -512,8 +512,8 @@ Aliases:
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
 Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 Constructors:
     foreground:
         `/bin/echo entering terrain` in terrain directory
@@ -556,7 +556,7 @@ Destructors:
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Aliases:
     non_existent="!!!DOES NOT EXIST!!!"
-    tenter="terrainium enter --biome example_biome"
+    tenter="terrain enter --biome example_biome"
 Constructors:
     foreground:
         `/bin/echo entering terrain` in terrain directory
@@ -597,8 +597,8 @@ Destructors:
     EDITOR="nvim"
     NON_EXISTENT="!!!DOES NOT EXIST!!!"
 Aliases:
-    tenter="terrainium enter --biome example_biome"
-    texit="terrainium exit"
+    tenter="terrain enter --biome example_biome"
+    texit="terrain exit"
 "#;
 
         assert_eq!(output, expected);
@@ -632,7 +632,7 @@ Aliases:
     POINTER_ENV_VAR="overridden_env_val"
 Aliases:
     non_existent="!!!DOES NOT EXIST!!!"
-    tenter="terrainium enter --biome example_biome"
+    tenter="terrain enter --biome example_biome"
 "#;
 
         assert_eq!(output, expected);

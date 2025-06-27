@@ -19,7 +19,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     let selected_biome = env::var(TERRAIN_SELECTED_BIOME).ok();
 
     if session_id.is_none() || selected_biome.is_none() {
-        bail!("no active terrain found, use 'terrainium enter' command to activate a terrain.");
+        bail!("no active terrain found, use 'terrain enter' command to activate a terrain.");
     }
 
     let mut client = if let Some(client) = client {
@@ -40,7 +40,7 @@ pub async fn handle(context: Context, terrain: Terrain, client: Option<Client>) 
     Ok(())
 }
 
-/// 'terrainium exit' should run background destructor commands only in following case:
+/// 'terrain exit' should run background destructor commands only in following case:
 /// 1. Auto-apply is disabled i.e. TERRAIN_AUTO_APPLY env var is not set i.e.
 ///    user activated terrain manually
 /// 2. Auto-apply is enabled and background flag is also turned on
@@ -103,7 +103,7 @@ mod tests {
     use std::path::Path;
 
     const TERRAIN_NOT_ACTIVE_ERR: &str =
-        "no active terrain found, use 'terrainium enter' command to activate a terrain.";
+        "no active terrain found, use 'terrain enter' command to activate a terrain.";
 
     fn expected_request_none() -> pb::Deactivate {
         pb::Deactivate {
