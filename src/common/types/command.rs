@@ -1,17 +1,19 @@
-use crate::client::types::biome::Biome;
-use crate::client::validation::{
-    Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
-};
-use crate::common::types::pb;
-use anyhow::{Context, Result};
-#[cfg(feature = "terrain-schema")]
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+#[cfg(feature = "terrain-schema")]
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use crate::client::types::biome::Biome;
+use crate::client::validation::{
+    Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
+};
+use crate::common::types::pb;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CommandsType {
@@ -169,8 +171,10 @@ impl Command {
             };
             if !cwd.is_absolute() {
                 self.cwd = Some(terrain_dir.join(cwd).canonicalize().context(format!(
-                    "failed to normalize path for exe:'{}' args: '{}' terrain_dir: '{terrain_dir:?}' and cwd: '{cwd:?}'",
-                    self.exe, self.args.join(" ")
+                    "failed to normalize path for exe:'{}' args: '{}' terrain_dir: \
+                     '{terrain_dir:?}' and cwd: '{cwd:?}'",
+                    self.exe,
+                    self.args.join(" ")
                 ))?);
             }
         } else {
@@ -190,12 +194,24 @@ impl Command {
     ) {
         let message = if !exe_path.exists() {
             if is_in_path {
-                Some(format!("exe '{}' is not present in PATH variable. make sure it is present before {commands_type} {operation_type} is to be run.", &self.exe))
+                Some(format!(
+                    "exe '{}' is not present in PATH variable. make sure it is present before \
+                     {commands_type} {operation_type} is to be run.",
+                    &self.exe
+                ))
             } else {
-                Some(format!("exe '{}' does not exists. make sure it is present before {commands_type} {operation_type} is to be run.", self.exe))
+                Some(format!(
+                    "exe '{}' does not exists. make sure it is present before {commands_type} \
+                     {operation_type} is to be run.",
+                    self.exe
+                ))
             }
         } else if !is_executable(exe_path) {
-            Some(format!("exe '{}' does not have permissions to execute. make sure it has correct permissions before {commands_type} {operation_type} is to be run.", self.exe))
+            Some(format!(
+                "exe '{}' does not have permissions to execute. make sure it has correct \
+                 permissions before {commands_type} {operation_type} is to be run.",
+                self.exe
+            ))
         } else {
             None
         };
@@ -218,13 +234,18 @@ impl Command {
     ) -> Option<(String, ValidationMessageLevel)> {
         let envs_to_sub = Biome::get_envs_to_substitute(path.to_str().unwrap());
         if !envs_to_sub.is_empty() {
-            Some((format!(
-                "cwd: '{}' contains environment variable references: '{}' for exe: '{}' args: '{}'. Make sure they are set before the {commands_type} {operation_type} is executed",
-                path.display(),
-                envs_to_sub.join("', '"),
-                self.exe,
-                self.args.join(" "),
-            ), ValidationMessageLevel::Info))
+            Some((
+                format!(
+                    "cwd: '{}' contains environment variable references: '{}' for exe: '{}' args: \
+                     '{}'. Make sure they are set before the {commands_type} {operation_type} is \
+                     executed",
+                    path.display(),
+                    envs_to_sub.join("', '"),
+                    self.exe,
+                    self.args.join(" "),
+                ),
+                ValidationMessageLevel::Info,
+            ))
         } else {
             Some((
                 format!(
@@ -242,13 +263,17 @@ impl Command {
         if path.is_symlink() {
             let resolved = fs::read_link(&path).unwrap();
             if !resolved.is_dir() {
-                Some((format!(
-                    "cwd: '{}' is a symlink but does not resolve to directory ({}) for command exe: '{}' args: '{}'.",
-                    path.display(),
-                    resolved.display(),
-                    self.exe,
-                    self.args.join(" ")
-                ), ValidationMessageLevel::Error))
+                Some((
+                    format!(
+                        "cwd: '{}' is a symlink but does not resolve to directory ({}) for \
+                         command exe: '{}' args: '{}'.",
+                        path.display(),
+                        resolved.display(),
+                        self.exe,
+                        self.args.join(" ")
+                    ),
+                    ValidationMessageLevel::Error,
+                ))
             } else {
                 None
             }
@@ -305,7 +330,8 @@ impl Command {
             results.insert(ValidationResult {
                 level: ValidationMessageLevel::Error,
                 message: format!(
-                    "exe cannot be empty, make sure it is set before {commands_type} {operation_type} is to be run.",
+                    "exe cannot be empty, make sure it is set before {commands_type} \
+                     {operation_type} is to be run.",
                 ),
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
                 fix_action: ValidationFixAction::None,
@@ -317,9 +343,16 @@ impl Command {
             fixable = true;
             results.insert(ValidationResult {
                 level: ValidationMessageLevel::Warn,
-                message: format!("exe '{}' has leading / trailing spaces. make sure it is removed before {commands_type} {operation_type} is to be run.", &self.exe),
+                message: format!(
+                    "exe '{}' has leading / trailing spaces. make sure it is removed before \
+                     {commands_type} {operation_type} is to be run.",
+                    &self.exe
+                ),
                 r#for: format!("{biome_name}({operation_type}:{commands_type})"),
-                fix_action: ValidationFixAction::Trim { biome_name, target: Target::from_command(commands_type, operation_type, self) },
+                fix_action: ValidationFixAction::Trim {
+                    biome_name,
+                    target: Target::from_command(commands_type, operation_type, self),
+                },
             });
         }
 
@@ -336,10 +369,19 @@ impl Command {
         if trimmed.contains("sudo") {
             let message = match commands_type {
                 CommandsType::Foreground => {
-                    format!("command exe: '{trimmed}' args: '{}' uses sudo. Running sudo commands in foreground will block entering / exiting shell till user is authenticated.", self.args.join(" "))
+                    format!(
+                        "command exe: '{trimmed}' args: '{}' uses sudo. Running sudo commands in \
+                         foreground will block entering / exiting shell till user is \
+                         authenticated.",
+                        self.args.join(" ")
+                    )
                 }
                 CommandsType::Background => {
-                    format!("command exe: '{trimmed}' args: '{}' uses sudo. Running sudo commands in background is not allowed (see terrainium docs for more info).", self.args.join(" "))
+                    format!(
+                        "command exe: '{trimmed}' args: '{}' uses sudo. Running sudo commands in \
+                         background is not allowed (see terrainium docs for more info).",
+                        self.args.join(" ")
+                    )
                 }
             };
 

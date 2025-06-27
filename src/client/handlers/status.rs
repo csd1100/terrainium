@@ -1,3 +1,5 @@
+use anyhow::{Context as AnyhowContext, Result, bail};
+
 #[mockall_double::double]
 use crate::client::types::client::Client;
 use crate::client::types::proto::{ProtoRequest, ProtoResponse};
@@ -5,7 +7,6 @@ use crate::common::constants::{TERRAIN_NAME, TERRAIN_SESSION_ID};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::types::terrain_state::TerrainState;
-use anyhow::{bail, Context as AnyhowContext, Result};
 
 fn get_valid_terrain_name_session_id(
     terrain_name: Option<String>,
@@ -16,8 +17,8 @@ fn get_valid_terrain_name_session_id(
     match terrain_name {
         None => Ok((
             terrain_name_env.context(
-                "if there is no active terrain,\
-         terrain name should passed with `--terrain-name <NAME>`",
+                "if there is no active terrain,terrain name should passed with `--terrain-name \
+                 <NAME>`",
             )?,
             session_id.or(session_id_env),
         )),
@@ -94,6 +95,11 @@ fn status(
 #[cfg(test)]
 #[serial_test::serial]
 mod tests {
+    use std::env::VarError;
+    use std::path::Path;
+
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::{restore_env_var, set_env_var};
     use crate::client::types::proto::{ProtoRequest, ProtoResponse};
@@ -101,12 +107,10 @@ mod tests {
         EXAMPLE_BIOME, TERRAIN_NAME, TERRAIN_SESSION_ID, TERRAIN_TOML, TEST_TIMESTAMP,
     };
     use crate::common::test_utils;
-    use crate::common::test_utils::expected_env_vars_example_biome;
-    use crate::common::test_utils::{RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME};
+    use crate::common::test_utils::{
+        RequestFor, TEST_SESSION_ID, TEST_TERRAIN_NAME, expected_env_vars_example_biome,
+    };
     use crate::common::types::pb;
-    use std::env::VarError;
-    use std::path::Path;
-    use tempfile::tempdir;
 
     fn expected_status_response(
         terrain_name: &str,

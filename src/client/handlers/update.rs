@@ -1,12 +1,14 @@
+use std::fs::{copy, write};
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+use toml_edit::{DocumentMut, value};
+
 use crate::client::args::UpdateArgs;
 use crate::client::shell::Shell;
 use crate::client::types::biome::Biome;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::constants::{ALIASES, AUTO_APPLY, BIOMES, DEFAULT_BIOME, ENVS, NONE, TERRAIN};
-use anyhow::{bail, Context as AnyhowContext, Result};
-use std::fs::{copy, write};
-use toml_edit::{value, DocumentMut};
 
 pub fn handle(
     context: Context,
@@ -21,7 +23,8 @@ pub fn handle(
     if let Some(new_default) = update_args.set_default {
         if !terrain.biomes().contains_key(&new_default) {
             bail!(
-                "cannot update default biome to '{new_default}', biome '{new_default}' does not exists",
+                "cannot update default biome to '{new_default}', biome '{new_default}' does not \
+                 exists",
             );
         }
         terrain_toml[DEFAULT_BIOME] = value(new_default);
@@ -68,23 +71,26 @@ pub fn handle(
 
 #[cfg(test)]
 mod tests {
+    use std::fs::{copy, create_dir_all, read_to_string};
+    use std::path::{Path, PathBuf};
+
+    use tempfile::tempdir;
+    use toml_edit::DocumentMut;
+
     use crate::client::args::{BiomeArg, Pair, UpdateArgs};
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
     use crate::client::test_utils::constants::{
-        IN_CURRENT_DIR, WITHOUT_DEFAULT_BIOME_TOML, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
+        IN_CURRENT_DIR, WITH_AUTO_APPLY_ENABLED_EXAMPLE_TOML,
         WITH_EXAMPLE_BIOME_UPDATED_EXAMPLE_TOML, WITH_EXAMPLE_TERRAIN_TOML_COMMENTS,
         WITH_NEW_EXAMPLE_BIOME2_EXAMPLE_TOML, WITH_NONE_UPDATED_EXAMPLE_TOML,
+        WITHOUT_DEFAULT_BIOME_TOML,
     };
     use crate::client::types::context::Context;
     use crate::client::types::terrain::tests::{force_set_invalid_default_biome, set_auto_apply};
     use crate::client::types::terrain::{AutoApply, Terrain};
     use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
-    use std::fs::{copy, create_dir_all, read_to_string};
-    use std::path::{Path, PathBuf};
-    use tempfile::tempdir;
-    use toml_edit::DocumentMut;
 
     #[test]
     fn set_default_biome() {

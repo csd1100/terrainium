@@ -2,7 +2,7 @@
 set -e
 
 printf "\nChecking formatting using rustfmt\n"
-cargo fmt --check
+cargo +nightly fmt --check
 printf "\nLinting using clippy\n"
 cargo clippy -- -D warnings
 printf "\nRunning tests\n"

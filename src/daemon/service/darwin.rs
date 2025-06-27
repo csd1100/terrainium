@@ -1,3 +1,8 @@
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+
 use crate::common::constants::{
     ENABLE, PATH, TERRAINIUMD, TERRAINIUMD_DARWIN_SERVICE_PATH, TERRAINIUMD_DEBUG,
 };
@@ -6,12 +11,9 @@ use crate::common::execute::Execute;
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
 use crate::daemon::service::{
-    Service, ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
-    ERROR_SERVICE_NOT_LOADED,
+    ERROR_ALREADY_RUNNING, ERROR_IS_NOT_RUNNING, ERROR_SERVICE_NOT_INSTALLED,
+    ERROR_SERVICE_NOT_LOADED, Service,
 };
-use anyhow::{bail, Context, Result};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 const GUI: &str = "gui";
 const LAUNCHCTL: &str = "launchctl";
@@ -460,6 +462,12 @@ impl DarwinService {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::common::constants::ENABLE;
     use crate::common::execute::MockExecutor;
@@ -469,10 +477,6 @@ mod tests {
     };
     use crate::daemon::service::tests::Status;
     use crate::daemon::service::{ERROR_SERVICE_NOT_INSTALLED, ERROR_SERVICE_NOT_LOADED};
-    use anyhow::Result;
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     fn service_target() -> &'static str {
         if cfg!(debug_assertions) {

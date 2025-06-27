@@ -1,3 +1,10 @@
+use std::collections::{BTreeMap, HashSet};
+use std::fmt::{Display, Formatter};
+use std::path::Path;
+
+use anyhow::{Context, Result, bail};
+use serde::Serialize;
+
 use crate::client::args::BiomeArg;
 use crate::client::types::biome::Biome;
 use crate::client::types::commands::Commands;
@@ -9,11 +16,6 @@ use crate::client::validation::{
 use crate::common::constants::{
     TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
 };
-use anyhow::{bail, Context, Result};
-use serde::Serialize;
-use std::collections::{BTreeMap, HashSet};
-use std::fmt::{Display, Formatter};
-use std::path::Path;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
@@ -145,9 +147,10 @@ impl Environment {
                 result.insert(ValidationResult {
                     level: ValidationMessageLevel::Warn,
                     message: format!(
-                        "environment variable '{k}' contains reference to variables \
-                     ('{refs}') that are not defined in terrain.toml and system environment variables. \
-                      ensure that variables ('{refs}') are set before using '{k}' environment variable."
+                        "environment variable '{k}' contains reference to variables ('{refs}') \
+                         that are not defined in terrain.toml and system environment variables. \
+                         ensure that variables ('{refs}') are set before using '{k}' environment \
+                         variable."
                     ),
                     r#for: self.selected_biome().clone(),
                     fix_action: ValidationFixAction::None,
@@ -207,6 +210,15 @@ Auto Apply: {}
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+    use std::env::VarError;
+    use std::fs;
+    use std::fs::create_dir_all;
+    use std::path::PathBuf;
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::{
         expected_aliases_example_biome, expected_constructor_background_example_biome,
@@ -217,23 +229,16 @@ mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
+    use crate::client::types::terrain::Terrain;
     use crate::client::types::terrain::tests::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
-    use crate::client::types::terrain::Terrain;
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
     use crate::common::constants::{EXAMPLE_BIOME, NONE};
     use crate::common::test_utils::expected_env_vars_example_biome;
     use crate::common::types::command::Command;
-    use anyhow::Result;
-    use std::collections::BTreeMap;
-    use std::env::VarError;
-    use std::fs;
-    use std::fs::create_dir_all;
-    use std::path::PathBuf;
-    use tempfile::tempdir;
 
     #[test]
     fn environment_from_empty_terrain() -> Result<()> {
@@ -558,13 +563,17 @@ mod tests {
         let messages = environment.validate().expect("should not fail").results();
 
         assert_eq!(messages.len(), 1);
-        assert!(messages.contains(&ValidationResult {
-            level: ValidationMessageLevel::Warn,
-            message: "environment variable 'NESTED_POINTER' contains reference to variables \
-                 ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system environment variables. \
-                 ensure that variables ('NULL_1', 'NULL_2') are set before using 'NESTED_POINTER' environment variable.".to_string(),
-            r#for: "none".to_string(),
-            fix_action: ValidationFixAction::None,
-        }));
+        assert!(
+            messages.contains(&ValidationResult {
+                level: ValidationMessageLevel::Warn,
+                message: "environment variable 'NESTED_POINTER' contains reference to variables \
+                          ('NULL_1', 'NULL_2') that are not defined in terrain.toml and system \
+                          environment variables. ensure that variables ('NULL_1', 'NULL_2') are \
+                          set before using 'NESTED_POINTER' environment variable."
+                    .to_string(),
+                r#for: "none".to_string(),
+                fix_action: ValidationFixAction::None,
+            })
+        );
     }
 }

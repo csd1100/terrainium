@@ -1,3 +1,8 @@
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+use uuid::Uuid;
+
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background::execute_request;
 use crate::client::shell::Shell;
@@ -11,9 +16,6 @@ use crate::common::constants::{DEBUG_PATH, PATH, TERRAINIUM_DEV};
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
 use crate::common::utils::timestamp;
-use anyhow::{bail, Context as AnyhowContext, Result};
-use std::sync::Arc;
-use uuid::Uuid;
 
 pub async fn handle(
     context: Context,
@@ -131,6 +133,9 @@ fn activate_request(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+    use std::path::Path;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
@@ -140,16 +145,11 @@ mod tests {
     use crate::common::constants::{NONE, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        expected_activate_request_example_biome, expected_envs_with_activate_example_biome,
-        TEST_TERRAIN_NAME,
+        TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+        expected_activate_request_example_biome, expected_activation_env_vars,
+        expected_env_vars_none, expected_envs_with_activate_example_biome, expected_zsh_env_vars,
     };
-    use crate::common::test_utils::{
-        expected_activation_env_vars, expected_env_vars_none, expected_zsh_env_vars,
-    };
-    use crate::common::test_utils::{TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR};
     use crate::common::types::pb;
-    use std::collections::BTreeMap;
-    use std::path::Path;
 
     fn expected_envs_with_activate_none(
         is_auto_apply: bool,
@@ -639,6 +639,10 @@ mod tests {
         .unwrap_err()
         .to_string();
 
-        assert_eq!(err, "failed to spawn background processes while entering terrain environment: failed to parse the request");
+        assert_eq!(
+            err,
+            "failed to spawn background processes while entering terrain environment: failed to \
+             parse the request"
+        );
     }
 }

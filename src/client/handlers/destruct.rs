@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background;
 #[mockall_double::double]
@@ -5,7 +7,6 @@ use crate::client::types::client::Client;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
 use crate::common::utils::timestamp;
-use anyhow::Result;
 
 pub async fn handle(
     context: Context,
@@ -18,6 +19,8 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::types::client::MockClient;
@@ -26,10 +29,8 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::TERRAIN_SESSION_ID;
     use crate::common::execute::MockExecutor;
-    use crate::common::test_utils::expected_execute_request_example_biome;
-    use crate::common::test_utils::TEST_TERRAIN_DIR;
+    use crate::common::test_utils::{TEST_TERRAIN_DIR, expected_execute_request_example_biome};
     use crate::common::types::pb;
-    use std::path::Path;
 
     pub(crate) fn expected_request_destruct_example_biome(
         session_id: Option<String>,

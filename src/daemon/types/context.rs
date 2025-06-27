@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
+use tokio_util::sync::CancellationToken;
+
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::paths::DaemonPaths;
 use crate::daemon::types::config::DaemonConfig;
 use crate::daemon::types::state_manager::StateManager;
-use std::sync::Arc;
-use tokio_util::sync::CancellationToken;
 
 #[derive(Default, Clone, Debug)]
 pub struct DaemonContext {

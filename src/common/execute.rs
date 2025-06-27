@@ -1,11 +1,13 @@
-use crate::common::types::command::Command;
-use anyhow::{Context, Result};
-#[cfg(test)]
-use mockall::mock;
 use std::collections::BTreeMap;
 use std::process::{ExitStatus, Output, Stdio};
 use std::sync::Arc;
+
+use anyhow::{Context, Result};
+#[cfg(test)]
+use mockall::mock;
 use tracing::{info, trace};
+
+use crate::common::types::command::Command;
 
 pub trait Execute {
     fn get_output(
@@ -163,13 +165,15 @@ mock! {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::client::test_utils;
-    use crate::common::execute::{Execute, Executor};
-    use crate::common::types::command::Command;
-    use anyhow::Result;
     use std::collections::BTreeMap;
     use std::env::VarError;
     use std::sync::Arc;
+
+    use anyhow::Result;
+
+    use crate::client::test_utils;
+    use crate::common::execute::{Execute, Executor};
+    use crate::common::types::command::Command;
 
     #[test]
     fn test_spawn_and_get_output_without_envs() -> Result<()> {

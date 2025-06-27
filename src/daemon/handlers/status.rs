@@ -1,12 +1,14 @@
+use std::sync::Arc;
+
+use anyhow::{Context, Result, bail};
+use prost_types::Any;
+use tracing::trace;
+
 use crate::common::types::pb;
 use crate::common::types::pb::response::Payload::Body;
 use crate::common::types::pb::{Response, StatusRequest};
-use crate::daemon::handlers::{error_response, RequestHandler};
+use crate::daemon::handlers::{RequestHandler, error_response};
 use crate::daemon::types::context::DaemonContext;
-use anyhow::{bail, Context, Result};
-use prost_types::Any;
-use std::sync::Arc;
-use tracing::trace;
 
 pub struct StatusHandler;
 
@@ -71,6 +73,13 @@ async fn status(request: StatusRequest, context: Arc<DaemonContext>) -> Result<R
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+    use std::fs;
+    use std::path::Path;
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+
     use crate::client::test_utils::expected_constructor_background_example_biome;
     use crate::client::types::terrain::AutoApply;
     use crate::common::constants::{
@@ -78,22 +87,17 @@ mod tests {
         TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        expected_envs_with_activate_example_biome, expected_status_request, RequestFor,
-        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        RequestFor, TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        expected_envs_with_activate_example_biome, expected_status_request,
     };
-    use crate::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
+    use crate::common::types::paths::{DaemonPaths, get_terrainiumd_paths};
+    use crate::common::types::pb::StatusResponse;
     use crate::common::types::pb::response::Payload;
     use crate::common::types::pb::status_response::{CommandState, CommandStates};
-    use crate::common::types::pb::StatusResponse;
     use crate::common::types::terrain_state::test_utils::terrain_state_after_activate;
     use crate::common::utils::{create_file, write_to_file};
     use crate::daemon::handlers::status::status;
     use crate::daemon::types::context::DaemonContext;
-    use std::collections::BTreeMap;
-    use std::fs;
-    use std::path::Path;
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     fn expected_status_response(is_auto_apply: bool, auto_apply: &AutoApply) -> StatusResponse {
         let mut command_states = vec![];
@@ -103,7 +107,11 @@ mod tests {
             .for_each(|(idx, cmd)| {
                 command_states.push(CommandState {
                     command: Some(cmd.into()),
-                    log_path: format!("{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.{TEST_TIMESTAMP_NUMERIC}.log", get_terrainiumd_paths().dir_str()),
+                    log_path: format!(
+                        "{}/{TEST_TERRAIN_NAME}/{TEST_SESSION_ID}/constructors.{idx}.\
+                         {TEST_TIMESTAMP_NUMERIC}.log",
+                        get_terrainiumd_paths().dir_str()
+                    ),
                     // status: 1 i.e. starting
                     status: 1,
                     // exit_code: -100 i.e. starting

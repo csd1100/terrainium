@@ -1,3 +1,8 @@
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+
 use crate::client::args::Verbs;
 use crate::client::shell::{Shell, Zsh};
 use crate::client::types::config::Config;
@@ -6,9 +11,6 @@ use crate::common::constants::{
 };
 #[mockall_double::double]
 use crate::common::execute::Executor;
-use anyhow::{bail, Context as AnyhowContext, Result};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Context {
@@ -136,7 +138,8 @@ impl Context {
 
         if terrain_dir.join(TERRAIN_TOML).exists() || central_dir.join(TERRAIN_TOML).exists() {
             bail!(
-                "terrain for this project is already present. edit existing terrain with 'terrain edit' command"
+                "terrain for this project is already present. edit existing terrain with 'terrain \
+                 edit' command"
             );
         }
 
@@ -287,6 +290,16 @@ impl Context {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::env::{VarError, current_dir};
+    use std::fs::{create_dir_all, write};
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use anyhow::Result;
+    use home::home_dir;
+    use serial_test::serial;
+    use tempfile::tempdir;
+
     use super::Context;
     use crate::client::args::{BiomeArg, Verbs};
     use crate::client::shell::{Shell, Zsh};
@@ -296,14 +309,6 @@ pub(crate) mod tests {
     use crate::common::constants::{TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::TEST_SESSION_ID;
-    use anyhow::Result;
-    use home::home_dir;
-    use serial_test::serial;
-    use std::env::{current_dir, VarError};
-    use std::fs::{create_dir_all, write};
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     pub(crate) fn get_shell_integration_dir(home_dir: &Path) -> PathBuf {
         home_dir.join(".config/terrainium/shell_integration")
@@ -394,7 +399,11 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
+        );
 
         Ok(())
     }
@@ -417,7 +426,11 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
+        );
 
         Ok(())
     }
@@ -437,7 +450,11 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
+        );
 
         Ok(())
     }
@@ -459,7 +476,11 @@ pub(crate) mod tests {
         .expect_err("expected error")
         .to_string();
 
-        assert_eq!(err, "terrain for this project is already present. edit existing terrain with 'terrain edit' command");
+        assert_eq!(
+            err,
+            "terrain for this project is already present. edit existing terrain with 'terrain \
+             edit' command"
+        );
 
         Ok(())
     }

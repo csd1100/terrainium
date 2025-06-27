@@ -1,11 +1,13 @@
-use crate::common::constants::TERRAIN_HISTORY_FILE_NAME;
-use crate::common::types::pb::status_request::Identifier;
-use crate::common::utils;
-use anyhow::{bail, Result};
 use std::path::{Path, PathBuf};
+
+use anyhow::{Result, bail};
 use tokio::fs::File;
 use tokio::sync::Mutex;
 use tracing::{debug, instrument, trace};
+
+use crate::common::constants::TERRAIN_HISTORY_FILE_NAME;
+use crate::common::types::pb::status_request::Identifier;
+use crate::common::utils;
 
 #[derive(Debug)]
 pub struct History {

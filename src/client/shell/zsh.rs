@@ -1,5 +1,19 @@
+use std::collections::BTreeMap;
+use std::fs;
+use std::io::Write;
+use std::os::unix::process::ExitStatusExt;
+use std::path::{Path, PathBuf};
+use std::process::{ExitStatus, Output};
+use std::str::FromStr;
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
+use home::home_dir;
+use serde::Serialize;
+use tracing::warn;
+
 use crate::client::args::BiomeArg;
-use crate::client::shell::{render, Shell, Zsh};
+use crate::client::shell::{Shell, Zsh, render};
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
@@ -11,18 +25,6 @@ use crate::common::execute::Execute;
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
-use anyhow::{bail, Context as AnyhowContext, Result};
-use home::home_dir;
-use serde::Serialize;
-use std::collections::BTreeMap;
-use std::fs;
-use std::io::Write;
-use std::os::unix::process::ExitStatusExt;
-use std::path::{Path, PathBuf};
-use std::process::{ExitStatus, Output};
-use std::str::FromStr;
-use std::sync::Arc;
-use tracing::warn;
 
 pub const ZSH_INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
 
@@ -199,7 +201,10 @@ fi
         if !fs::exists(&init_script_location)
             .context("failed to check if shell integration script exists")?
         {
-            warn!("shell-integration script not found in config directory, copying script to config directory");
+            warn!(
+                "shell-integration script not found in config directory, copying script to config \
+                 directory"
+            );
 
             fs::write(&init_script_location, script)
                 .context("failed to create shell-integration script file")?;
@@ -215,7 +220,10 @@ fi
             fs::remove_file(&init_script_location)
                 .context("failed to remove outdated shell-integration script")?;
 
-            warn!("shell-integration script was outdated in config directory, copying newer script to config directory");
+            warn!(
+                "shell-integration script was outdated in config directory, copying newer script \
+                 to config directory"
+            );
 
             fs::write(&init_script_location, script)
                 .context("failed to create updated shell-integration script file")?;
@@ -479,6 +487,13 @@ impl Zsh {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use tempfile::tempdir;
+
     use crate::client::args::BiomeArg;
     use crate::client::shell::zsh::{re_un_exports, unsets};
     use crate::client::shell::{Shell, Zsh};
@@ -491,11 +506,6 @@ mod tests {
     use crate::client::types::terrain::Terrain;
     use crate::common::constants::{EXAMPLE_BIOME, FPATH, NONE};
     use crate::common::execute::MockExecutor;
-    use std::collections::HashSet;
-    use std::fs;
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tempfile::tempdir;
 
     #[test]
     fn creates_script() {
@@ -602,8 +612,10 @@ mod tests {
         let actual = fs::read_to_string(&zsh_integration_script).unwrap();
 
         assert_eq!(actual, expected);
-        assert!(fs::exists(zsh_integration_script)
-            .expect("failed to check if shell integration script created"));
+        assert!(
+            fs::exists(zsh_integration_script)
+                .expect("failed to check if shell integration script created")
+        );
     }
 
     #[test]
@@ -637,11 +649,15 @@ mod tests {
             .setup_integration(zsh_integration_script_location)
             .expect("to succeed");
 
-        assert!(fs::exists(zsh_integration_script)
-            .expect("failed to check if shell integration script created"));
+        assert!(
+            fs::exists(zsh_integration_script)
+                .expect("failed to check if shell integration script created")
+        );
 
-        assert!(fs::exists(zsh_integration_script_backup)
-            .expect("failed to check if shell integration script created"));
+        assert!(
+            fs::exists(zsh_integration_script_backup)
+                .expect("failed to check if shell integration script created")
+        );
     }
 
     #[test]

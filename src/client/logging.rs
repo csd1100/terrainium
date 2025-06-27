@@ -1,9 +1,10 @@
-use crate::client::args::{ClientArgs, Verbs};
-use tracing::metadata::LevelFilter;
 use tracing::Level;
+use tracing::metadata::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, Layer, Registry};
+use tracing_subscriber::{Layer, Registry, fmt};
+
+use crate::client::args::{ClientArgs, Verbs};
 
 pub fn init_logging(args: &ClientArgs) -> WorkerGuard {
     let level_filter = if matches!(args.command, Some(Verbs::Validate)) {

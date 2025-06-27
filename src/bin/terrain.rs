@@ -1,7 +1,8 @@
-use anyhow::{bail, Context as AnyhowContext, Result};
+use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use home::home_dir;
-use std::sync::Arc;
 use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
 use terrainium::client::handlers::schema;
@@ -20,7 +21,11 @@ use terrainium::common::types::styles::warning;
 #[tokio::main]
 async fn main() -> Result<()> {
     if cfg!(debug_assertions) {
-        println!("{}: you are running debug build of terrainium, which might cause some unwanted behavior.",warning("WARNING"));
+        println!(
+            "{}: you are running debug build of terrainium, which might cause some unwanted \
+             behavior.",
+            warning("WARNING")
+        );
     }
 
     let args = ClientArgs::parse();

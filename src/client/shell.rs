@@ -1,16 +1,18 @@
-use crate::client::types::context::Context;
-use crate::client::types::terrain::Terrain;
-#[mockall_double::double]
-use crate::common::execute::Executor;
-use crate::common::types::command::Command;
-use anyhow::{Context as AnyhowContext, Result};
-use handlebars::Handlebars;
-use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 use std::sync::Arc;
+
+use anyhow::{Context as AnyhowContext, Result};
+use handlebars::Handlebars;
+use serde::Serialize;
+
+use crate::client::types::context::Context;
+use crate::client::types::terrain::Terrain;
+#[mockall_double::double]
+use crate::common::execute::Executor;
+use crate::common::types::command::Command;
 
 pub mod zsh;
 

@@ -2,12 +2,12 @@ use tracing::metadata::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, Layer, Registry};
+use tracing_subscriber::{Layer, Registry, fmt};
 
 pub fn init_logging(
     state_directory: &str,
     filter: LevelFilter,
-) -> (impl SubscriberExt, (WorkerGuard, WorkerGuard)) {
+) -> (impl SubscriberExt + use<>, (WorkerGuard, WorkerGuard)) {
     let appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("terrainiumd")

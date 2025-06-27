@@ -1,11 +1,12 @@
+use std::fs::{File, create_dir_all, exists};
+use std::io::Write;
+
+use anyhow::{Context as AnyhowContext, Result};
+
 use crate::client::handlers::edit;
 use crate::client::shell::Shell;
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use anyhow::{Context as AnyhowContext, Result};
-use std::fs::File;
-use std::fs::{create_dir_all, exists};
-use std::io::Write;
 
 pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
     if !exists(context.scripts_dir()).context("failed to check if scripts dir exists")? {
@@ -42,6 +43,13 @@ pub fn handle(context: Context, example: bool, edit: bool) -> Result<()> {
 
 #[cfg(test)]
 pub mod tests {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    use anyhow::Result;
+    use serial_test::serial;
+    use tempfile::tempdir;
+
     use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
     use crate::client::test_utils::assertions::terrain::AssertTerrain;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;
@@ -52,11 +60,6 @@ pub mod tests {
     use crate::common::constants::{EXAMPLE_BIOME, NONE, TERRAIN_TOML};
     use crate::common::execute::MockExecutor;
     use crate::common::types::command::Command;
-    use anyhow::Result;
-    use serial_test::serial;
-    use std::fs;
-    use std::path::{Path, PathBuf};
-    use tempfile::tempdir;
 
     #[test]
     fn init_creates_terrain_toml_in_current_dir() -> Result<()> {

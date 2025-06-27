@@ -1,6 +1,7 @@
-use crate::common::constants::TERRAIN_TOML;
 use std::fs::read_to_string;
 use std::path::Path;
+
+use crate::common::constants::TERRAIN_TOML;
 
 pub struct AssertTerrain<'a> {
     current_dir: &'a Path,
@@ -58,7 +59,8 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             read_to_string(&toml).expect("to find terrain.toml"),
             read_to_string(mode).expect("to find test terrain.toml"),
-            "failed to validate that terrain.toml was created for in_central {in_central} for test terrain: {mode}",
+            "failed to validate that terrain.toml was created for in_central {in_central} for \
+             test terrain: {mode}",
         );
 
         self
@@ -95,7 +97,8 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             new_toml_contents,
             read_to_string(new_toml_path).expect("to find test terrain.toml"),
-            "failed to validate terrain.toml was created for in_central {in_central} for test terrain: {new_toml_path}",
+            "failed to validate terrain.toml was created for in_central {in_central} for test \
+             terrain: {new_toml_path}",
         );
 
         self
@@ -113,7 +116,8 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             self.older_toml,
             read_to_string(backup).expect("to find test terrain.toml"),
-            "failed to check terrain.toml.bkp was created for in_central {in_central} for test terrain: {}",
+            "failed to check terrain.toml.bkp was created for in_central {in_central} for test \
+             terrain: {}",
             self.older_toml_path
         );
 
@@ -135,7 +139,8 @@ impl<'a> AssertTerrain<'a> {
         assert_eq!(
             new_toml_contents,
             read_to_string(self.older_toml_path).expect("to find test terrain.toml"),
-            "failed to check terrain.toml was created for in_central {in_central} for test terrain: {}",
+            "failed to check terrain.toml was created for in_central {in_central} for test \
+             terrain: {}",
             self.older_toml_path
         );
 

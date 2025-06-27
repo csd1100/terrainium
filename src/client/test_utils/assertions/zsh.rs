@@ -1,10 +1,11 @@
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
 use crate::client::test_utils::assertions::executor::{AssertExecutor, ExpectedCommand};
 use crate::common::execute::MockExecutor;
 use crate::common::test_utils::TEST_FPATH;
 use crate::common::types::command::Command;
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 const ZSH: &str = "/bin/zsh";
 
