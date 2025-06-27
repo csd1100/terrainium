@@ -10,10 +10,12 @@ pub const TERRAINIUMD_LINUX_SERVICE_PATH: &str = ".config/systemd/user";
 pub const ENABLE: &str = "enable";
 pub const DISABLE: &str = "disable";
 
-pub const ZSHRC: &str = ".zshrc";
-pub const SHELL: &str = "SHELL";
 pub const PATH: &str = "PATH";
+pub const SHELL: &str = "SHELL";
 pub const FPATH: &str = "FPATH";
+pub const ZSHRC: &str = ".zshrc";
+pub const ZSHRC_PATH: &str = "~/.zshrc";
+pub const UNSUPPORTED: &str = "UNSUPPORTED";
 pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";

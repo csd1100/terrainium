@@ -105,8 +105,7 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
 - Options:
   - `--create-config` - creates a config file at location:
     `~/.config/terrainium/terrainium.toml`. Cannot be used with other options.
-  - `--update-rc` - to update `~/.zshrc` to source shell integration script.
-  - `--update-rc-path <path>` - to update `<path>` to source shell integration script.
+  - `--update-rc [path]` - update `path` if specified or `~/.zshrc` to source shell integration script.
     Cannot be used with `--update-rc`.
   - `-l | --log-level` - select log level to validation messages.
     Value can be `trace`, `debug`, `info`, `warn` and `error`.

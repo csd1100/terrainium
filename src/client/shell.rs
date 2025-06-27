@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::client::types::context::Context;
 use crate::client::types::terrain::Terrain;
-use crate::common::constants::{SHELL, ZSH, ZSHRC};
+use crate::common::constants::{SHELL, ZSH};
 #[mockall_double::double]
 use crate::common::execute::Executor;
 use crate::common::types::command::Command;
@@ -23,6 +23,7 @@ pub trait Shell: Debug {
     fn get_init_rc_contents() -> String;
     fn get_integration_script(&self) -> String;
     fn setup_integration(&self, init_script_dir: PathBuf) -> Result<()>;
+    fn get_default_rc(&self, home_dir: &Path) -> PathBuf;
     fn update_rc(&self, home_dir: &Path, path: PathBuf) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
     fn execute(
@@ -67,7 +68,15 @@ pub fn update_rc(home_dir: &Path, rc_path: Option<PathBuf>) -> Result<()> {
     #[allow(clippy::default_constructed_unit_structs)]
     let shell = get_shell(home_dir, Arc::new(Executor::default()))?;
 
-    let rc_path = rc_path.unwrap_or(home_dir.join(ZSHRC));
+    let mut rc_path = rc_path.unwrap_or(shell.get_default_rc(home_dir));
+
+    if rc_path.starts_with("~/") {
+        let rc = rc_path
+            .strip_prefix("~/")
+            .context("failed to remove '~/' from path")?;
+        rc_path = home_dir.join(rc);
+    }
+
     shell
         .update_rc(home_dir, rc_path)
         .context("failed to update rc")

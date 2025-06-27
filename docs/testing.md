@@ -70,33 +70,18 @@ terrain --update-rc
 
 ---
 
-### using `--update-rc-path` argument
+### using `--update-rc` with path specified
 
 **User Input:**
 
 ```shell
-terrain --update-rc-path ~/zsh/source.zsh
+terrain --update-rc ~/zsh/source.zsh
 ```
 
 **Expected Output:**
 
 - shell integration script is created at location `~/.config/terrainium/shell_integration/`
 - `~/zsh/source.zsh` file is updated to source shell integration script
-
----
-
-### errors when `--update-rc` and `--update-rc-path` is used together
-
-**User Input:**
-
-```shell
-# ! will fail
-terrain --update-rc --update-rc-path ~/zsh/source.zsh
-```
-
-**Expected Output:**
-
-- fails with error both of the options cannot be used together
 
 ---
 

@@ -8,9 +8,22 @@ use tracing::Level;
 
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
-use crate::common::constants::NONE;
+use crate::common::constants::{NONE, SHELL, UNSUPPORTED, ZSH, ZSHRC_PATH};
 
 const DEFAULT_SELECTED: &str = "__default__";
+
+/// get default rc path for supported shells
+/// if unsupported send UNSUPPORTED. As, UNSUPPORTED
+/// value will be handled inside [shell::get_shell method](crate::client::shell::get_shell)
+fn get_default_shell_rc() -> &'static str {
+    let shell = std::env::var(SHELL).ok();
+
+    if shell.is_some_and(|s| s.contains(ZSH)) {
+        return ZSHRC_PATH;
+    }
+
+    UNSUPPORTED
+}
 
 /// terrainium
 ///
@@ -34,18 +47,16 @@ pub struct Options {
     /// creates a configuration file for terrain client
     ///
     /// location: `~/.config/terrainium/terrainium.toml`
-    #[arg(long, conflicts_with = "update-rc")]
+    #[arg(long, conflicts_with = "update_rc")]
     pub create_config: bool,
 
-    /// adds shell integration to default shell rc file
-    ///
-    /// file: `~/.zshrc`
-    #[arg(long, group = "update-rc")]
-    pub update_rc: bool,
-
     /// adds shell integration to specified rc file
-    #[arg(long, group = "update-rc", value_hint = ValueHint::FilePath)]
-    pub update_rc_path: Option<PathBuf>,
+    /// if file is not specified `~/.zshrc` is updated
+    #[arg(long,
+        num_args = 0..=1,
+        default_missing_value = get_default_shell_rc(),
+        value_hint = ValueHint::FilePath)]
+    pub update_rc: Option<PathBuf>,
 
     /// set logging level for validation messages
     ///

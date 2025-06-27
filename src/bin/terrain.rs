@@ -34,8 +34,8 @@ async fn main() -> Result<()> {
 
     match args.command {
         None => {
-            if args.options.update_rc || args.options.update_rc_path.is_some() {
-                update_rc(home_dir.as_path(), args.options.update_rc_path)
+            if args.options.update_rc.is_some() {
+                update_rc(home_dir.as_path(), args.options.update_rc)
                     .context("failed to update shell rc file")?;
             } else if args.options.create_config {
                 Config::create_file().context("failed to create config file")?;

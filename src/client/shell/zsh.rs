@@ -18,7 +18,7 @@ use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{
     FPATH, NONE, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN,
-    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, ZSHRC,
 };
 use crate::common::execute::Execute;
 #[mockall_double::double]
@@ -386,6 +386,10 @@ alias {{@key}}="{{{this}}}"
                 .to_string(),
         );
         templates
+    }
+
+    fn get_default_rc(&self, home_dir: &Path) -> PathBuf {
+        home_dir.join(ZSHRC)
     }
 }
 
