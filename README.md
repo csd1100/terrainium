@@ -62,8 +62,14 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
       updating the original.
     - `--active` updates active terrain rather than current directory
 
-  - `generate` - generates and compiles required shell scripts.
+  - `generate` - generates and compiles required shell scripts.  
+    **Must** be executed if terrain.toml is updated commands other
+    than `terrain edit`, `terrain update`
+    - `--active` generates for active terrain rather than current directory
+
   - `validate` - validates the `terrain.toml` and shows error and warnings if any.
+    - `--active` validates the active terrain rather than current directory
+
   - `get [OPTIONS]` - Get the values that will be applied. If no options passed
     will return all values.
     - `-b|--biome <biome_name>` - name of the biome for which values to be retrieved.

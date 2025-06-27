@@ -60,6 +60,8 @@ pub struct Options {
 
     /// set logging level for validation messages
     ///
+    /// for `terrain validate` value is overwritten to debug
+    ///
     /// [possible values: trace, debug, info, warn, error]
     #[arg(
         short,
@@ -164,23 +166,24 @@ pub enum Verbs {
         active: bool,
     },
 
+    /// generates required shell scripts for terrainium to work
+    ///
+    /// must be executed if terrain.toml is updated commands other
+    /// than `terrain edit`, `terrain update`
     Generate {
+        /// generates scripts active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
-    Validate,
-
-    Get {
+    /// validates the terrain in current directory
+    Validate {
+        /// validates the active terrain rather than current directory
         #[arg(long)]
         active: bool,
+    },
 
-        #[arg(long)]
-        debug: bool,
-
-        #[arg(short, long, name = "json")]
-        json: bool,
-
+    Get {
         #[arg(short, long, default_value = DEFAULT_SELECTED, conflicts_with = "json")]
         biome: BiomeArg,
 
@@ -204,6 +207,15 @@ pub enum Verbs {
 
         #[arg(long, conflicts_with = "json")]
         auto_apply: bool,
+
+        #[arg(long)]
+        active: bool,
+
+        #[arg(long)]
+        debug: bool,
+
+        #[arg(short, long, name = "json")]
+        json: bool,
     },
 
     Enter {

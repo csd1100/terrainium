@@ -77,6 +77,7 @@ impl Context {
             | Verbs::Update { active: true, .. }
             | Verbs::Generate { active: true, .. }
             | Verbs::Get { active: true, .. }
+            | Verbs::Validate { active: true, .. }
             | Verbs::Construct { .. }
             | Verbs::Destruct { .. }
             | Verbs::Exit
@@ -696,7 +697,7 @@ pub(crate) mod tests {
             .compile_script_successfully_for_times(
                 &shell_integration_dir.join("terrainium_init.zsh"),
                 &shell_integration_dir.join("terrainium_init.zwc"),
-                15,
+                16,
             )
             .successfully();
 
@@ -773,7 +774,11 @@ pub(crate) mod tests {
                 expected: &current_dir_ctx,
             },
             TestVerbContext {
-                verb: Verbs::Validate,
+                verb: Verbs::Validate { active: true },
+                expected: &terrain_dir_ctx,
+            },
+            TestVerbContext {
+                verb: Verbs::Validate { active: false },
                 expected: &current_dir_ctx,
             },
             TestVerbContext {

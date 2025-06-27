@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
                 Verbs::Generate { .. } => generate::handle(context, terrain)
                     .context("failed to generate scripts for the terrain")?,
 
-                Verbs::Validate => {
+                Verbs::Validate { .. } => {
                     // create environments to run environment validations inside `Environment::from`
                     Environment::from(&terrain, BiomeArg::None, context.terrain_dir())?;
                     let res: Result<Vec<Environment>> = terrain
