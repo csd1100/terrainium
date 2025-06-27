@@ -303,6 +303,7 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
     use tokio::sync::RwLock;
 

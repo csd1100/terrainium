@@ -499,6 +499,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     use crate::client::args::BiomeArg;

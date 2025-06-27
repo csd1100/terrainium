@@ -136,6 +136,8 @@ mod tests {
     use std::collections::BTreeMap;
     use std::path::Path;
 
+    use pretty_assertions::assert_eq;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::test_utils::assertions::zsh::ExpectZSH;

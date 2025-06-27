@@ -98,6 +98,7 @@ mod tests {
     use std::env::VarError;
     use std::path::Path;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     use crate::client::test_utils::assertions::client::ExpectClient;

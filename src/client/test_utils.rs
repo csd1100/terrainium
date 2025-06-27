@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 use std::env::VarError;
 use std::path::Path;
 
+use pretty_assertions::assert_eq;
+
 use crate::client::types::commands::Commands;
 use crate::common::types::command::Command;
 

@@ -299,6 +299,7 @@ pub(crate) mod tests {
 
     use anyhow::Result;
     use home::home_dir;
+    use pretty_assertions::assert_eq;
     use serial_test::serial;
     use tempfile::tempdir;
 

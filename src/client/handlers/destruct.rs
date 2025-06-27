@@ -21,6 +21,8 @@ pub async fn handle(
 mod tests {
     use std::path::Path;
 
+    use pretty_assertions::assert_eq;
+
     use crate::client::args::BiomeArg;
     use crate::client::test_utils::assertions::client::ExpectClient;
     use crate::client::types::client::MockClient;

@@ -78,6 +78,7 @@ mod tests {
     use std::path::Path;
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     use crate::client::test_utils::expected_constructor_background_example_biome;

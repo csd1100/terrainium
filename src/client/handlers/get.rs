@@ -62,6 +62,7 @@ mod tests {
     use std::str::FromStr;
 
     use anyhow::Result;
+    use pretty_assertions::assert_eq;
 
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::types::config::Config;

@@ -13,7 +13,7 @@ use crate::common::constants::{NONE, SHELL, UNSUPPORTED, ZSH, ZSHRC_PATH};
 const DEFAULT_SELECTED: &str = "__default__";
 
 /// get default rc path for supported shells
-/// if unsupported send UNSUPPORTED. As, UNSUPPORTED
+/// if unsupported shell found send UNSUPPORTED. UNSUPPORTED
 /// value will be handled inside [shell::get_shell method](crate::client::shell::get_shell)
 fn get_default_shell_rc() -> &'static str {
     let shell = std::env::var(SHELL).ok();
@@ -138,6 +138,8 @@ pub enum Verbs {
         /// updates environment variable to specified biome in '--new' or '--biome'
         ///
         /// format for environment variable will be ENV_VAR="some value"
+        /// ENV_VAR should NOT have double or single quotes around it.
+        /// if value does not have spaces in then there is no need for double quotes.
         ///
         /// multiple environment variable can be specified by -e ENV_VAR1=value1 -e ENV_VAR2=value2
         #[arg(short, long, value_name = "ENV_VAR=\"env value\"")]
@@ -145,7 +147,9 @@ pub enum Verbs {
 
         /// updates alias to specified biome in '--new' or '--biome'
         ///
-        /// format for alias will be alias="some value".
+        /// format for alias will be alias_name="some value".
+        /// alias_name should NOT have double or single quotes around it.
+        /// if value does not have spaces in then there is no need for double quotes.
         ///
         /// multiple aliases can be specified by -a alias1=value1 -a alias2=value2
         #[arg(short, long, value_name = "ALIAS=\"alias value\"")]
@@ -358,6 +362,7 @@ mod tests {
     use std::str::FromStr;
 
     use clap::ValueEnum;
+    use pretty_assertions::assert_eq;
 
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
