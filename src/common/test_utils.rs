@@ -131,7 +131,7 @@ pub fn expected_status_request(
 pub(crate) fn expected_zsh_env_vars(biome: &str) -> BTreeMap<String, String> {
     let script = format!("{TEST_CENTRAL_DIR}/scripts/terrain-{biome}.zwc");
     let mut envs = BTreeMap::new();
-    envs.insert(FPATH.to_string(), format!("{}:{}", script, TEST_FPATH));
+    envs.insert(FPATH.to_string(), format!("{script}:{TEST_FPATH}"));
     envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
     envs.insert(TERRAIN_INIT_SCRIPT.to_string(), script);
     envs

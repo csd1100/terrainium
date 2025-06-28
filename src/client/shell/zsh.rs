@@ -446,8 +446,7 @@ impl Zsh {
             terrain_dir,
         )
         .context(format!(
-            "expected to generate environment from terrain for biome {:?}",
-            biome_name
+            "expected to generate environment from terrain for biome {biome_name:?}"
         ))?;
 
         let script = render(
@@ -459,12 +458,11 @@ impl Zsh {
             },
         )
         .context(format!(
-            "failed to render script for biome: '{:?}'",
-            biome_name
+            "failed to render script for biome: '{biome_name:?}'"
         ))?;
 
         fs::write(script_path, script)
-            .context(format!("failed to write script to path {:?}", script_path))?;
+            .context(format!("failed to write script to path {script_path:?}"))?;
 
         Ok(())
     }
@@ -478,7 +476,7 @@ impl Zsh {
 
         let output = self
             .execute(args, None)
-            .context(format!("failed to compile script {:?}", script_path))?;
+            .context(format!("failed to compile script {script_path:?}"))?;
 
         if output.status.into_raw() != 0 {
             bail!(

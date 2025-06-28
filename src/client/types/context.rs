@@ -975,8 +975,7 @@ pub(crate) mod tests {
                 executor.clone(),
             )
             .expect_err(&format!(
-                "failed to get an error while creating context for verb: {:?}",
-                verb
+                "failed to get an error while creating context for verb: {verb:?}"
             ))
             .to_string();
 

@@ -83,8 +83,8 @@ async fn main() -> Result<()> {
                     Environment::from(&terrain, BiomeArg::None, context.terrain_dir())?;
                     let res: Result<Vec<Environment>> = terrain
                         .biomes()
-                        .iter()
-                        .map(|(biome_name, _)| {
+                        .keys()
+                        .map(|biome_name| {
                             // create environments to run environment validations
                             Environment::from(
                                 &terrain,

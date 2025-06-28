@@ -43,14 +43,14 @@ pub(crate) fn run_editor(
             toml_path
                 .to_string_lossy()
                 .parse()
-                .context(format!("failed to convert path {:?} to string", toml_path))?,
+                .context(format!("failed to convert path {toml_path:?} to string"))?,
         ],
         Some(terrain_dir.to_path_buf()),
     );
 
     executor
         .wait(None, command, false)
-        .context(format!("failed to edit file {:?}", toml_path))?;
+        .context(format!("failed to edit file {toml_path:?}"))?;
 
     Ok(())
 }
