@@ -1,8 +1,17 @@
 use clap::{Parser, Subcommand};
 use tracing::Level;
 
+use crate::common::utils::VERSION_INFO;
+
 #[derive(Parser, Debug)]
-#[command(args_conflicts_with_subcommands = true)]
+#[command(
+    version(VERSION_INFO),
+    propagate_version(true),
+    args_conflicts_with_subcommands = true
+)]
+/// terrainiumd
+///
+/// A daemon to run background commands specified in terrain
 pub struct DaemonArgs {
     #[clap(flatten)]
     pub options: Options,

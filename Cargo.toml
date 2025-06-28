@@ -39,6 +39,7 @@ uuid = { version = "1.17.0", features = ["v4"] }
 regex = "1.11.1"
 toml_edit = "0.22.27"
 tokio-util = "0.7.15"
+const-str = "0.6.2"
 
 [dependencies.schemars]
 version = "1.0.1"

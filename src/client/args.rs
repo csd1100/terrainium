@@ -9,6 +9,7 @@ use tracing::Level;
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
 use crate::common::constants::{NONE, SHELL, TERRAIN_NAME, UNSUPPORTED, ZSH, ZSHRC_PATH};
+use crate::common::utils::VERSION_INFO;
 
 const DEFAULT_SELECTED: &str = "__default__";
 
@@ -30,7 +31,7 @@ fn get_default_shell_rc() -> &'static str {
 /// A command-line utility for environment management
 #[derive(Parser, Debug)]
 #[command(
-    version,
+    version(VERSION_INFO),
     propagate_version(true),
     args_conflicts_with_subcommands = true
 )]
