@@ -54,4 +54,4 @@ pub const NONE: &str = "none";
 pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
 
-pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
+pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES_NOT_EXIST!!!";

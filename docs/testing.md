@@ -38,12 +38,12 @@ terrain --create-config -l trace
 **User Input:**
 
 ```shell
-# ! will fail
+#! will fail
 terrain --create-config --update-rc
 ```
 
 ```shell
-# ! will fail
+#! will fail
 terrain --create-config init
 ```
 
@@ -90,7 +90,7 @@ terrain --update-rc ~/zsh/source.zsh
 **User Input:**
 
 ```shell
-# ! will fail
+#! will fail
 #  SHELL environment variable does not contain zsh OR is not set
 terrain --update-rc
 ```
@@ -122,7 +122,7 @@ terrain validate -l trace
 **User Input:**
 
 ```shell
-# ! will fail
+#! will fail
 terrain validate -l any
 ```
 
@@ -215,19 +215,19 @@ terrain init -cxe
 **User Input:**
 
 ```shell
-# ! will fail
+#! will fail
 terrain init
 terrain init
 ```
 
 ```shell
-# ! will fail
+#! will fail
 terrain init -c # creates terrain in central directory
 terrain init
 ```
 
 ```shell
-# ! will fail
+#! will fail
 terrain init
 terrain init -c # creates terrain in central directory
 ```
@@ -235,6 +235,67 @@ terrain init -c # creates terrain in central directory
 **Expected Output:**
 
 - fails with error notifying user that terrain is already present
+
+---
+
+### generates scripts after `init`
+
+**User Input:**
+
+```shell
+terrain init
+```
+
+**Expected Output:**
+
+- updates and compiles scripts for new terrain in
+  `~/.config/terrainium/terrains/_home_user_work_new_terrain/scripts/`
+
+---
+
+## edits the terrain
+
+### launches `EDITOR` to edit terrain
+
+**User Input:**
+
+```shell
+terrain edit
+```
+
+**Expected Output:**
+
+- launches text editor specified in EDITOR environment variable
+
+---
+
+### launches `vi` if `EDITOR` not set
+
+**User Input:**
+
+```shell
+# unexport EDITOR
+typeset +x EDITOR
+terrain edit
+```
+
+**Expected Output:**
+
+- launches `vi` to edit terrain.toml
+
+---
+
+### generates scripts after `edit`
+
+**User Input:**
+
+```shell
+terrain edit
+```
+
+**Expected Output:**
+
+- updates and compiles scripts in `~/.config/terrainium/terrains/_home_user_work_terrain/scripts/`
 
 ---
 
@@ -259,17 +320,17 @@ terrain update -s example_biome
 **User Input:**
 
 ```shell
-# ! will fail
+#! will fail
 terrain update -s example_biome -b example_biome -e VAR1="SOME VALUE"
 ```
 
 ```shell
-# ! will fail
+#! will fail
 terrain update -s example_biome -n new_biome -e VAR1="SOME VALUE"
 ```
 
 ```shell
-# ! will fail
+#! will fail
 terrain update -s example_biome --auto-apply off
 ```
 
@@ -389,6 +450,205 @@ terrain update -e ENV_VAR="value" --active
 
 - updates `active_terrain`
 - sets `ENV_VAR` in `active_terrain`'s default biome
+
+---
+
+### `--set-default` throws error if biome does not exist
+
+**User Input:**
+
+```shell
+#! will fail
+terrain update -s unknown_biome
+```
+
+**Expected Output:**
+
+- fails with error `unknown_biome` does not exist
+
+---
+
+### `--biome` throws error if biome does not exist
+
+**User Input:**
+
+```shell
+#! will fail
+terrain update -b unknown_biome -e ENV_VAR=VALUE
+```
+
+**Expected Output:**
+
+- fails with error `unknown_biome` does not exist
+
+---
+
+### generates scripts after `update`
+
+**User Input:**
+
+```shell
+terrain update -s example_biome
+```
+
+**Expected Output:**
+
+- updates and compiles scripts in `~/.config/terrainium/terrains/_home_user_work_terrain/scripts/`
+
+---
+
+## Generates scripts
+
+### `generate`s scripts
+
+**User Input:**
+
+```shell
+terrain generate
+```
+
+**Expected Output:**
+
+- creates and compiles scripts in `~/.config/terrainium/terrains/_home_user_work_terrain/scripts/`
+
+---
+
+## Validates terrain.toml
+
+### `validate`s scripts
+
+**User Input:**
+
+```shell
+terrain validate
+```
+
+**Expected Output:**
+
+- validates terrain in current directory.
+
+---
+
+More information about validations performed is in: [TERRAIN.md](./TERRAIN.md)
+
+---
+
+## Fetch values
+
+### `get` in text format
+
+**User Input:**
+
+```shell
+terrain get
+```
+
+**Expected Output:**
+
+- Fetches values for `default_biome`
+- Output similar to [this](../tests/data/terrain-default.rendered).
+
+### `get` the main terrain
+
+**User Input:**
+
+```shell
+terrain get -b none
+```
+
+**Expected Output:**
+
+- Fetches values for main terrain
+
+---
+
+### `get` using json format
+
+**User Input:**
+
+```shell
+terrain get -j
+```
+
+**Expected Output:**
+
+- Fetches values for `default_biome` in json format
+- Output will be similar to [this](../tests/data/terrain-example_biome.json).
+
+---
+
+### `get` all environment variables and aliases
+
+**User Input:**
+
+```shell
+terrain get --aliases --envs
+```
+
+**Expected Output:**
+
+- Fetches values for all aliases and environment variables.
+
+---
+
+### `get` specified environment variables and aliases
+
+**User Input:**
+
+```shell
+terrain get -a tenter -a non_existent -e EDITOR -e NON_EXISTENT
+```
+
+**Expected Output:**
+
+- Fetches specified values
+- Output will be:
+
+```
+Environment Variables:
+    EDITOR="nvim"
+    NON_EXISTENT="!!!DOES_NOT_EXIST!!!"
+Aliases:
+    non_existent="!!!DOES_NOT_EXIST!!!"
+    tenter="terrain enter --biome example_biome"
+```
+
+---
+
+### `get` fails when both all values and specified value are specified
+
+**User Input:**
+
+```shell
+#! will fail
+terrain get --envs -e EDITOR -e NON_EXISTENT
+```
+
+```shell
+#! will fail
+terrain get --aliases -a tenter
+```
+
+**Expected Output:**
+
+- fails specifying both of these cannot be used together
+
+---
+
+### `get` fails when json and other option is specified
+
+**User Input:**
+
+```shell
+#! will fail
+terrain get -j --envs
+```
+
+**Expected Output:**
+
+- fails specifying both of these cannot be used together
+
+---
 
 # Template
 

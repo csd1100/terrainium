@@ -27,7 +27,7 @@ fn get_default_shell_rc() -> &'static str {
 
 /// terrainium
 ///
-/// a command-line utility for environment management
+/// A command-line utility for environment management
 #[derive(Parser, Debug)]
 #[command(
     version,
@@ -44,23 +44,23 @@ pub struct ClientArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
-    /// creates a configuration file for terrain client
+    /// Creates a configuration file for terrain client
     ///
-    /// location: `~/.config/terrainium/terrainium.toml`
+    /// Location: `~/.config/terrainium/terrainium.toml`
     #[arg(long, conflicts_with = "update_rc")]
     pub create_config: bool,
 
-    /// adds shell integration to specified rc file
-    /// if file is not specified `~/.zshrc` is updated
+    /// Adds shell integration to specified rc file
+    /// If file is not specified `~/.zshrc` is updated
     #[arg(long,
         num_args = 0..=1,
         default_missing_value = get_default_shell_rc(),
         value_hint = ValueHint::FilePath)]
     pub update_rc: Option<PathBuf>,
 
-    /// set logging level for validation messages
+    /// Set logging level for validation messages
     ///
-    /// for `terrain validate` value is overwritten to debug
+    /// For `terrain validate` value is overwritten to debug
     ///
     /// [possible values: trace, debug, info, warn, error]
     #[arg(
@@ -75,13 +75,13 @@ pub struct Options {
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
-    /// initialize terrain in current directory
+    /// Initialize terrain in current directory
     ///
-    /// creates terrain.toml file
+    /// Creates terrain.toml file
     Init {
-        /// creates terrain.toml in central directory.
+        /// Creates terrain.toml in central directory.
         ///
-        /// if current directory is /home/user/work/project, then
+        /// If current directory is /home/user/work/project, then
         /// terrain.toml file is created in
         /// ~/.config/terrainium/terrains/_home_user_work_project/.
         ///
@@ -90,136 +90,167 @@ pub enum Verbs {
         #[arg(short, long)]
         central: bool,
 
-        /// creates terrain.toml with example terrain included.
+        /// Creates terrain.toml with example terrain included.
         #[arg(short = 'x', long)]
         example: bool,
 
-        /// opens terrain.toml in EDITOR after creation
+        /// Opens terrain.toml in EDITOR after creation
         ///
-        /// launches editor defined in EDITOR environment variable.
-        /// if EDITOR environment variable is not set, 'vi' will be used
+        /// Launches editor defined in EDITOR environment variable.
+        /// If EDITOR environment variable is not set, 'vi' will be used
         /// as editor.
         #[arg(short, long)]
         edit: bool,
     },
 
-    /// opens terrain.toml for current directory in EDITOR
+    /// Opens terrain.toml for current directory in EDITOR
     ///
-    /// launches editor defined in EDITOR environment variable.
-    /// if EDITOR environment variable is not set, 'vi' will be used
+    /// Launches editor defined in EDITOR environment variable.
+    /// If EDITOR environment variable is not set, 'vi' will be used
     /// as editor.
     Edit {
-        /// opens editor for active terrain rather than current directory
+        /// Opens editor for active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
-    /// updates terrain.toml for current directory
+    /// Updates terrain.toml for current directory
     Update {
-        /// sets default biome.
+        /// Sets default biome.
         ///
-        /// will fail if specified biome is not defined before.
+        /// Will fail if specified biome is not defined before.
         #[arg(short, long, conflicts_with_all = ["biome", "new", "env", "alias", "auto_apply"])]
         set_default: Option<String>,
 
-        /// updates specified biome
+        /// Updates specified biome
         ///
-        /// if not specified default biome will be updated
+        /// If not specified default biome will be updated
         #[arg(short, long, group = "biomes", default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        /// creates a new biome
+        /// Creates a new biome
         ///
-        /// if -e and -a is used with this option, new biome will be created
+        /// If -e and -a is used with this option, new biome will be created
         /// with specified environment variables and aliases
         #[arg(short, long, group = "biomes")]
         new: Option<String>,
 
-        /// updates environment variable to specified biome in '--new' or '--biome'
+        /// Updates environment variable to specified biome in '--new' or '--biome'
         ///
-        /// format for environment variable will be ENV_VAR="some value"
+        /// Format for environment variable will be ENV_VAR="some value"
         /// ENV_VAR should NOT have double or single quotes around it.
-        /// if value does not have spaces in then there is no need for double quotes.
+        /// If value does not have spaces in then there is no need for double quotes.
         ///
-        /// multiple environment variable can be specified by -e ENV_VAR1=value1 -e ENV_VAR2=value2
+        /// Multiple environment variable can be specified by -e ENV_VAR1=value1 -e ENV_VAR2=value2
         #[arg(short, long, value_name = "ENV_VAR=\"env value\"")]
         env: Vec<Pair>,
 
-        /// updates alias to specified biome in '--new' or '--biome'
+        /// Updates alias to specified biome in '--new' or '--biome'
         ///
-        /// format for alias will be alias_name="some value".
-        /// alias_name should NOT have double or single quotes around it.
-        /// if value does not have spaces in then there is no need for double quotes.
+        /// Format for alias will be alias_name="some value".
+        /// Alias_name should NOT have double or single quotes around it.
+        /// If value does not have spaces in then there is no need for double quotes.
         ///
-        /// multiple aliases can be specified by -a alias1=value1 -a alias2=value2
+        /// Multiple aliases can be specified by -a alias1=value1 -a alias2=value2
         #[arg(short, long, value_name = "ALIAS=\"alias value\"")]
         alias: Vec<Pair>,
 
-        /// updates auto_apply value
+        /// Updates auto_apply value
         #[arg(long, value_enum)]
         auto_apply: Option<AutoApply>,
 
-        /// backs up terrain.toml before update
+        /// Backs up terrain.toml before update
         ///
-        /// backs up to terrain.toml.bkp file in same directory as terrain.toml
+        /// Backs up to terrain.toml.bkp file in same directory as terrain.toml
         #[arg(long)]
         backup: bool,
 
-        /// updates active terrain rather than current directory
+        /// Updates active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
-    /// generates required shell scripts for terrainium to work
+    /// Generates required shell scripts for terrainium to work
     ///
-    /// must be executed if terrain.toml is updated commands other
-    /// than `terrain edit`, `terrain update`
+    /// MUST be executed if terrain.toml is updated by something other
+    /// than `terrain edit`, `terrain update` commands.
     Generate {
         /// generates scripts active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
-    /// validates the terrain in current directory
+    /// Validates the terrain in current directory
     Validate {
-        /// validates the active terrain rather than current directory
+        /// Validates the active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
+    /// Fetch the values of the environment for current directory
+    ///
+    /// If no arguments are provided fetches all the values.
     Get {
-        #[arg(short, long, default_value = DEFAULT_SELECTED, conflicts_with = "json")]
+        /// Biome to use for environment.
+        /// If it is not specified default biome will be used.
+        ///
+        /// If "none" is used, main terrain will be used without applying any Biome.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        #[arg(long, group = "get_alias", conflicts_with = "json")]
-        aliases: bool,
-
-        #[arg(long, group = "get_env", conflicts_with = "json")]
+        /// Fetches all the environment variables
+        ///
+        /// Cannot be used with `-e`
+        #[arg(long, conflicts_with_all = ["env", "json"])]
         envs: bool,
 
-        #[arg(short, group = "get_alias", conflicts_with = "json")]
-        alias: Vec<String>,
+        /// Fetches all the aliases
+        ///
+        /// Cannot be used with `-a`.
+        #[arg(long, conflicts_with_all = ["alias", "json"])]
+        aliases: bool,
 
-        #[arg(short, group = "get_env", conflicts_with = "json")]
+        /// Fetches specified list of environment variables
+        ///
+        /// Multiple values can be fetched.
+        /// Single instance of `-e` can be supplied with single environment variable to fetch.
+        /// .i.e. if multiple values are needed use `-e ENV_VAR1 -e ENV_VAR2`
+        /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
+        #[arg(short, conflicts_with = "json")]
         env: Vec<String>,
 
+        /// Fetches specified list of aliases
+        ///
+        /// Multiple values can be fetched.
+        /// Single instance of `-a` can be supplied with single alias to fetch.
+        /// .i.e. if multiple values are needed use `-a alias1 -a alias2`
+        /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
+        #[arg(short, conflicts_with = "json")]
+        alias: Vec<String>,
+
+        /// Fetches all the constructors
         #[arg(short, long, conflicts_with = "json")]
         constructors: bool,
 
+        /// Fetches all the destructors
         #[arg(short, long, conflicts_with = "json")]
         destructors: bool,
 
+        /// Fetches the current auto_apply value
         #[arg(long, conflicts_with = "json")]
         auto_apply: bool,
 
+        /// Fetches all the values in json format
+        #[arg(short, long)]
+        json: bool,
+
+        /// Fetches the values for currently active terrain
         #[arg(long)]
         active: bool,
 
+        /// Prints the terrain validation logs
         #[arg(long)]
         debug: bool,
-
-        #[arg(short, long, name = "json")]
-        json: bool,
     },
 
     Enter {
