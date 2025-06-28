@@ -1,6 +1,4 @@
-# Testing
-
-Expected behavior and Scenarios to test manually
+# Expected behavior and Scenarios
 
 ## creates configuration file
 
@@ -847,6 +845,291 @@ terrain status
 
 - fetches status of active session by reading `TERRAIN_NAME` and `TERRAIN_SESSION_ID`
   environment variable
+
+---
+
+## Terrainium Daemon
+
+### starts daemon socket
+
+**User Input:**
+
+```shell
+terrainiumd --run
+```
+
+**Expected Output:**
+
+- starts the daemon to handle background commands
+- creates a socket at `/tmp/terrainiumd/socket location`
+- creates a pid file at `/tmp/terrainiumd/pid`
+
+---
+
+### fails to create socket if already running
+
+**User Input:**
+
+```shell
+# ! will fail
+terrainiumd --run &> /dev/null &
+terrainiumd --run
+```
+
+**Expected Output:**
+
+- fails as terrainiumd is already running
+
+---
+
+### kills older process and starts a new one
+
+**User Input:**
+
+```shell
+terrainiumd --run &> /dev/null &
+terrainiumd --run --force
+```
+
+**Expected Output:**
+
+- kills first instance of terrainiumd and starts a new one
+
+---
+
+### creates a configuration
+
+**User Input:**
+
+```shell
+terrainiumd --create-config
+```
+
+**Expected Output:**
+
+- creates the configuration file at `~/.config/terrainium/terrainiumd.toml`
+
+---
+
+### `install` terrrainiumd service
+
+**User Input:**
+
+```shell
+terrainiumd install
+```
+
+**Expected Output:**
+
+- installs service file
+- enables the service
+- starts the service
+
+---
+
+### `install` terrrainiumd twice, shows already installed
+
+**User Input:**
+
+```shell
+# will NOT fail but show already installed and reload the service if needed
+terrainiumd install
+terrainiumd install
+```
+
+**Expected Output:**
+
+- reloads the service
+
+---
+
+### `remove`s terrrainiumd service
+
+**User Input:**
+
+```shell
+terrainiumd remove
+```
+
+**Expected Output:**
+
+- stops the service
+- removes the service file
+- reloads service manager
+
+---
+
+### `remove` without `install` fails
+
+**User Input:**
+
+```shell
+# ! will fail
+terrainiumd remove
+terrainiumd remove
+```
+
+**Expected Output:**
+
+- fails if service is not installed
+
+---
+
+### `enable`s service
+
+**User Input:**
+
+```shell
+terrainiumd enable
+```
+
+**Expected Output:**
+
+- enables service to be started on logon
+
+---
+
+### `enable`s service `--now`
+
+**User Input:**
+
+```shell
+terrainiumd enable --now
+```
+
+**Expected Output:**
+
+- enables service to be started on logon
+- starts the service if not started
+
+---
+
+### `disable`s service
+
+**User Input:**
+
+```shell
+terrainiumd disable
+```
+
+**Expected Output:**
+
+- disables service to be started on logon
+
+---
+
+### `disable`s service `--now`
+
+**User Input:**
+
+```shell
+terrainiumd disable --now
+```
+
+**Expected Output:**
+
+- disables service to be started on logon
+- stops the service if running
+
+---
+
+### `start`s service
+
+**User Input:**
+
+```shell
+terrainiumd start
+```
+
+**Expected Output:**
+
+- starts the service if not running
+
+---
+
+### `start` fails if already running
+
+**User Input:**
+
+```shell
+# ! will fail
+terrainiumd start
+terrainiumd start
+```
+
+**Expected Output:**
+
+- fails with error service is already running
+
+---
+
+### `stop`s service
+
+**User Input:**
+
+```shell
+terrainiumd stop
+```
+
+**Expected Output:**
+
+- stops the service if service is running
+
+---
+
+### `stop` fails if not running
+
+**User Input:**
+
+```shell
+# ! will fail
+terrainiumd stop
+terrainiumd stop
+```
+
+**Expected Output:**
+
+- fails with error service is not running
+
+---
+
+### `reload`s service
+
+**User Input:**
+
+```shell
+terrainiumd status # Output: "not loaded"
+terrainiumd reload
+terrainiumd status # Output: "running" / "not running"
+```
+
+**Expected Output:**
+
+- Just reloads the service in the system (launchd, systemd).
+- Does NOT start the service. On macOS if service is enabled then this will
+  start the service as `RunAtLoad` is set to true in launchd service.
+
+---
+
+### `status` shows status
+
+**User Input:**
+
+```shell
+terrainiumd status # Output: "not installed"
+terrainiumd install
+terrainiumd status # Output: "running (enabled)"
+terrainiumd stop
+terrainiumd status # Output: "not running (enabled)"
+terrainiumd disable
+terrainiumd status # Output: "not running (disabled)"
+terrainiumd remove
+terrainiumd status # Output: "not installed"
+```
+
+**Expected Output:**
+
+- shows status of the service
 
 ---
 

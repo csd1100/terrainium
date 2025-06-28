@@ -13,6 +13,12 @@ pub struct DaemonArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
+    /// Starts the daemon
+    ///
+    /// Will FAIL, if daemon is already running
+    #[arg(long, conflicts_with = "create_config")]
+    pub run: bool,
+
     /// Kills existing daemon and starts a new daemon
     #[arg(short, long, conflicts_with = "create_config")]
     pub force: bool,
@@ -28,12 +34,6 @@ pub struct Options {
     /// Location: ~/.config/terrainium/terrainiumd.toml
     #[arg(long)]
     pub create_config: bool,
-
-    /// Starts the daemon
-    ///
-    /// Will FAIL, if daemon is already running
-    #[arg(long, conflicts_with = "create_config")]
-    pub run: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -54,6 +54,7 @@ pub enum Verbs {
         #[arg(short, long)]
         now: bool,
     },
+
     /// Disables terrainiumd service to be started on the machine startup
     Disable {
         /// Stop the terrainiumd process now if running
