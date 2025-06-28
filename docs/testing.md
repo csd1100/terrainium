@@ -786,6 +786,70 @@ terrain exit
 
 ---
 
+## Status
+
+### terrains `status`
+
+**User Input:**
+
+```shell
+terrain status -t <terrain_name> -s <session_id>
+```
+
+**Expected Output:**
+
+- fetches status for terrain `terrain_name` and session id `session_id`
+
+---
+
+### terrains most recent `status`
+
+**User Input:**
+
+```shell
+terrain status -t <terrain_name>
+```
+
+```shell
+terrain status -t <terrain_name> -r 0
+```
+
+**Expected Output:**
+
+- fetches last updated sessions' status for terrain `terrain_name` if terrain is not
+  active
+
+---
+
+### terrains recent `status`
+
+**User Input:**
+
+```shell
+terrain status -t <terrain_name> -r 2
+```
+
+**Expected Output:**
+
+- fetches 2nd most recent updated sessions' status for terrain `terrain_name`
+
+---
+
+### terrains fetches active sessions `status`
+
+**User Input:**
+
+```shell
+terrain status
+```
+
+**Expected Output:**
+
+- fetches status of active session by reading `TERRAIN_NAME` and `TERRAIN_SESSION_ID`
+  environment variable
+
+---
+
 # Template
 
 ## Description

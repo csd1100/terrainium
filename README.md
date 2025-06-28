@@ -31,11 +31,11 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
     - `--active` - opens editor for active terrain rather than current directory
 
   - `update OPTIONS` - Updates terrain with options
-    - `-s|--set-default <name>` - set default `biome`.  
+    - `-s|--set-default <DEFAULT>` - set default `biome`.  
       _Cannot be used with other options._
-    - `-b|--biome <biome_name>` - biome to update.  
+    - `-b|--biome <BIOME>` - biome to update.  
       _Cannot be used with `-n` flag._
-    - `-n|--new <new>` creates a new biome with `name`. If `-e`|`-a` are passed with
+    - `-n|--new <NEW>` creates a new biome with `name`. If `-e`|`-a` are passed with
       this, the environment variable and alias will be set for the new biome.  
       _Cannot be used with `-b` flag._
     - `-e|--env <VAR_NAME>=<VAR_VALUE>` adds or updates environment variable `VAR_NAME`
@@ -62,43 +62,53 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
       updating the original.
     - `--active` updates active terrain rather than current directory
 
-  - `generate` - generates and compiles required shell scripts.  
+  - `generate [OPTIONS]` - generates and compiles required shell scripts.  
     **Must** be executed if terrain.toml is updated commands other
     than `terrain edit`, `terrain update`
     - `--active` generates for active terrain rather than current directory
 
-  - `validate` - validates the `terrain.toml` and shows error and warnings if any.
+  - `validate [OPTIONS]` - validates the `terrain.toml` and shows error and warnings if any.
     - `--active` validates the active terrain rather than current directory
 
   - `get [OPTIONS]` - Get the values that will be applied. If no options passed
     will return all values.
-    - `-b|--biome <biome_name>` - name of the biome for which values to be retrieved.
-    - `--aliases` - returns value of all aliases defined.
-    - `--envs` - returns value of all environment variables defined.
-    - `-e|--env [name]` - returns value of environment variable with `name`.
-    - `-a|--alias [name]` - returns value of alias with `name`.
+    - `-b|--biome <BIOME>` - name of the biome for which values to be retrieved.
+    - `-e|--env <ENV>` - returns value of environment variable with `name`.
+    - `-a|--alias <ALIAS>` - returns value of alias with `name`.
     - `-c|--constructors` - returns value of all the constructors defined.
     - `-d|--destructors` - returns value of all the destructors defined.
+    - `--envs` - returns value of all environment variables defined.
+    - `--aliases` - returns value of all aliases defined.
     - `--auto-apply` - returns auto apply configuration value.
       Output will be one of `all`, `enabled`, `background`, `replace`, `off`.
+    - `-j|--json` - get all values in json format.
+      _Cannot be used with options other than `--active`, `--debug`_
+    - `--active` fetches the active terrain rather than current directory
     - `--debug` - by default this command does not print any terrain validation
       logs for automation purpose. Pass this flag to print them.
+
   - `enter [OPTIONS]` - applies terrain.
-    - `-b|--biome <biome_name>` - name of the biome to be applied.
+    - `-b|--biome <BIOME>` - name of the biome to be applied.
+
   - `exit` - exits terrain.
+
   - `construct [OPTIONS]` - runs commands specified in constructor block.
-    - `-b|--biome <biome_name>` - name of the biome for which constructors are run.
+    - `-b|--biome <BIOME>` - name of the biome for which constructors are run.
+
   - `destruct [OPTIONS]` - runs commands specified in destructor block.
-    - `-b|--biome <biome_name>` - name of the biome for which destructors are run.
+    - `-b|--biome <BIOME>` - name of the biome for which destructors are run.
+
   - `status [OPTIONS]` - fetches the status of the currently applied or
     recent session of the terrain from the daemon.
+    - `-t|--terrain-name` - name of the terrain for which status is to be fetched.
     - `-j|--json` - print status in `json` format.
-    - `-r|--recent <n>` - fetches status of last `n`Th session.
-    - `-s|--session-id <session_id>` - specify session for which status is to be fetched.
+    - `-r|--recent <N>` - fetches status of last `N`th session.
+    - `-s|--session-id <SESSION_ID>` - specify session for which status is to be fetched.
+
   - `-h|--help` - shows help.
 
   - **NOTE**
-    - The `-b|--biome <biome_name>` argument for all supported commands following is the behavior:
+    - The `-b|--biome <BIOME>` argument for all supported commands following is the behavior:
       - if not specified `default-biome` will be selected.
       - if there is no `default-biome`, then main terrain will be used.
       - if value `none` is passed main terrain will be used regardless of other biome definitions.
@@ -109,11 +119,12 @@ terrain <COMMAND|OPTIONS> [OPTIONS]
         current directory rather than activated terrain in current shell session.
 
 - Options:
-  - `--create-config` - creates a config file at location:
-    `~/.config/terrainium/terrainium.toml`. Cannot be used with other options.
+  - `--create-config` - creates a configuration file at location:
+    `~/.config/terrainium/terrainium.toml`.
+    _Cannot be used with other options._
   - `--update-rc [path]` - update `path` if specified or `~/.zshrc` to source shell integration script.
-    Cannot be used with `--update-rc`.
   - `-l | --log-level` - select log level to validation messages.
+    Can be used with subcommands as well.
     Value can be `trace`, `debug`, `info`, `warn` and `error`.
 
 ### terrainiumd
@@ -133,8 +144,8 @@ terrainiumd <COMMAND|OPTIONS> [OPTIONS]
   - `stop` - stop the `terrainiumd` process now if running.
   - `reload` - just reloads the service in the system (`launchd`, `systemd`).
     Does NOT start the service.
-  - `status` - prints status of the installed service, status can be: `running`, `not running`, `not loaded`, `not
-installed`, also displays whether service is enabled to run at startup or not (`enabled`, `disabled`).
+  - `status` - prints status of the installed service, status can be: `running(enabled|disabled)`,
+    `not running(enabled|disabled)`, `not loaded`, `not installed`
 
 - Options:
   - `--run` - starts the terrainium daemon

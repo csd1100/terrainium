@@ -8,7 +8,7 @@ use tracing::Level;
 
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
-use crate::common::constants::{NONE, SHELL, UNSUPPORTED, ZSH, ZSHRC_PATH};
+use crate::common::constants::{NONE, SHELL, TERRAIN_NAME, UNSUPPORTED, ZSH, ZSHRC_PATH};
 
 const DEFAULT_SELECTED: &str = "__default__";
 
@@ -119,7 +119,10 @@ pub enum Verbs {
         /// Sets default biome.
         ///
         /// Will fail if specified biome is not defined before.
-        #[arg(short, long, conflicts_with_all = ["biome", "new", "env", "alias", "auto_apply"])]
+        #[arg(short,
+            long,
+            value_name = "DEFAULT",
+            conflicts_with_all = ["biome", "new", "env", "alias", "auto_apply"])]
         set_default: Option<String>,
 
         /// Updates specified biome
@@ -198,18 +201,6 @@ pub enum Verbs {
         #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        /// Fetches all the environment variables
-        ///
-        /// Cannot be used with `-e`
-        #[arg(long, conflicts_with_all = ["env", "json"])]
-        envs: bool,
-
-        /// Fetches all the aliases
-        ///
-        /// Cannot be used with `-a`.
-        #[arg(long, conflicts_with_all = ["alias", "json"])]
-        aliases: bool,
-
         /// Fetches specified list of environment variables
         ///
         /// Multiple values can be fetched.
@@ -235,6 +226,18 @@ pub enum Verbs {
         /// Fetches all the destructors
         #[arg(short, long, conflicts_with = "json")]
         destructors: bool,
+
+        /// Fetches all the environment variables
+        ///
+        /// Cannot be used with `-e`
+        #[arg(long, conflicts_with_all = ["env", "json"])]
+        envs: bool,
+
+        /// Fetches all the aliases
+        ///
+        /// Cannot be used with `-a`.
+        #[arg(long, conflicts_with_all = ["alias", "json"])]
+        aliases: bool,
 
         /// Fetches the current auto_apply value
         #[arg(long, conflicts_with = "json")]
@@ -295,15 +298,38 @@ pub enum Verbs {
     /// If terrain is not active, this command will fail
     Exit,
 
+    /// Fetches status of background constructors and destructors from terrainium
+    /// daemon
+    ///
+    /// Fetches status for specified terrain name and session.
+    /// If both session_id and recent are not provided (and TERRAIN_SESSION_ID is not set)
+    /// will fetch most recently updated session.
     Status {
+        /// Terrain for which status is to be fetched
+        ///
+        /// Needs to be specified if terrain is not active.
+        ///
+        /// If terrain is active, and this value is not specified, then value
+        /// is read from TERRAIN_NAME environment variable.
+        #[arg(short, long, env = TERRAIN_NAME, hide_env_values = true)]
+        terrain_name: String,
+
+        /// Return status for session_id [env: TERRAIN_SESSION_ID]
+        ///
+        /// If not specified read from TERRAIN_SESSION_ID environment variable,
+        /// which is set when terrain activates.
+        #[arg(short, long)]
+        session_id: Option<String>,
+
+        /// Return last updated nth session
+        ///
+        /// Cannot be used with session_id
+        #[arg(short, long, value_name = "N", conflicts_with = "session_id")]
+        recent: Option<u32>,
+
+        /// Return status in json format
         #[arg(short, long)]
         json: bool,
-        #[arg(short, long, group = "session")]
-        recent: Option<u32>,
-        #[arg(short, long, group = "session")]
-        session_id: Option<String>,
-        #[arg(short, long)]
-        terrain_name: Option<String>,
     },
 
     /// Generate schema.json for terrain.toml, terrainium.toml, terrainiumd.toml.
