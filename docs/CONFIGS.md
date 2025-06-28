@@ -11,7 +11,7 @@
   - JSON schema for this file
 
 - `auto_apply`:
-  - whether to disable `auto_apply` globally.
+  - whether to enable `auto_apply` globally.
   - type - boolean.
   - default - true.
 
