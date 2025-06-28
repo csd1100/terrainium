@@ -161,7 +161,7 @@ pub enum Verbs {
 
         /// Backs up terrain.toml before update
         ///
-        /// Backs up to terrain.toml.bkp file in same directory as terrain.toml
+        /// Backs up to terrain.toml.bkp file in same directory as terrain.toml.
         #[arg(long)]
         backup: bool,
 
@@ -214,7 +214,7 @@ pub enum Verbs {
         ///
         /// Multiple values can be fetched.
         /// Single instance of `-e` can be supplied with single environment variable to fetch.
-        /// .i.e. if multiple values are needed use `-e ENV_VAR1 -e ENV_VAR2`
+        /// .i.e. if multiple values are needed use `-e ENV_VAR1 -e ENV_VAR2`.
         /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
         #[arg(short, conflicts_with = "json")]
         env: Vec<String>,
@@ -223,7 +223,7 @@ pub enum Verbs {
         ///
         /// Multiple values can be fetched.
         /// Single instance of `-a` can be supplied with single alias to fetch.
-        /// .i.e. if multiple values are needed use `-a alias1 -a alias2`
+        /// .i.e. if multiple values are needed use `-a alias1 -a alias2`.
         /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
         #[arg(short, conflicts_with = "json")]
         alias: Vec<String>,
@@ -253,24 +253,46 @@ pub enum Verbs {
         debug: bool,
     },
 
+    /// Activates the terrainium shell and runs constructors in new shell
+    ///
+    /// Creates a new shell session with environment variables, aliases from the
+    /// terrain and selected biome.
+    /// Runs foreground processes first when shell starts.
+    /// Also triggers background constructors in daemon.
     Enter {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the terrain should be activated.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
+        /// flag to indicate whether terrain has activated by auto_apply mechanism
         #[arg(long, hide = true)]
         auto_apply: bool,
     },
 
+    /// Runs the constructors for the active terrain
+    ///
+    /// If terrain is not active, this command will fail
     Construct {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the constructors should be run.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
     },
 
+    /// Runs the destructors for the active terrain
+    ///
+    /// If terrain is not active, this command will fail
     Destruct {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the destructors should be run.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
     },
 
+    /// Exits the active terrain
+    ///
+    /// Runs foreground destructors in shell.
+    /// Triggers background destructors in daemon.
+    ///
+    /// If terrain is not active, this command will fail
     Exit,
 
     Status {
@@ -284,14 +306,19 @@ pub enum Verbs {
         terrain_name: Option<String>,
     },
 
+    /// Generate schema.json for terrain.toml, terrainium.toml, terrainiumd.toml.
     #[cfg(feature = "terrain-schema")]
     Schema,
 }
 
+/// Biome to select
 #[derive(Debug, Clone)]
 pub enum BiomeArg {
+    /// Main terrain will be selected.
     None,
+    /// If default biome is specified it will be used, else main terrain.
     Default,
+    /// Specified biome will be selected if exists.
     Some(String),
 }
 

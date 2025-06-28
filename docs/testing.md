@@ -38,12 +38,12 @@ terrain --create-config -l trace
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain --create-config --update-rc
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain --create-config init
 ```
 
@@ -90,7 +90,7 @@ terrain --update-rc ~/zsh/source.zsh
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 #  SHELL environment variable does not contain zsh OR is not set
 terrain --update-rc
 ```
@@ -122,7 +122,7 @@ terrain validate -l trace
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain validate -l any
 ```
 
@@ -215,19 +215,19 @@ terrain init -cxe
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain init
 terrain init
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain init -c # creates terrain in central directory
 terrain init
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain init
 terrain init -c # creates terrain in central directory
 ```
@@ -320,17 +320,17 @@ terrain update -s example_biome
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain update -s example_biome -b example_biome -e VAR1="SOME VALUE"
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain update -s example_biome -n new_biome -e VAR1="SOME VALUE"
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain update -s example_biome --auto-apply off
 ```
 
@@ -458,7 +458,7 @@ terrain update -e ENV_VAR="value" --active
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain update -s unknown_biome
 ```
 
@@ -473,7 +473,7 @@ terrain update -s unknown_biome
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain update -b unknown_biome -e ENV_VAR=VALUE
 ```
 
@@ -620,12 +620,12 @@ Aliases:
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain get --envs -e EDITOR -e NON_EXISTENT
 ```
 
 ```shell
-#! will fail
+# ! will fail
 terrain get --aliases -a tenter
 ```
 
@@ -640,13 +640,149 @@ terrain get --aliases -a tenter
 **User Input:**
 
 ```shell
-#! will fail
+# ! will fail
 terrain get -j --envs
 ```
 
 **Expected Output:**
 
 - fails specifying both of these cannot be used together
+
+---
+
+## Activation
+
+### `enter`s terrain
+
+**User Input:**
+
+```shell
+terrain enter
+```
+
+**Expected Output:**
+
+- starts the shell
+- sets aliases and environment variables
+- runs foreground constructors
+- triggers background constructors
+
+---
+
+### `enter`s specified biome
+
+**User Input:**
+
+```shell
+terrain enter -b example_biome
+```
+
+**Expected Output:**
+
+- uses biome `example_biome`
+- starts the shell
+- sets aliases and environment variables
+- runs foreground constructors
+- triggers background constructors
+
+---
+
+## Constructors
+
+### runs constructors
+
+**User Input:**
+
+```shell
+terrain construct
+```
+
+**Expected Output:**
+
+- runs foreground constructors
+- triggers background constructors
+
+---
+
+### `construct` specified biome
+
+**User Input:**
+
+```shell
+terrain construct -b example_biome
+```
+
+**Expected Output:**
+
+- uses biome `example_biome`
+- runs foreground constructors
+- triggers background constructors
+
+---
+
+## Destructors
+
+### runs destructors
+
+**User Input:**
+
+```shell
+terrain destruct
+```
+
+**Expected Output:**
+
+- runs foreground destructors
+- triggers background destructors
+
+---
+
+### `destruct` specified biome
+
+**User Input:**
+
+```shell
+terrain destruct -b example_biome
+```
+
+**Expected Output:**
+
+- uses biome `example_biome`
+- runs foreground destructors
+- triggers background destructors
+
+---
+
+## Deactivation
+
+### `exit`s terrain
+
+**User Input:**
+
+```shell
+terrain exit
+```
+
+**Expected Output:**
+
+- runs foreground destructors
+- triggers background destructors
+- exits shell
+
+---
+
+### `exit` fails if terrain is not active
+
+**User Input:**
+
+```shell
+# ! will fail
+terrain exit
+```
+
+**Expected Output:**
+
+- fails with the error stating terrain is not active
 
 ---
 
