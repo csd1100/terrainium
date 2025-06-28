@@ -571,7 +571,7 @@ terrain get -j
 **Expected Output:**
 
 - Fetches values for `default_biome` in json format
-- Output will be similar to [this](../tests/data/terrain-example_biome.json).
+- Output will be similar to [this](../example_configs/terrain-example_biome.json).
 
 ---
 

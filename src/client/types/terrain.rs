@@ -68,10 +68,10 @@ pub struct Terrain {
     schema: String,
 
     name: String,
+    default_biome: Option<String>,
     auto_apply: AutoApply,
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
-    default_biome: Option<String>,
 }
 
 impl Terrain {

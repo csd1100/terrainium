@@ -6,8 +6,11 @@ A command-line utility written in Rust for env management
   creates your development environment for you.
 - This utility will automatically set environment variables, aliases and run specified
   commands in shell or in background.
-- The sample configuration file is stored in [terrain.toml](./tests/data/terrain.example.toml)
+- The sample configuration file is stored in [terrain.toml](./example_configs/terrain.example.toml)
 - Currently only `zsh` is supported.
+- Information about `terrain.toml` files anatomy can be found in [TERRAIN.md](./docs/TERRAIN.md).
+- Information about configuration options for behavior of `terrain` and `terrainiumd` commands
+  can be found in [CONFIGS.md](./docs/CONFIGS.md).
 
 ## Command-Line Arguments (Usage)
 
@@ -228,7 +231,7 @@ terrainiumd <COMMAND|OPTIONS> [OPTIONS]
 
 ### Example
 
-- If [terrain.toml](./tests/data/terrain.example.toml) is used.
+- If [terrain.toml](./example_configs/terrain.example.toml) is used.
 - When `terrain enter` is run, the default biome `example_biome` will be applied:
   1. environment variables set will be:
      - `EDITOR=nvim` -- from `example_biome`
@@ -241,6 +244,10 @@ terrainiumd <COMMAND|OPTIONS> [OPTIONS]
        if `NULL` env var is set in parent shell it will be substituted here.
      - `PAGER="less"` -- from terrain
      - `NULL_POINTER=${NULL}` -- from terrain
+     - environment variable `TERRAIN_DIR` is also set but not exported. i.e. This
+       environment variable won't be available to the child processes of shell but can
+       be used in shell itself.
+       This can be used by user if they want to execute something in terrain directory.
   2. aliases set will be:
      - `texit=terrain exit` -- from `terrain`
      - `tenter=terrain enter -b example_biome` -- from `example_biome`

@@ -116,7 +116,7 @@ pub(crate) mod tests {
             Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
+        copy(WITH_EXAMPLE_TERRAIN_TOML, terrain_toml).expect("test file to be copied");
 
         let script_dir = central_dir.path().join("scripts");
         create_dir_all(script_dir).expect("test scripts dir to be created");
@@ -171,7 +171,7 @@ pub(crate) mod tests {
             Context::build(current_dir.path(), central_dir.path(), true, executor);
 
         let terrain_toml: PathBuf = central_dir.path().join(TERRAIN_TOML);
-        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
+        copy(WITH_EXAMPLE_TERRAIN_TOML, terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
         let script_dir = central_dir1.join("scripts");
@@ -228,7 +228,7 @@ pub(crate) mod tests {
             Context::build(current_dir.path(), central_dir.path(), false, executor);
 
         let terrain_toml: PathBuf = current_dir.path().join(TERRAIN_TOML);
-        copy("./tests/data/terrain.example.toml", terrain_toml).expect("test file to be copied");
+        copy(WITH_EXAMPLE_TERRAIN_TOML, terrain_toml).expect("test file to be copied");
 
         let central_dir1 = central_dir.path();
         let script_dir = central_dir1.join("scripts");
