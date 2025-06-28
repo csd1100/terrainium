@@ -23,13 +23,14 @@ background = []
 TERRAINIUM_DEV = "true"
 
 [biomes.dev.aliases]
+trenter = "exec cargo run -- enter -b test"
 
 [biomes.dev.constructors]
-background = []
+foreground = []
 
-[[biomes.dev.constructors.foreground]]
+[[biomes.dev.constructors.background]]
 exe = "cargo"
-args = ["run", "--", "enter", "-b", "test"]
+args = ["run", "--bin", "terrainiumd", "--", "--run"]
 
 [biomes.dev.destructors]
 background = []
