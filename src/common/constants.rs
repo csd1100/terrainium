@@ -11,7 +11,11 @@ pub const ENABLE: &str = "enable";
 pub const DISABLE: &str = "disable";
 
 pub const PATH: &str = "PATH";
+pub const SHELL: &str = "SHELL";
 pub const FPATH: &str = "FPATH";
+pub const ZSHRC: &str = ".zshrc";
+pub const ZSHRC_PATH: &str = "~/.zshrc";
+pub const UNSUPPORTED: &str = "UNSUPPORTED";
 pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
@@ -42,10 +46,12 @@ pub const CONSTRUCTORS: &str = "constructors";
 pub const DESTRUCTORS: &str = "destructors";
 pub const FOREGROUND: &str = "foreground";
 pub const BACKGROUND: &str = "background";
-pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES NOT EXIST!!!";
 
-pub const EXAMPLE_BIOME: &str = "example_biome";
-pub const NONE: &str = "none";
+pub const ZSH: &str = "zsh";
 pub const TRUE: &str = "true";
 pub const JSON: &str = "json";
+pub const NONE: &str = "none";
+pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";
+
+pub(crate) const DOES_NOT_EXIST: &str = "!!!DOES_NOT_EXIST!!!";

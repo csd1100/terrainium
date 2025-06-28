@@ -10,7 +10,7 @@ use terrainium::client::handlers::{
     construct, destruct, edit, enter, exit, generate, get, init, status, update,
 };
 use terrainium::client::logging::init_logging;
-use terrainium::client::shell::{Shell, Zsh};
+use terrainium::client::shell::update_rc;
 use terrainium::client::types::config::Config;
 use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
@@ -30,11 +30,13 @@ async fn main() -> Result<()> {
 
     let args = ClientArgs::parse();
     let _out_guard = init_logging(&args);
+    let home_dir = home_dir().context("failed to get home directory")?;
 
     match args.command {
         None => {
-            if args.options.update_rc || args.options.update_rc_path.is_some() {
-                Zsh::update_rc(args.options.update_rc_path).context("failed to update rc")?;
+            if args.options.update_rc.is_some() {
+                update_rc(home_dir.as_path(), args.options.update_rc)
+                    .context("failed to update shell rc file")?;
             } else if args.options.create_config {
                 Config::create_file().context("failed to create config file")?;
             } else {
@@ -54,7 +56,6 @@ async fn main() -> Result<()> {
                     .context("failed to get the terrain status");
             }
 
-            let home_dir = home_dir().context("failed to get home directory")?;
             let current_dir = std::env::current_dir().context("failed to get current directory")?;
             let context = Context::new(&verbs, home_dir, current_dir, Arc::new(Executor))?;
 
@@ -77,13 +78,13 @@ async fn main() -> Result<()> {
                 Verbs::Generate { .. } => generate::handle(context, terrain)
                     .context("failed to generate scripts for the terrain")?,
 
-                Verbs::Validate => {
+                Verbs::Validate { .. } => {
                     // create environments to run environment validations inside `Environment::from`
                     Environment::from(&terrain, BiomeArg::None, context.terrain_dir())?;
                     let res: Result<Vec<Environment>> = terrain
                         .biomes()
-                        .iter()
-                        .map(|(biome_name, _)| {
+                        .keys()
+                        .map(|biome_name| {
                             // create environments to run environment validations
                             Environment::from(
                                 &terrain,

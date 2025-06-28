@@ -5,6 +5,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use anyhow::{Context as AnyhowContext, Result, bail};
+use clap::ValueEnum;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -25,7 +26,7 @@ use crate::common::constants::{
 use crate::common::types::command::Command;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum AutoApply {
     All,
@@ -67,10 +68,10 @@ pub struct Terrain {
     schema: String,
 
     name: String,
+    default_biome: Option<String>,
     auto_apply: AutoApply,
     terrain: Biome,
     biomes: BTreeMap<String, Biome>,
-    default_biome: Option<String>,
 }
 
 impl Terrain {
@@ -433,8 +434,8 @@ pub mod tests {
     use std::fs::{copy, create_dir_all, metadata, read_to_string, set_permissions, write};
     use std::os::unix::fs::{PermissionsExt, symlink};
     use std::path::PathBuf;
-    use std::str::FromStr;
 
+    use pretty_assertions::assert_eq;
     use serial_test::serial;
     use tempfile::tempdir;
     use toml_edit::DocumentMut;
@@ -500,7 +501,9 @@ pub mod tests {
 
     #[cfg(test)]
     pub(crate) fn set_auto_apply(terrain: &mut Terrain, auto_apply: &str) {
-        terrain.auto_apply = AutoApply::from_str(auto_apply).unwrap();
+        use clap::ValueEnum;
+
+        terrain.auto_apply = AutoApply::from_str(auto_apply, false).unwrap();
     }
 
     #[test]

@@ -62,6 +62,7 @@ mod tests {
     use std::str::FromStr;
 
     use anyhow::Result;
+    use pretty_assertions::assert_eq;
 
     use crate::client::args::{BiomeArg, GetArgs};
     use crate::client::types::config::Config;
@@ -392,7 +393,7 @@ Aliases:
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Environment Variables:
     EDITOR="nvim"
-    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+    NON_EXISTENT="!!!DOES_NOT_EXIST!!!"
 "#;
 
         assert_eq!(output, expected);
@@ -418,7 +419,7 @@ Aliases:
 
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Aliases:
-    non_existent="!!!DOES NOT EXIST!!!"
+    non_existent="!!!DOES_NOT_EXIST!!!"
     tenter="terrain enter --biome example_biome"
 "#;
 
@@ -556,9 +557,9 @@ Destructors:
 
         let expected = r#"Environment Variables:
     EDITOR="nvim"
-    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+    NON_EXISTENT="!!!DOES_NOT_EXIST!!!"
 Aliases:
-    non_existent="!!!DOES NOT EXIST!!!"
+    non_existent="!!!DOES_NOT_EXIST!!!"
     tenter="terrain enter --biome example_biome"
 Constructors:
     foreground:
@@ -598,7 +599,7 @@ Destructors:
         let output = super::get(context, Terrain::example(), args).expect("to not throw an error");
         let expected = r#"Environment Variables:
     EDITOR="nvim"
-    NON_EXISTENT="!!!DOES NOT EXIST!!!"
+    NON_EXISTENT="!!!DOES_NOT_EXIST!!!"
 Aliases:
     tenter="terrain enter --biome example_biome"
     texit="terrain exit"
@@ -634,7 +635,7 @@ Aliases:
     PAGER="less"
     POINTER_ENV_VAR="overridden_env_val"
 Aliases:
-    non_existent="!!!DOES NOT EXIST!!!"
+    non_existent="!!!DOES_NOT_EXIST!!!"
     tenter="terrain enter --biome example_biome"
 "#;
 

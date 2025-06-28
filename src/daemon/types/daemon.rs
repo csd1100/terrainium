@@ -119,6 +119,7 @@ mod tests {
     use std::os::unix::fs::FileTypeExt;
 
     use anyhow::Result;
+    use pretty_assertions::{assert_eq, assert_ne};
     use tempfile::tempdir;
 
     use super::*;

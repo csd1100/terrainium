@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{Context as AnyhowContext, Result, bail};
 
 use crate::client::args::Verbs;
-use crate::client::shell::{Shell, Zsh};
+use crate::client::shell::{Shell, Zsh, get_shell};
 use crate::client::types::config::Config;
 use crate::common::constants::{
     CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML,
@@ -77,6 +77,7 @@ impl Context {
             | Verbs::Update { active: true, .. }
             | Verbs::Generate { active: true, .. }
             | Verbs::Get { active: true, .. }
+            | Verbs::Validate { active: true, .. }
             | Verbs::Construct { .. }
             | Verbs::Destruct { .. }
             | Verbs::Exit
@@ -148,6 +149,7 @@ impl Context {
         } else {
             terrain_dir.join(TERRAIN_TOML)
         };
+
         Self::generate(
             home_dir,
             terrain_dir,
@@ -168,13 +170,13 @@ impl Context {
     ) -> Result<Self> {
         let config = Config::from_file().unwrap_or_default();
 
-        let shell = Zsh::get(
-            &std::env::current_dir().context("failed to get current directory")?,
-            executor.clone(),
-        );
+        let cwd = std::env::current_dir().context("failed to get current directory")?;
+        let shell = get_shell(cwd.as_path(), executor.clone())?;
 
         shell
-            .setup_integration(Self::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))
+            .setup_integration(
+                Self::config_dir(home_dir.as_path()).join(SHELL_INTEGRATION_SCRIPTS_DIR),
+            )
             .context("failed to setup shell integration")?;
 
         Ok(Context {
@@ -200,7 +202,7 @@ impl Context {
         &self.central_dir
     }
 
-    pub fn config_dir(home_dir: PathBuf) -> PathBuf {
+    pub fn config_dir(home_dir: &Path) -> PathBuf {
         home_dir.join(CONFIG_LOCATION)
     }
 
@@ -297,6 +299,7 @@ pub(crate) mod tests {
 
     use anyhow::Result;
     use home::home_dir;
+    use pretty_assertions::assert_eq;
     use serial_test::serial;
     use tempfile::tempdir;
 
@@ -695,7 +698,7 @@ pub(crate) mod tests {
             .compile_script_successfully_for_times(
                 &shell_integration_dir.join("terrainium_init.zsh"),
                 &shell_integration_dir.join("terrainium_init.zwc"),
-                15,
+                16,
             )
             .successfully();
 
@@ -772,7 +775,11 @@ pub(crate) mod tests {
                 expected: &current_dir_ctx,
             },
             TestVerbContext {
-                verb: Verbs::Validate,
+                verb: Verbs::Validate { active: true },
+                expected: &terrain_dir_ctx,
+            },
+            TestVerbContext {
+                verb: Verbs::Validate { active: false },
                 expected: &current_dir_ctx,
             },
             TestVerbContext {
@@ -968,8 +975,7 @@ pub(crate) mod tests {
                 executor.clone(),
             )
             .expect_err(&format!(
-                "failed to get an error while creating context for verb: {:?}",
-                verb
+                "failed to get an error while creating context for verb: {verb:?}"
             ))
             .to_string();
 

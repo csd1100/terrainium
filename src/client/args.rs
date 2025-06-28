@@ -3,20 +3,38 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::bail;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueHint};
 use tracing::Level;
 
 use crate::client::types::terrain::AutoApply;
 use crate::client::validation::{IdentifierType, validate_identifiers};
-use crate::common::constants::{
-    AUTO_APPLY_ALL, AUTO_APPLY_BACKGROUND, AUTO_APPLY_ENABLED, AUTO_APPLY_OFF, AUTO_APPLY_REPLACE,
-    NONE,
-};
+use crate::common::constants::{NONE, SHELL, TERRAIN_NAME, UNSUPPORTED, ZSH, ZSHRC_PATH};
+use crate::common::utils::VERSION_INFO;
 
 const DEFAULT_SELECTED: &str = "__default__";
 
+/// get default rc path for supported shells
+/// if unsupported shell found send UNSUPPORTED. UNSUPPORTED
+/// value will be handled inside [shell::get_shell method](crate::client::shell::get_shell)
+fn get_default_shell_rc() -> &'static str {
+    let shell = std::env::var(SHELL).ok();
+
+    if shell.is_some_and(|s| s.contains(ZSH)) {
+        return ZSHRC_PATH;
+    }
+
+    UNSUPPORTED
+}
+
+/// terrainium
+///
+/// A command-line utility for environment management
 #[derive(Parser, Debug)]
-#[command(args_conflicts_with_subcommands = true)]
+#[command(
+    version(VERSION_INFO),
+    propagate_version(true),
+    args_conflicts_with_subcommands = true
+)]
 pub struct ClientArgs {
     #[clap(flatten)]
     pub options: Options,
@@ -27,144 +45,307 @@ pub struct ClientArgs {
 
 #[derive(Parser, Debug)]
 pub struct Options {
-    #[arg(long)]
+    /// Creates a configuration file for terrain client
+    ///
+    /// Location: `~/.config/terrainium/terrainium.toml`
+    #[arg(long, conflicts_with = "update_rc")]
     pub create_config: bool,
 
-    #[arg(long, group = "update-rc")]
-    pub update_rc: bool,
+    /// Adds shell integration to specified rc file
+    /// If file is not specified `~/.zshrc` is updated
+    #[arg(long,
+        num_args = 0..=1,
+        default_missing_value = get_default_shell_rc(),
+        value_hint = ValueHint::FilePath)]
+    pub update_rc: Option<PathBuf>,
 
-    #[arg(long, group = "update-rc")]
-    pub update_rc_path: Option<PathBuf>,
-
-    #[arg(short, long, default_value = "warn", global = true)]
+    /// Set logging level for validation messages
+    ///
+    /// For `terrain validate` value is overwritten to debug
+    ///
+    /// [possible values: trace, debug, info, warn, error]
+    #[arg(
+        short,
+        long,
+        default_value = "warn",
+        global = true,
+        display_order = 100
+    )]
     pub log_level: Level,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Verbs {
+    /// Initialize terrain in current directory
+    ///
+    /// Creates terrain.toml file
     Init {
+        /// Creates terrain.toml in central directory.
+        ///
+        /// If current directory is /home/user/work/project, then
+        /// terrain.toml file is created in
+        /// ~/.config/terrainium/terrains/_home_user_work_project/.
+        ///
+        /// This is useful if user does not want to add terrain.toml
+        /// to source control
         #[arg(short, long)]
         central: bool,
 
+        /// Creates terrain.toml with example terrain included.
         #[arg(short = 'x', long)]
         example: bool,
 
+        /// Opens terrain.toml in EDITOR after creation
+        ///
+        /// Launches editor defined in EDITOR environment variable.
+        /// If EDITOR environment variable is not set, 'vi' will be used
+        /// as editor.
         #[arg(short, long)]
         edit: bool,
     },
 
+    /// Opens terrain.toml for current directory in EDITOR
+    ///
+    /// Launches editor defined in EDITOR environment variable.
+    /// If EDITOR environment variable is not set, 'vi' will be used
+    /// as editor.
     Edit {
+        /// Opens editor for active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
+    /// Updates terrain.toml for current directory
     Update {
-        #[arg(long)]
-        active: bool,
-
-        #[arg(short, long, groups = ["update_biome" , "update"])]
+        /// Sets default biome.
+        ///
+        /// Will fail if specified biome is not defined before.
+        #[arg(short,
+            long,
+            value_name = "DEFAULT",
+            conflicts_with_all = ["biome", "new", "env", "alias", "auto_apply"])]
         set_default: Option<String>,
 
-        #[arg(short, long, group = "update_biome", default_value = DEFAULT_SELECTED)]
+        /// Updates specified biome
+        ///
+        /// If not specified default biome will be updated
+        #[arg(short, long, group = "biomes", default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        #[arg(short, long, group = "update_biome")]
+        /// Creates a new biome
+        ///
+        /// If -e and -a is used with this option, new biome will be created
+        /// with specified environment variables and aliases
+        #[arg(short, long, group = "biomes")]
         new: Option<String>,
 
-        #[arg(short, long, group = "update")]
-        alias: Vec<Pair>,
-
-        #[arg(short, long, group = "update")]
+        /// Updates environment variable to specified biome in '--new' or '--biome'
+        ///
+        /// Format for environment variable will be ENV_VAR="some value"
+        /// ENV_VAR should NOT have double or single quotes around it.
+        /// If value does not have spaces in then there is no need for double quotes.
+        ///
+        /// Multiple environment variable can be specified by -e ENV_VAR1=value1 -e ENV_VAR2=value2
+        #[arg(short, long, value_name = "ENV_VAR=\"env value\"")]
         env: Vec<Pair>,
 
-        #[arg(long)]
+        /// Updates alias to specified biome in '--new' or '--biome'
+        ///
+        /// Format for alias will be alias_name="some value".
+        /// Alias_name should NOT have double or single quotes around it.
+        /// If value does not have spaces in then there is no need for double quotes.
+        ///
+        /// Multiple aliases can be specified by -a alias1=value1 -a alias2=value2
+        #[arg(short, long, value_name = "ALIAS=\"alias value\"")]
+        alias: Vec<Pair>,
+
+        /// Updates auto_apply value
+        #[arg(long, value_enum)]
         auto_apply: Option<AutoApply>,
 
-        #[arg(short = 'k', long)]
+        /// Backs up terrain.toml before update
+        ///
+        /// Backs up to terrain.toml.bkp file in same directory as terrain.toml.
+        #[arg(long)]
         backup: bool,
+
+        /// Updates active terrain rather than current directory
+        #[arg(long)]
+        active: bool,
     },
 
+    /// Generates required shell scripts for terrainium to work
+    ///
+    /// MUST be executed if terrain.toml is updated by something other
+    /// than `terrain edit`, `terrain update` commands.
     Generate {
+        /// generates scripts active terrain rather than current directory
         #[arg(long)]
         active: bool,
     },
 
-    Validate,
-
-    Get {
+    /// Validates the terrain in current directory
+    Validate {
+        /// Validates the active terrain rather than current directory
         #[arg(long)]
         active: bool,
+    },
 
-        #[arg(long)]
-        debug: bool,
-
-        #[arg(short, long, name = "json")]
-        json: bool,
-
-        #[arg(short, long, default_value = DEFAULT_SELECTED, conflicts_with = "json")]
+    /// Fetch the values of the environment for current directory
+    ///
+    /// If no arguments are provided fetches all the values.
+    Get {
+        /// Biome to use for environment.
+        /// If it is not specified default biome will be used.
+        ///
+        /// If "none" is used, main terrain will be used without applying any Biome.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
-        #[arg(long, group = "get_alias", conflicts_with = "json")]
-        aliases: bool,
-
-        #[arg(long, group = "get_env", conflicts_with = "json")]
-        envs: bool,
-
-        #[arg(short, group = "get_alias", conflicts_with = "json")]
-        alias: Vec<String>,
-
-        #[arg(short, group = "get_env", conflicts_with = "json")]
+        /// Fetches specified list of environment variables
+        ///
+        /// Multiple values can be fetched.
+        /// Single instance of `-e` can be supplied with single environment variable to fetch.
+        /// .i.e. if multiple values are needed use `-e ENV_VAR1 -e ENV_VAR2`.
+        /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
+        #[arg(short, conflicts_with = "json")]
         env: Vec<String>,
 
+        /// Fetches specified list of aliases
+        ///
+        /// Multiple values can be fetched.
+        /// Single instance of `-a` can be supplied with single alias to fetch.
+        /// .i.e. if multiple values are needed use `-a alias1 -a alias2`.
+        /// If value does not exist "!!!DOES_NOT_EXIST!!!" is returned.
+        #[arg(short, conflicts_with = "json")]
+        alias: Vec<String>,
+
+        /// Fetches all the constructors
         #[arg(short, long, conflicts_with = "json")]
         constructors: bool,
 
+        /// Fetches all the destructors
         #[arg(short, long, conflicts_with = "json")]
         destructors: bool,
 
+        /// Fetches all the environment variables
+        ///
+        /// Cannot be used with `-e`
+        #[arg(long, conflicts_with_all = ["env", "json"])]
+        envs: bool,
+
+        /// Fetches all the aliases
+        ///
+        /// Cannot be used with `-a`.
+        #[arg(long, conflicts_with_all = ["alias", "json"])]
+        aliases: bool,
+
+        /// Fetches the current auto_apply value
         #[arg(long, conflicts_with = "json")]
         auto_apply: bool,
+
+        /// Fetches all the values in json format
+        #[arg(short, long)]
+        json: bool,
+
+        /// Fetches the values for currently active terrain
+        #[arg(long)]
+        active: bool,
+
+        /// Prints the terrain validation logs
+        #[arg(long)]
+        debug: bool,
     },
 
+    /// Activates the terrainium shell and runs constructors in new shell
+    ///
+    /// Creates a new shell session with environment variables, aliases from the
+    /// terrain and selected biome.
+    /// Runs foreground processes first when shell starts.
+    /// Also triggers background constructors in daemon.
     Enter {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the terrain should be activated.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
 
+        /// flag to indicate whether terrain has activated by auto_apply mechanism
         #[arg(long, hide = true)]
         auto_apply: bool,
     },
 
+    /// Runs the constructors for the active terrain
+    ///
+    /// If terrain is not active, this command will fail
     Construct {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the constructors should be run.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
     },
 
+    /// Runs the destructors for the active terrain
+    ///
+    /// If terrain is not active, this command will fail
     Destruct {
-        #[arg(short, long, default_value = DEFAULT_SELECTED)]
+        /// Biome for which the destructors should be run.
+        #[arg(short, long, default_value = DEFAULT_SELECTED, hide_default_value = true)]
         biome: BiomeArg,
     },
 
+    /// Exits the active terrain
+    ///
+    /// Runs foreground destructors in shell.
+    /// Triggers background destructors in daemon.
+    ///
+    /// If terrain is not active, this command will fail
     Exit,
 
+    /// Fetches status of background constructors and destructors from terrainium
+    /// daemon
+    ///
+    /// Fetches status for specified terrain name and session.
+    /// If both session_id and recent are not provided (and TERRAIN_SESSION_ID is not set)
+    /// will fetch most recently updated session.
     Status {
+        /// Terrain for which status is to be fetched
+        ///
+        /// Needs to be specified if terrain is not active.
+        ///
+        /// If terrain is active, and this value is not specified, then value
+        /// is read from TERRAIN_NAME environment variable.
+        #[arg(short, long, env = TERRAIN_NAME, hide_env_values = true)]
+        terrain_name: String,
+
+        /// Return status for session_id [env: TERRAIN_SESSION_ID]
+        ///
+        /// If not specified read from TERRAIN_SESSION_ID environment variable,
+        /// which is set when terrain activates.
+        #[arg(short, long)]
+        session_id: Option<String>,
+
+        /// Return last updated nth session
+        ///
+        /// Cannot be used with session_id
+        #[arg(short, long, value_name = "N", conflicts_with = "session_id")]
+        recent: Option<u32>,
+
+        /// Return status in json format
         #[arg(short, long)]
         json: bool,
-        #[arg(short, long, group = "session")]
-        recent: Option<u32>,
-        #[arg(short, long, group = "session")]
-        session_id: Option<String>,
-        #[arg(short, long)]
-        terrain_name: Option<String>,
     },
 
+    /// Generate schema.json for terrain.toml, terrainium.toml, terrainiumd.toml.
     #[cfg(feature = "terrain-schema")]
     Schema,
 }
 
+/// Biome to select
 #[derive(Debug, Clone)]
 pub enum BiomeArg {
+    /// Main terrain will be selected.
     None,
+    /// If default biome is specified it will be used, else main terrain.
     Default,
+    /// Specified biome will be selected if exists.
     Some(String),
 }
 
@@ -240,40 +421,33 @@ impl FromStr for Pair {
             bail!("pair of key values should be passed in format <KEY>=<VALUE>.");
         }
 
-        let mut env = BTreeMap::new();
-        env.insert(pair[0].to_string(), pair[1].to_string());
+        let key = pair.first().unwrap().to_string();
+        let value = pair
+            .last()
+            .unwrap()
+            .trim_matches(|c| c == '\'' || c == '"')
+            .to_string();
 
-        let validation_results = validate_identifiers(IdentifierType::Identifier, &env, NONE);
+        let mut identifier = BTreeMap::new();
+        identifier.insert(key.clone(), value.clone());
+
+        let validation_results =
+            validate_identifiers(IdentifierType::Identifier, &identifier, NONE);
         if !validation_results.results_ref().is_empty() {
             validation_results.print_validation_message();
             bail!("env or alias is not valid, please make sure that it is valid.");
         }
 
-        Ok(Pair {
-            key: pair.first().expect("key to be present").to_string(),
-            value: pair.get(1).expect("value to be present").to_string(),
-        })
-    }
-}
-
-impl FromStr for AutoApply {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            AUTO_APPLY_ENABLED => Ok(AutoApply::Enabled),
-            AUTO_APPLY_REPLACE => Ok(AutoApply::Replace),
-            AUTO_APPLY_BACKGROUND => Ok(AutoApply::Background),
-            AUTO_APPLY_ALL => Ok(AutoApply::All),
-            AUTO_APPLY_OFF => Ok(AutoApply::Off),
-            _ => bail!("failed to parse auto_apply argument from: {s}"),
-        }
+        Ok(Pair { key, value })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use clap::ValueEnum;
+    use pretty_assertions::assert_eq;
 
     use crate::client::args::Pair;
     use crate::client::types::terrain::AutoApply;
@@ -286,6 +460,30 @@ mod tests {
             Pair {
                 key: "KEY".to_string(),
                 value: "VALUE".to_string()
+            },
+            pair
+        );
+    }
+
+    #[test]
+    fn pair_from_value_with_double_quotes_and_space() {
+        let pair = Pair::from_str("KEY=\"SOME VALUE\"").expect("no error to be thrown");
+        assert_eq!(
+            Pair {
+                key: "KEY".to_string(),
+                value: "SOME VALUE".to_string()
+            },
+            pair
+        );
+    }
+
+    #[test]
+    fn pair_from_value_with_single_quotes_and_space() {
+        let pair = Pair::from_str("KEY='SOME VALUE'").expect("no error to be thrown");
+        assert_eq!(
+            Pair {
+                key: "KEY".to_string(),
+                value: "SOME VALUE".to_string()
             },
             pair
         );
@@ -334,29 +532,29 @@ mod tests {
     #[test]
     fn auto_apply_from_str() {
         assert_eq!(
-            AutoApply::from_str("enabled").expect("to be parsed"),
+            AutoApply::from_str("enabled", false).expect("to be parsed"),
             AutoApply::Enabled
         );
         assert_eq!(
-            AutoApply::from_str("all").expect("to be parsed"),
+            AutoApply::from_str("all", false).expect("to be parsed"),
             AutoApply::All
         );
         assert_eq!(
-            AutoApply::from_str("replace").expect("to be parsed"),
+            AutoApply::from_str("replace", false).expect("to be parsed"),
             AutoApply::Replace
         );
         assert_eq!(
-            AutoApply::from_str("background").expect("to be parsed"),
+            AutoApply::from_str("background", false).expect("to be parsed"),
             AutoApply::Background
         );
         assert_eq!(
-            AutoApply::from_str("off").expect("to be parsed"),
+            AutoApply::from_str("off", false).expect("to be parsed"),
             AutoApply::default()
         );
 
         assert_eq!(
-            AutoApply::from_str(NONE).err().unwrap().to_string(),
-            "failed to parse auto_apply argument from: none"
+            AutoApply::from_str(NONE, false).err().unwrap().to_string(),
+            "invalid variant: none"
         );
     }
 }

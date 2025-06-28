@@ -75,8 +75,8 @@ function __terrainium_exit() {
 }
 
 function __terrainium_preexec_functions() {
-    __terrainium_parse_command "$3"
     if [ -n "$TERRAIN_SESSION_ID" ]; then
+        __terrainium_parse_command "$3"
         if [ "$__terrainium_is_terrain" = "true" ]; then
             __terrainium_reexport_envs
             case "$__terrainium_verb" in

@@ -278,10 +278,7 @@ async fn spawn_command(
                     CommandStatus::Failed(None),
                 )
                 .await?;
-            let error = format!(
-                "failed to spawn command: {cmd_str} with an error: {:#?}",
-                err
-            );
+            let error = format!("failed to spawn command: {cmd_str} with an error: {err:#?}");
             error!(
                 terrain_name = terrain_name,
                 session_id = session_id,
@@ -303,6 +300,7 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
     use tokio::sync::RwLock;
 

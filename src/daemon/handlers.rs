@@ -57,7 +57,7 @@ pub async fn handle_request(context: Arc<DaemonContext>, mut daemon_socket: Daem
 }
 
 pub fn error_response(err: anyhow::Error) -> Response {
-    let error = format!("{:?}", err);
+    let error = format!("{err:?}");
     error!("{}", error);
     Response {
         payload: Some(Error(error)),

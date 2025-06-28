@@ -2,6 +2,7 @@ use std::env;
 use std::str::FromStr;
 
 use anyhow::{Context as AnyhowContext, Result, bail};
+use clap::ValueEnum;
 
 use crate::client::args::BiomeArg;
 use crate::client::handlers::background::execute_request;
@@ -50,9 +51,13 @@ fn should_run_destructor() -> bool {
     let auto_apply = env::var(TERRAIN_AUTO_APPLY);
     match auto_apply {
         Ok(auto_apply) => {
-            let auto_apply = AutoApply::from_str(&auto_apply)
-                .expect("expect auto-apply to be converted from string");
-            auto_apply.is_background_enabled()
+            if !auto_apply.is_empty() {
+                let auto_apply = AutoApply::from_str(&auto_apply, false)
+                    .expect("expect auto-apply to be converted from string");
+                auto_apply.is_background_enabled()
+            } else {
+                true
+            }
         }
         Err(_) => true,
     }
@@ -91,6 +96,7 @@ mod tests {
     use std::env::VarError;
     use std::path::Path;
 
+    use pretty_assertions::assert_eq;
     use serial_test::serial;
 
     use crate::client::test_utils::assertions::client::ExpectClient;

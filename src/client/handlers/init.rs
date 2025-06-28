@@ -47,6 +47,7 @@ pub mod tests {
     use std::path::{Path, PathBuf};
 
     use anyhow::Result;
+    use pretty_assertions::assert_eq;
     use serial_test::serial;
     use tempfile::tempdir;
 

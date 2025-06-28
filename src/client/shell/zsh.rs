@@ -8,7 +8,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Context as AnyhowContext, Result, bail};
-use home::home_dir;
 use serde::Serialize;
 use tracing::warn;
 
@@ -18,8 +17,8 @@ use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{
-    FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
-    TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID,
+    FPATH, NONE, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN,
+    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, ZSHRC,
 };
 use crate::common::execute::Execute;
 #[mockall_double::double]
@@ -234,18 +233,22 @@ fi
         self.compile_script(&init_script_location, &compiled_path)
     }
 
-    fn update_rc(path: Option<PathBuf>) -> Result<()> {
-        let path = path.unwrap_or_else(|| home_dir().expect("cannot get home dir").join(".zshrc"));
+    fn update_rc(&self, home_dir: &Path, path: PathBuf) -> Result<()> {
+        self.setup_integration(Context::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))?;
+
+        let path = fs::canonicalize(path).context("failed to normalize the rc path")?;
         let rc = fs::read_to_string(&path).context("failed to read rc")?;
+
         if !rc.contains(&Self::get_init_rc_contents()) {
-            let rc_file = fs::OpenOptions::new()
+            let mut rc_file = fs::OpenOptions::new()
                 .append(true)
                 .open(&path)
-                .context("failed to open rc");
-            rc_file?
+                .context("failed to open rc")?;
+            rc_file
                 .write_all(Self::get_init_rc_contents().as_bytes())
                 .context("failed to write rc")?;
         }
+
         Ok(())
     }
 
@@ -384,6 +387,10 @@ alias {{@key}}="{{{this}}}"
         );
         templates
     }
+
+    fn get_default_rc(&self, home_dir: &Path) -> PathBuf {
+        home_dir.join(ZSHRC)
+    }
 }
 
 impl Zsh {
@@ -439,8 +446,7 @@ impl Zsh {
             terrain_dir,
         )
         .context(format!(
-            "expected to generate environment from terrain for biome {:?}",
-            biome_name
+            "expected to generate environment from terrain for biome {biome_name:?}"
         ))?;
 
         let script = render(
@@ -452,12 +458,11 @@ impl Zsh {
             },
         )
         .context(format!(
-            "failed to render script for biome: '{:?}'",
-            biome_name
+            "failed to render script for biome: '{biome_name:?}'"
         ))?;
 
         fs::write(script_path, script)
-            .context(format!("failed to write script to path {:?}", script_path))?;
+            .context(format!("failed to write script to path {script_path:?}"))?;
 
         Ok(())
     }
@@ -471,7 +476,7 @@ impl Zsh {
 
         let output = self
             .execute(args, None)
-            .context(format!("failed to compile script {:?}", script_path))?;
+            .context(format!("failed to compile script {script_path:?}"))?;
 
         if output.status.into_raw() != 0 {
             bail!(
@@ -492,6 +497,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     use crate::client::args::BiomeArg;
@@ -568,15 +574,30 @@ mod tests {
 
     #[test]
     fn update_rc_path() {
-        let temp_dir = tempdir().unwrap();
-        fs::write(temp_dir.path().join(".zshrc"), "").unwrap();
-        Zsh::update_rc(Some(temp_dir.path().join(".zshrc"))).unwrap();
+        let home_dir = tempdir().unwrap();
+        fs::write(home_dir.path().join(".zshrc"), "").unwrap();
+
+        let zsh_integration_script_location =
+            home_dir.path().join(".config/terrainium/shell_integration");
+        let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
+        let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
+
+        let executor = ExpectZSH::with(MockExecutor::new(), home_dir.path())
+            .compile_script_successfully_for(
+                &zsh_integration_script,
+                &compiled_zsh_integration_script,
+            )
+            .successfully();
+
+        Zsh::get(home_dir.path(), Arc::new(executor))
+            .update_rc(home_dir.path(), home_dir.path().join(".zshrc"))
+            .unwrap();
 
         let expected =
             "\nsource \"$HOME/.config/terrainium/shell_integration/terrainium_init.zsh\"\n";
         assert_eq!(
             expected,
-            fs::read_to_string(temp_dir.path().join(".zshrc")).unwrap()
+            fs::read_to_string(home_dir.path().join(".zshrc")).unwrap()
         );
     }
 
@@ -586,8 +607,6 @@ mod tests {
 
         let zsh_integration_script_location =
             home_dir.path().join(".config/terrainium/shell_integration");
-        fs::create_dir_all(&zsh_integration_script_location).unwrap();
-
         let zsh_integration_script = zsh_integration_script_location.join("terrainium_init.zsh");
         let compiled_zsh_integration_script = zsh_integration_script.with_extension("zwc");
 

@@ -1,6 +1,8 @@
 use std::fs::read_to_string;
 use std::path::Path;
 
+use pretty_assertions::{assert_eq, assert_ne};
+
 use crate::common::constants::TERRAIN_TOML;
 
 pub struct AssertTerrain<'a> {

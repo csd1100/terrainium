@@ -7,7 +7,7 @@ use tracing_subscriber::{Layer, Registry, fmt};
 use crate::client::args::{ClientArgs, Verbs};
 
 pub fn init_logging(args: &ClientArgs) -> WorkerGuard {
-    let level_filter = if matches!(args.command, Some(Verbs::Validate)) {
+    let level_filter = if matches!(args.command, Some(Verbs::Validate { .. })) {
         // if validate show debug level logs
         LevelFilter::from(Level::DEBUG)
     } else {

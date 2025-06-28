@@ -64,7 +64,7 @@ impl Client {
             ProtoRequest::Execute(commands) => Any::from_msg(commands),
             ProtoRequest::Status(status) => Any::from_msg(status),
         }
-        .context(format!("failed to convert request {:?} to any", payload))?;
+        .context(format!("failed to convert request {payload:?} to any"))?;
 
         self.write_and_stop(request).await?;
 

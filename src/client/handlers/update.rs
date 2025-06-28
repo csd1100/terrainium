@@ -74,6 +74,7 @@ mod tests {
     use std::fs::{copy, create_dir_all, read_to_string};
     use std::path::{Path, PathBuf};
 
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
     use toml_edit::DocumentMut;
 

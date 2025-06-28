@@ -170,6 +170,7 @@ pub(crate) mod tests {
     use std::sync::Arc;
 
     use anyhow::Result;
+    use pretty_assertions::assert_eq;
 
     use crate::client::test_utils;
     use crate::common::execute::{Execute, Executor};

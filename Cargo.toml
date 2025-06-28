@@ -10,7 +10,7 @@ terrain-schema = ["schemars"]
 
 [dependencies]
 anyhow = "1.0.98"
-clap = { version = "4.5.40", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive", "wrap_help", "env"] }
 handlebars = "6.3.2"
 home = "0.5.11"
 mockall_double = "0.3.1"
@@ -23,12 +23,23 @@ time = { version = "0.3.41", features = ["local-offset", "formatting"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "local-time"] }
 tracing-appender = { version = "0.2.3" }
-tokio = { version = "1.45.1", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "process", "fs", "time", "signal"] }
+tokio = { version = "1.45.1", features = [
+    "rt",
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "io-util",
+    "process",
+    "fs",
+    "time",
+    "signal",
+] }
 tokio-stream = { version = "0.1.17", features = ["net"] }
 uuid = { version = "1.17.0", features = ["v4"] }
 regex = "1.11.1"
 toml_edit = "0.22.27"
 tokio-util = "0.7.15"
+const-str = "0.6.2"
 
 [dependencies.schemars]
 version = "1.0.1"
@@ -39,6 +50,7 @@ features = ["preserve_order", "indexmap2"]
 mockall = { version = "0.13.1" }
 serial_test = "3.2.0"
 tempfile = "3.20.0"
+pretty_assertions = "1.4.1"
 
 [build-dependencies]
 anyhow = "1.0.98"
