@@ -9,11 +9,10 @@ TERRAINIUM_DEV = "false"
 [terrain.aliases]
 t = "cargo run --"
 td = "cargo run --bin terrainiumd --"
+tfmt = "cargo +nightly fmt"
 ttest = "cargo clippy && cargo test"
 tdaemon = "cargo run --bin terrainiumd -- -f --log-level trace --run"
-tenter = "cargo run -- enter"
 trenter = "exec cargo run -- enter"
-tstatus = "cargo run -- status"
 
 [terrain.constructors]
 foreground = []

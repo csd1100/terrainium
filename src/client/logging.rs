@@ -21,6 +21,7 @@ pub fn init_logging(args: &ClientArgs) -> WorkerGuard {
         fmt::Layer::default()
             .with_writer(non_blocking_stdout)
             .with_target(false)
+            .without_time()
             .with_filter(level_filter),
     );
 

@@ -989,19 +989,24 @@ pub mod tests {
                                  {biome_name}({operation_type}:{commands_type})"
                             );
 
+                            let not_present_path_level = match *commands_type {
+                                "foreground" => ValidationMessageLevel::Warn,
+                                "background" => ValidationMessageLevel::Error,
+                                _ => panic!("invalid commands_type"),
+                            };
+                            let not_present_path = ValidationResult {
+                                level: not_present_path_level,
+                                message: format!(
+                                    "exe 'not_in_path' is not present in PATH variable. make sure \
+                                     it is present before {commands_type} {operation_type} is to \
+                                     be run."
+                                ),
+                                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
+                                fix_action: ValidationFixAction::None,
+                            };
+
                             assert!(
-                                messages.contains(&ValidationResult {
-                                    level: ValidationMessageLevel::Error,
-                                    message: format!(
-                                        "exe 'not_in_path' is not present in PATH variable. make \
-                                         sure it is present before {commands_type} \
-                                         {operation_type} is to be run."
-                                    ),
-                                    r#for: format!(
-                                        "{biome_name}({operation_type}:{commands_type})"
-                                    ),
-                                    fix_action: ValidationFixAction::None,
-                                }),
+                                messages.contains(&not_present_path),
                                 "failed to validate exe being not in path for \
                                  {biome_name}({operation_type}:{commands_type})"
                             );

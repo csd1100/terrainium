@@ -8,11 +8,13 @@ use anyhow::{Context, Result};
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 use crate::client::types::biome::Biome;
 use crate::client::validation::{
     Target, ValidationFixAction, ValidationMessageLevel, ValidationResult, ValidationResults,
 };
+use crate::common::constants::PATH;
 use crate::common::types::pb;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -54,42 +56,44 @@ impl Display for OperationType {
 }
 
 fn is_exe_in_path(exe: &str) -> Option<PathBuf> {
-    if let Ok(path) = std::env::var("PATH") {
+    if let Ok(path) = std::env::var(PATH) {
         for p in path.split(':') {
-            let p_str = format!("{p}/{exe}");
-            if std::fs::metadata(&p_str).is_ok() {
-                return Some(PathBuf::from(p_str));
+            let p = Path::new(p).join(exe);
+            if p.exists() {
+                return Some(p);
             }
         }
     }
     None
 }
 
-fn resolve_symlink(path: &Path) -> PathBuf {
+fn resolve_symlink(path: &Path, orig: PathBuf) -> Result<PathBuf> {
     if path.exists() && path.is_symlink() {
-        let path = fs::read_link(path).unwrap();
-        resolve_symlink(&path)
+        let path = fs::read_link(path).context("failed to read symlink")?;
+        resolve_symlink(&path, orig)
+    } else if path.is_relative() {
+        // resolved file is relative so normalize it.
+        let parent = orig.parent().context("failed to get parent of symlink")?;
+        let path = parent.join(path);
+        debug!("resolving symlink: {}", path.display());
+        fs::canonicalize(&path).context("failed to canonicalize symlink")
     } else {
-        path.to_path_buf()
+        Ok(path.to_path_buf())
     }
 }
 
 fn is_executable(path: &Path) -> bool {
-    let path = if path.is_symlink() {
-        resolve_symlink(path)
-    } else {
-        path.to_path_buf()
-    };
-
-    if !path.is_file() {
-        return false;
-    }
-
     let md = std::fs::metadata(path);
     if md.is_err() {
         return false;
     }
-    let permissions = md.unwrap().permissions();
+
+    let md = md.unwrap();
+    if !md.is_file() {
+        return false;
+    }
+
+    let permissions = md.permissions();
     let mode = permissions.mode();
 
     mode & 0o111 != 0
@@ -152,6 +156,9 @@ impl Command {
         self.cwd = cwd;
     }
 
+    /// substitute `cwd` with terrain_dir if not present
+    /// substitute relative path with normalized version
+    /// substitute environment variable reference in cwd
     pub(crate) fn substitute_cwd(
         &mut self,
         terrain_dir: &Path,
@@ -183,29 +190,23 @@ impl Command {
         Ok(())
     }
 
+    /// validate `exe` which is in path form
+    ///
+    /// i.e. `exe` is either relative or absolute path
     fn validate_path_exe(
         &self,
         exe_path: &Path,
-        is_in_path: bool,
         biome_name: &str,
         operation_type: &OperationType,
         commands_type: &CommandsType,
         results: &mut HashSet<ValidationResult>,
     ) {
         let message = if !exe_path.exists() {
-            if is_in_path {
-                Some(format!(
-                    "exe '{}' is not present in PATH variable. make sure it is present before \
-                     {commands_type} {operation_type} is to be run.",
-                    &self.exe
-                ))
-            } else {
-                Some(format!(
-                    "exe '{}' does not exists. make sure it is present before {commands_type} \
-                     {operation_type} is to be run.",
-                    self.exe
-                ))
-            }
+            Some(format!(
+                "exe '{}' does not exists. make sure it is present before {commands_type} \
+                 {operation_type} is to be run.",
+                self.exe
+            ))
         } else if !is_executable(exe_path) {
             Some(format!(
                 "exe '{}' does not have permissions to execute. make sure it has correct \
@@ -226,7 +227,42 @@ impl Command {
         }
     }
 
-    fn validate_absent_cwd_for_envs(
+    /// check if `exe` is in path and executable
+    fn validate_exe_in_path(
+        &self,
+        exe: &str,
+        biome_name: &str,
+        operation_type: &OperationType,
+        commands_type: &CommandsType,
+        results: &mut HashSet<ValidationResult>,
+    ) {
+        let res = is_exe_in_path(exe);
+
+        if let Some(res) = res {
+            self.validate_path_exe(&res, biome_name, operation_type, commands_type, results);
+        } else {
+            let message = format!(
+                "exe '{exe}' is not present in PATH variable. make sure it is present before \
+                 {commands_type} {operation_type} is to be run.",
+            );
+
+            let level = match commands_type {
+                CommandsType::Foreground => ValidationMessageLevel::Warn,
+                CommandsType::Background => ValidationMessageLevel::Error,
+            };
+
+            results.insert(ValidationResult {
+                level,
+                message,
+                r#for: format!("{biome_name}({operation_type}:{commands_type})"),
+                fix_action: ValidationFixAction::None,
+            });
+        }
+    }
+
+    /// check if `cwd` contains reference to environment variables,
+    /// or simply does not exist
+    fn validate_cwd_for_envs(
         &self,
         operation_type: &OperationType,
         commands_type: &CommandsType,
@@ -259,23 +295,36 @@ impl Command {
         }
     }
 
-    fn validate_present_path(&self, path: PathBuf) -> Option<(String, ValidationMessageLevel)> {
+    /// validate that `cwd` is a valid directory or symlink to directory
+    fn validate_cwd_path(&self, path: PathBuf) -> Option<(String, ValidationMessageLevel)> {
         if path.is_symlink() {
-            let resolved = fs::read_link(&path).unwrap();
-            if !resolved.is_dir() {
+            let res = resolve_symlink(path.as_path(), path.clone());
+            if let Ok(resolved) = res {
+                if !resolved.is_dir() {
+                    Some((
+                        format!(
+                            "cwd: '{}' is a symlink but does not resolve to directory ({}) for \
+                             command exe: '{}' args: '{}'.",
+                            path.display(),
+                            resolved.display(),
+                            self.exe,
+                            self.args.join(" ")
+                        ),
+                        ValidationMessageLevel::Error,
+                    ))
+                } else {
+                    None
+                }
+            } else {
                 Some((
                     format!(
-                        "cwd: '{}' is a symlink but does not resolve to directory ({}) for \
-                         command exe: '{}' args: '{}'.",
+                        "failed to resolve symlink cwd: '{}' for exe: '{}' args: '{}'.",
                         path.display(),
-                        resolved.display(),
                         self.exe,
                         self.args.join(" ")
                     ),
                     ValidationMessageLevel::Error,
                 ))
-            } else {
-                None
             }
         } else if !path.is_dir() {
             Some((
@@ -292,6 +341,7 @@ impl Command {
         }
     }
 
+    /// validate `cwd`
     fn validate_cwd(
         &self,
         operation_type: &OperationType,
@@ -309,9 +359,9 @@ impl Command {
         };
 
         if !exists {
-            self.validate_absent_cwd_for_envs(operation_type, commands_type, cwd)
+            self.validate_cwd_for_envs(operation_type, commands_type, cwd)
         } else {
-            self.validate_present_path(cwd)
+            self.validate_cwd_path(cwd)
         }
     }
 
@@ -398,7 +448,6 @@ impl Command {
         if exe_path.is_absolute() {
             self.validate_path_exe(
                 &exe_path,
-                false,
                 biome_name,
                 operation_type,
                 commands_type,
@@ -410,17 +459,14 @@ impl Command {
 
             self.validate_path_exe(
                 &exe_path,
-                false,
                 biome_name,
                 operation_type,
                 commands_type,
                 &mut results,
             );
         } else {
-            let res = is_exe_in_path(trimmed).unwrap_or_default();
-            self.validate_path_exe(
-                &res,
-                true,
+            self.validate_exe_in_path(
+                trimmed,
                 biome_name,
                 operation_type,
                 commands_type,

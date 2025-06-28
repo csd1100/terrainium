@@ -288,6 +288,9 @@ impl Biome {
         envs
     }
 
+    /// get list of environment variables present in passed string
+    ///
+    /// environment variables will be detected like `${ENV_VAR}` and not `$ENV_VAR`
     pub(crate) fn get_envs_to_substitute(str_to_parse: &str) -> Vec<String> {
         let mut result = vec![];
         let re =
