@@ -1,15 +1,18 @@
 "$schema" = "https://raw.githubusercontent.com/csd1100/terrainium/main/schema/terrain-schema.json"
 name = "terrainium"
 auto_apply = "all"
-default_biome = "dev"
+default_biome = "test"
 
 [terrain.envs]
+TERRAINIUM_DEV = "false"
 
 [terrain.aliases]
 t = "cargo run --"
 td = "cargo run --bin terrainiumd --"
 tfmt = "cargo +nightly fmt"
 ttest = "cargo clippy && cargo test"
+tdaemon = "cargo run --bin terrainiumd -- -f --log-level trace --run"
+trenter = "exec cargo run -- enter"
 
 [terrain.constructors]
 foreground = []
@@ -23,25 +26,19 @@ background = []
 TERRAINIUM_DEV = "true"
 
 [biomes.dev.aliases]
-trenter = "exec cargo run -- enter -b test"
 
 [biomes.dev.constructors]
 foreground = []
-
-[[biomes.dev.constructors.background]]
-exe = "cargo"
-args = ["run", "--bin", "terrainiumd", "--", "--run"]
+background = []
 
 [biomes.dev.destructors]
-background = []
 foreground = []
+background = []
 
 [biomes.test.envs]
 TERRAINIUM_DEV = "true"
 
 [biomes.test.aliases]
-tdaemon = "cargo run --bin terrainiumd -- -f --log-level trace --run"
-trenter = "exec cargo run -- enter"
 
 [[biomes.test.constructors.foreground]]
 exe = "echo"
