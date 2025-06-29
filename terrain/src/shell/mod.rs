@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
+use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::sync::Arc;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use terrainium_lib::command::Command;
 use terrainium_lib::executor::{Execute, Executor};
 
@@ -11,7 +12,7 @@ use crate::constants::{HOME, SHELL, ZSH};
 
 pub mod zsh;
 
-pub trait Shell {
+pub trait Shell: Debug {
     fn command(&self) -> Command;
     fn get_init_rc_contents(&self) -> String;
     fn generate_integration_script(&self) -> String;
@@ -26,7 +27,7 @@ pub trait Shell {
 }
 
 /// get shell instance
-pub fn get_shell(dir: &Path, executor: Arc<Executor>) -> Result<Box<dyn Shell>> {
+pub fn get_shell(dir: &Path, executor: Arc<dyn Execute>) -> Result<Box<dyn Shell>> {
     let shell = std::env::var(SHELL);
     if shell.is_err() {
         bail!("failed to detect shell!");
@@ -60,8 +61,58 @@ pub fn update_rc(home_dir: &Path, rc_path: Option<PathBuf>) -> Result<()> {
         .context("failed to update rc")
 }
 
+#[derive(Debug)]
 pub struct Zsh {
     bin: String,
     cwd: PathBuf,
     executor: Arc<dyn Execute>,
+}
+
+#[cfg(test)]
+#[serial_test::serial]
+mod tests {
+    use std::env::VarError;
+    use std::path::Path;
+    use std::sync::Arc;
+
+    use pretty_assertions::assert_eq;
+    use terrainium_lib::test_utils::{restore_env_var, set_env_var};
+
+    use super::*;
+
+    #[test]
+    fn get_shell_errors_if_no_shell_env() {
+        let shell: std::result::Result<String, VarError>;
+        unsafe {
+            shell = set_env_var(SHELL, None);
+        }
+
+        let err = get_shell(Path::new(""), Arc::new(Executor))
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(err, "failed to detect shell!");
+
+        unsafe {
+            restore_env_var(SHELL, shell);
+        }
+    }
+
+    #[test]
+    fn get_shell_errors_if_unsupported_shell() {
+        let shell: std::result::Result<String, VarError>;
+        unsafe {
+            shell = set_env_var(SHELL, Some("/bin/bash"));
+        }
+
+        let err = get_shell(Path::new(""), Arc::new(Executor))
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!(err, "shell \"/bin/bash\" is not supported!");
+
+        unsafe {
+            restore_env_var(SHELL, shell);
+        }
+    }
 }

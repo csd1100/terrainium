@@ -7,12 +7,12 @@ use std::process::{ExitStatus, Output};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as _, Result, bail};
 use serde::Serialize;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::client::args::BiomeArg;
-use crate::client::shell::{render, Shell, Zsh};
+use crate::client::shell::{Shell, Zsh, render};
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};

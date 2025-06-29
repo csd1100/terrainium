@@ -1268,8 +1268,9 @@ dependencies = [
  "clap",
  "const-str",
  "home",
- "regex",
- "serde",
+ "pretty_assertions",
+ "serial_test",
+ "tempfile",
  "terrainium-lib",
  "tracing",
  "tracing-appender",
@@ -1321,6 +1322,8 @@ dependencies = [
  "anyhow",
  "clap",
  "const-str",
+ "mockall",
+ "serial_test",
 ]
 
 [[package]]

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::builder::styling::AnsiColor;
 use serde::{Deserialize, Serialize};
 use terrainium_lib::styles::{
@@ -638,8 +638,8 @@ pub mod test_utils {
         CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        expected_env_vars_example_biome, expected_envs_with_activate_example_biome, TEST_TERRAIN_DIR,
-        TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
+        expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
     };
 
     fn get_commands(

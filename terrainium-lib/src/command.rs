@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
+#[derive(Debug, PartialEq)]
 pub struct Command {
     exe: String,
     args: Vec<String>,
     cwd: Option<PathBuf>,
 }
+
 impl Command {
     /// creates a new command object for Executor to use
     pub fn new(exe: String, args: Vec<String>, cwd: Option<PathBuf>) -> Self {

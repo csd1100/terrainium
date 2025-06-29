@@ -10,10 +10,18 @@ readme.workspace = true
 license.workspace = true
 build = "build.rs"
 
+[features]
+test-exports = ["mockall"]
+
 [dependencies]
 clap.workspace = true
 anyhow.workspace = true
 const-str = "0.6.2"
+mockall = { workspace = true, optional = true }
+
+[dev-dependencies]
+mockall.workspace = true
+serial_test.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true

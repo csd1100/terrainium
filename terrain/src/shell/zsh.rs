@@ -290,3 +290,148 @@ fi
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use anyhow::Result;
+    use pretty_assertions::assert_eq;
+    use tempfile::tempdir;
+
+    use super::*;
+    use crate::test_helpers::test_zsh::{
+        ExpectZSH, ZSH_INTEGRATION_SCRIPT, ZSH_INTEGRATION_SCRIPT_RELEASE,
+    };
+    use crate::types::terrain::{BiomeArg, Terrain};
+
+    /// zsh binary
+    fn bin() -> String {
+        "/bin/zsh".to_string()
+    }
+
+    #[test]
+    fn update_rc_path() -> Result<()> {
+        let home_dir = tempdir()?;
+        fs::write(home_dir.path().join(".zshrc"), "")?;
+
+        let integration_dir = home_dir.path().join(".config/terrainium/shell_integration");
+
+        let integration_script = integration_dir.join("terrainium_init.zsh");
+        let compiled_script = integration_script.with_extension("zwc");
+
+        let executor = ExpectZSH::to(home_dir.path())
+            .compile_script_successfully_for(&integration_script, &compiled_script);
+
+        Zsh::get(bin(), home_dir.path(), Arc::new(executor))
+            .update_rc(home_dir.path(), home_dir.path().join(ZSHRC))?;
+
+        let expected =
+            "\nsource \"$HOME/.config/terrainium/shell_integration/terrainium_init.zsh\"\n";
+
+        assert_eq!(expected, fs::read_to_string(home_dir.path().join(ZSHRC))?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn shell_integration() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let integration_dir = home_dir.path().join(".config/terrainium/shell_integration");
+        let integration_script = integration_dir.join("terrainium_init.zsh");
+        let compiled_script = integration_script.with_extension("zwc");
+
+        let executor = ExpectZSH::to(home_dir.path())
+            .compile_script_successfully_for(&integration_script, &compiled_script);
+
+        Zsh::get(bin(), home_dir.path(), Arc::new(executor))
+            .create_integration_script(integration_dir)
+            .expect("to succeed");
+
+        let file_name = if cfg!(debug_assertions) {
+            ZSH_INTEGRATION_SCRIPT
+        } else {
+            ZSH_INTEGRATION_SCRIPT_RELEASE
+        };
+
+        let expected = fs::read_to_string(file_name)?;
+        let actual = fs::read_to_string(&integration_script)?;
+
+        assert!(integration_script.exists());
+        assert_eq!(actual, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn shell_integration_replace() -> Result<()> {
+        let home_dir = tempdir()?;
+
+        let integration_dir = home_dir.path().join(".config/terrainium/shell_integration");
+        fs::create_dir_all(&integration_dir)?;
+
+        let integration_script = integration_dir.join("terrainium_init.zsh");
+        let integration_script_bkp = integration_script.with_extension("zsh.bkp");
+        let compiled_script = integration_script.with_extension("zwc");
+
+        fs::write(&integration_script, "")?;
+
+        let executor = ExpectZSH::to(home_dir.path())
+            .compile_script_successfully_for(&integration_script, &compiled_script);
+
+        Zsh::get(bin(), home_dir.path(), Arc::new(executor))
+            .create_integration_script(integration_dir)
+            .expect("to succeed");
+
+        assert!(integration_script.exists());
+        assert!(integration_script_bkp.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn assert_reexports() -> Result<()> {
+        // added tests to keep them in sync with actual values
+        let environment = Terrain::example().into_environment(BiomeArg::None)?;
+
+        let mut vars = environment
+            .terrainium_vars(String::new(), Path::new(""), true)
+            .keys()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+        vars.insert(FPATH.to_owned());
+
+        let actual = reexports()
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+
+        assert_eq!(actual, vars);
+
+        Ok(())
+    }
+
+    #[test]
+    fn assert_unsets() {
+        // added tests to keep them in sync with actual values
+        // let executor = ExpectZSH::to(Path::new("")).get_fpath().successfully();
+        //
+        // let zsh = Zsh::get(Path::new(""), Arc::new(executor));
+        //
+        // let mut vars = zsh
+        //     .generate_envs(PathBuf::new(), NONE)
+        //     .unwrap()
+        //     .keys()
+        //     .map(ToOwned::to_owned)
+        //     .collect::<HashSet<String>>();
+        // vars.remove(FPATH);
+        //
+        // let actual = unsets()
+        //     .into_iter()
+        //     .map(ToOwned::to_owned)
+        //     .collect::<HashSet<String>>();
+        //
+        // assert_eq!(actual, vars);
+    }
+}

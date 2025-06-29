@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Context as AnyhowContext, Result, bail};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use uuid::Uuid;
 
 use crate::client::args::BiomeArg;
@@ -40,7 +40,7 @@ pub async fn handle(
 
     let zsh_envs = context
         .shell()
-        .generate_envs(context.scripts_dir(), environment.selected_biome())?;
+        .generate_envs(context.scripts_dir(), &environment.selected_biome())?;
     environment.append_envs(zsh_envs);
     environment.add_activation_envs(
         context.session_id().unwrap(),
@@ -147,9 +147,9 @@ mod tests {
     use crate::common::constants::{NONE, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
-        expected_activate_request_example_biome, expected_activation_env_vars,
-        expected_env_vars_none, expected_envs_with_activate_example_biome, expected_zsh_env_vars,
+        expected_activate_request_example_biome, expected_activation_env_vars, expected_env_vars_none, expected_envs_with_activate_example_biome,
+        expected_zsh_env_vars, TEST_CENTRAL_DIR,
+        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
     };
     use crate::common::types::pb;
 

@@ -1,7 +1,7 @@
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;

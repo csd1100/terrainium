@@ -12,6 +12,8 @@ mod constants;
 mod context;
 mod logging;
 mod shell;
+#[cfg(test)]
+mod test_helpers;
 mod types;
 mod validate;
 
@@ -28,14 +30,9 @@ fn main() -> Result<()> {
 
     let home_dir = home_dir().context("failed to get home directory")?;
 
-    match args.command {
-        None => {
-            if args.options.update_rc.is_some() {
-                update_rc(home_dir.as_path(), args.options.update_rc)
-                    .context("failed to update shell rc file")?;
-            }
-        }
-        Some(_) => {}
+    if args.command.is_none() && args.options.update_rc.is_some() {
+        update_rc(home_dir.as_path(), args.options.update_rc)
+            .context("failed to update shell rc file")?;
     }
 
     Ok(())

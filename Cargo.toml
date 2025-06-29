@@ -1,7 +1,12 @@
 [workspace]
-members = ["terrain", "terrainiumd", "terrainium-lib", "terrainium-build"]
-default-members = ["terrain", "terrainiumd", "terrainium-lib", "terrainium-build"]
 resolver = "3"
+members = ["terrain", "terrainiumd", "terrainium-lib", "terrainium-build"]
+default-members = [
+    "terrain",
+    "terrainiumd",
+    "terrainium-lib",
+    "terrainium-build",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -41,6 +46,9 @@ serde = { version = "1.0.219", features = ["derive"] }
 clap = { version = "4.5.40", features = ["derive", "wrap_help"] }
 mockall_double = "0.3.1"
 
+mockall = "0.13.1"
+tempfile = "3.20.0"
+serial_test = "3.2.0"
 pretty_assertions = "1.4.1"
 
 [dependencies]
@@ -85,10 +93,11 @@ version = "1.0.1"
 features = ["preserve_order", "indexmap2"]
 
 [dev-dependencies]
+mockall.workspace = true
+tempfile.workspace = true
+serial_test.workspace = true
 pretty_assertions.workspace = true
-mockall = { version = "0.13.1" }
-serial_test = "3.2.0"
-tempfile = "3.20.0"
+
 
 [build-dependencies]
 anyhow = "1.0.98"

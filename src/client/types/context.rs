@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use terrainium_lib::constants::CONFIG_LOCATION;
 
 use crate::client::args::Verbs;
-use crate::client::shell::{get_shell, Shell, Zsh};
+use crate::client::shell::{Shell, Zsh, get_shell};
 use crate::client::types::config::Config;
 use crate::common::constants::{TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML};
 #[mockall_double::double]
@@ -297,7 +297,7 @@ impl Context {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::env::{current_dir, VarError};
+    use std::env::{VarError, current_dir};
     use std::fs::{create_dir_all, write};
     use std::path::{Path, PathBuf};
     use std::sync::Arc;

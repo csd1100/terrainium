@@ -1,8 +1,8 @@
-use tracing::metadata::LevelFilter;
 use tracing::Level;
+use tracing::metadata::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, Layer, Registry};
+use tracing_subscriber::{Layer, Registry, fmt};
 
 use crate::args::{ClientArgs, Verbs};
 

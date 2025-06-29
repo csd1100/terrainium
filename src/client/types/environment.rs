@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
 use crate::client::args::BiomeArg;
@@ -21,7 +21,6 @@ use crate::common::constants::{
 pub struct Environment {
     name: String,
     default_biome: Option<String>,
-    selected_biome: String,
     auto_apply: AutoApply,
     merged: Biome,
 }
@@ -38,7 +37,6 @@ impl Environment {
         let environment = Environment {
             name: terrain.name().clone(),
             default_biome: terrain.default_biome().clone(),
-            selected_biome: merged.name(),
             auto_apply: terrain.auto_apply().clone(),
             merged,
         };
@@ -93,8 +91,8 @@ impl Environment {
         &self.auto_apply
     }
 
-    pub fn selected_biome(&self) -> &String {
-        &self.selected_biome
+    pub fn selected_biome(&self) -> String {
+        self.merged.name()
     }
 
     pub fn merged(&self) -> &Biome {
@@ -178,7 +176,6 @@ impl Environment {
         Environment {
             name: "terrainium".to_string(),
             default_biome,
-            selected_biome,
             auto_apply: AutoApply::default(),
             merged: merged.clone(),
         }
@@ -198,7 +195,7 @@ impl Display for Environment {
 Auto Apply: {}
 {}{}{}{}"#,
             self.default_biome.as_ref().unwrap_or(&"none".to_string()),
-            self.selected_biome,
+            self.merged.name(),
             self.auto_apply,
             self.merged.envs_str(None),
             self.merged.aliases_str(None),
@@ -230,10 +227,10 @@ mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
-    use crate::client::types::terrain::Terrain;
     use crate::client::types::terrain::tests::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
+    use crate::client::types::terrain::Terrain;
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use home::home_dir;
 use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};

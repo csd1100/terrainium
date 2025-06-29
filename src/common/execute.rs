@@ -177,7 +177,7 @@ pub(crate) mod tests {
     use crate::common::types::command::Command;
 
     #[test]
-    fn test_spawn_and_get_output_without_envs() -> Result<()> {
+    fn test_get_output_without_envs() -> Result<()> {
         let test_var = "TEST_VAR";
         let orig_env: std::result::Result<String, VarError>;
         unsafe {
@@ -205,7 +205,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn test_spawn_and_get_output_with_envs() -> Result<()> {
+    fn test_get_output_with_envs() -> Result<()> {
         let test_var1 = "TEST_VAR1";
         let test_var2 = "TEST_VAR2";
 
@@ -246,7 +246,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn test_run_set_args_and_envs() -> Result<()> {
+    fn test_get_output_set_args_and_envs() -> Result<()> {
         let mut envs: BTreeMap<String, String> = BTreeMap::new();
         envs.insert("TEST_VAR".to_string(), "TEST_VALUE".to_string());
 

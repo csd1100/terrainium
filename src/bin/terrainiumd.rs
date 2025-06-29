@@ -1,11 +1,11 @@
 use std::process::exit;
 use std::sync::Arc;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use terrainium::common::execute::{Execute, Executor};
 use terrainium::common::types::command::Command;
-use terrainium::common::types::paths::{get_terrainiumd_paths, DaemonPaths};
+use terrainium::common::types::paths::{DaemonPaths, get_terrainiumd_paths};
 use terrainium::daemon::args::{DaemonArgs, Verbs};
 use terrainium::daemon::handlers::handle_request;
 use terrainium::daemon::logging::init_logging;
@@ -15,9 +15,9 @@ use terrainium::daemon::types::context::DaemonContext;
 use terrainium::daemon::types::daemon::Daemon;
 use terrainium::daemon::types::daemon_socket::DaemonSocket;
 use terrainium_lib::styles::{error, warning};
-use tokio::signal::unix::{signal, SignalKind};
-use tokio_stream::wrappers::UnixListenerStream;
+use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::UnixListenerStream;
 use tokio_util::sync::CancellationToken;
 use tracing::metadata::LevelFilter;
 use tracing::{debug, info, trace, warn};

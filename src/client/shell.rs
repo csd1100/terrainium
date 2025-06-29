@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 use std::sync::Arc;
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use handlebars::Handlebars;
 use serde::Serialize;
 
@@ -100,13 +100,13 @@ pub(crate) fn render<T: Serialize>(
 }
 
 #[cfg(test)]
+#[serial_test::serial]
 mod tests {
     use std::env::VarError;
     use std::path::Path;
     use std::sync::Arc;
 
     use pretty_assertions::assert_eq;
-    use serial_test::serial;
 
     use crate::client::shell::get_shell;
     use crate::client::test_utils::restore_env_var;
@@ -114,7 +114,6 @@ mod tests {
     use crate::common::execute::MockExecutor;
 
     #[test]
-    #[serial]
     fn get_shell_errors_if_no_shell_env() {
         let shell: std::result::Result<String, VarError>;
         unsafe {
@@ -133,7 +132,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn get_shell_errors_if_unsupported_shell() {
         let shell: std::result::Result<String, VarError>;
         unsafe {
