@@ -1,16 +1,17 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{Context as AnyhowContext, Result, bail};
+use anyhow::{bail, Context as AnyhowContext, Result};
+use terrainium_lib::constants::CONFIG_LOCATION;
 
 use crate::client::args::Verbs;
-use crate::client::shell::{Shell, Zsh, get_shell};
+use crate::client::shell::{get_shell, Shell, Zsh};
 use crate::client::types::config::Config;
-use crate::common::constants::{
-    CONFIG_LOCATION, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML,
-};
+use crate::common::constants::{TERRAIN_DIR, TERRAIN_SESSION_ID, TERRAIN_TOML};
 #[mockall_double::double]
 use crate::common::execute::Executor;
+
+const SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";
 
 #[derive(Debug)]
 pub struct Context {
@@ -174,7 +175,7 @@ impl Context {
         let shell = get_shell(cwd.as_path(), executor.clone())?;
 
         shell
-            .setup_integration(
+            .create_integration_script(
                 Self::config_dir(home_dir.as_path()).join(SHELL_INTEGRATION_SCRIPTS_DIR),
             )
             .context("failed to setup shell integration")?;
@@ -204,6 +205,10 @@ impl Context {
 
     pub fn config_dir(home_dir: &Path) -> PathBuf {
         home_dir.join(CONFIG_LOCATION)
+    }
+
+    pub fn shell_integration_dir(home_dir: &Path) -> PathBuf {
+        Self::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR)
     }
 
     pub fn toml_path(&self) -> &Path {
@@ -292,7 +297,7 @@ impl Context {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::env::{VarError, current_dir};
+    use std::env::{current_dir, VarError};
     use std::fs::{create_dir_all, write};
     use std::path::{Path, PathBuf};
     use std::sync::Arc;

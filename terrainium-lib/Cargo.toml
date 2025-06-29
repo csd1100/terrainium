@@ -1,0 +1,19 @@
+[package]
+name = "terrainium-lib"
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[dependencies]
+clap.workspace = true
+anyhow.workspace = true
+const-str = "0.6.2"
+
+[build-dependencies]
+anyhow.workspace = true

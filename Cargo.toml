@@ -1,28 +1,68 @@
-[package]
-name = "terrainium"
+[workspace]
+members = ["terrain", "terrainiumd", "terrainium-lib", "terrainium-build"]
+default-members = ["terrain", "terrainiumd", "terrainium-lib", "terrainium-build"]
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+description = "A CLI environment management utility"
+homepage = "https://github.com/csd1100/terrainium"
+documentation = "https://github.com/csd1100/terrainium"
+repository = "https://github.com/csd1100/terrainium.git"
+readme = "README.md"
+license = "GPL-3"
+
+[package]
+name = "terrainium"
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
 default-run = "terrain"
 build = "build.rs"
 
 [features]
 terrain-schema = ["schemars"]
 
-[dependencies]
-anyhow = "1.0.98"
-clap = { version = "4.5.40", features = ["derive", "wrap_help", "env"] }
-handlebars = "6.3.2"
+[workspace.dependencies]
 home = "0.5.11"
+regex = "1.11.1"
+const-str = "0.6.2"
+anyhow = "1.0.98"
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
+tracing-subscriber = { version = "0.3.19" }
+serde = { version = "1.0.219", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive", "wrap_help"] }
 mockall_double = "0.3.1"
+
+pretty_assertions = "1.4.1"
+
+[dependencies]
+terrainium-lib = { path = "terrainium-lib" }
+const-str.workspace = true
+regex.workspace = true
+home.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+clap = { workspace = true, features = ["env"] }
+tracing.workspace = true
+tracing-appender.workspace = true
+tracing-subscriber = { workspace = true, features = ["fmt", "local-time"] }
+mockall_double.workspace = true
+
+
+handlebars = "6.3.2"
 prost = "0.14.1"
 prost-types = "0.14.1"
-serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 toml = "0.8.23"
 time = { version = "0.3.41", features = ["local-offset", "formatting"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["fmt", "local-time"] }
-tracing-appender = { version = "0.2.3" }
 tokio = { version = "1.45.1", features = [
     "rt",
     "rt-multi-thread",
@@ -36,21 +76,19 @@ tokio = { version = "1.45.1", features = [
 ] }
 tokio-stream = { version = "0.1.17", features = ["net"] }
 uuid = { version = "1.17.0", features = ["v4"] }
-regex = "1.11.1"
 toml_edit = "0.22.27"
 tokio-util = "0.7.15"
-const-str = "0.6.2"
 
 [dependencies.schemars]
-version = "1.0.1"
 optional = true
+version = "1.0.1"
 features = ["preserve_order", "indexmap2"]
 
 [dev-dependencies]
+pretty_assertions.workspace = true
 mockall = { version = "0.13.1" }
 serial_test = "3.2.0"
 tempfile = "3.20.0"
-pretty_assertions = "1.4.1"
 
 [build-dependencies]
 anyhow = "1.0.98"

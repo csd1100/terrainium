@@ -1,5 +1,3 @@
-pub const CONFIG_LOCATION: &str = ".config/terrainium";
-
 pub const TERRAINIUMD: &str = "terrainiumd";
 pub const TERRAINIUMD_DEBUG: &str = "terrainiumd-debug";
 pub const TERRAINIUMD_CONF: &str = "terrainiumd.toml";
@@ -19,17 +17,16 @@ pub const UNSUPPORTED: &str = "UNSUPPORTED";
 pub const DEBUG_PATH: &str = "target/debug";
 
 pub const TERRAIN_DIR: &str = "TERRAIN_DIR";
-pub const TERRAIN_INIT_FN: &str = "terrain_init";
 pub const TERRAIN_NAME: &str = "TERRAIN_NAME";
 pub const TERRAIN_SESSION_ID: &str = "TERRAIN_SESSION_ID";
 pub const TERRAIN_AUTO_APPLY: &str = "TERRAIN_AUTO_APPLY";
-pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 pub const TERRAIN_SELECTED_BIOME: &str = "TERRAIN_SELECTED_BIOME";
+pub const TERRAIN_INIT_FN: &str = "terrain_init";
+pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 pub const TERRAIN_TOML: &str = "terrain.toml";
 
 pub const TERRAINIUM_DEV: &str = "TERRAINIUM_DEV";
 pub const TERRAINIUM_CONF: &str = "terrainium.toml";
-pub const SHELL_INTEGRATION_SCRIPTS_DIR: &str = "shell_integration";
 
 pub const DEFAULT_BIOME: &str = "default_biome";
 pub const AUTO_APPLY: &str = "auto_apply";

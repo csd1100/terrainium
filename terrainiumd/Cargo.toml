@@ -1,0 +1,12 @@
+[package]
+name = "terrainiumd"
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]

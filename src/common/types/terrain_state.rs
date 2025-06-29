@@ -2,18 +2,18 @@ use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use clap::builder::styling::AnsiColor;
 use serde::{Deserialize, Serialize};
+use terrainium_lib::styles::{
+    colored, error, heading, sub_heading, sub_value, success, value, warning,
+};
 use tracing::{debug, instrument, trace};
 
 use crate::common::constants::{CONSTRUCTORS, DESTRUCTORS, TERRAIN_STATE_FILE_NAME};
 use crate::common::types::command::Command;
 use crate::common::types::paths::get_terrainiumd_paths;
 use crate::common::types::pb;
-use crate::common::types::styles::{
-    colored, error, heading, sub_heading, sub_value, success, value, warning,
-};
 use crate::common::utils::remove_non_numeric;
 
 fn get_log_path(
@@ -638,8 +638,8 @@ pub mod test_utils {
         CONSTRUCTORS, DESTRUCTORS, EXAMPLE_BIOME, TERRAIN_TOML, TEST_TIMESTAMP,
     };
     use crate::common::test_utils::{
-        TEST_TERRAIN_DIR, TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
-        expected_env_vars_example_biome, expected_envs_with_activate_example_biome,
+        expected_env_vars_example_biome, expected_envs_with_activate_example_biome, TEST_TERRAIN_DIR,
+        TEST_TERRAIN_NAME, TEST_TIMESTAMP_NUMERIC,
     };
 
     fn get_commands(

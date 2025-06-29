@@ -7,18 +7,18 @@ use std::process::{ExitStatus, Output};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::{Context as AnyhowContext, Result, bail};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use serde::Serialize;
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::client::args::BiomeArg;
-use crate::client::shell::{Shell, Zsh, render};
+use crate::client::shell::{render, Shell, Zsh};
 use crate::client::types::context::Context;
 use crate::client::types::environment::Environment;
 use crate::client::types::terrain::{AutoApply, Terrain};
 use crate::common::constants::{
-    FPATH, NONE, SHELL_INTEGRATION_SCRIPTS_DIR, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN,
-    TERRAIN_INIT_SCRIPT, TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, ZSHRC,
+    FPATH, NONE, TERRAIN_AUTO_APPLY, TERRAIN_DIR, TERRAIN_INIT_FN, TERRAIN_INIT_SCRIPT,
+    TERRAIN_NAME, TERRAIN_SELECTED_BIOME, TERRAIN_SESSION_ID, ZSHRC,
 };
 use crate::common::execute::Execute;
 #[mockall_double::double]
@@ -50,7 +50,7 @@ fn unsets() -> Vec<&'static str> {
     vec![TERRAIN_INIT_SCRIPT, TERRAIN_INIT_FN]
 }
 
-fn get_exports(which: char) -> String {
+fn typesets(which: char) -> String {
     re_un_exports()
         .into_iter()
         .map(|e| {
@@ -71,7 +71,7 @@ fn get_unsets() -> String {
         .join("\n")
 }
 
-fn get_debug_command_check() -> &'static str {
+fn debug_condition() -> &'static str {
     if cfg!(debug_assertions) {
         r#"
     elif [ "${command[1]} ${command[2]}" = "cargo run" ] && [ "$TERRAINIUM_DEV" = "true" ]; then
@@ -103,7 +103,7 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
         )
     }
 
-    fn get_integration_script(&self) -> String {
+    fn generate_integration_script(&self) -> String {
         format!(
             r#"#!/usr/bin/env zsh
 
@@ -179,62 +179,48 @@ fi
             AutoApply::Background,
             AutoApply::Replace,
             AutoApply::All,
-            get_debug_command_check(),
-            get_exports('-'),
-            get_exports('+'),
+            debug_condition(),
+            typesets('-'),
+            typesets('+'),
             get_unsets(),
         )
     }
 
-    fn setup_integration(&self, integration_scripts_dir: PathBuf) -> Result<()> {
-        if !fs::exists(&integration_scripts_dir)
-            .context("failed to check if config and shell integration scripts directory exists")?
-        {
-            fs::create_dir_all(&integration_scripts_dir)
-                .context("failed to create shell integration scripts directory")?;
+    fn create_integration_script(&self, integration_dir: PathBuf) -> Result<()> {
+        if !integration_dir.exists() {
+            fs::create_dir_all(&integration_dir)
+                .context("failed to create shell-integration scripts directory")?;
         }
 
-        let init_script_location = integration_scripts_dir.join(ZSH_INIT_SCRIPT_NAME);
-        let script = self.get_integration_script();
+        let script_path = integration_dir.join(ZSH_INIT_SCRIPT_NAME);
+        let generated_script = self.generate_integration_script();
 
-        if !fs::exists(&init_script_location)
-            .context("failed to check if shell integration script exists")?
-        {
-            warn!(
-                "shell-integration script not found in config directory, copying script to config \
-                 directory"
-            );
+        if script_path.exists() {
+            let script = fs::read_to_string(&script_path)
+                .context("failed to read shell-integration script")?;
 
-            fs::write(&init_script_location, script)
-                .context("failed to create shell-integration script file")?;
-        } else if fs::read_to_string(&init_script_location)
-            .context("failed to read shell-integration script")?
-            != script
-        {
-            let backup = init_script_location.with_extension("zsh.bkp");
+            if script == generated_script {
+                return Ok(());
+            }
 
-            fs::copy(&init_script_location, backup)
-                .context("failed to backup shell-integration script")?;
-
-            fs::remove_file(&init_script_location)
-                .context("failed to remove outdated shell-integration script")?;
-
-            warn!(
-                "shell-integration script was outdated in config directory, copying newer script \
-                 to config directory"
-            );
-
-            fs::write(&init_script_location, script)
-                .context("failed to create updated shell-integration script file")?;
+            info!("shell-integration script was outdated updating it...");
+            let backup = script_path.with_extension("zsh.bkp");
+            fs::copy(&script_path, backup).context("failed to backup shell-integration script")?;
         }
 
-        let compiled_path = init_script_location.with_extension("zwc");
+        fs::write(&script_path, generated_script)
+            .context("failed to create shell-integration script file")?;
 
-        self.compile_script(&init_script_location, &compiled_path)
+        let compiled_path = script_path.with_extension("zwc");
+        self.compile_script(&script_path, &compiled_path)
+    }
+
+    fn get_default_rc(&self, home_dir: &Path) -> PathBuf {
+        home_dir.join(ZSHRC)
     }
 
     fn update_rc(&self, home_dir: &Path, path: PathBuf) -> Result<()> {
-        self.setup_integration(Context::config_dir(home_dir).join(SHELL_INTEGRATION_SCRIPTS_DIR))?;
+        self.create_integration_script(Context::shell_integration_dir(home_dir))?;
 
         let path = fs::canonicalize(path).context("failed to normalize the rc path")?;
         let rc = fs::read_to_string(&path).context("failed to read rc")?;
@@ -386,10 +372,6 @@ alias {{@key}}="{{{this}}}"
                 .to_string(),
         );
         templates
-    }
-
-    fn get_default_rc(&self, home_dir: &Path) -> PathBuf {
-        home_dir.join(ZSHRC)
     }
 }
 
@@ -618,7 +600,7 @@ mod tests {
             .successfully();
 
         Zsh::get(home_dir.path(), Arc::new(executor))
-            .setup_integration(zsh_integration_script_location)
+            .create_integration_script(zsh_integration_script_location)
             .expect("to succeed");
 
         let file_name = if cfg!(debug_assertions) {
@@ -665,7 +647,7 @@ mod tests {
             .successfully();
 
         Zsh::get(home_dir.path(), Arc::new(executor))
-            .setup_integration(zsh_integration_script_location)
+            .create_integration_script(zsh_integration_script_location)
             .expect("to succeed");
 
         assert!(

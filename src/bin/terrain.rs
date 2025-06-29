@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Context as AnyhowContext, Result, bail};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use home::home_dir;
 use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
@@ -16,7 +16,7 @@ use terrainium::client::types::context::Context;
 use terrainium::client::types::environment::Environment;
 use terrainium::client::types::terrain::Terrain;
 use terrainium::common::execute::Executor;
-use terrainium::common::types::styles::warning;
+use terrainium_lib::styles::warning;
 
 #[tokio::main]
 async fn main() -> Result<()> {

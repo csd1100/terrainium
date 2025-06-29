@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Output};
 use std::sync::Arc;
 
-use anyhow::{Context as AnyhowContext, Result, bail};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
 
@@ -21,8 +21,8 @@ pub trait Shell: Debug {
     fn get(cwd: &Path, executor: Arc<Executor>) -> Self;
     fn command(&self) -> Command;
     fn get_init_rc_contents() -> String;
-    fn get_integration_script(&self) -> String;
-    fn setup_integration(&self, init_script_dir: PathBuf) -> Result<()>;
+    fn generate_integration_script(&self) -> String;
+    fn create_integration_script(&self, init_script_dir: PathBuf) -> Result<()>;
     fn get_default_rc(&self, home_dir: &Path) -> PathBuf;
     fn update_rc(&self, home_dir: &Path, path: PathBuf) -> Result<()>;
     fn generate_scripts(&self, context: &Context, terrain: Terrain) -> Result<()>;
@@ -56,7 +56,7 @@ pub fn get_shell(dir: &Path, executor: Arc<Executor>) -> Result<Zsh> {
         bail!("failed to detect shell!");
     }
 
-    let shell = shell.unwrap();
+    let shell = shell.expect("to be present");
 
     if !shell.to_lowercase().contains(ZSH) {
         bail!("shell \"{shell}\" is not supported!");

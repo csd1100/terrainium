@@ -1,14 +1,15 @@
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use home::home_dir;
 #[cfg(feature = "terrain-schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use terrainium_lib::constants::CONFIG_LOCATION;
 use tracing::{info, trace};
 
-use crate::common::constants::{CONFIG_LOCATION, TERRAINIUMD_CONF};
+use crate::common::constants::TERRAINIUMD_CONF;
 
 #[cfg_attr(feature = "terrain-schema", derive(JsonSchema))]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
