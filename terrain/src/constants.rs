@@ -20,6 +20,7 @@ pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 pub const NONE: &str = "none";
 pub const EXAMPLE_BIOME: &str = "example_biome";
 pub const TERRAINIUM: &str = "terrainium";
+pub const TERRAINIUM_CONF: &str = "terrainium.toml";
 
 pub const EDITOR: &str = "EDITOR";
 pub const ENV_VAR: &str = "ENV_VAR";

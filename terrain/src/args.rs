@@ -38,6 +38,12 @@ pub struct ClientArgs {
 
 #[derive(Parser)]
 pub struct Options {
+    /// Creates a configuration file for terrain client
+    ///
+    /// Location: `~/.config/terrainium/terrainium.toml`
+    #[arg(long, conflicts_with = "update_rc")]
+    pub create_config: bool,
+
     /// Adds shell integration to specified rc file
     /// If file is not specified `~/.zshrc` is updated
     #[arg(long,

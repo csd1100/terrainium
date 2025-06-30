@@ -10,7 +10,7 @@ TERRAINIUM_DEV = "false"
 t = "cargo run --"
 td = "cargo run --bin terrainiumd --"
 tfmt = "cargo +nightly fmt"
-ttest = "cargo clippy && cargo test"
+ttest = "cargo clippy && cargo nextest run"
 tdaemon = "cargo run --bin terrainiumd -- -f --log-level trace --run"
 trenter = "exec cargo run -- enter"
 

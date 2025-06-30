@@ -1,13 +1,15 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use home::home_dir;
 use terrainium_lib::styles::warning;
 
-use crate::args::ClientArgs;
+use crate::args::{ClientArgs, Verbs};
+use crate::config::Config;
 use crate::logging::init_logging;
 use crate::shell::update_rc;
 
 mod args;
+mod config;
 mod constants;
 mod context;
 mod logging;
@@ -30,10 +32,19 @@ fn main() -> Result<()> {
 
     let home_dir = home_dir().context("failed to get home directory")?;
 
-    if args.command.is_none() && args.options.update_rc.is_some() {
-        update_rc(home_dir.as_path(), args.options.update_rc)
-            .context("failed to update shell rc file")?;
-    }
+    match args.command {
+        None => {
+            if args.options.update_rc.is_some() {
+                update_rc(home_dir.as_path(), args.options.update_rc)
+                    .context("failed to update shell rc file")?;
+            } else if args.options.create_config {
+                Config::create_file().context("failed to create config file")?;
+            } else {
+                bail!("must pass argument or command, run with --help for more information.");
+            }
+        }
+        Some(verb) => {}
+    };
 
     Ok(())
 }
