@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use terrainium_lib::command::Command;
 
 use crate::constants::{EDITOR, ENV_VAR, EXAMPLE_BIOME, NONE, TENTER, TERRAINIUM};

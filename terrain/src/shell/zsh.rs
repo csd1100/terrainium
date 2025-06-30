@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::sync::Arc;
 
-use anyhow::{bail, Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use terrainium_lib::command::Command;
 use terrainium_lib::executor::Execute;
 use tracing::info;
@@ -22,26 +22,22 @@ use crate::types::terrain::AutoApply;
 const INIT_SCRIPT_NAME: &str = "terrainium_init.zsh";
 
 /// list of environment variables to export only for terrain commands
-fn reexports() -> Vec<&'static str> {
-    vec![
-        FPATH,
-        TERRAIN_NAME,
-        TERRAIN_SESSION_ID,
-        TERRAIN_SELECTED_BIOME,
-        TERRAIN_AUTO_APPLY,
-        TERRAIN_DIR,
-    ]
-}
+const REEXPORTS: [&str; 6] = [
+    FPATH,
+    TERRAIN_NAME,
+    TERRAIN_SESSION_ID,
+    TERRAIN_SELECTED_BIOME,
+    TERRAIN_AUTO_APPLY,
+    TERRAIN_DIR,
+];
 
 /// list of environment variables to unset after terrain has initialized
-fn unsets() -> Vec<&'static str> {
-    vec![TERRAIN_INIT_SCRIPT, TERRAIN_INIT_FN]
-}
+const UNSETS: [&str; 2] = [TERRAIN_INIT_SCRIPT, TERRAIN_INIT_FN];
 
 /// typeset commands for all reexports
 /// used in shell-integration script
 fn typesets(which: char) -> String {
-    reexports()
+    REEXPORTS
         .into_iter()
         .map(|e| {
             format!(
@@ -55,8 +51,8 @@ fn typesets(which: char) -> String {
 
 /// unset command for all environment variables that will be unset
 /// used in shell-integration script
-fn get_unsets() -> String {
-    unsets()
+fn unsets() -> String {
+    UNSETS
         .into_iter()
         .map(|e| format!("{: <4}unset {e}", ""))
         .collect::<Vec<_>>()
@@ -83,15 +79,6 @@ impl Shell for Zsh {
     /// [Command] to execute commands using shell
     fn command(&self) -> Command {
         Command::new(self.bin.to_string(), vec![], Some(self.cwd.clone()))
-    }
-
-    /// get contents to be added to the rc file to enable shell-integration
-    fn get_init_rc_contents(&self) -> String {
-        format!(
-            r#"
-source "$HOME/.config/terrainium/shell_integration/{INIT_SCRIPT_NAME}"
-"#,
-        )
     }
 
     /// generate shell-integration script contents
@@ -127,6 +114,15 @@ source "$HOME/.config/terrainium/shell_integration/{INIT_SCRIPT_NAME}"
 
         let compiled_path = script_path.with_extension("zwc");
         self.compile_script(&script_path, &compiled_path)
+    }
+
+    /// get contents to be added to the rc file to enable shell-integration
+    fn get_init_rc_contents(&self) -> String {
+        format!(
+            r#"
+source "$HOME/.config/terrainium/shell_integration/{INIT_SCRIPT_NAME}"
+"#,
+        )
     }
 
     /// get default rc path i.e. `~/.zshrc`.
@@ -169,6 +165,27 @@ source "$HOME/.config/terrainium/shell_integration/{INIT_SCRIPT_NAME}"
             .get_output(envs, command)
             .context("failed to execute zsh command due to an error")
     }
+
+    /// generate environment variables required for terrain to activate
+    ///
+    /// Prepends `TERRAIN_INIT_SCRIPT` to `FPATH` to load terrainium zsh scripts
+    /// on terrain activation.
+    /// `FPATH`, `TERRAIN_INIT_SCRIPT`, `terrain_init`
+    fn generate_envs(&self, scripts_dir: PathBuf, biome: &str) -> Result<BTreeMap<String, String>> {
+        let compiled_script = Self::compiled_script_path(&scripts_dir, biome)
+            .to_str()
+            .expect("path to be converted to string")
+            .to_string();
+
+        let mut envs = BTreeMap::new();
+
+        let updated_fpath = format!("{compiled_script}:{}", self.get_fpath()?);
+        envs.insert(FPATH.to_string(), updated_fpath);
+        envs.insert(TERRAIN_INIT_SCRIPT.to_string(), compiled_script);
+        envs.insert(TERRAIN_INIT_FN.to_string(), format!("terrain-{biome}.zsh"));
+
+        Ok(envs)
+    }
 }
 
 impl Zsh {
@@ -179,6 +196,11 @@ impl Zsh {
             cwd: cwd.to_path_buf(),
             executor,
         }
+    }
+
+    /// get path for compiled script for specified biome
+    fn compiled_script_path(scripts_dir: &Path, biome_name: &str) -> PathBuf {
+        scripts_dir.join(format!("terrain-{biome_name}.zwc"))
     }
 
     /// compile script using `zcompile` command.
@@ -204,6 +226,27 @@ impl Zsh {
         }
 
         Ok(())
+    }
+
+    /// fetches `FPATH` environment variable to add terrain scripts
+    fn get_fpath(&self) -> Result<String> {
+        if let Ok(fpath) = std::env::var(FPATH) {
+            return Ok(fpath);
+        }
+
+        let cmd = "/bin/echo -n $FPATH";
+
+        let output = self.execute(vec![cmd.to_string()], None)?;
+
+        if !output.status.success() {
+            bail!(
+                "getting fpath failed with status {}, due to an error: {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        String::from_utf8(output.stdout).context("failed to convert stdout to string")
     }
 
     /// create integration script contents
@@ -286,7 +329,7 @@ fi
             debug_condition(),
             typesets('-'),
             typesets('+'),
-            get_unsets(),
+            unsets(),
         )
     }
 }
@@ -300,6 +343,7 @@ mod tests {
     use tempfile::tempdir;
 
     use super::*;
+    use crate::constants::NONE;
     use crate::test_helpers::test_zsh::{
         ExpectZSH, ZSH_INTEGRATION_SCRIPT, ZSH_INTEGRATION_SCRIPT_RELEASE,
     };
@@ -400,12 +444,9 @@ mod tests {
             .keys()
             .map(ToOwned::to_owned)
             .collect::<HashSet<String>>();
-        vars.insert(FPATH.to_owned());
+        vars.insert(FPATH.to_string());
 
-        let actual = reexports()
-            .into_iter()
-            .map(ToOwned::to_owned)
-            .collect::<HashSet<String>>();
+        let actual: HashSet<String> = REEXPORTS.into_iter().map(ToString::to_string).collect();
 
         assert_eq!(actual, vars);
 
@@ -415,23 +456,20 @@ mod tests {
     #[test]
     fn assert_unsets() {
         // added tests to keep them in sync with actual values
-        // let executor = ExpectZSH::to(Path::new("")).get_fpath().successfully();
-        //
-        // let zsh = Zsh::get(Path::new(""), Arc::new(executor));
-        //
-        // let mut vars = zsh
-        //     .generate_envs(PathBuf::new(), NONE)
-        //     .unwrap()
-        //     .keys()
-        //     .map(ToOwned::to_owned)
-        //     .collect::<HashSet<String>>();
-        // vars.remove(FPATH);
-        //
-        // let actual = unsets()
-        //     .into_iter()
-        //     .map(ToOwned::to_owned)
-        //     .collect::<HashSet<String>>();
-        //
-        // assert_eq!(actual, vars);
+        let executor = ExpectZSH::to(Path::new("")).get_fpath();
+
+        let zsh = Zsh::get(bin(), Path::new(""), Arc::new(executor));
+
+        let mut vars = zsh
+            .generate_envs(PathBuf::new(), NONE)
+            .unwrap()
+            .keys()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<String>>();
+        vars.remove(FPATH);
+
+        let actual: HashSet<String> = UNSETS.into_iter().map(ToString::to_string).collect();
+
+        assert_eq!(actual, vars);
     }
 }

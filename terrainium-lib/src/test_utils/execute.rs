@@ -40,7 +40,7 @@ impl ExpectExecutor {
     }
 
     /// run command and return [anyhow::Result<Output>]
-    pub fn get_output_for(
+    fn get_output_for(
         mut self,
         envs: Option<Arc<BTreeMap<String, String>>>,
         command: Command,

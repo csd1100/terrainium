@@ -14,9 +14,9 @@ pub mod zsh;
 
 pub trait Shell: Debug {
     fn command(&self) -> Command;
-    fn get_init_rc_contents(&self) -> String;
     fn generate_integration_script(&self) -> String;
     fn create_integration_script(&self, init_script_dir: PathBuf) -> Result<()>;
+    fn get_init_rc_contents(&self) -> String;
     fn get_default_rc(&self, home_dir: &Path) -> PathBuf;
     fn update_rc(&self, home_dir: &Path, path: PathBuf) -> Result<()>;
     fn execute(
@@ -24,6 +24,7 @@ pub trait Shell: Debug {
         args: Vec<String>,
         envs: Option<Arc<BTreeMap<String, String>>>,
     ) -> Result<Output>;
+    fn generate_envs(&self, scripts_dir: PathBuf, biome: &str) -> Result<BTreeMap<String, String>>;
 }
 
 /// get shell instance

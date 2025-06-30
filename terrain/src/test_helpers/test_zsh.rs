@@ -5,6 +5,7 @@ use terrainium_lib::executor::MockExecute;
 use terrainium_lib::test_utils::execute::ExpectExecutor;
 
 const ZSH_BIN: &str = "/bin/zsh";
+const TEST_FPATH: &str = "/usr/share/zsh/completions";
 
 pub const ZSH_INTEGRATION_SCRIPT: &str = "../tests/data/terrainium_init.zsh";
 pub const ZSH_INTEGRATION_SCRIPT_RELEASE: &str = "../tests/data/terrainium_init-release.zsh";
@@ -49,6 +50,20 @@ impl ExpectZSH {
             None,
             command,
             "".to_string(),
+            1,
+        )
+    }
+
+    pub fn get_fpath(self) -> MockExecute {
+        let ExpectZSH { executor, cwd } = self;
+        ExpectExecutor::with(executor).successfully_get_output_for(
+            None,
+            Command::new(
+                "/bin/zsh".to_string(),
+                vec!["-c".to_string(), "/bin/echo -n $FPATH".to_string()],
+                Some(cwd.to_path_buf()),
+            ),
+            TEST_FPATH.to_string(),
             1,
         )
     }

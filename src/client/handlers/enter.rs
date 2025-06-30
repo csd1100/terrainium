@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use uuid::Uuid;
 
 use crate::client::args::BiomeArg;
@@ -147,9 +147,9 @@ mod tests {
     use crate::common::constants::{NONE, TERRAIN_TOML, TEST_TIMESTAMP};
     use crate::common::execute::MockExecutor;
     use crate::common::test_utils::{
-        expected_activate_request_example_biome, expected_activation_env_vars, expected_env_vars_none, expected_envs_with_activate_example_biome,
-        expected_zsh_env_vars, TEST_CENTRAL_DIR,
-        TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+        TEST_CENTRAL_DIR, TEST_SESSION_ID, TEST_TERRAIN_DIR, TEST_TERRAIN_NAME,
+        expected_activate_request_example_biome, expected_activation_env_vars,
+        expected_env_vars_none, expected_envs_with_activate_example_biome, expected_zsh_env_vars,
     };
     use crate::common::types::pb;
 

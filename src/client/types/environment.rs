@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use serde::Serialize;
 
 use crate::client::args::BiomeArg;
@@ -227,10 +227,10 @@ mod tests {
     use crate::client::types::biome::Biome;
     use crate::client::types::commands::Commands;
     use crate::client::types::environment::Environment;
+    use crate::client::types::terrain::Terrain;
     use crate::client::types::terrain::tests::{
         add_biome, force_set_invalid_default_biome, get_test_biome,
     };
-    use crate::client::types::terrain::Terrain;
     use crate::client::validation::{
         ValidationFixAction, ValidationMessageLevel, ValidationResult,
     };
