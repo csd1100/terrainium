@@ -20,6 +20,7 @@ use crate::common::constants::{
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Environment {
     name: String,
+    selected_biome: String,
     default_biome: Option<String>,
     auto_apply: AutoApply,
     merged: Biome,
@@ -36,6 +37,7 @@ impl Environment {
 
         let environment = Environment {
             name: terrain.name().clone(),
+            selected_biome: merged.name(),
             default_biome: terrain.default_biome().clone(),
             auto_apply: terrain.auto_apply().clone(),
             merged,
@@ -175,6 +177,7 @@ impl Environment {
     pub fn build(default_biome: Option<String>, selected_biome: String, merged: &Biome) -> Self {
         Environment {
             name: "terrainium".to_string(),
+            selected_biome,
             default_biome,
             auto_apply: AutoApply::default(),
             merged: merged.clone(),

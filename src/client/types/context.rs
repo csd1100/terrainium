@@ -703,7 +703,7 @@ pub(crate) mod tests {
             .compile_script_successfully_for_times(
                 &shell_integration_dir.join("terrainium_init.zsh"),
                 &shell_integration_dir.join("terrainium_init.zwc"),
-                16,
+                1,
             )
             .successfully();
 

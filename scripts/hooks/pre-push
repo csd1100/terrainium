@@ -2,8 +2,8 @@
 set -e
 
 printf "\nChecking formatting using rustfmt\n"
-cargo +nightly fmt --check
+cargo +nightly fmt --check --all
 printf "\nLinting using clippy\n"
-cargo clippy -- -D warnings
+cargo clippy --workspace -- -D warnings
 printf "\nRunning tests\n"
-cargo test
+cargo test --workspace

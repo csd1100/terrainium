@@ -171,7 +171,7 @@ mod tests {
         let expected = read_to_string("./tests/data/terrain-example_biome.json")
             .expect("test data to be read");
 
-        assert_eq!(output, expected);
+        assert_eq!(output, expected.trim());
 
         Ok(())
     }

@@ -1,7 +1,7 @@
 {
   "name": "terrainium",
-  "default_biome": "example_biome",
   "selected_biome": "example_biome",
+  "default_biome": "example_biome",
   "auto_apply": "off",
   "merged": {
     "envs": {
