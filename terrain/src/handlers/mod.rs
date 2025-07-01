@@ -33,7 +33,7 @@ impl Socket<pb::Response, pb::Request> for Client {
 }
 
 impl Client {
-    pub async fn new(path: PathBuf) -> Result<Self> {
+    pub fn new(path: PathBuf) -> Result<Self> {
         if !path.exists() {
             bail!("Daemon Socket does not exist at: {path:?}");
         }

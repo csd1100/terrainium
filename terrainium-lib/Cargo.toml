@@ -20,6 +20,7 @@ async-trait.workspace = true
 clap.workspace = true
 tokio.workspace = true
 prost.workspace = true
+serde.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]

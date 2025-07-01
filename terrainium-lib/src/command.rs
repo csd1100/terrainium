@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
-#[derive(Debug, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+use crate::pb;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Command {
     exe: String,
     args: Vec<String>,
@@ -13,9 +17,34 @@ impl Command {
         Command { exe, args, cwd }
     }
 
+    /// Get executable for the command
+    pub fn exe(&self) -> &str {
+        &self.exe
+    }
+
+    /// Get the arguments for the command
+    pub fn args(&self) -> &[String] {
+        &self.args
+    }
+
+    /// Get the path to the directory where [Command] is to be run
+    pub fn cwd(&self) -> &Option<PathBuf> {
+        &self.cwd
+    }
+
     /// set arguments for command to be executed
     pub fn set_args(&mut self, args: Vec<String>) {
         self.args = args;
+    }
+}
+
+impl From<pb::Command> for Command {
+    fn from(value: pb::Command) -> Self {
+        Self {
+            exe: value.exe,
+            args: value.args,
+            cwd: Some(PathBuf::from(value.cwd)),
+        }
     }
 }
 

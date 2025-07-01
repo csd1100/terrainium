@@ -3,8 +3,7 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use home::home_dir;
-use terrainium_lib::styles::warning;
-use tokio::runtime::Builder;
+use tracing::warn;
 
 use crate::args::{ClientArgs, Verbs};
 use crate::config::Config;
@@ -24,16 +23,14 @@ mod test_helpers;
 mod types;
 mod validate;
 
-fn main() -> Result<()> {
-    if cfg!(debug_assertions) {
-        println!(
-            "{}: you are running debug build of terrain, which might cause some unwanted behavior.",
-            warning("WARNING")
-        );
-    }
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = ClientArgs::parse();
 
     let _out_guard = init_logging(&args);
+    if cfg!(debug_assertions) {
+        warn!("you are running debug build of terrain, which might cause some unwanted behavior.",);
+    }
 
     let home_dir = home_dir().context("failed to get home directory")?;
 
@@ -56,15 +53,9 @@ fn main() -> Result<()> {
                 terrain_name,
             } = verb
             {
-                let rt = Builder::new_current_thread()
-                    .build()
-                    .context("failed to create async runtime")?;
-
-                rt.block_on(async move {
-                    status::handle(json, terrain_name, session_id, recent, None)
-                        .await
-                        .context("failed to get the terrain status")
-                })
+                status::handle(json, terrain_name, session_id, recent, None)
+                    .await
+                    .context("failed to get the terrain status")
             } else {
                 Ok(())
             }

@@ -46,8 +46,14 @@ tracing = "0.1.41"
 tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19" }
 serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 clap = { version = "4.5.40", features = ["derive", "wrap_help"] }
-tokio = { version = "1.45.1", features = ["macros", "net", "io-util"] }
+tokio = { version = "1.45.1", features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "io-util",
+] }
 mockall_double = "0.3.1"
 
 mockall = "0.13.1"
@@ -64,11 +70,12 @@ anyhow.workspace = true
 serde.workspace = true
 toml.workspace = true
 clap = { workspace = true, features = ["env"] }
+prost.workspace = true
+serde_json.workspace = true
 tracing.workspace = true
 tracing-appender.workspace = true
 tracing-subscriber = { workspace = true, features = ["fmt", "local-time"] }
 mockall_double.workspace = true
-
 tokio = { workspace = true, features = [
     "rt-multi-thread",
     "process",
@@ -78,9 +85,7 @@ tokio = { workspace = true, features = [
 ] }
 
 handlebars = "6.3.2"
-prost.workspace = true
 prost-types = "0.14.1"
-serde_json = "1.0.140"
 time = { version = "0.3.41", features = ["local-offset", "formatting"] }
 tokio-stream = { version = "0.1.17", features = ["net"] }
 uuid = { version = "1.17.0", features = ["v4"] }

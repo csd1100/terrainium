@@ -88,4 +88,28 @@ pub trait Socket<In: Message + Default, Out: Message> {
             .await
             .context("failed to shutdown the socket")
     }
+
+    /// Connects, Writes the [Out], Reads the [In], and Shutdowns
+    ///
+    /// Helper for client to communicate with Daemon
+    async fn request(&mut self, req: &Out) -> Result<In> {
+        self.connect()
+            .await
+            .context("failed to connect to daemon")?;
+
+        self.write(req)
+            .await
+            .context("failed to write request to daemon")?;
+
+        let response = self
+            .read()
+            .await
+            .context("failed to read response from daemon")?;
+
+        self.shutdown()
+            .await
+            .context("failed to close the connection")?;
+
+        Ok(response)
+    }
 }
