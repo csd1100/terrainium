@@ -18,22 +18,6 @@ repository = "https://github.com/csd1100/terrainium.git"
 readme = "README.md"
 license = "GPL-3"
 
-[package]
-name = "terrainium"
-description.workspace = true
-version.workspace = true
-edition.workspace = true
-homepage.workspace = true
-documentation.workspace = true
-repository.workspace = true
-readme.workspace = true
-license.workspace = true
-default-run = "terrain"
-build = "build.rs"
-
-[features]
-terrain-schema = ["schemars"]
-
 [workspace.dependencies]
 home = "0.5.11"
 regex = "1.11.1"
@@ -60,6 +44,21 @@ mockall = "0.13.1"
 tempfile = "3.20.0"
 serial_test = "3.2.0"
 pretty_assertions = "1.4.1"
+
+[package]
+name = "terrainium_old"
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[features]
+terrain-schema = ["schemars"]
 
 [dependencies]
 terrainium-lib = { path = "terrainium-lib" }

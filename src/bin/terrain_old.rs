@@ -3,20 +3,20 @@ use std::sync::Arc;
 use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use home::home_dir;
-use terrainium::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
+use terrainium_lib::styles::warning;
+use terrainium_old::client::args::{BiomeArg, ClientArgs, GetArgs, UpdateArgs, Verbs};
 #[cfg(feature = "terrain-schema")]
-use terrainium::client::handlers::schema;
-use terrainium::client::handlers::{
+use terrainium_old::client::handlers::schema;
+use terrainium_old::client::handlers::{
     construct, destruct, edit, enter, exit, generate, get, init, status, update,
 };
-use terrainium::client::logging::init_logging;
-use terrainium::client::shell::update_rc;
-use terrainium::client::types::config::Config;
-use terrainium::client::types::context::Context;
-use terrainium::client::types::environment::Environment;
-use terrainium::client::types::terrain::Terrain;
-use terrainium::common::execute::Executor;
-use terrainium_lib::styles::warning;
+use terrainium_old::client::logging::init_logging;
+use terrainium_old::client::shell::update_rc;
+use terrainium_old::client::types::config::Config;
+use terrainium_old::client::types::context::Context;
+use terrainium_old::client::types::environment::Environment;
+use terrainium_old::client::types::terrain::Terrain;
+use terrainium_old::common::execute::Executor;
 
 #[tokio::main]
 async fn main() -> Result<()> {

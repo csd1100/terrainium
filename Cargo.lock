@@ -1294,7 +1294,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "terrainium"
+name = "terrainium-build"
+version = "0.1.0"
+
+[[package]]
+name = "terrainium-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap",
+ "const-str",
+ "mockall",
+ "prost",
+ "prost-build",
+ "serde",
+ "serial_test",
+ "tokio",
+]
+
+[[package]]
+name = "terrainium_old"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1325,26 +1345,6 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "uuid",
-]
-
-[[package]]
-name = "terrainium-build"
-version = "0.1.0"
-
-[[package]]
-name = "terrainium-lib"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "clap",
- "const-str",
- "mockall",
- "prost",
- "prost-build",
- "serde",
- "serial_test",
- "tokio",
 ]
 
 [[package]]
