@@ -2,6 +2,7 @@ use std::process::Command;
 use std::{env, fs};
 
 use anyhow::{Context, Result};
+
 fn write_git_hash() -> Result<()> {
     // Get the git commit hash
     let output = Command::new("git")
@@ -17,6 +18,26 @@ fn write_git_hash() -> Result<()> {
     fs::write(dest_path, git_hash.trim()).context("failed to write git hash to the file")
 }
 
+fn generate_protos() -> Result<()> {
+    let files = [
+        "../proto/terrainium/v1/activate.proto",
+        "../proto/terrainium/v1/common.proto",
+        "../proto/terrainium/v1/command.proto",
+        "../proto/terrainium/v1/deactivate.proto",
+        "../proto/terrainium/v1/status.proto",
+    ];
+
+    let mut config = prost_build::Config::new();
+    config.enable_type_names();
+    config.btree_map(["."]);
+    config
+        .compile_protos(&files, &["../proto"])
+        .context("failed to compile protobufs")?;
+
+    Ok(())
+}
+
 fn main() -> Result<()> {
-    write_git_hash()
+    write_git_hash()?;
+    generate_protos()
 }

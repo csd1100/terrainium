@@ -3,6 +3,7 @@ use std::env::VarError;
 pub mod execute;
 
 pub use crate::executor::MockExecute;
+pub use crate::socket::MockSocket;
 
 /// # Safety
 ///

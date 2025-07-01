@@ -2,7 +2,28 @@ syntax = "proto3";
 
 package terrainium.v1;
 
+import "terrainium/v1/activate.proto";
+import "terrainium/v1/command.proto";
+import "terrainium/v1/deactivate.proto";
 import "terrainium/v1/status.proto";
+
+message Request {
+  enum RequestType {
+      REQUEST_TYPE_UNSPECIFIED = 0;
+      REQUEST_TYPE_ACTIVATE = 1;
+      REQUEST_TYPE_EXECUTE = 2;
+      REQUEST_TYPE_DEACTIVATE = 3;
+      REQUEST_TYPE_STAUTS = 4;
+  }
+
+  RequestType type = 1;
+  oneof payload {
+    Activate activate = 2;
+    Execute execute = 3;
+    Deactivate deactivate = 4;
+    StatusRequest status = 5;
+  }
+}
 
 message Response {
   oneof payload {

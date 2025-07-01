@@ -1,7 +1,7 @@
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use terrainium_lib::constants::CONFIG_LOCATION;

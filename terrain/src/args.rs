@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand, ValueHint};
 use terrainium_lib::version::VERSION;
 use tracing::Level;
 
-use crate::constants::{SHELL, UNSUPPORTED, ZSH, ZSHRC_PATH};
+use crate::constants::{SHELL, TERRAIN_NAME, UNSUPPORTED, ZSH, ZSHRC_PATH};
 
 /// get default rc path for supported shells
 /// if unsupported shell is found, send UNSUPPORTED. UNSUPPORTED
@@ -79,5 +79,39 @@ pub enum Verbs {
         /// Prints the terrain validation logs
         #[arg(long)]
         debug: bool,
+    },
+
+    /// Fetches status of background constructors and destructors from terrainium
+    /// daemon
+    ///
+    /// Fetches status for specified terrain name and session.
+    /// If both session_id and recent are not provided (and TERRAIN_SESSION_ID is not set)
+    /// will fetch most recently updated session.
+    Status {
+        /// Terrain for which status is to be fetched
+        ///
+        /// Needs to be specified if terrain is not active.
+        ///
+        /// If terrain is active, and this value is not specified, then value
+        /// is read from TERRAIN_NAME environment variable.
+        #[arg(short, long, env = TERRAIN_NAME, hide_env_values = true)]
+        terrain_name: String,
+
+        /// Return status for session_id [env: TERRAIN_SESSION_ID]
+        ///
+        /// If not specified read from TERRAIN_SESSION_ID environment variable,
+        /// which is set when terrain activates.
+        #[arg(short, long)]
+        session_id: Option<String>,
+
+        /// Return last updated nth session
+        ///
+        /// Cannot be used with session_id
+        #[arg(short, long, value_name = "N", conflicts_with = "session_id")]
+        recent: Option<u32>,
+
+        /// Return status in json format
+        #[arg(short, long)]
+        json: bool,
     },
 }
