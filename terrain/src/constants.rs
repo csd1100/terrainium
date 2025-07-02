@@ -19,6 +19,7 @@ pub const TERRAIN_INIT_SCRIPT: &str = "TERRAIN_INIT_SCRIPT";
 
 pub const NONE: &str = "none";
 pub const EXAMPLE_BIOME: &str = "example_biome";
+pub const TERRAIN_TOML: &str = "terrain.toml";
 pub const TERRAINIUM: &str = "terrainium";
 pub const TERRAINIUM_CONF: &str = "terrainium.toml";
 
@@ -33,3 +34,5 @@ pub const TENTER: &str = "tenter";
 pub const TEXIT: &str = "texit";
 
 pub const UNSUPPORTED: &str = "UNSUPPORTED";
+
+pub const TEST_TIMESTAMP: &str = "1970-01-01_00:00:00";

@@ -9,8 +9,8 @@ use tokio::net::UnixStream;
 ///
 /// For Client: [Out] should be [pb::Request] and [In] should be [pb::Response]
 /// For Daemon: [Out] should be [pb::Response] and [In] should be [pb::Request]
-#[async_trait::async_trait]
 #[cfg_attr(any(test, feature = "test-exports"), automock)]
+#[async_trait::async_trait]
 pub trait Socket<In: Message + Default, Out: Message> {
     /// Connect with socket
     ///

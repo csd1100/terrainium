@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use terrainium_lib::command::Command;
 use terrainium_lib::executor::MockExecute;
-use terrainium_lib::test_utils::execute::ExpectExecutor;
+use terrainium_lib::test_utils::mock_execute::ExpectExecutor;
 
 const ZSH_BIN: &str = "/bin/zsh";
 const TEST_FPATH: &str = "/usr/share/zsh/completions";

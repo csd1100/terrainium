@@ -1,6 +1,7 @@
 use std::env::VarError;
 
-pub mod execute;
+pub mod mock_execute;
+pub mod mocket;
 
 pub use crate::executor::MockExecute;
 pub use crate::socket::MockSocket;
