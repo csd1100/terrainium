@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
+use std::path::Path;
 
-use anyhow::{Result, bail};
+use anyhow::{Context as _, Result, bail};
+use serde::{Deserialize, Serialize};
 use terrainium_lib::command::Command;
 
 use crate::constants::{EDITOR, ENV_VAR, EXAMPLE_BIOME, NONE, TENTER, TERRAINIUM};
@@ -15,7 +17,7 @@ const AUTO_APPLY_REPLACE: &str = "replace";
 const AUTO_APPLY_ALL: &str = "all";
 const AUTO_APPLY_OFF: &str = "off";
 
-#[derive(Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub enum AutoApply {
     All,
     Background,
@@ -51,6 +53,7 @@ pub enum BiomeArg {
     Some(String),
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Terrain {
     name: String,
     default_biome: Option<String>,
@@ -60,6 +63,20 @@ pub struct Terrain {
 }
 
 impl Terrain {
+    /// Serialize [Terrain] to `toml`
+    pub fn to_toml(&self, _terrain_dir: &Path) -> Result<String> {
+        // let result = self.validate(terrain_dir);
+        // if result
+        //     .results()
+        //     .iter()
+        //     .any(|r| r.level == ValidationMessageLevel::Error)
+        // {
+        //     bail!("failed to write terrain as it had validation errors");
+        // }
+
+        toml::to_string_pretty(&self).context("failed to convert terrain to toml")
+    }
+
     /// Converts [Terrain] into [Environment] by merging environment variables
     /// , aliases, and by appending constructors, destructors.
     pub fn into_environment(mut self, selected: BiomeArg) -> Result<Environment> {
@@ -108,6 +125,22 @@ impl Terrain {
         }
     }
 
+    // /// Validates the terrain and returns the result
+    // pub fn validate<'a>(&'a self, terrain_dir: &'a Path) -> ValidationResults<'a> {
+    //     // validate terrain
+    //     let mut results = self.terrain.validate(NONE, terrain_dir);
+    //
+    //     // all biomes
+    //     self.biomes.iter().for_each(|(biome_name, biome)| {
+    //         results.append(biome.validate(biome_name, terrain_dir))
+    //     });
+    //
+    //     results
+    // }
+
+    /// Get example terrain
+    ///
+    /// Used when `-x` flag is passed to `terrain init`
     pub fn example() -> Self {
         let terrain = Biome::example(NONE.to_string());
 

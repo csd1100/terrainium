@@ -69,6 +69,34 @@ pub struct Options {
 
 #[derive(Subcommand)]
 pub enum Verbs {
+    /// Initialize terrain in current directory
+    ///
+    /// Creates terrain.toml file
+    Init {
+        /// Creates terrain.toml in central directory.
+        ///
+        /// If current directory is /home/user/work/project, then
+        /// terrain.toml file is created in
+        /// ~/.config/terrainium/terrains/_home_user_work_project/.
+        ///
+        /// This is useful if user does not want to add terrain.toml
+        /// to source control
+        #[arg(short, long)]
+        central: bool,
+
+        /// Creates terrain.toml with example terrain included.
+        #[arg(short = 'x', long)]
+        example: bool,
+
+        /// Opens terrain.toml in EDITOR after creation
+        ///
+        /// Launches editor defined in EDITOR environment variable.
+        /// If EDITOR environment variable is not set, 'vi' will be used
+        /// as editor.
+        #[arg(short, long)]
+        edit: bool,
+    },
+
     /// Validates the terrain in current directory
     Validate {},
 

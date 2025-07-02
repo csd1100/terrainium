@@ -1,13 +1,17 @@
 // FIXME: remove #![allow(dead_code)]
 #![allow(dead_code)]
-use anyhow::{Context, Result, bail};
+use std::sync::Arc;
+
+use anyhow::{Context as _, Result, bail};
 use clap::Parser;
 use home::home_dir;
+use terrainium_lib::executor::Executor;
 use tracing::warn;
 
 use crate::args::{ClientArgs, Verbs};
 use crate::config::Config;
-use crate::handlers::status;
+use crate::context::Context;
+use crate::handlers::{init, status};
 use crate::logging::init_logging;
 use crate::shell::update_rc;
 
@@ -57,6 +61,15 @@ async fn main() -> Result<()> {
                     .await
                     .context("failed to get the terrain status")
             } else {
+                let current_dir =
+                    std::env::current_dir().context("failed to get current directory")?;
+                let context = Context::new(&verb, home_dir, current_dir, Arc::new(Executor))?;
+
+                if let Verbs::Init { example, edit, .. } = verb {
+                    return init::handle(context, example, edit)
+                        .context("failed to initialize new terrain");
+                }
+
                 Ok(())
             }
         }

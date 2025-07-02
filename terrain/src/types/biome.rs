@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
 use terrainium_lib::command::Command;
 
 use crate::constants::{
@@ -10,6 +11,7 @@ use crate::types::commands::Commands;
 /// [Biome] is a most basic unit of environment
 /// stores environment variables, alias, constructors,
 /// and destructors
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Biome {
     name: String,
     envs: BTreeMap<String, String>,
@@ -90,6 +92,50 @@ impl Biome {
     fn append_destructors(&mut self, other: Commands) {
         self.destructors.append(other)
     }
+
+    // /// Validates the biome
+    // pub(crate) fn validate<'a>(
+    //     &'a self,
+    //     biome_name: &'a str,
+    //     terrain_dir: &'a Path,
+    // ) -> ValidationResults<'a> {
+    //     let mut result = ValidationResults::new(false, HashSet::new());
+    //     result.append(self.validate_envs(biome_name));
+    //     result.append(self.validate_aliases(biome_name));
+    //     result.append(self.validate_constructors(biome_name, terrain_dir));
+    //     result.append(self.validate_destructors(biome_name, terrain_dir));
+    //     result
+    // }
+    //
+    // /// Validate the environment variables from the [Biome]
+    // fn validate_envs<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+    //     validate_identifiers(IdentifierType::Env, &self.envs, biome_name)
+    // }
+    //
+    // /// Validate the aliases from the [Biome]
+    // fn validate_aliases<'a>(&'a self, biome_name: &'a str) -> ValidationResults<'a> {
+    //     validate_identifiers(IdentifierType::Alias, &self.aliases, biome_name)
+    // }
+    //
+    // /// Validate the constructors from the [Biome]
+    // fn validate_constructors<'a>(
+    //     &'a self,
+    //     biome_name: &'a str,
+    //     terrain_dir: &'a Path,
+    // ) -> ValidationResults<'a> {
+    //     self.constructors
+    //         .validate_commands(biome_name, &OperationType::Constructor, terrain_dir)
+    // }
+    //
+    // /// Validate the destructors from the [Biome]
+    // fn validate_destructors<'a>(
+    //     &'a self,
+    //     biome_name: &'a str,
+    //     terrain_dir: &'a Path,
+    // ) -> ValidationResults<'a> {
+    //     self.destructors
+    //         .validate_commands(biome_name, &OperationType::Destructor, terrain_dir)
+    // }
 
     pub fn example(name: String) -> Biome {
         Self {

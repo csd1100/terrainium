@@ -5,6 +5,7 @@ use terrainium_lib::pb;
 use terrainium_lib::socket::Socket;
 use tokio::net::UnixStream;
 
+pub mod init;
 pub mod status;
 
 /// Client that will connect to Daemon

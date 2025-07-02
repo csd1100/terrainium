@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
 use terrainium_lib::command::Command;
 
 /// Stores foreground and background [Command]s to be run
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Commands {
     foreground: Vec<Command>,
     background: Vec<Command>,
