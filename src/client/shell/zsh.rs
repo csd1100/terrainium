@@ -109,17 +109,15 @@ source "$HOME/.config/terrainium/shell_integration/{ZSH_INIT_SCRIPT_NAME}"
 
 function __terrainium_auto_apply() {{
     auto_apply="$(terrain get --auto-apply 2> /dev/null)"
-    if [ $? != 0 ]; then
-        auto_apply="{}"
+    if [ $? = 0 ]; then
+        typeset -x FPATH
+        if [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
+            terrain enter --auto-apply
+        elif [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
+            exec terrain enter --auto-apply
+        fi
+        typeset +x FPATH
     fi
-
-    typeset -x FPATH
-    if [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
-        terrain enter --auto-apply
-    elif [ "$auto_apply" = "{}" ] || [ "$auto_apply" = "{}" ]; then
-        exec terrain enter --auto-apply
-    fi
-    typeset +x FPATH
 }}
 
 function __terrainium_parse_command() {{
@@ -174,7 +172,6 @@ else
     __terrainium_auto_apply
 fi
 "#,
-            AutoApply::Off,
             AutoApply::Enabled,
             AutoApply::Background,
             AutoApply::Replace,
