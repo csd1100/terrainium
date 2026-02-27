@@ -117,7 +117,7 @@ impl<'a> ValidationResults<'a> {
         self.fixable
     }
 
-    pub fn results_ref(&self) -> &HashSet<ValidationResult> {
+    pub fn results_ref(&self) -> &HashSet<ValidationResult<'_>> {
         &self.results
     }
 
@@ -161,7 +161,7 @@ pub struct ValidationError<'a> {
 }
 
 impl ValidationError<'_> {
-    pub fn results(&self) -> &ValidationResults {
+    pub fn results(&'_ self) -> &'_ ValidationResults<'_> {
         &self.results
     }
 }

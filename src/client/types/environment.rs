@@ -137,7 +137,7 @@ impl Environment {
         self.merged.append_envs(envs);
     }
 
-    fn validate_envs(&self) -> ValidationResults {
+    fn validate_envs(&self) -> ValidationResults<'_> {
         let mut result = HashSet::new();
         self.merged.envs().iter().for_each(|(k, v)| {
             // validate if all env references are resolved
@@ -160,7 +160,9 @@ impl Environment {
         ValidationResults::new(false, result)
     }
 
-    pub(crate) fn validate(&self) -> std::result::Result<ValidationResults, ValidationError> {
+    pub(crate) fn validate(
+        &self,
+    ) -> std::result::Result<ValidationResults<'_>, ValidationError<'_>> {
         let results = self.validate_envs();
         if results
             .results_ref()

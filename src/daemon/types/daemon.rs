@@ -62,14 +62,14 @@ fn cleanup(
     socket: &PathBuf,
     pid_file: PathBuf,
 ) -> Result<()> {
-    if let Ok(pid) = get_pid(pid_file) {
-        if is_already_running(executor.clone(), &pid) {
-            warn!("terrainiumd is already running, pid: {pid}");
-            if !force {
-                bail!("terrainiumd is already running, and --force is not passed");
-            }
-            kill_command(executor, SIGKILL, &pid).context("failed to kill terrainiumd")?;
+    if let Ok(pid) = get_pid(pid_file)
+        && is_already_running(executor.clone(), &pid)
+    {
+        warn!("terrainiumd is already running, pid: {pid}");
+        if !force {
+            bail!("terrainiumd is already running, and --force is not passed");
         }
+        kill_command(executor, SIGKILL, &pid).context("failed to kill terrainiumd")?;
     }
     remove_file(socket).context("failed to remove socket")
 }

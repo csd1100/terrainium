@@ -2,17 +2,15 @@
 
 function __terrainium_auto_apply() {
     auto_apply="$(terrain get --auto-apply 2> /dev/null)"
-    if [ $? != 0 ]; then
-        auto_apply="off"
+    if [ $? = 0 ]; then
+        typeset -x FPATH
+        if [ "$auto_apply" = "enabled" ] || [ "$auto_apply" = "background" ]; then
+            terrain enter --auto-apply
+        elif [ "$auto_apply" = "replace" ] || [ "$auto_apply" = "all" ]; then
+            exec terrain enter --auto-apply
+        fi
+        typeset +x FPATH
     fi
-
-    typeset -x FPATH
-    if [ "$auto_apply" = "enabled" ] || [ "$auto_apply" = "background" ]; then
-        terrain enter --auto-apply
-    elif [ "$auto_apply" = "replace" ] || [ "$auto_apply" = "all" ]; then
-        exec terrain enter --auto-apply
-    fi
-    typeset +x FPATH
 }
 
 function __terrainium_parse_command() {

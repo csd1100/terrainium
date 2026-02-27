@@ -46,10 +46,10 @@ impl DaemonConfig {
     pub fn from_file() -> Result<Self> {
         let path = get_config_path();
         info!("reading config from {path:?}");
-        if path.exists() {
-            if let Ok(toml_str) = read_to_string(&path) {
-                return toml::from_str(&toml_str).context("invalid config");
-            }
+        if path.exists()
+            && let Ok(toml_str) = read_to_string(&path)
+        {
+            return toml::from_str(&toml_str).context("invalid config");
         }
         bail!("failed to read configuration file {path:?}")
     }
