@@ -29,8 +29,7 @@ pub fn handle(
         }
         terrain_toml[DEFAULT_BIOME] = value(new_default);
     } else {
-        let biome_name = if update_args.new.is_some() {
-            let new_biome = update_args.new.expect("new biome to be some");
+        let biome_name = if let Some(new_biome) = update_args.new {
             terrain_toml[BIOMES][&new_biome] = Biome::new_toml().into();
             new_biome
         } else {
