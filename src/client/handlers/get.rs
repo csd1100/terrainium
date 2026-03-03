@@ -12,6 +12,13 @@ pub fn handle(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<(
 }
 
 fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> {
+    if get_args.auto_apply {
+        if context.config().auto_apply() {
+            return Ok(terrain.auto_apply().to_string());
+        }
+        return Ok(AutoApply::default().to_string());
+    }
+
     let environment = Environment::from(&terrain, get_args.biome.clone(), context.terrain_dir())
         .context("failed to generate environment")?;
 
@@ -21,13 +28,6 @@ fn get(context: Context, terrain: Terrain, get_args: GetArgs) -> Result<String> 
                 .context("failed to convert environment to json");
         }
         return Ok(format!("{environment}"));
-    }
-
-    if get_args.auto_apply {
-        if context.config().auto_apply() {
-            return Ok(terrain.auto_apply().to_string());
-        }
-        return Ok(AutoApply::default().to_string());
     }
 
     let mut result = String::new();
