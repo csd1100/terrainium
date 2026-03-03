@@ -63,28 +63,9 @@ pub(crate) async fn spawn_commands(
     let timestamp = request.timestamp.clone();
     let is_constructor = request.is_constructor;
 
-    let (terrain_name, session_id) = if request.session_id.is_none() {
-        // session_id is not provided that means running constructors or destructors
-        // outside terrainium shell so create a new state
-
-        let state: TerrainState = request.into();
-
-        let terrain_name = state.terrain_name().to_string();
-        let session_id = state.session_id().to_string();
-
-        debug!(
-            terrain_name = terrain_name,
-            timestamp = timestamp,
-            is_constructor = is_constructor,
-            "execute request does not have associated session id"
-        );
-        context.state_manager().create_state(state).await?;
-
-        (terrain_name, session_id)
-    } else {
+    let (terrain_name, session_id) = if let Some(session_id) = request.session_id {
         // if session_id is present check if CommandStatus is present for current
         // timestamp else add new entry
-        let session_id = request.session_id.unwrap();
         let numeric_timestamp = remove_non_numeric(&timestamp);
         let terrain_name = request.terrain_name;
 
@@ -116,6 +97,24 @@ pub(crate) async fn spawn_commands(
             )
             .await
             .context("failed to add commands to state manager")?;
+
+        (terrain_name, session_id)
+    } else {
+        // session_id is not provided that means running constructors or destructors
+        // outside terrainium shell so create a new state
+
+        let state: TerrainState = request.into();
+
+        let terrain_name = state.terrain_name().to_string();
+        let session_id = state.session_id().to_string();
+
+        debug!(
+            terrain_name = terrain_name,
+            timestamp = timestamp,
+            is_constructor = is_constructor,
+            "execute request does not have associated session id"
+        );
+        context.state_manager().create_state(state).await?;
 
         (terrain_name, session_id)
     };
