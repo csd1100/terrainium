@@ -223,6 +223,8 @@ fi
 
             fs::write(&init_script_location, script)
                 .context("failed to create updated shell-integration script file")?;
+        } else {
+            return Ok(());
         }
 
         let compiled_path = init_script_location.with_extension("zwc");
